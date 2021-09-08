@@ -1,7 +1,7 @@
 package ir.maneditor.mananpiclibrary.properties
 
 /**
- * An abstract class for defining views that support path effect like [android.widget.TextView] and etc...
+ * Interface definition for a view that is capable of path effect.
  */
 interface Pathable {
 
