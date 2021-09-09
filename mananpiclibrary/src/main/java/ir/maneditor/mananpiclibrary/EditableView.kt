@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
@@ -145,8 +146,11 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     init {
         setWillNotDraw(false)
-        clipToPadding = false
-        clipChildren = false
+
+        // Elevating the editable view in z direction
+        // This will allow the view to be on the top if it's selected
+        // Therefore it wouldn't get stuck behind a view.
+        translationZ += 10f
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
@@ -195,12 +199,11 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
         if (doesHaveChild() && changed) {
             mainChild.run {
                 layout(
-                    l,
-                    t,
-                    r,
-                    b
+                    0,
+                    0,
+                    measuredWidth,
+                    measuredHeight
                 )
-
 
                 frameLayoutRectangle.set(
                     0f,
@@ -261,9 +264,13 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
     }
 
     override fun addView(child: View?) {
+        resetTheView(child)
+
         super.addView(child)
 
-        resetTheView(child)
+        child!!.rotation = 0f
+        child.x = 0f
+        child.y = 0f
 
         drawFrame = true
     }
@@ -292,10 +299,21 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
     }
 
     private fun resetTheView(view: View?) {
-        view!!.x = 0f
-        view.y = 0f
+        Log.i(
+            "VR",
+            "resetTheView: parent x: $x and y: $y  || child x: ${view!!.x} and y: ${view.y}"
+        )
+
+        x = view.x
+        y = view.y
         rotation = view.rotation
-        view.rotation = 0f
+
+        Log.i(
+            "VR",
+            "resetTheView: after reset:  parent x: $x and y: $y  || child x: ${view.x} and y: ${view.y}"
+        )
+
+
     }
 
     private fun setTheView(view: View?) {
