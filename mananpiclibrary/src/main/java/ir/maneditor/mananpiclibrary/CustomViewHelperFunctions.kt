@@ -2,6 +2,7 @@ package ir.maneditor.mananpiclibrary
 
 import android.content.res.Resources
 import android.graphics.Canvas
+import android.view.View
 import android.view.ViewGroup
 
 private val displayMetrics = Resources.getSystem().displayMetrics
@@ -42,3 +43,23 @@ private val ViewGroup.centerX get() = (this.measuredWidth * 0.5f)
  * This property returns center of a ViewGroup in vertical axis (ConstrainLayout,RelativeLayout,FrameLayout and etc...)
  */
 private val ViewGroup.centerY get() = (this.measuredHeight * 0.5f)
+
+
+/**
+ * This property returns the center point of a view in x direction.
+ */
+val View.centerX get() = (this.measuredWidth * 0.5f)
+
+/**
+ * This property returns the center point of a view in y direction.
+ */
+val View.centerY get() = (this.measuredHeight * 0.5f)
+
+
+/**
+ * This extension function invokes a block and invalidate the view afterwards.
+ */
+fun View.doWhileInvalidate(block: (Unit) -> Unit) {
+    block(Unit)
+    invalidate()
+}

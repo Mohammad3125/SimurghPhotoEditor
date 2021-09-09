@@ -10,7 +10,7 @@ import ir.maneditor.mananpiclibrary.properties.*
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Shadowable,
     Texturable, Colorable,
-    Scalable {
+    Scalable, Gradientable {
 
 
     constructor(context: Context) : this(context, null)
@@ -19,19 +19,24 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     private var textPathEffect: PathEffect? = null
     private var blurFilter: BlurMaskFilter? = null
     private var bitmapShader: Shader? = null
-
+    private val rotationMatrix = Matrix().apply {
+        setRotate(0f)
+    }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
-        if (textPathEffect == null) textPathEffect =
-            ComposePathEffect(DashPathEffect(floatArrayOf(on, off), 0f), CornerPathEffect(radius))
+        doWhileInvalidate {
+            if (textPathEffect == null) textPathEffect =
+                ComposePathEffect(
+                    DashPathEffect(floatArrayOf(on, off), 0f),
+                    CornerPathEffect(radius)
+                )
 
-        paint.apply {
-            style = Paint.Style.STROKE
-            this.strokeWidth = strokeWidth
-            pathEffect = textPathEffect
+            paint.apply {
+                style = Paint.Style.STROKE
+                this.strokeWidth = strokeWidth
+                pathEffect = textPathEffect
+            }
         }
-
-        invalidate()
     }
 
     override fun applyPath(onAndOff: Float, radius: Float, strokeWidth: Float) {
@@ -52,12 +57,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      * @param filter Represents style of the shadow with enums.
      */
     override fun applyShadow(shadowRadius: Float, filter: BlurMaskFilter.Blur) {
-        if (blurFilter == null) blurFilter = BlurMaskFilter(shadowRadius, filter)
-        paint.maskFilter = blurFilter
+        doWhileInvalidate {
+            if (blurFilter == null) blurFilter = BlurMaskFilter(shadowRadius, filter)
+            paint.maskFilter = blurFilter
 
-        setLayerType(LAYER_TYPE_SOFTWARE, null)
-
-        invalidate()
+            setLayerType(LAYER_TYPE_SOFTWARE, null)
+        }
     }
 
     /**
@@ -75,31 +80,41 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
-        if (bitmapShader == null) bitmapShader = BitmapShader(bitmap, tileMode, tileMode)
-        paint.shader = bitmapShader
-        invalidate()
+        doWhileInvalidate {
+            if (bitmapShader == null) bitmapShader = BitmapShader(bitmap, tileMode, tileMode)
+            paint.shader = bitmapShader
+        }
     }
 
 
     override fun removeShadow() {
-        paint.maskFilter = null
-        blurFilter = null
-        setLayerType(LAYER_TYPE_HARDWARE, null)
-        invalidate()
+        doWhileInvalidate {
+            paint.maskFilter = null
+            blurFilter = null
+            setLayerType(LAYER_TYPE_HARDWARE, null)
+        }
     }
 
     override fun removePath() {
-        paint.pathEffect = null
-        paint.style = Paint.Style.FILL
-        textPathEffect = null
-        invalidate()
+        doWhileInvalidate {
+            paint.pathEffect = null
+            paint.style = Paint.Style.FILL
+            textPathEffect = null
+        }
     }
 
 
     override fun removeTexture() {
-        paint.shader = null
-        bitmapShader = null
-        invalidate()
+        doWhileInvalidate {
+            paint.shader = null
+            bitmapShader = null
+        }
+    }
+
+    override fun removeGradient() {
+        doWhileInvalidate {
+            paint.shader = null
+        }
     }
 
     override fun applyColorResource(color: Int) {
@@ -116,5 +131,66 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         if (textSize > 85.sp) textSize = 85f
     }
 
+    override fun applyLinearGradient(
+        x0: Float,
+        y0: Float,
+        x1: Float,
+        y1: Float,
+        colors: IntArray,
+        position: FloatArray?,
+        tileMode: Shader.TileMode,
+        rotation: Float
+    ) {
+        doWhileInvalidate {
+            paint.shader = applyRotationToTheShader(
+                LinearGradient(x0, y0, x1, y1, colors, position, tileMode),
+                rotation
+            )
+        }
+    }
+
+    override fun applyRadialGradient(
+        centerX: Float,
+        centerY: Float,
+        radius: Float,
+        colors: IntArray,
+        stops: FloatArray?,
+        tileMode: Shader.TileMode,
+        rotation: Float
+    ) {
+        doWhileInvalidate {
+            paint.shader =
+                applyRotationToTheShader(
+                    RadialGradient(
+                        centerX,
+                        centerY,
+                        radius,
+                        colors,
+                        stops,
+                        tileMode
+                    ), rotation
+                )
+        }
+    }
+
+    override fun applySweepGradient(
+        cx: Float,
+        cy: Float,
+        colors: IntArray,
+        positions: FloatArray?,
+        rotation: Float
+    ) {
+        doWhileInvalidate {
+            paint.shader =
+                applyRotationToTheShader(SweepGradient(cx, cy, colors, positions), rotation)
+        }
+    }
+
+    private fun applyRotationToTheShader(shader: Shader, rotation: Float): Shader {
+        rotationMatrix.setRotate(rotation)
+        return shader.apply {
+            setLocalMatrix(rotationMatrix)
+        }
+    }
 
 }
