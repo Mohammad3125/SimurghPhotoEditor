@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
@@ -224,6 +223,9 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
             }
     }
 
+    override fun shouldDelayChildPressedState(): Boolean {
+        return false
+    }
 
     /**
      * This function resets child's x and y to the parents (keeps children centered while scaling happens)
@@ -268,9 +270,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
         super.addView(child)
 
-        child!!.rotation = 0f
-        child.x = 0f
-        child.y = 0f
+        resetViewToParent(child)
 
         drawFrame = true
     }
@@ -299,27 +299,20 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
     }
 
     private fun resetTheView(view: View?) {
-        Log.i(
-            "VR",
-            "resetTheView: parent x: $x and y: $y  || child x: ${view!!.x} and y: ${view.y}"
-        )
-
-        x = view.x
+        x = view!!.x
         y = view.y
         rotation = view.rotation
-
-        Log.i(
-            "VR",
-            "resetTheView: after reset:  parent x: $x and y: $y  || child x: ${view.x} and y: ${view.y}"
-        )
-
-
     }
 
     private fun setTheView(view: View?) {
         view!!.x = x
         view.y = y
         view.rotation = rotation
+    }
 
+    private fun resetViewToParent(view: View?) {
+        view!!.rotation = 0f
+        view.x = 0f
+        view.y = 0f
     }
 }
