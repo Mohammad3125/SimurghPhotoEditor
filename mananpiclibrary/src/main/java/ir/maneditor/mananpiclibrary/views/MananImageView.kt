@@ -1,14 +1,16 @@
 package ir.maneditor.mananpiclibrary.views
 
 import android.content.Context
+import android.graphics.ColorFilter
 import android.util.AttributeSet
 import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.updateLayoutParams
+import ir.maneditor.mananpiclibrary.properties.Filterable
 import ir.maneditor.mananpiclibrary.properties.Scalable
 
 class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView(context, attr),
-    Scalable {
+    Scalable, Filterable {
     constructor(context: Context) : this(context, null)
 
     private var isInitialScaling = true
@@ -46,5 +48,14 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
             height = heightToScale
         }
     }
+
+    override fun applyFilter(colorFilter: ColorFilter) {
+        this.colorFilter = colorFilter
+    }
+
+    override fun removeFilter() {
+        clearColorFilter()
+    }
+
 
 }
