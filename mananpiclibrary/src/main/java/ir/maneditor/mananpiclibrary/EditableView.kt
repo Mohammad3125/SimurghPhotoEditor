@@ -145,8 +145,11 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     init {
         setWillNotDraw(false)
-        clipToPadding = false
-        clipChildren = false
+
+        // Elevating the editable view in z direction
+        // This will allow the view to be on the top if it's selected
+        // Therefore it wouldn't get stuck behind a view.
+        translationZ += 10f
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
@@ -195,12 +198,11 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
         if (doesHaveChild() && changed) {
             mainChild.run {
                 layout(
-                    l,
-                    t,
-                    r,
-                    b
+                    0,
+                    0,
+                    measuredWidth,
+                    measuredHeight
                 )
-
 
                 frameLayoutRectangle.set(
                     0f,
@@ -221,6 +223,9 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
             }
     }
 
+    override fun shouldDelayChildPressedState(): Boolean {
+        return false
+    }
 
     /**
      * This function resets child's x and y to the parents (keeps children centered while scaling happens)
@@ -261,9 +266,11 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
     }
 
     override fun addView(child: View?) {
+        resetTheView(child)
+
         super.addView(child)
 
-        resetTheView(child)
+        resetViewToParent(child)
 
         drawFrame = true
     }
@@ -292,16 +299,20 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
     }
 
     private fun resetTheView(view: View?) {
-        view!!.x = 0f
-        view.y = 0f
+        x = view!!.x
+        y = view.y
         rotation = view.rotation
-        view.rotation = 0f
     }
 
     private fun setTheView(view: View?) {
         view!!.x = x
         view.y = y
         view.rotation = rotation
+    }
 
+    private fun resetViewToParent(view: View?) {
+        view!!.rotation = 0f
+        view.x = 0f
+        view.y = 0f
     }
 }
