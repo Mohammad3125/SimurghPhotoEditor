@@ -1,11 +1,13 @@
-package ir.maneditor.mananpiclibrary
+package ir.maneditor.mananpiclibrary.views
 
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
+import ir.maneditor.mananpiclibrary.doWhileInvalidate
 import ir.maneditor.mananpiclibrary.properties.*
+import ir.maneditor.mananpiclibrary.sp
 
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Shadowable,
