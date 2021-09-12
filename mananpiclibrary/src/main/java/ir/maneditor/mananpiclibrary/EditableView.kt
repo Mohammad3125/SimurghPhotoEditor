@@ -37,7 +37,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     private var pointerCount = 0
 
-    // It will notify the motion event that user is gesturing a new gesture on the screen
+    // It will notify the motion event that user is gesturing a new gesture on the screen.
     private var newGesture = false
 
     private lateinit var viewParent: ViewGroup
@@ -72,7 +72,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
 
     private val motionEventHandler: (view: View, event: MotionEvent) -> Boolean = { v, event ->
-        // Add motion event to the scale detector
+        // Add motion event to the scale detector.
         scaleDetector.onTouchEvent(event)
 
         pointerCount = event.pointerCount
@@ -80,7 +80,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 if (drawFrame) {
-                    // Get the initial x and y of current view
+                    // Get the initial x and y of current view.
                     initialX = v.x - event.rawX
                     initialY = v.y - event.rawY
                 }
@@ -97,18 +97,18 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
                 }
             }
             MotionEvent.ACTION_MOVE -> {
-                // If view is in editing state (got clicked)
+                // If view is in editing state (got clicked).
                 if (drawFrame) {
                     /* Moving the view by touch */
 
-                    // and if there is only 1 pointer on the screen
+                    // and if there is only 1 pointer on the screen.
                     if (pointerCount == 1 && newGesture) {
 
                         // Move the view
                         v.x = event.rawX + initialX
                         v.y = event.rawY + initialY
 
-                        // Don't let the view go beyond the phone's display and limit it's x and y
+                        // Don't let the view go beyond the phone's display and limit it's y axis.
                         viewParent.run {
                             if ((v.y + v.height) >= height) v.y =
                                 (height - v.height).toFloat()
@@ -118,7 +118,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
                     }
 
                     /* Rotating the view by touch */
-                    // If there are total of two pointer on the screen
+                    // If there are total of two pointer on the screen.
                     else if (pointerCount == 2) {
                         // Rotate the ViewGroup
                         rotation += event.run {
@@ -130,7 +130,8 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
                     }
                 }
             }
-            // Do not let the moving gesture continue it's work, because it shifts the view while rotating or scaling.
+            // Do not let the moving gesture continue it's work, because it
+            // shifts the view while rotating or scaling.
             MotionEvent.ACTION_POINTER_UP -> {
                 newGesture = false
             }
@@ -147,8 +148,8 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
         setWillNotDraw(false)
 
         // Elevating the editable view in z direction
-        // This will allow the view to be on the top if it's selected
-        // Therefore it wouldn't get stuck behind a view.
+        // this will allow the view to be on the top if it's selected
+        // therefore it wouldn't get stuck behind a view.
         translationZ += 10f
     }
 
@@ -158,7 +159,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
                 true
             }
             MotionEvent.ACTION_MOVE -> {
-                // We're currently moving the child, so intercept the event
+                // We're currently moving the child, so intercept the event.
                 true
             }
             else -> {
@@ -228,7 +229,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
     }
 
     /**
-     * This function resets child's x and y to the parents (keeps children centered while scaling happens)
+     * This function resets child's x and y to the parents (keeps children centered while scaling happens.)
      * @param view the child view.
      */
     private fun resetViewToParentBounds(view: View) {
@@ -240,8 +241,8 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
     /**
      * This function calculates the degree of rotation with the given delta x and y.
      * The rotation is calculated by the angle of two touch points.
-     * @param deltaX Difference between x in touches (two pointers)
-     * @param deltaY Difference between y in touches (two pointers)
+     * @param deltaX Difference between x in touches (two pointers).
+     * @param deltaY Difference between y in touches (two pointers).
      */
     private fun calculateTheRotation(deltaX: Double, deltaY: Double): Float {
         return Math.toDegrees(
@@ -254,13 +255,13 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
 
     fun showFrameAroundView() {
-        // Show the rectangle frame around the view
+        // Show the rectangle frame around the view.
         drawFrame = true
         invalidate()
     }
 
     private fun hideFrameAroundView() {
-        // Hide the rectangle around the view (meaning it's not longer in editing state)
+        // Hide the rectangle around the view (meaning it's not longer in editing state.)
         drawFrame = false
         invalidate()
     }

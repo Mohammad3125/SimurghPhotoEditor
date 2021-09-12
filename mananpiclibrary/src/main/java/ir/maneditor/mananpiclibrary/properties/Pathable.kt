@@ -9,7 +9,7 @@ interface Pathable {
      * A function for applying the path effect on certain views that are capable of.
      * @param on This parameter means the times that path is visible and drawing.
      * @param off This parameter means the times that path is invisible and not drawing (spacing in a sense).
-     * @param radius This parameter represents that radius of path effect around corner o views like TextView (default is 0)
+     * @param radius This parameter represents that radius of path effect around corner o views like TextView (default is 0).
      * @param strokeWidth This parameter represents the width of path effect (default is 1).
      */
     fun applyPath(on: Float, off: Float, radius: Float = 0f, strokeWidth: Float = 1f)
