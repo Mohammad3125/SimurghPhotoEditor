@@ -5,9 +5,9 @@ import android.graphics.*
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
-import ir.maneditor.mananpiclibrary.doWhileInvalidate
 import ir.maneditor.mananpiclibrary.properties.*
-import ir.maneditor.mananpiclibrary.sp
+import ir.maneditor.mananpiclibrary.utils.doWhileInvalidate
+import ir.maneditor.mananpiclibrary.utils.sp
 
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Shadowable,
@@ -17,6 +17,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     constructor(context: Context) : this(context, null)
 
+    private var fontSize = textSize
 
     private var textPathEffect: PathEffect? = null
     private var blurFilter: BlurMaskFilter? = null
@@ -128,9 +129,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
     override fun applyScale(scaleFactor: Float) {
-        textSize *= scaleFactor
-        if (textSize < 18.sp) textSize = 18f
-        if (textSize > 85.sp) textSize = 85f
+        fontSize *= scaleFactor
+        if (fontSize < 18.sp) fontSize = 18.sp
+        if (fontSize > 85.sp) fontSize = 85.sp
+
+        textSize = fontSize
     }
 
     override fun applyLinearGradient(
