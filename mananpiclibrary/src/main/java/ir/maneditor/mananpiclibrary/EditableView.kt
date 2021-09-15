@@ -22,7 +22,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     private var drawFrame: Boolean = true
 
-    private var scaleFactor = 0.2f
+    private var scaleFactor = 0.13f
 
     private val mainChild: View
         get() =
