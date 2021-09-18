@@ -7,14 +7,13 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.children
 import ir.maneditor.mananpiclibrary.properties.Scalable
+import ir.maneditor.mananpiclibrary.utils.dp
+import kotlin.math.abs
 import kotlin.math.atan2
-import kotlin.math.max
-import kotlin.math.min
 
 
 class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, attr) {
@@ -23,7 +22,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     private var drawFrame: Boolean = true
 
-    private var scaleFactor = 1f
+    private var scaleFactor = 0.13f
 
     private val mainChild: View
         get() =
@@ -32,6 +31,9 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     private var initialX = 0f
     private var initialY = 0f
+
+
+    private var totalInitialScaling = 0f
 
     private var initialRotation = 0f
 
@@ -50,31 +52,7 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     private val frameLayoutRectangle = RectF()
 
-    private val scaleListener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-
-
-        override fun onScale(detector: ScaleGestureDetector?): Boolean {
-
-            scaleFactor *= detector!!.scaleFactor
-            scaleFactor = max(0.1f, min(scaleFactor, 100f))
-
-            if (mainChild is Scalable) {
-                (mainChild as? Scalable)?.applyScale(scaleFactor)
-                resetViewToParentBounds(mainChild)
-            }
-
-            return true
-        }
-    }
-
-
-    private val scaleDetector = ScaleGestureDetector(context, scaleListener)
-
-
     private val motionEventHandler: (view: View, event: MotionEvent) -> Boolean = { v, event ->
-        // Add motion event to the scale detector.
-        scaleDetector.onTouchEvent(event)
-
         pointerCount = event.pointerCount
 
         when (event.actionMasked) {
@@ -89,11 +67,15 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
                 // Calculate the rotating when two pointers are on the screen.
-                initialRotation = event.run {
-                    calculateTheRotation(
+                event.run {
+                    initialRotation = calculateTheRotation(
                         (getX(0) - getX(1)).toDouble(),
                         (getY(1) - getY(0)).toDouble()
                     )
+
+
+                    // Calculate the initial pointers at first to use it as a reference point.
+                    totalInitialScaling = abs((getX(0) - getX(1))) + abs((getY(0) - getY(1)))
                 }
             }
             MotionEvent.ACTION_MOVE -> {
@@ -117,15 +99,21 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
                         }
                     }
 
-                    /* Rotating the view by touch */
                     // If there are total of two pointer on the screen.
                     else if (pointerCount == 2) {
+                        /* Rotating the view by touch */
                         // Rotate the ViewGroup
-                        rotation += event.run {
-                            calculateTheRotation(
+                        event.run {
+                            rotation += calculateTheRotation(
                                 (getX(0) - getX(1)).toDouble(),
                                 (getY(1) - getY(0)).toDouble()
                             ) - initialRotation
+
+                            (mainChild as? Scalable)?.applyScale(
+                                (((abs((getX(0) - getX(1))) + abs((getY(0) - getY(1)))) -
+                                        totalInitialScaling) * scaleFactor / (v.width + v.height)) + 1f
+                            )
+
                         }
                     }
                 }
