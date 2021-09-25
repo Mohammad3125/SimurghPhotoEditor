@@ -21,7 +21,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     private var textPathEffect: PathEffect? = null
     private var blurFilter: BlurMaskFilter? = null
-    private var bitmapShader: Shader? = null
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
     }
@@ -84,8 +83,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
         invalidateAfter {
-            if (bitmapShader == null) bitmapShader = BitmapShader(bitmap, tileMode, tileMode)
-            paint.shader = bitmapShader
+            paint.shader = BitmapShader(bitmap, tileMode, tileMode)
         }
     }
 
@@ -110,7 +108,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun removeTexture() {
         invalidateAfter {
             paint.shader = null
-            bitmapShader = null
         }
     }
 
