@@ -19,24 +19,20 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     private var fontSize = textSize
 
-    private var textPathEffect: PathEffect? = null
-    private var blurFilter: BlurMaskFilter? = null
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
         invalidateAfter {
-            if (textPathEffect == null) textPathEffect =
-                ComposePathEffect(
-                    DashPathEffect(floatArrayOf(on, off), 0f),
-                    CornerPathEffect(radius)
-                )
-
             paint.apply {
                 style = Paint.Style.STROKE
                 this.strokeWidth = strokeWidth
-                pathEffect = textPathEffect
+
+                pathEffect = ComposePathEffect(
+                    DashPathEffect(floatArrayOf(on, off), 0f),
+                    CornerPathEffect(radius)
+                )
             }
         }
     }
@@ -60,10 +56,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      */
     override fun applyShadow(shadowRadius: Float, filter: BlurMaskFilter.Blur) {
         invalidateAfter {
-            if (blurFilter == null) blurFilter = BlurMaskFilter(shadowRadius, filter)
-            paint.maskFilter = blurFilter
-
             setLayerType(LAYER_TYPE_SOFTWARE, null)
+            paint.maskFilter = BlurMaskFilter(shadowRadius, filter)
         }
     }
 
@@ -91,7 +85,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun removeShadow() {
         invalidateAfter {
             paint.maskFilter = null
-            blurFilter = null
             setLayerType(LAYER_TYPE_HARDWARE, null)
         }
     }
@@ -100,7 +93,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         invalidateAfter {
             paint.pathEffect = null
             paint.style = Paint.Style.FILL
-            textPathEffect = null
         }
     }
 
