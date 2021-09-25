@@ -10,10 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.children
-import ir.maneditor.mananpiclibrary.properties.Scalable
 import ir.maneditor.mananpiclibrary.utils.dp
-import kotlin.math.abs
-import kotlin.math.atan2
 
 
 class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, attr) {
@@ -22,25 +19,9 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     private var drawFrame: Boolean = true
 
-    private var scaleFactor = 0.13f
-
-    private val mainChild: View
+    val mainChild: View
         get() =
             children.first()
-
-
-    private var initialX = 0f
-    private var initialY = 0f
-
-
-    private var totalInitialScaling = 0f
-
-    private var initialRotation = 0f
-
-    private var pointerCount = 0
-
-    // It will notify the motion event that user is gesturing a new gesture on the screen.
-    private var newGesture = false
 
     private lateinit var viewParent: ViewGroup
 
@@ -52,93 +33,18 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     private val frameLayoutRectangle = RectF()
 
-    private val motionEventHandler: (view: View, event: MotionEvent) -> Boolean = { v, event ->
-        pointerCount = event.pointerCount
-
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                if (drawFrame) {
-                    // Get the initial x and y of current view.
-                    initialX = v.x - event.rawX
-                    initialY = v.y - event.rawY
-                }
-                performClick()
-
-            }
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                // Calculate the rotating when two pointers are on the screen.
-                event.run {
-                    initialRotation = calculateTheRotation(
-                        (getX(0) - getX(1)).toDouble(),
-                        (getY(1) - getY(0)).toDouble()
-                    )
-
-
-                    // Calculate the initial pointers at first to use it as a reference point.
-                    totalInitialScaling = abs((getX(0) - getX(1))) + abs((getY(0) - getY(1)))
-                }
-            }
-            MotionEvent.ACTION_MOVE -> {
-                // If view is in editing state (got clicked).
-                if (drawFrame) {
-                    /* Moving the view by touch */
-
-                    // and if there is only 1 pointer on the screen.
-                    if (pointerCount == 1 && newGesture) {
-
-                        // Move the view
-                        v.x = event.rawX + initialX
-                        v.y = event.rawY + initialY
-
-                        // Don't let the view go beyond the phone's display and limit it's y axis.
-                        viewParent.run {
-                            if ((v.y + v.height) >= height) v.y =
-                                (height - v.height).toFloat()
-
-                            if (v.y <= y) v.y = y
-                        }
-                    }
-
-                    // If there are total of two pointer on the screen.
-                    else if (pointerCount == 2) {
-                        /* Rotating the view by touch */
-                        // Rotate the ViewGroup
-                        event.run {
-                            rotation += calculateTheRotation(
-                                (getX(0) - getX(1)).toDouble(),
-                                (getY(1) - getY(0)).toDouble()
-                            ) - initialRotation
-
-                            (mainChild as? Scalable)?.applyScale(
-                                (((abs((getX(0) - getX(1))) + abs((getY(0) - getY(1)))) -
-                                        totalInitialScaling) * scaleFactor / (v.width + v.height)) + 1f
-                            )
-
-                        }
-                    }
-                }
-            }
-            // Do not let the moving gesture continue it's work, because it
-            // shifts the view while rotating or scaling.
-            MotionEvent.ACTION_POINTER_UP -> {
-                newGesture = false
-            }
-            // After all of the fingers were lifted from screen, then we can make a move gesture.
-            MotionEvent.ACTION_UP -> {
-                newGesture = true
-            }
-
-        }
-        true
-    }
-
     init {
         setWillNotDraw(false)
 
         // Elevating the editable view in z direction
-        // this will allow the view to be on the top if it's selected
+        // that will allow the view to be on the top if it's selected
         // therefore it wouldn't get stuck behind a view.
         translationZ += 10f
+    }
+
+
+    override fun performClick(): Boolean {
+        return super.performClick()
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
@@ -158,7 +64,6 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        setOnTouchListener(motionEventHandler)
         viewParent = parent as ViewGroup
     }
 
@@ -216,39 +121,13 @@ class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, a
         return false
     }
 
-    /**
-     * This function resets child's x and y to the parents (keeps children centered while scaling happens.)
-     * @param view the child view.
-     */
-    private fun resetViewToParentBounds(view: View) {
-        view.x = 0f
-        view.y = 0f
-    }
-
-
-    /**
-     * This function calculates the degree of rotation with the given delta x and y.
-     * The rotation is calculated by the angle of two touch points.
-     * @param deltaX Difference between x in touches (two pointers).
-     * @param deltaY Difference between y in touches (two pointers).
-     */
-    private fun calculateTheRotation(deltaX: Double, deltaY: Double): Float {
-        return Math.toDegrees(
-            atan2(
-                deltaX,
-                deltaY
-            )
-        ).toFloat()
-    }
-
-
     fun showFrameAroundView() {
         // Show the rectangle frame around the view.
         drawFrame = true
         invalidate()
     }
 
-    private fun hideFrameAroundView() {
+    fun hideFrameAroundView() {
         // Hide the rectangle around the view (meaning it's not longer in editing state.)
         drawFrame = false
         invalidate()
