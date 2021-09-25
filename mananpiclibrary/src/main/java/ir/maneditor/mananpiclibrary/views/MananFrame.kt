@@ -33,7 +33,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private var initialX = 0f
     private var initialY = 0f
 
-    private var scaleFactor = 0.13f
+    /**
+     * sensitivity of scaling algorithm.
+     */
+    var scaleFactor = 0.13f
 
     private var totalInitialScaling = 0f
 
