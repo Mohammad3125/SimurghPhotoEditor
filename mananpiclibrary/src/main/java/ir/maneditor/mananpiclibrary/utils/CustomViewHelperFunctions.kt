@@ -59,7 +59,7 @@ val View.centerY get() = (this.measuredHeight * 0.5f)
 /**
  * This extension function invokes a block and invalidate the view afterwards.
  */
-fun View.doWhileInvalidate(block: (Unit) -> Unit) {
+fun View.invalidateAfter(block: (Unit) -> Unit) {
     block(Unit)
     invalidate()
 }
