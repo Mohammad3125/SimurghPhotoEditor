@@ -13,6 +13,10 @@ import androidx.core.view.children
 import ir.maneditor.mananpiclibrary.utils.dp
 
 
+@Deprecated(
+    "This class is no longer responsible for editing views until further announcement (may be deleted soon.)",
+    level = DeprecationLevel.WARNING
+)
 class EditableView(context: Context, attr: AttributeSet?) : ViewGroup(context, attr) {
 
     constructor(context: Context) : this(context, null)
