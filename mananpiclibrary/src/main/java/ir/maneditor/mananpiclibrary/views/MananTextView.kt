@@ -65,8 +65,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      * Applies a texture to the text with default tileMode of [Shader.TileMode.REPEAT]
      * @param bitmap The bitmap texture that is going to be applied to the view.
      */
-    override fun applyTexture(bitmap: Bitmap) {
-        applyTexture(bitmap, Shader.TileMode.REPEAT)
+    override fun applyTexture(bitmap: Bitmap, opacity: Float) {
+        applyTexture(bitmap, Shader.TileMode.REPEAT, opacity)
     }
 
 
@@ -75,9 +75,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      * @param bitmap The bitmap texture that is going to be applied to the view.
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
-    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
+    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
         invalidateAfter {
-            paint.shader = BitmapShader(bitmap, tileMode, tileMode)
+            paint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
+                alpha = opacity
+            }
         }
     }
 
