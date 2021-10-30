@@ -17,7 +17,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
 
     // Paint used for drawing the frame.
     private val framePaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        Paint().apply {
             color = Color.DKGRAY
             strokeWidth = 2.dp
             style = Paint.Style.STROKE
@@ -26,7 +26,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
 
     // Paint used for drawing guidelines.
     private val frameGuidelinePaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        Paint().apply {
             color = Color.DKGRAY
             strokeWidth = 1.dp
             style = Paint.Style.STROKE
@@ -44,7 +44,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
 
     // Paint used for drawing handle bars.
     private val gridLineHandleBarPaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        Paint().apply {
             color = Color.DKGRAY
             strokeWidth = 3.dp
             style = Paint.Style.STROKE
