@@ -371,15 +371,15 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                                 // Validate that the rectangle is inside the view's bounds.
                                 val finalX =
                                     when {
-                                        right >= width -> width - right
-                                        left <= 0f -> -left
+                                        right > width -> width - right
+                                        left < 0f -> -left
                                         else -> 0f
                                     }
 
                                 val finalY =
                                     when {
-                                        bottom >= height -> height - bottom
-                                        top <= 0f -> -top
+                                        bottom > height -> height - bottom
+                                        top < 0f -> -top
                                         else -> 0f
                                     }
 
@@ -399,10 +399,11 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                     if (handleBar != null) {
 
                         // Validate if rectangle(frame) is inside the view's bounds.
-                        if (fLeft <= 0f) fLeft = 0f
-                        if (fTop <= 0f) fTop = 0f
-                        if (fRight >= width) fRight = width.toFloat()
-                        if (fBottom >= height) fBottom = height.toFloat()
+                        if (fRight > width) fRight = width.toFloat()
+                        if (fLeft < 0f) fLeft = 0f
+
+                        if (fBottom > height) fBottom = height.toFloat()
+                        if (fTop < 0f) fTop = 0f
 
 
                         // After validation set the frame's dimensions.
