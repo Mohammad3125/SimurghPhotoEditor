@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.utils.dp
 import ir.maneditor.mananpiclibrary.utils.invalidateAfter
 import ir.maneditor.mananpiclibrary.views.MananCropper.HandleBar.*
@@ -18,38 +19,87 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
     // Paint used for drawing the frame.
     private val framePaint by lazy {
         Paint().apply {
-            color = Color.DKGRAY
-            strokeWidth = 2.dp
             style = Paint.Style.STROKE
         }
     }
+
+    var frameColor = 0
+        set(value) {
+            framePaint.color = value
+            field = value
+        }
+    var frameStrokeWidth = 0f
+        set(value) {
+            framePaint.strokeWidth = value
+            field = value
+        }
 
     // Paint used for drawing guidelines.
     private val frameGuidelinePaint by lazy {
         Paint().apply {
-            color = Color.DKGRAY
-            strokeWidth = 1.dp
             style = Paint.Style.STROKE
         }
     }
+
+    var guidelineStrokeWidth = 0f
+        set(value) {
+            frameGuidelinePaint.strokeWidth = value
+            field = value
+        }
+    var guidelineColor = 0
+        set(value) {
+            frameGuidelinePaint.color = value
+            field = value
+        }
+
+    // Determines if guideline should be drawn or not.
+    var isDrawGuidelineEnabled = true
+
 
     // Paint used for drawing the shadows around frame.
     private val frameShadowsPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
             style = Paint.Style.FILL
-            alpha = 255 / 3
         }
     }
 
+    var backgroundShadowColor = 0
+        set(value) {
+            frameShadowsPaint.color = value
+            field = value
+        }
+    var backgroundShadowAlpha = 0
+        set(value) {
+            frameShadowsPaint.alpha = value
+            field = value
+        }
+
     // Paint used for drawing handle bars.
-    private val gridLineHandleBarPaint by lazy {
+    private val handleBarPaint by lazy {
         Paint().apply {
-            color = Color.DKGRAY
-            strokeWidth = 3.dp
             style = Paint.Style.STROKE
+
         }
     }
+
+    var handleBarStrokeWidth = 0f
+        set(value) {
+            handleBarPaint.strokeWidth = value
+            field = value
+        }
+    var handleBarColor = 0
+        set(value) {
+            handleBarPaint.color = value
+            field = value
+        }
+    var handleBarCornerType = Paint.Cap.ROUND
+        set(value) {
+            handleBarPaint.strokeCap = value
+            // If corners are round turn on anti-aliasing.
+            handleBarPaint.isAntiAlias = value == Paint.Cap.ROUND
+            field = value
+        }
+
 
     // Rectangle that represents the crop frame.
     private lateinit var frameRect: RectF
@@ -72,6 +122,52 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
     // Used for saving initial touch points.
     private var initialX = 0f
     private var initialY = 0f
+
+    init {
+        context.theme.obtainStyledAttributes(attr, R.styleable.MananCropper, 0, 0).apply {
+            try {
+                guidelineColor =
+                    getColor(R.styleable.MananCropper_guidelineColor, Color.DKGRAY)
+
+                guidelineStrokeWidth =
+                    getDimension(R.styleable.MananCropper_guidelineStrokeWidth, 1.dp)
+
+                isDrawGuidelineEnabled =
+                    getBoolean(R.styleable.MananCropper_isGuidelineEnabled, true)
+
+                frameColor = getColor(R.styleable.MananCropper_frameColor, Color.DKGRAY)
+
+                frameStrokeWidth = getDimension(R.styleable.MananCropper_frameStrokeWidth, 2.dp)
+
+                handleBarColor =
+                    getColor(R.styleable.MananCropper_handleBarColor, Color.DKGRAY)
+
+                handleBarStrokeWidth =
+                    getDimension(R.styleable.MananCropper_handleBarStrokeWidth, 3.dp)
+
+                handleBarCornerType =
+                    Paint.Cap.values()[getInt(
+                        R.styleable.MananCropper_handleBarStrokeType,
+                        Paint.Cap.ROUND.ordinal
+                    )]
+
+                backgroundShadowColor =
+                    getColor(
+                        R.styleable.MananCropper_backgroundShadowColor,
+                        Color.BLACK
+                    )
+
+                val shadowAlpha =
+                    getInt(R.styleable.MananCropper_backgroundShadowAlpha, 255 / 3)
+
+                backgroundShadowAlpha =
+                    if (shadowAlpha > 255) 255 else if (shadowAlpha < 0) 0 else shadowAlpha
+
+            } finally {
+                recycle()
+            }
+        }
+    }
 
     // Secondary constructor to initialize the view programmatically.
     constructor(context: Context, width: Int, height: Int) : this(context, null) {
@@ -164,14 +260,15 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
 
     override fun onDraw(canvas: Canvas?) {
         canvas!!.run {
-            // Draw grid line
+            // Draw frame
             drawRect(frameRect, framePaint)
 
             // Draw handle bars
-            drawLines(frameHandleBar, gridLineHandleBarPaint)
+            drawLines(frameHandleBar, handleBarPaint)
 
-            // Draw guidelines
-            drawLines(guideLineDimension, frameGuidelinePaint)
+            if (isDrawGuidelineEnabled)
+                // Draw guidelines
+                drawLines(guideLineDimension, frameGuidelinePaint)
 
             // Draw shadows around frame.
             for (rect in frameShadows)
