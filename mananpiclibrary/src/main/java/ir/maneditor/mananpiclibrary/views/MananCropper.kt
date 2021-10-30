@@ -267,7 +267,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
             drawLines(frameHandleBar, handleBarPaint)
 
             if (isDrawGuidelineEnabled)
-                // Draw guidelines
+            // Draw guidelines
                 drawLines(guideLineDimension, frameGuidelinePaint)
 
             // Draw shadows around frame.
@@ -405,9 +405,26 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                         if (fBottom > height) fBottom = height.toFloat()
                         if (fTop < 0f) fTop = 0f
 
+                        frameRect.run {
 
-                        // After validation set the frame's dimensions.
-                        frameRect.set(fLeft, fTop, fRight, fBottom)
+                            val frameWidth = frameRect.width()
+                            val frameHeight = frameRect.height()
+
+                            val minWidth = width * 0.3f
+                            val minHeight = height * 0.3f
+
+                            if (frameWidth - (fLeft - left) < minWidth)
+                                fLeft = left + (frameWidth - minWidth)
+                            if (frameWidth - (right - fRight) < minWidth)
+                                fRight = right
+                            if (frameHeight - (fTop - top) < minHeight)
+                                fTop = top + (frameHeight - minHeight)
+                            if (frameHeight - (bottom - fBottom) < minHeight)
+                                fBottom = bottom
+
+                            // After validation set the frame's dimensions.
+                            frameRect.set(fLeft, fTop, fRight, fBottom)
+                        }
 
                     }
                     // Reset the shadows,handle bar dimensions, handle bar map and etc based on new frame size.
