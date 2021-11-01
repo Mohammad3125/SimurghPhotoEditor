@@ -413,8 +413,10 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                             val frameWidth = frameRect.width()
                             val frameHeight = frameRect.height()
 
-                            val minWidth = width * 0.3f
-                            val minHeight = height * 0.3f
+                            // 24dp for left handle clearance + 24dp for right handle and 24dp in between
+                            val minWidth = 64.dp
+                            // 24dp for top handle clearance + 24dp for bottom handle and 24dp in between
+                            val minHeight = 64.dp
 
                             if (frameWidth - (fLeft - left) < minWidth)
                                 fLeft = left + (frameWidth - minWidth)
@@ -569,7 +571,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
         return frame.run {
 
             // Figure out some extra touch area for better touch experience.
-            val excessTouchArea = ((height() + width()) / 50).dp
+            val excessTouchArea = 24.dp
 
             // Store areas that handle are located + excess area.
             mutableMapOf<Pair<PointF, PointF>, HandleBar>(
