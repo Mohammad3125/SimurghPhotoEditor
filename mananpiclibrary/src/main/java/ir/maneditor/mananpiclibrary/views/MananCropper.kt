@@ -103,6 +103,9 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
 
     // Rectangle that represents the crop frame.
     private lateinit var frameRect: RectF
+    val cropperDimensions: RectF
+        get() = frameRect
+
 
     // List of rectangles representing shadows around frame.
     private lateinit var frameShadows: List<RectF>
