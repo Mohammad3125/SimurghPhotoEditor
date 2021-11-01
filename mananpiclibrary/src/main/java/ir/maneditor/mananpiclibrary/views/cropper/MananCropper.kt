@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.views
+package ir.maneditor.mananpiclibrary.views.cropper
 
 import android.content.Context
 import android.graphics.*
@@ -9,7 +9,7 @@ import android.view.ViewGroup
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.utils.dp
 import ir.maneditor.mananpiclibrary.utils.invalidateAfter
-import ir.maneditor.mananpiclibrary.views.MananCropper.HandleBar.*
+import ir.maneditor.mananpiclibrary.views.cropper.HandleBar.*
 
 /**
  * A resizable view that shows guidelines and let user define an area of interest to crop images and etc....
@@ -269,8 +269,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
             // Draw handle bars
             drawLines(frameHandleBar, handleBarPaint)
 
-            if (isDrawGuidelineEnabled)
             // Draw guidelines
+            if (isDrawGuidelineEnabled)
                 drawLines(guideLineDimension, frameGuidelinePaint)
 
             // Draw shadows around frame.
@@ -356,6 +356,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                             if (handleBar == BOTTOM_LEFT)
                                 fLeft += differenceX
                             else fRight += differenceX
+
 
                             initialY += differenceY
                             initialX += differenceX
@@ -637,17 +638,4 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
         }
     }
 
-    /**
-     * This class represents the location of bars in frame.
-     */
-    private enum class HandleBar {
-        TOP_LEFT,
-        TOP,
-        TOP_RIGHT,
-        BOTTOM_LEFT,
-        BOTTOM,
-        BOTTOM_RIGHT,
-        LEFT,
-        RIGHT
-    }
 }
