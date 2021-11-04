@@ -15,5 +15,6 @@
         </attr>
         <attr name="backgroundShadowColor" format="color" />
         <attr name="backgroundShadowAlpha" format="integer" />
+        <attr name="aspectRatio" format="string" />
     </declare-styleable>
 </resources>

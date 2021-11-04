@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.utils.dp
 import ir.maneditor.mananpiclibrary.utils.invalidateAfter
@@ -171,10 +172,42 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                 backgroundShadowAlpha =
                     if (shadowAlpha > 255) 255 else if (shadowAlpha < 0) 0 else shadowAlpha
 
+                aspectRatio =
+                    convertStringToAspectRatio(getString(R.styleable.MananCropper_aspectRatio))
+
             } finally {
                 recycle()
             }
         }
+    }
+
+
+    /**
+     * This method converts a string representation of aspect-ratio into aspect ratio class.
+     * String SHOULD be in this format: either "FREE" or ratio of width to height separated with hyphen like "16-9".
+     * @param aspectRatioString String to convert it into [AspectRatio]. if null returns [AspectRatioFree]
+     */
+    fun convertStringToAspectRatio(aspectRatioString: String?): AspectRatio {
+        // If string is null or it's value is "FREE" return 'AspectRatioFree'.
+        if (aspectRatioString == null || (aspectRatioString.trim() == "FREE")) return AspectRatioFree()
+        else {
+            // Trim the string and split it with hyphen.
+            val listRatios = aspectRatioString.run {
+                trim()
+                split("-")
+            }
+            // If either it's size is greater than 2 or it's empty or null then this is not a valid string.
+            if (listRatios.size > 2 || listRatios.isNullOrEmpty()) return AspectRatioFree()
+
+            // Check that strings in list are digits only.
+            for (string in listRatios)
+                if (!string.isDigitsOnly()) return AspectRatioFree()
+
+            // Finally return 'AspectRatioLocked' with given width and height ratio.
+            return AspectRatioLocked(listRatios[0].toFloat(), listRatios[1].toFloat())
+
+        }
+
     }
 
     // Secondary constructor to initialize the view programmatically.
