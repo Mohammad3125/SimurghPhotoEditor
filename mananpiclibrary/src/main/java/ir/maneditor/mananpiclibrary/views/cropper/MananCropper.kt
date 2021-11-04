@@ -10,6 +10,8 @@ import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.utils.dp
 import ir.maneditor.mananpiclibrary.utils.invalidateAfter
 import ir.maneditor.mananpiclibrary.views.cropper.HandleBar.*
+import ir.maneditor.mananpiclibrary.views.cropper.aspect_ratios.AspectRatioFree
+import ir.maneditor.mananpiclibrary.views.cropper.aspect_ratios.AspectRatioLocked
 
 /**
  * A resizable view that shows guidelines and let user define an area of interest to crop images and etc....
@@ -126,6 +128,9 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
     private var initialX = 0f
     private var initialY = 0f
 
+    // Variable to save aspect ratio of cropper.
+    private var aspectRatio: AspectRatio = AspectRatioFree()
+
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananCropper, 0, 0).apply {
             try {
@@ -176,6 +181,17 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
     constructor(context: Context, width: Int, height: Int) : this(context, null) {
         layoutParams = ViewGroup.LayoutParams(width, height)
         initializeDrawingObjects(width, height)
+    }
+
+    fun setAspectRatio(newAspectRatio: AspectRatio) {
+        if (newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked)
+            if ((aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio())
+                return
+
+        if (newAspectRatio is AspectRatioFree && aspectRatio is AspectRatioFree) return
+
+        aspectRatio = newAspectRatio
+        requestLayout()
     }
 
     /**
@@ -282,6 +298,20 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         // Initialize drawing objects after the width and height has been determined.
+        if (aspectRatio is AspectRatioLocked) {
+            val ratio = (aspectRatio as AspectRatioLocked).getRatio()
+            // If ratio is less than 1 then the height of aspect ratio is bigger than the width.
+            if (ratio < 1f)
+                initializeDrawingObjects(
+                    (measuredHeight * ratio).toInt(), measuredHeight
+                )
+            else
+                initializeDrawingObjects(
+                    measuredWidth, (measuredWidth / ratio).toInt()
+                )
+            return
+        }
+        // Initialize drawing object if aspect ratio is not locked.
         initializeDrawingObjects(measuredWidth, measuredHeight)
     }
 
@@ -321,117 +351,58 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                 val differenceX = (event.x - initialX)
 
 
-                // Set rectangle's dimensions in variables to not change them directly
-                // because they need to be validated.
-                var fTop = frameRect.top
-                var fLeft = frameRect.left
-                var fBottom = frameRect.bottom
-                var fRight = frameRect.right
-
                 invalidateAfter {
-                    when (handleBar) {
-                        TOP, BOTTOM -> {
-                            if (handleBar == BOTTOM)
-                                fBottom += differenceY
-                            else fTop += differenceY
-                            initialY += differenceY
-                        }
-                        RIGHT, LEFT -> {
-                            if (handleBar == RIGHT)
-                                fRight += differenceX
-                            else fLeft += differenceX
-                            initialX += differenceX
-                        }
-                        TOP_LEFT, TOP_RIGHT -> {
-                            fTop += differenceY
-                            if (handleBar == TOP_LEFT)
-                                fLeft += differenceX
-                            else fRight += differenceX
+                    // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size
+                    val changedRect =
+                        aspectRatio.resize(RectF(frameRect), handleBar, differenceX, differenceY)
 
-                            initialY += differenceY
-                            initialX += differenceX
-                        }
-                        BOTTOM_LEFT, BOTTOM_RIGHT -> {
-                            fBottom += differenceY
-                            if (handleBar == BOTTOM_LEFT)
-                                fLeft += differenceX
-                            else fRight += differenceX
-
-
-                            initialY += differenceY
-                            initialX += differenceX
-                        }
-                        // If non of handle bars has been pressed, move the rectangle inside the view.
-                        else -> {
-
-                            frameRect.run {
-
-                                // Offset the rectangle.
-                                offset(
-                                    differenceX,
-                                    differenceY
-                                )
-
-                                // Validate that the rectangle is inside the view's bounds.
-                                val finalX =
-                                    when {
-                                        right > width -> width - right
-                                        left < 0f -> -left
-                                        else -> 0f
-                                    }
-
-                                val finalY =
-                                    when {
-                                        bottom > height -> height - bottom
-                                        top < 0f -> -top
-                                        else -> 0f
-                                    }
-
-                                // If rectangle wasn't inside bounds, offset them back.
-                                offset(
-                                    finalX,
-                                    finalY
-                                )
-
-                            }
-                            // Change the initial x and y to set reference point to last touch.
-                            initialY += differenceY
-                            initialX += differenceX
-                        }
-                    }
+                    initialY += differenceY
+                    initialX += differenceX
 
                     if (handleBar != null) {
 
-                        // Validate if rectangle(frame) is inside the view's bounds.
-                        if (fRight > width) fRight = width.toFloat()
-                        if (fLeft < 0f) fLeft = 0f
-
-                        if (fBottom > height) fBottom = height.toFloat()
-                        if (fTop < 0f) fTop = 0f
-
+                        // After validation set the frame's dimensions.
+                        frameRect.set(
+                            aspectRatio.validate(
+                                frameRect,
+                                changedRect,
+                                64.dp /* 24dp for left handle clearance + 24dp for right handle and 24dp in between */,
+                                width.toFloat(),
+                                64.dp /* 24dp for top handle clearance + 24dp for bottom handle and 24dp in between */,
+                                height.toFloat()
+                            )
+                        )
+                    } else {
+                        // If non of handle bars has been pressed, move the rectangle inside the view.
                         frameRect.run {
 
-                            val frameWidth = frameRect.width()
-                            val frameHeight = frameRect.height()
+                            // Offset the rectangle.
+                            offset(
+                                differenceX,
+                                differenceY
+                            )
 
-                            // 24dp for left handle clearance + 24dp for right handle and 24dp in between
-                            val minWidth = 64.dp
-                            // 24dp for top handle clearance + 24dp for bottom handle and 24dp in between
-                            val minHeight = 64.dp
+                            // Validate that the rectangle is inside the view's bounds.
+                            val finalX =
+                                when {
+                                    right > width -> width - right
+                                    left < 0f -> -left
+                                    else -> 0f
+                                }
 
-                            if (frameWidth - (fLeft - left) < minWidth)
-                                fLeft = left + (frameWidth - minWidth)
-                            if (frameWidth - (right - fRight) < minWidth)
-                                fRight = right
-                            if (frameHeight - (fTop - top) < minHeight)
-                                fTop = top + (frameHeight - minHeight)
-                            if (frameHeight - (bottom - fBottom) < minHeight)
-                                fBottom = bottom
+                            val finalY =
+                                when {
+                                    bottom > height -> height - bottom
+                                    top < 0f -> -top
+                                    else -> 0f
+                                }
 
-                            // After validation set the frame's dimensions.
-                            frameRect.set(fLeft, fTop, fRight, fBottom)
+                            // If rectangle wasn't inside bounds, offset them back.
+                            offset(
+                                finalX,
+                                finalY
+                            )
                         }
-
                     }
                     // Reset the shadows,handle bar dimensions, handle bar map and etc based on new frame size.
                     setDrawingDimensions()
