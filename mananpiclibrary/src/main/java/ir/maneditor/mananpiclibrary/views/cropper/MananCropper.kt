@@ -4,8 +4,9 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.AppCompatImageView
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.utils.dp
@@ -13,11 +14,12 @@ import ir.maneditor.mananpiclibrary.utils.invalidateAfter
 import ir.maneditor.mananpiclibrary.views.cropper.HandleBar.*
 import ir.maneditor.mananpiclibrary.views.cropper.aspect_ratios.AspectRatioFree
 import ir.maneditor.mananpiclibrary.views.cropper.aspect_ratios.AspectRatioLocked
+import kotlin.math.roundToInt
 
 /**
  * A resizable view that shows guidelines and let user define an area of interest to crop images and etc....
  */
-class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) {
+class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(context, attr) {
 
     // Paint used for drawing the frame.
     private val framePaint by lazy {
@@ -179,6 +181,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
                 recycle()
             }
         }
+        adjustViewBounds = true
     }
 
 
@@ -311,6 +314,9 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
     }
 
     override fun onDraw(canvas: Canvas?) {
+        // Draw image.
+        super.onDraw(canvas)
+
         canvas!!.run {
             // Draw frame
             drawRect(frameRect, framePaint)
@@ -642,4 +648,19 @@ class MananCropper(context: Context, attr: AttributeSet?) : View(context, attr) 
         }
     }
 
+    /**
+     * Crops image with current dimension of cropper.
+     * @return Cropped bitmap.
+     */
+    fun cropImage(): Bitmap {
+        frameRect.run {
+            return Bitmap.createBitmap(
+                drawable.toBitmap(width, height),
+                left.roundToInt(),
+                top.roundToInt(),
+                width().roundToInt(),
+                height().roundToInt()
+            )
+        }
+    }
 }
