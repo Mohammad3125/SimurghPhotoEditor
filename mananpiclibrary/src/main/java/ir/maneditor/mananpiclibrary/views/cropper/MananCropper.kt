@@ -318,13 +318,13 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
         super.onDraw(canvas)
 
         canvas!!.run {
-            // Draw frame
+            // Draw frame.
             drawRect(frameRect, framePaint)
 
-            // Draw handle bars
+            // Draw handle bars.
             drawLines(frameHandleBar, handleBarPaint)
 
-            // Draw guidelines
+            // Draw guidelines.
             if (isDrawGuidelineEnabled)
                 drawLines(guideLineDimension, frameGuidelinePaint)
 
@@ -338,16 +338,13 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         // Initialize drawing objects after the width and height has been determined.
         if (aspectRatio is AspectRatioLocked) {
-            val ratio = (aspectRatio as AspectRatioLocked).getRatio()
-            // If ratio is less than 1 then the height of aspect ratio is bigger than the width.
-            if (ratio < 1f)
-                initializeDrawingObjects(
-                    (measuredHeight * ratio).toInt(), measuredHeight
-                )
-            else
-                initializeDrawingObjects(
-                    measuredWidth, (measuredWidth / ratio).toInt()
-                )
+            val pair = (aspectRatio as AspectRatioLocked).normalizeAspectRatio(
+                measuredWidth,
+                measuredHeight,
+                measuredWidth,
+                measuredHeight
+            )
+            initializeDrawingObjects(pair.first, pair.second)
             return
         }
         // Initialize drawing object if aspect ratio is not locked.
@@ -405,9 +402,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
                             aspectRatio.validate(
                                 frameRect,
                                 changedRect,
-                                64.dp /* 24dp for left handle clearance + 24dp for right handle and 24dp in between */,
                                 width.toFloat(),
-                                64.dp /* 24dp for top handle clearance + 24dp for bottom handle and 24dp in between */,
                                 height.toFloat()
                             )
                         )

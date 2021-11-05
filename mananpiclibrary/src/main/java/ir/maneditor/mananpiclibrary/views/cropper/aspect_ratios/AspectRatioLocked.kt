@@ -79,9 +79,7 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
     override fun validate(
         rect: RectF,
         dirtyRect: RectF,
-        minWidth: Float,
         maxWidth: Float,
-        minHeight: Float,
         maxHeight: Float
     ): RectF {
         dirtyRect.run {
@@ -140,8 +138,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
             }
 
             // Validation for minimum width and height.
-            if (width() < minWidth || height() < minHeight)
-                set(rect)
+//            if (width() < minWidth || height() < minHeight)
+//                set(rect)
 
             return dirtyRect
         }
@@ -153,4 +151,46 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
      * @return ratio of division of width to height.
      */
     fun getRatio(): Float = widthRatio / heightRatio
+
+    /**
+     * Applies aspect ratio to width or height.
+     * If final width or height exceeds the maximum amount, it normalizes them to fit inside bounds.
+     * @param width Width to be normalized.
+     * @param height Height to be normalized.
+     * @param maxWidth Maximum width allowed for aspect-ratio.
+     * @param maxHeight Maximum height allowed for aspect-ratio.
+     * @return A [Pair]. First element is aspect-ratio applied width and second is aspect-ratio applied height.
+     */
+    fun normalizeAspectRatio(
+        width: Int,
+        height: Int,
+        maxWidth: Int,
+        maxHeight: Int
+    ): Pair<Int, Int> {
+        val ratio = getRatio()
+        // If ratio is less than 1 then the height of aspect ratio is bigger than the width.
+        return if (ratio < 1f) {
+            // Apply aspect ratio.
+            var normalizedWidth = (height * ratio).toInt()
+            var finalHeight = height
+
+            // If it exceeds the maximum width.
+            if (normalizedWidth > maxWidth) {
+                // Then normalize height to fit inside bounds.
+                finalHeight = (maxWidth / ratio).toInt()
+                normalizedWidth = (finalHeight * ratio).toInt()
+            }
+
+            Pair(normalizedWidth, finalHeight)
+        } else {
+            var normalizedHeight = (width / ratio).toInt()
+            var finalWidth = width
+
+            if (normalizedHeight > maxHeight) {
+                finalWidth = (maxHeight * ratio).toInt()
+                normalizedHeight = (finalWidth / ratio).toInt()
+            }
+            Pair(finalWidth, normalizedHeight)
+        }
+    }
 }

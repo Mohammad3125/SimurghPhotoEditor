@@ -43,14 +43,12 @@ class AspectRatioFree : AspectRatio() {
     override fun validate(
         rect: RectF,
         dirtyRect: RectF,
-        minWidth: Float,
         maxWidth: Float,
-        minHeight: Float,
         maxHeight: Float
     ): RectF {
         rect.run {
-            val frameWidth = width()
-            val frameHeight = height()
+//            val frameWidth = width()
+//            val frameHeight = height()
 
             var finalLeft = dirtyRect.left
             var finalTop = dirtyRect.top
@@ -68,14 +66,14 @@ class AspectRatioFree : AspectRatio() {
             if (dirtyRect.top < 0f) finalTop = 0f
 
             // This piece of code makes rectangle to don't get resized less than minimum width and height.
-            if (frameWidth - (dirtyRect.left - left) < minWidth)
-                finalLeft = left + (frameWidth - minWidth)
-            if (frameWidth - (right - dirtyRect.right) < minWidth)
-                finalRight = right
-            if (frameHeight - (dirtyRect.top - top) < minHeight)
-                finalTop = top + (frameHeight - minHeight)
-            if (frameHeight - (bottom - dirtyRect.bottom) < minHeight)
-                finalBottom = bottom
+//            if (frameWidth - (dirtyRect.left - left) < minWidth)
+//                finalLeft = left + (frameWidth - minWidth)
+//            if (frameWidth - (right - dirtyRect.right) < minWidth)
+//                finalRight = right
+//            if (frameHeight - (dirtyRect.top - top) < minHeight)
+//                finalTop = top + (frameHeight - minHeight)
+//            if (frameHeight - (bottom - dirtyRect.bottom) < minHeight)
+//                finalBottom = bottom
 
 
             return RectF(finalLeft, finalTop, finalRight, finalBottom)
