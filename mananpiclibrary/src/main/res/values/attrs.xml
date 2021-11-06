@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="MananCropper">
+        <attr name="guidelineColor" format="color" />
+        <attr name="guidelineStrokeWidth" format="dimension" />
+        <attr name="isGuidelineEnabled" format="boolean" />
+        <attr name="frameColor" format="color" />
+        <attr name="frameStrokeWidth" format="dimension" />
+        <attr name="handleBarColor" format="color" />
+        <attr name="handleBarStrokeWidth" format="dimension" />
+        <attr name="handleBarStrokeType" format="enum">
+            <enum name="Butt" value="0" />
+            <enum name="Round" value="1" />
+            <enum name="Square" value="2" />
+        </attr>
+        <attr name="backgroundShadowColor" format="color" />
+        <attr name="backgroundShadowAlpha" format="integer" />
+        <attr name="aspectRatio" format="string" />
+    </declare-styleable>
+</resources>
