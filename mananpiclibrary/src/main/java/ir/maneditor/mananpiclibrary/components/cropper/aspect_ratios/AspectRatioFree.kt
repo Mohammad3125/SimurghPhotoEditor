@@ -1,8 +1,8 @@
-package ir.maneditor.mananpiclibrary.views.cropper.aspect_ratios
+package ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios
 
 import android.graphics.RectF
-import ir.maneditor.mananpiclibrary.views.cropper.AspectRatio
-import ir.maneditor.mananpiclibrary.views.cropper.HandleBar
+import ir.maneditor.mananpiclibrary.components.cropper.AspectRatio
+import ir.maneditor.mananpiclibrary.components.cropper.HandleBar
 
 /**
  * Class representing aspect-ratio-free resizing.

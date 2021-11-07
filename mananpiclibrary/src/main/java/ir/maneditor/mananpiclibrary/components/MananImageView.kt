@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.views
+package ir.maneditor.mananpiclibrary.components
 
 import android.content.Context
 import android.graphics.*

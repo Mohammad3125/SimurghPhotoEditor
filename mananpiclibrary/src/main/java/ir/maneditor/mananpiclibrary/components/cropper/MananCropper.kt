@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.views.cropper
+package ir.maneditor.mananpiclibrary.components.cropper
 
 import android.content.Context
 import android.graphics.*
@@ -9,11 +9,11 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
+import ir.maneditor.mananpiclibrary.components.cropper.HandleBar.*
+import ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios.AspectRatioFree
+import ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios.AspectRatioLocked
 import ir.maneditor.mananpiclibrary.utils.dp
 import ir.maneditor.mananpiclibrary.utils.invalidateAfter
-import ir.maneditor.mananpiclibrary.views.cropper.HandleBar.*
-import ir.maneditor.mananpiclibrary.views.cropper.aspect_ratios.AspectRatioFree
-import ir.maneditor.mananpiclibrary.views.cropper.aspect_ratios.AspectRatioLocked
 import kotlin.math.roundToInt
 
 /**

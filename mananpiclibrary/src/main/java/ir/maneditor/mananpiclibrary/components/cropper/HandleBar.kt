@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.views.cropper
+package ir.maneditor.mananpiclibrary.components.cropper
 
 /**
  * This class represents the location of bars in frame.
