@@ -1,7 +1,10 @@
 package ir.maneditor.mananpiclibrary.components
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.ColorFilter
+import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatImageView
@@ -53,5 +56,21 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
 
     override fun removeFilter() {
         clearColorFilter()
+    }
+
+    fun drawContentToBitmap(
+        bitmapConfig: Bitmap.Config = Bitmap.Config.ARGB_8888
+    ): Bitmap {
+
+        val mDrawable = drawable
+        if (mDrawable is BitmapDrawable)
+            return mDrawable.bitmap
+
+        val bitmap =
+            Bitmap.createBitmap(mDrawable.intrinsicWidth, mDrawable.intrinsicHeight, bitmapConfig)
+
+        mDrawable.draw(Canvas(bitmap))
+
+        return bitmap
     }
 }
