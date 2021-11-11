@@ -14,8 +14,6 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
     constructor(context: Context) : this(context, null)
 
     private var isInitialScaling = true
-    private var maximumScalingWidth = 0
-    private var maximumScalingHeight = 0
     private var minimumScalingWidth = 0
     private var minimumScalingHeight = 0
     private lateinit var imageParent: ViewGroup
@@ -25,20 +23,20 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
         imageParent = parent as ViewGroup
     }
 
-    override fun applyScale(scaleFactor: Float) {
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
         if (isInitialScaling) {
-            maximumScalingWidth = imageParent.width
-            maximumScalingHeight = imageParent.height
-            minimumScalingWidth = width / 4
-            minimumScalingHeight = height / 4
+            minimumScalingWidth = measuredWidth / 4
+            minimumScalingHeight = measuredHeight / 4
             isInitialScaling = false
         }
-
+    }
+    override fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int) {
         var widthToScale = (width.toFloat() * scaleFactor).toInt()
         var heightToScale = (height.toFloat() * scaleFactor).toInt()
 
-        if (widthToScale > maximumScalingWidth) widthToScale = maximumScalingWidth
-        if (heightToScale > maximumScalingHeight) heightToScale = maximumScalingHeight
+        if (widthToScale > widthLimit) widthToScale = widthLimit
+        if (heightToScale > heightLimit) heightToScale = heightLimit
 
         if (widthToScale < minimumScalingWidth) widthToScale = minimumScalingWidth
         if (heightToScale < minimumScalingHeight) heightToScale = minimumScalingHeight

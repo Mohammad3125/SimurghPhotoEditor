@@ -28,9 +28,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private var initialY = 0f
 
     /**
-     * sensitivity of scaling algorithm (default is 0.13f).
+     * sensitivity of scaling algorithm (default is 1f).
      */
-    var scaleFactor = 0.13f
+    var scaleFactor = 1f
 
     private var totalInitialScaling = 0f
 
@@ -97,10 +97,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         currentEditingView!!.y = event.rawY + initialY
 
                         // Don't let the view go beyond the phone's display and limit it's y axis.
-                        if ((currentEditingView!!.y + currentEditingView!!.height) >= height) currentEditingView!!.y =
+                        if ((currentEditingView!!.y + currentEditingView!!.height) > height) currentEditingView!!.y =
                             (height - currentEditingView!!.height).toFloat()
 
-                        if (currentEditingView!!.y <= y) currentEditingView!!.y = y
+                        if (currentEditingView!!.y < 0f) currentEditingView!!.y = 0f
+
+                        if ((currentEditingView!!.x + currentEditingView!!.width) > width) currentEditingView!!.x =
+                            (width - currentEditingView!!.width).toFloat()
+
+                        if (currentEditingView!!.x < 0f) currentEditingView!!.x = 0f
                     }
 
                     // If there are total of two pointer on the screen.
@@ -114,11 +119,20 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                                     (getY(1) - getY(0)).toDouble()
                                 ) + initialRotation
 
-                            (currentEditingView as? Scalable)?.applyScale(
-                                (((abs((getX(0) - getX(1))) + abs((getY(0) - getY(1)))) -
-                                        totalInitialScaling) * scaleFactor / (currentEditingView!!.width + currentEditingView!!.height)) + 1f
-                            )
 
+                            if (currentEditingView is Scalable) {
+                                val scalingDifference =
+                                    (abs((getX(0) - getX(1))) + abs((getY(0) - getY(1))))
+
+                                (currentEditingView as? Scalable)?.applyScale(
+                                    ((scalingDifference -
+                                            totalInitialScaling) * scaleFactor / (currentEditingView!!.width + currentEditingView!!.height)) + 1f,
+                                    width,
+                                    height
+                                )
+
+                                totalInitialScaling = scalingDifference
+                            }
                         }
                     }
                 }

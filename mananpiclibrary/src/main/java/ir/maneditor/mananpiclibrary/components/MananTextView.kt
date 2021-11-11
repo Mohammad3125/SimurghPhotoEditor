@@ -119,12 +119,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         setTextColor(color)
     }
 
-    override fun applyScale(scaleFactor: Float) {
-        fontSize *= scaleFactor
-        if (fontSize < 18.sp) fontSize = 18.sp
-        if (fontSize > 85.sp) fontSize = 85.sp
-
-        textSize = fontSize
+    override fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int) {
+        if (width < widthLimit && height < heightLimit || scaleFactor < 1f) {
+            fontSize *= scaleFactor
+            if (fontSize < MINIMUM_TEXT_SIZE) fontSize = MINIMUM_TEXT_SIZE
+            textSize = fontSize
+        }
     }
 
     override fun applyLinearGradient(
@@ -187,6 +187,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         return shader.apply {
             setLocalMatrix(rotationMatrix)
         }
+    }
+
+    companion object {
+        val MINIMUM_TEXT_SIZE = 4.sp
     }
 
 }
