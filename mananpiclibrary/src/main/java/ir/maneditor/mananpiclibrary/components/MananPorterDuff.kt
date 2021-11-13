@@ -111,6 +111,8 @@ class MananPorterDuff {
                 // Remove source image's color filter to prevent duplication.
                 imagesColorFilterBuffer = sourceImage.colorFilter
 
+                sourceImage.colorFilter = null
+
                 // Rotate the canvas again as much as source image is rotated.
                 withRotation(
                     sourceImage.rotation,
