@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
-import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.updateLayoutParams
 import ir.maneditor.mananpiclibrary.properties.Filterable
@@ -20,12 +19,6 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
     private var minimumScalingWidth = 0
     private var minimumScalingHeight = 0
     private var imageRatio = 0f
-    private lateinit var imageParent: ViewGroup
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        imageParent = parent as ViewGroup
-    }
 
     override fun setImageBitmap(bm: Bitmap?) {
         // Update aspect ratio.
