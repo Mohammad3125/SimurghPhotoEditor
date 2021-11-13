@@ -19,6 +19,7 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
     private var isInitialScaling = true
     private var minimumScalingWidth = 0
     private var minimumScalingHeight = 0
+    private var imageRatio = 0f
     private lateinit var imageParent: ViewGroup
 
     override fun onAttachedToWindow() {
@@ -26,24 +27,54 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
         imageParent = parent as ViewGroup
     }
 
+    override fun setImageBitmap(bm: Bitmap?) {
+        // Update aspect ratio.
+        imageRatio = bm!!.width.toFloat() / bm.height.toFloat()
+
+        // Resize to fit into new aspect ratio,
+        applyScale(1f, bm.width, bm.height)
+        super.setImageBitmap(bm)
+    }
+
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         if (isInitialScaling) {
             minimumScalingWidth = measuredWidth / 4
             minimumScalingHeight = measuredHeight / 4
+            imageRatio = measuredWidth.toFloat() / measuredHeight.toFloat()
             isInitialScaling = false
         }
     }
+
     override fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int) {
-        var widthToScale = (width.toFloat() * scaleFactor).toInt()
-        var heightToScale = (height.toFloat() * scaleFactor).toInt()
 
-        if (widthToScale > widthLimit) widthToScale = widthLimit
-        if (heightToScale > heightLimit) heightToScale = heightLimit
+        var widthToScale: Int
+        var heightToScale: Int
 
-        if (widthToScale < minimumScalingWidth) widthToScale = minimumScalingWidth
-        if (heightToScale < minimumScalingHeight) heightToScale = minimumScalingHeight
+        // If ratio is less than 1 then height of view is greater than it's width.
+        if (imageRatio < 1f) {
+            heightToScale = (height.toFloat() * scaleFactor).toInt()
 
+            if (heightToScale > heightLimit)
+                heightToScale = heightLimit
+
+            if (heightToScale < minimumScalingHeight)
+                heightToScale = minimumScalingHeight
+
+
+            widthToScale = (heightToScale.toFloat() * imageRatio).toInt()
+
+        } else {
+            widthToScale = (width.toFloat() * scaleFactor).toInt()
+
+            if (widthToScale > widthLimit)
+                widthToScale = widthLimit
+
+            if (widthToScale < minimumScalingWidth)
+                widthToScale = minimumScalingWidth
+
+            heightToScale = (widthToScale.toFloat() / imageRatio).toInt()
+        }
         updateLayoutParams {
             width = widthToScale
             height = heightToScale
