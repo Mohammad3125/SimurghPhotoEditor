@@ -4,13 +4,17 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
+import androidx.core.graphics.withRotation
 import androidx.core.view.updateLayoutParams
+import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.properties.Scalable
+import ir.maneditor.mananpiclibrary.utils.dp
 import kotlin.math.abs
 import kotlin.math.atan2
 
@@ -40,6 +44,62 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     // It will notify the motion event that user is gesturing a new gesture on the screen.
     private var newGesture = false
+
+    private val boxPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+        }
+    }
+
+    /**
+     * stroke width of box around current editing view (if [isDrawingBoxAroundEditingViewEnabled] is true.)
+     */
+    var frameBoxStrokeWidth = 2.dp
+        set(value) {
+            boxPaint.strokeWidth = value
+            field = value
+        }
+
+    /**
+     * Color of box around current editing view (if [isDrawingBoxAroundEditingViewEnabled] is true.)
+     */
+    var frameBoxColor = Color.BLACK
+        set(value) {
+            boxPaint.color = value
+            field = value
+        }
+
+    /**
+     * If true, this ViewGroup draws a box around the current editing view.
+     */
+    var isDrawingBoxAroundEditingViewEnabled = false
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    init {
+        context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
+            try {
+                isDrawingBoxAroundEditingViewEnabled =
+                    getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
+
+                setWillNotDraw(!isDrawingBoxAroundEditingViewEnabled)
+
+                if (isDrawingBoxAroundEditingViewEnabled) {
+
+                    frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
+
+                    frameBoxStrokeWidth =
+                        getDimension(R.styleable.MananFrame_frameBoxStrokeWidth, 2.dp)
+                }
+
+            } finally {
+                recycle()
+            }
+        }
+
+    }
 
     override fun performClick(): Boolean {
         return super.performClick()
@@ -135,6 +195,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                             }
                         }
                     }
+                    // Only invalidate if we're drawing box around the view.
+                    if (isDrawingBoxAroundEditingViewEnabled)
+                        invalidate()
                 }
                 MotionEvent.ACTION_POINTER_UP -> {
                     // Do not let the moving gesture continue it's work, because it
@@ -150,6 +213,39 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             return true
         }
         return false
+    }
+
+    override fun draw(canvas: Canvas?) {
+        super.draw(canvas)
+        // Draw the box around view.
+        if (currentEditingView != null && isDrawingBoxAroundEditingViewEnabled) {
+            val editingViewX = currentEditingView!!.x
+            val editingViewY = currentEditingView!!.y
+
+            val editingViewWidth = currentEditingView!!.width
+            val editingViewHeight = currentEditingView!!.height
+
+            val editingViewRotation = currentEditingView!!.rotation
+
+            val pivotPointX = (editingViewX + editingViewWidth * 0.5f)
+            val pivotPointY = (editingViewY + editingViewHeight * 0.5f)
+
+            canvas!!.run {
+                withRotation(
+                    editingViewRotation,
+                    pivotPointX,
+                    pivotPointY
+                ) {
+                    drawRect(
+                        editingViewX,
+                        editingViewY,
+                        editingViewWidth + editingViewX,
+                        editingViewHeight + editingViewY,
+                        boxPaint
+                    )
+                }
+            }
+        }
     }
 
 

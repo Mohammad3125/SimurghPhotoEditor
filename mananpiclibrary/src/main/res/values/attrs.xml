@@ -17,4 +17,10 @@
         <attr name="backgroundShadowAlpha" format="integer" />
         <attr name="aspectRatio" format="string" />
     </declare-styleable>
+
+    <declare-styleable name="MananFrame">
+        <attr name="frameBoxStrokeWidth" format="dimension" />
+        <attr name="frameBoxColor" format="color" />
+        <attr name="isDrawingBoxEnabled" format="boolean" />
+    </declare-styleable>
 </resources>
