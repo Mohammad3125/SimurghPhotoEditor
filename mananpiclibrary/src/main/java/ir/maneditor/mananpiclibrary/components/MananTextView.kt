@@ -10,7 +10,7 @@ import ir.maneditor.mananpiclibrary.utils.invalidateAfter
 import ir.maneditor.mananpiclibrary.utils.sp
 
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
-    Pathable, Shadowable,
+    Pathable, Blurable,
     Texturable, Colorable,
     Scalable, Gradientable {
 
@@ -42,8 +42,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
 
-    override fun applyShadow(shadowRadius: Float) {
-        applyShadow(shadowRadius, BlurMaskFilter.Blur.NORMAL)
+    override fun applyBlur(shadowRadius: Float) {
+        applyBlur(shadowRadius, BlurMaskFilter.Blur.NORMAL)
     }
 
 
@@ -54,7 +54,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      * @param shadowRadius Shadow radius that is going to be applied.
      * @param filter Represents style of the shadow with enums.
      */
-    override fun applyShadow(shadowRadius: Float, filter: BlurMaskFilter.Blur) {
+    override fun applyBlur(shadowRadius: Float, filter: BlurMaskFilter.Blur) {
         invalidateAfter {
             setLayerType(LAYER_TYPE_SOFTWARE, null)
             paint.maskFilter = BlurMaskFilter(shadowRadius, filter)
@@ -84,7 +84,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
 
-    override fun removeShadow() {
+    override fun removeBlur() {
         invalidateAfter {
             paint.maskFilter = null
             setLayerType(LAYER_TYPE_HARDWARE, null)
