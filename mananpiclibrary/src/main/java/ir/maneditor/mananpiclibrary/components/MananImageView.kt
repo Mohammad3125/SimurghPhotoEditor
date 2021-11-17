@@ -82,7 +82,12 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
         clearColorFilter()
     }
 
-    fun drawContentToBitmap(
+    /**
+     * Returns original bitmap/drawing of current imageview.
+     * This is helpful if user wants to perform processing on image with higher quality (even if imageview is scaled down.)
+     * @param bitmapConfig config of bitmap to return (if imageview's drawable wasn't a [BitmapDrawable]).
+     */
+    fun getOriginalBitmap(
         bitmapConfig: Bitmap.Config = Bitmap.Config.ARGB_8888
     ): Bitmap {
 
