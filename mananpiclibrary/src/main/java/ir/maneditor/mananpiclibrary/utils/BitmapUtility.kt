@@ -92,12 +92,14 @@ class BitmapUtility {
          * @param rect rect to set bitmap size to it.
          * @return down sized bitmap.
          */
-        fun downSizeBitmap(bitmap: Bitmap, rect: Rect): Bitmap {
+        fun downSizeBitmap(bitmap: Bitmap, rect: Rect, recycleInputBitmap: Boolean = true): Bitmap {
             val bitmapToReturn =
                 Bitmap.createBitmap(bitmap, rect.left, rect.top, rect.width(), rect.height())
 
             // Recycle to prevent memory leaking.
-            bitmap.recycle()
+            if (recycleInputBitmap)
+                bitmap.recycle()
+
             return bitmapToReturn
         }
     }
