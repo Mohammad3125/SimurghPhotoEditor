@@ -20,6 +20,8 @@ import kotlin.math.min
 class MananDropper(context: Context, attributeSet: AttributeSet?) :
     FrameLayout(context, attributeSet) {
 
+    constructor(context: Context) : this(context, null)
+
     // Image that later we will pick color from.
     private val imageview by lazy {
         AppCompatImageView(context, null).apply {
