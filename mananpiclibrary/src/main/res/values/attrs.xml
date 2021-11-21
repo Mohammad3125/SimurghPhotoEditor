@@ -23,4 +23,18 @@
         <attr name="frameBoxColor" format="color" />
         <attr name="isDrawingBoxEnabled" format="boolean" />
     </declare-styleable>
+
+    <declare-styleable name="FrameDropper">
+        <attr name="colorRingStrokeWidth" format="dimension" />
+        <attr name="colorRingCircleRadius" format="dimension" />
+        <attr name="centerCrossColor" format="color" />
+        <attr name="centerCrossStrokeWidth" format="dimension" />
+        <attr name="centerCrossLineSize" format="dimension" />
+        <attr name="src" format="integer" />
+        <attr name="imageGravity" format="enum">
+            <enum name="TOP" value="48" />
+            <enum name="CENTER" value="18" />
+            <enum name="BOTTOM" value="80" />
+        </attr>
+    </declare-styleable>
 </resources>
