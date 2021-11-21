@@ -122,15 +122,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (currentEditingView != null) {
-
+            val currentView = currentEditingView!!
             pointerCount = event!!.pointerCount
 
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     // Get the initial x and y of current view.
-                    initialX = currentEditingView!!.x - event.rawX
-                    initialY = currentEditingView!!.y - event.rawY
-                    currentEditingView!!.performClick()
+                    initialX = currentView.x - event.rawX
+                    initialY = currentView.y - event.rawY
+                    currentView.performClick()
                     performClick()
                 }
                 MotionEvent.ACTION_POINTER_DOWN -> {
@@ -153,19 +153,19 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     if (pointerCount == 1 && newGesture) {
 
                         // Move the view
-                        currentEditingView!!.x = event.rawX + initialX
-                        currentEditingView!!.y = event.rawY + initialY
+                        currentView.x = event.rawX + initialX
+                        currentView.y = event.rawY + initialY
 
                         // Don't let the view go beyond the phone's display and limit it's y axis.
-                        if ((currentEditingView!!.y + currentEditingView!!.height) > height) currentEditingView!!.y =
-                            (height - currentEditingView!!.height).toFloat()
+                        if ((currentView.y + currentView.height) > height) currentView.y =
+                            (height - currentView.height).toFloat()
 
-                        if (currentEditingView!!.y < 0f) currentEditingView!!.y = 0f
+                        if (currentView.y < y) currentView.y = y
 
-                        if ((currentEditingView!!.x + currentEditingView!!.width) > width) currentEditingView!!.x =
-                            (width - currentEditingView!!.width).toFloat()
+                        if ((currentView.x + currentView.width) > width) currentView.x =
+                            (width - currentView.width).toFloat()
 
-                        if (currentEditingView!!.x < 0f) currentEditingView!!.x = 0f
+                        if (currentView.x < x) currentView.x = x
                     }
 
                     // If there are total of two pointer on the screen.
@@ -173,20 +173,20 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         /* Rotating the view by touch */
                         // Rotate the ViewGroup
                         event.run {
-                            currentEditingView!!.rotation =
+                            currentView.rotation =
                                 calculateTheRotation(
                                     (getX(0) - getX(1)).toDouble(),
                                     (getY(1) - getY(0)).toDouble()
                                 ) + initialRotation
 
 
-                            if (currentEditingView is Scalable) {
+                            if (currentView is Scalable) {
                                 val scalingDifference =
                                     (abs((getX(0) - getX(1))) + abs((getY(0) - getY(1))))
 
-                                (currentEditingView as? Scalable)?.applyScale(
+                                (currentView as? Scalable)?.applyScale(
                                     ((scalingDifference -
-                                            totalInitialScaling) * scaleFactor / (currentEditingView!!.width + currentEditingView!!.height)) + 1f,
+                                            totalInitialScaling) * scaleFactor / (currentView.width + currentView.height)) + 1f,
                                     width,
                                     height
                                 )
@@ -203,7 +203,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     // Do not let the moving gesture continue it's work, because it
                     // shifts the view while rotating or scaling.
                     newGesture = false
-                    initialRotation = currentEditingView!!.rotation
+                    initialRotation = currentView.rotation
                 }
                 // After all of the fingers were lifted from screen, then we can make a move gesture.
                 MotionEvent.ACTION_UP -> {
@@ -219,13 +219,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         super.draw(canvas)
         // Draw the box around view.
         if (currentEditingView != null && isDrawingBoxAroundEditingViewEnabled) {
-            val editingViewX = currentEditingView!!.x
-            val editingViewY = currentEditingView!!.y
+            val view = currentEditingView!!
+            val editingViewX = view.x
+            val editingViewY = view.y
 
-            val editingViewWidth = currentEditingView!!.width
-            val editingViewHeight = currentEditingView!!.height
+            val editingViewWidth = view.width
+            val editingViewHeight = view.height
 
-            val editingViewRotation = currentEditingView!!.rotation
+            val editingViewRotation = view.rotation
 
             val pivotPointX = (editingViewX + editingViewWidth * 0.5f)
             val pivotPointY = (editingViewY + editingViewHeight * 0.5f)
