@@ -114,8 +114,30 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     // Will later determine if user has inserted new bitmap in Dropper or not.
     private var isNewBitmap = false
 
-    var lastSelectedColor = Int
-        private set
+    /**
+     * The last color that was detected by dropper.
+     */
+    private var lastSelectedColor: Int = 0
+
+    /**
+     * Last color selected before user lifts his/her finger from screen.
+     */
+    private var onLastColorDetected: ((color: Int) -> Unit)? = null
+
+    /**
+     * Called everytime a new color get detected by dropper.
+     */
+    private var onColorDetected: ((color: Int) -> Unit)? = null
+
+    /**
+     * Interface for last color that get detected.
+     */
+    private var interfaceOnLastColorDetected: OnLastColorDetected? = null
+
+    /**
+     * Interface that get invoked when any color change happen.
+     */
+    private var interfaceOnColorDetected: OnColorDetected? = null
 
     init {
 
@@ -259,6 +281,10 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 true
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
+                // Call interfaces.
+                onLastColorDetected?.invoke(lastSelectedColor)
+                interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)
+
                 // If user lifts his/her finger then don't show the circle anymore.
                 showCircle = false
                 // Reset offset.
@@ -296,10 +322,15 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
                 // Finally get the color of current selected pixel (the pixel user pointing at) and set
                 // The ring color to that.
-                colorRingPaint.color = bitmapToView.getPixel(
+                lastSelectedColor = bitmapToView.getPixel(
                     xPositionWithPadding,
                     yPositionWithPadding
                 )
+                colorRingPaint.color = lastSelectedColor
+
+                // Call interfaces.
+                interfaceOnColorDetected?.onColorDetected(lastSelectedColor)
+                onColorDetected?.invoke(lastSelectedColor)
 
                 // Variables to store positions of drawing to reuse them.
                 val xPositionForDrawings = dropperXPosition
@@ -401,5 +432,57 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         return if (mDrawable != null && mDrawable is BitmapDrawable)
             Bitmap.createScaledBitmap(mDrawable.bitmap, imageview.width, imageview.height, false)
         else Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+    }
+
+    /**
+     * Set listener that get invoked everytime that color by color dropper get changed.
+     */
+    fun setOnColorDetected(listener: (Int) -> Unit) {
+        onColorDetected = listener
+    }
+
+    /**
+     * Set listener that get invoked everytime that color by color dropper get changed.
+     * @param listener Interface [OnColorDetected]
+     */
+    fun setOnColorDetected(listener: OnColorDetected) {
+        interfaceOnColorDetected = listener
+    }
+
+    /**
+     * Set listener that get invoked before user lifts his/her finger from screen.
+     * This listener returns the last color that was selected before user lifts his/her finger
+     * up from screen.
+     */
+    fun setOnLastColorDetected(listener: (Int) -> Unit) {
+        onLastColorDetected = listener
+    }
+
+    /**
+     * Set listener that get invoked before user lifts his/her finger from screen.
+     * This listener returns the last color that was selected before user lifts his/her finger
+     * up from screen.
+     * @param listener Interface [OnLastColorDetected]
+     */
+    fun setOnLastColorDetected(listener: OnLastColorDetected) {
+        interfaceOnLastColorDetected = listener
+    }
+
+
+    /**
+     * Interface definition of callback that get invoked when any color changes by
+     * dropper get detected.
+     */
+    interface OnColorDetected {
+        fun onColorDetected(color: Int)
+    }
+
+    /**
+     * Interface definition of callback that get invoked when user lifts his/her finger
+     * up. This callback should be used when you want to get the last color that was
+     * detected by dropper.
+     */
+    interface OnLastColorDetected {
+        fun onLastColorDetected(color: Int)
     }
 }
