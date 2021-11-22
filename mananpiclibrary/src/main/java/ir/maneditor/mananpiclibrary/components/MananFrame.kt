@@ -98,7 +98,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 recycle()
             }
         }
-
+        // Let some components like TextView be able to draw things outside their bounds (shadow layer and etc...)
+        clipChildren = false
     }
 
     override fun performClick(): Boolean {
