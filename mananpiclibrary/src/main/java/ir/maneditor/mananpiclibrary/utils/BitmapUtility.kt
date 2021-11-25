@@ -105,11 +105,6 @@ class BitmapUtility {
             if (!bitmap.hasAlpha()) throw IllegalStateException("bitmap does not support alpha channel")
             if (sensitivity !in 0..254) throw IllegalArgumentException("sensitivity should be between 0 and 254")
 
-            var visiblePixelX = bitmap.width
-            var visiblePixelY = bitmap.height
-            var visiblePixelWidth = 0
-            var visiblePixelHeight = 0
-
             // Get number of available processor.
             val numberThreads = Runtime.getRuntime().availableProcessors()
 
@@ -122,8 +117,7 @@ class BitmapUtility {
                 for (y in 0 until bitmap.height) {
                     for (x in 0 until bitmap.width) {
                         if (bitmap.getPixel(x, y).alpha > sensitivity) {
-                            visiblePixelY = y
-                            return@Callable
+                            return@Callable y
                         }
                     }
                 }
@@ -131,8 +125,7 @@ class BitmapUtility {
                 for (y in bitmap.height - 1 downTo 0) {
                     for (x in bitmap.width - 1 downTo 0) {
                         if (bitmap.getPixel(x, y).alpha > sensitivity) {
-                            visiblePixelHeight = y
-                            return@Callable
+                            return@Callable y
                         }
                     }
                 }
@@ -140,8 +133,7 @@ class BitmapUtility {
                 for (x in 0 until bitmap.width) {
                     for (y in 0 until bitmap.height) {
                         if (bitmap.getPixel(x, y).alpha > sensitivity) {
-                            visiblePixelX = x
-                            return@Callable
+                            return@Callable x
                         }
                     }
                 }
@@ -149,18 +141,21 @@ class BitmapUtility {
                 for (x in bitmap.width - 1 downTo 0) {
                     for (y in bitmap.height - 1 downTo 0) {
                         if (bitmap.getPixel(x, y).alpha > sensitivity) {
-                            visiblePixelWidth = x
-                            return@Callable
+                            return@Callable x
                         }
                     }
                 }
             })
 
             // Invoke all of task at once.
-            executor.invokeAll(listOfTask)
-
+            val values = executor.invokeAll(listOfTask)
             // Shutdown executor.
             executor.shutdown()
+
+            val visiblePixelX = values[2].get() as Int
+            val visiblePixelY = values[0].get() as Int
+            val visiblePixelWidth = values[3].get() as Int
+            val visiblePixelHeight = values[1].get() as Int
 
             // If either width of height after removing transparent pixels are 0, throw exception.
             if (visiblePixelWidth == 0) throw IllegalStateException("bitmap width is 0")
