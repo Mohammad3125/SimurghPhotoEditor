@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.FrameLayout
 import androidx.core.graphics.withRotation
@@ -15,8 +16,10 @@ import androidx.core.view.updateLayoutParams
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.properties.Scalable
 import ir.maneditor.mananpiclibrary.utils.dp
-import kotlin.math.abs
-import kotlin.math.atan2
+import ir.maneditor.mananpiclibrary.utils.gesture.detectors.RawMoveDetector
+import ir.maneditor.mananpiclibrary.utils.gesture.detectors.TwoFingerRotationDetector
+import ir.maneditor.mananpiclibrary.utils.gesture.gestures.SimpleOnMoveListener
+import ir.maneditor.mananpiclibrary.utils.gesture.gestures.SimpleOnRotateListener
 
 /**
  * A class that extends [FrameLayout] class and overrides certain functions such as
@@ -27,23 +30,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     constructor(context: Context) : this(context, null)
 
     private var currentEditingView: View? = null
-
-    private var initialX = 0f
-    private var initialY = 0f
-
-    /**
-     * sensitivity of scaling algorithm (default is 1f).
-     */
-    var scaleFactor = 1f
-
-    private var totalInitialScaling = 0f
-
-    private var initialRotation = 0f
-
-    private var pointerCount = 0
-
-    // It will notify the motion event that user is gesturing a new gesture on the screen.
-    private var newGesture = false
 
     private val boxPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -77,6 +63,62 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             field = value
             invalidate()
         }
+
+
+    private val scaleGestureListener by lazy {
+        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector?): Boolean {
+                val currentView = currentEditingView
+                if (currentView is Scalable) {
+                    currentView.applyScale(
+                        detector!!.scaleFactor,
+                        width,
+                        height
+                    )
+                }
+                return true
+            }
+        }
+    }
+
+    private val scaleDetector by lazy { ScaleGestureDetector(context, scaleGestureListener) }
+
+    private val rotateGestureListener by lazy {
+        object : SimpleOnRotateListener() {
+            override fun onRotate(degree: Float) {
+                currentEditingView?.rotation = degree
+            }
+        }
+    }
+
+    private val rotateDetector by lazy { TwoFingerRotationDetector(rotateGestureListener) }
+
+    private val moveGestureListener by lazy {
+        object : SimpleOnMoveListener() {
+            override fun onMove(dx: Float, dy: Float) {
+                val currentView = currentEditingView!!
+
+                currentView.x += dx
+                currentView.y += dy
+
+                // Don't let the view go beyond the phone's display and limit it's y axis.
+                if ((currentView.y + currentView.height) > height) currentView.y =
+                    (height - currentView.height).toFloat()
+
+                if (currentView.y < y) currentView.y = y
+
+                if ((currentView.x + currentView.width) > width) currentView.x =
+                    (width - currentView.width).toFloat()
+
+                if (currentView.x < x) currentView.x = x
+
+            }
+        }
+    }
+
+    private val moveDetector by lazy {
+        RawMoveDetector(moveGestureListener)
+    }
 
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
@@ -123,93 +165,25 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (currentEditingView != null) {
-            val currentView = currentEditingView!!
-            pointerCount = event!!.pointerCount
 
-            when (event.actionMasked) {
+            // Bind appropriate gestures to the ongoing event.
+            scaleDetector.onTouchEvent(event)
+            rotateDetector.onTouchEvent(event)
+            moveDetector.onTouchEvent(event)
+
+            val currentView = currentEditingView!!
+
+            when (event?.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    // Get the initial x and y of current view.
-                    initialX = currentView.x - event.rawX
-                    initialY = currentView.y - event.rawY
                     currentView.performClick()
                     performClick()
                 }
-                MotionEvent.ACTION_POINTER_DOWN -> {
-                    // Calculate the rotating when two pointers are on the screen.
-                    event.run {
-                        initialRotation -= calculateTheRotation(
-                            (getX(0) - getX(1)).toDouble(),
-                            (getY(1) - getY(0)).toDouble()
-                        )
-
-                        // Calculate the initial pointers at first to use it as a reference point.
-                        totalInitialScaling = abs((getX(0) - getX(1))) + abs((getY(0) - getY(1)))
-                    }
-                }
                 MotionEvent.ACTION_MOVE -> {
-                    // If view is in editing state (got clicked).
-                    /* Moving the view by touch */
-
-                    // and if there is only 1 pointer on the screen.
-                    if (pointerCount == 1 && newGesture) {
-
-                        // Move the view
-                        currentView.x = event.rawX + initialX
-                        currentView.y = event.rawY + initialY
-
-                        // Don't let the view go beyond the phone's display and limit it's y axis.
-                        if ((currentView.y + currentView.height) > height) currentView.y =
-                            (height - currentView.height).toFloat()
-
-                        if (currentView.y < y) currentView.y = y
-
-                        if ((currentView.x + currentView.width) > width) currentView.x =
-                            (width - currentView.width).toFloat()
-
-                        if (currentView.x < x) currentView.x = x
-                    }
-
-                    // If there are total of two pointer on the screen.
-                    else if (pointerCount == 2) {
-                        /* Rotating the view by touch */
-                        // Rotate the ViewGroup
-                        event.run {
-                            currentView.rotation =
-                                calculateTheRotation(
-                                    (getX(0) - getX(1)).toDouble(),
-                                    (getY(1) - getY(0)).toDouble()
-                                ) + initialRotation
-
-
-                            if (currentView is Scalable) {
-                                val scalingDifference =
-                                    (abs((getX(0) - getX(1))) + abs((getY(0) - getY(1))))
-
-                                (currentView as? Scalable)?.applyScale(
-                                    ((scalingDifference -
-                                            totalInitialScaling) * scaleFactor / (currentView.width + currentView.height)) + 1f,
-                                    width,
-                                    height
-                                )
-
-                                totalInitialScaling = scalingDifference
-                            }
-                        }
-                    }
                     // Only invalidate if we're drawing box around the view.
                     if (isDrawingBoxAroundEditingViewEnabled)
                         invalidate()
                 }
-                MotionEvent.ACTION_POINTER_UP -> {
-                    // Do not let the moving gesture continue it's work, because it
-                    // shifts the view while rotating or scaling.
-                    newGesture = false
-                    initialRotation = currentView.rotation
-                }
-                // After all of the fingers were lifted from screen, then we can make a move gesture.
-                MotionEvent.ACTION_UP -> {
-                    newGesture = true
-                }
+
             }
             return true
         }
@@ -249,23 +223,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
         }
     }
-
-
-    /**
-     * This function calculates the degree of rotation with the given delta x and y.
-     * The rotation is calculated by the angle of two touch points.
-     * @param deltaX Difference between x in touches (two pointers).
-     * @param deltaY Difference between y in touches (two pointers).
-     */
-    private fun calculateTheRotation(deltaX: Double, deltaY: Double): Float {
-        return Math.toDegrees(
-            atan2(
-                deltaX,
-                deltaY
-            )
-        ).toFloat()
-    }
-
 
     /**
      * Draws content of the layout onto a bitmap.
