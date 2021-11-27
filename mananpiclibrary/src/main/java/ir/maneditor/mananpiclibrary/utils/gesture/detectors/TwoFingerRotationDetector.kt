@@ -9,7 +9,7 @@ import ir.maneditor.mananpiclibrary.utils.gesture.gestures.OnRotateListener
  * A gesture class for rotation gesture with two fingers.
  * @param listener A [OnRotateListener] that gets called in appropriate situations.
  */
-open class TwoFingerRotationDetector(var listener: OnRotateListener) : Gesture {
+class TwoFingerRotationDetector(var listener: OnRotateListener) : Gesture {
 
     // Later will be used for calculations.
     private var initialRotation = 0f
