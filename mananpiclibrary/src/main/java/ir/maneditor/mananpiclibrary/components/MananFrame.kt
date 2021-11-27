@@ -16,7 +16,7 @@ import androidx.core.view.updateLayoutParams
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.properties.Scalable
 import ir.maneditor.mananpiclibrary.utils.dp
-import ir.maneditor.mananpiclibrary.utils.gesture.detectors.RawMoveDetector
+import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 import ir.maneditor.mananpiclibrary.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.maneditor.mananpiclibrary.utils.gesture.gestures.SimpleOnMoveListener
 import ir.maneditor.mananpiclibrary.utils.gesture.gestures.SimpleOnRotateListener
@@ -117,7 +117,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     private val moveDetector by lazy {
-        RawMoveDetector(moveGestureListener)
+        MoveDetector(moveGestureListener)
     }
 
     init {

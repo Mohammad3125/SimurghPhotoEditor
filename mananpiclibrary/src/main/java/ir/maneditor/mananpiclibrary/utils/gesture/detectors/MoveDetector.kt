@@ -8,7 +8,7 @@ import ir.maneditor.mananpiclibrary.utils.gesture.gestures.OnMoveListener
  * Implementation of a finger move gesture.
  * @param listener a [OnMoveListener] that gets called in appropriate situations.
  */
-class RawMoveDetector(var listener: OnMoveListener) : Gesture {
+class MoveDetector(var listener: OnMoveListener) : Gesture {
 
     private var initialX = 0f
     private var initialY = 0f
