@@ -126,8 +126,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 isDrawingBoxAroundEditingViewEnabled =
                     getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
 
-                setWillNotDraw(!isDrawingBoxAroundEditingViewEnabled)
-
                 if (isDrawingBoxAroundEditingViewEnabled) {
 
                     frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
@@ -142,6 +140,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
         // Let some components like TextView be able to draw things outside their bounds (shadow layer and etc...)
         clipChildren = false
+
+        // Determine if ViewGroup is going to do drawing operations or not.
+        setWillNotDraw(!isDrawingBoxAroundEditingViewEnabled)
     }
 
     override fun performClick(): Boolean {
