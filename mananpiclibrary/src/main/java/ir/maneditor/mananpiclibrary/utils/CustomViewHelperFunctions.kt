@@ -2,6 +2,7 @@ package ir.maneditor.mananpiclibrary.utils
 
 import android.content.res.Resources
 import android.graphics.Canvas
+import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 
@@ -11,14 +12,13 @@ private val displayMetrics = Resources.getSystem().displayMetrics
  * This extension property converts an SP number into pixels.
  */
 val Number.sp: Float
-    get() = this.toFloat() * displayMetrics.scaledDensity
-
+    get() = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,this.toFloat(), displayMetrics)
 
 /**
  * This extension property converts a DP number into pixels.
  */
 val Number.dp: Float
-    get() = this.toFloat() * displayMetrics.density
+    get() = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,this.toFloat(), displayMetrics)
 
 
 /**
