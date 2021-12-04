@@ -14,28 +14,36 @@ class TwoFingerRotationDetector(var listener: OnRotateListener) : Gesture {
     // Later will be used for calculations.
     private var initialRotation = 0f
 
-    override fun onTouchEvent(event: MotionEvent?) {
-        when (event?.actionMasked) {
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        return when (event?.actionMasked) {
             MotionEvent.ACTION_POINTER_DOWN -> {
                 event.run {
                     initialRotation -= calculateAngle(event)
                     listener.onRotateBegin(initialRotation)
                 }
+                true
             }
 
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount == 2) {
                     val calculatedRotation = calculateAngle(event) + initialRotation
                     listener.onRotate(calculatedRotation)
-                }
+                    true
+                } else false
             }
 
             MotionEvent.ACTION_POINTER_UP -> {
                 initialRotation += calculateAngle(event)
+                false
             }
 
             MotionEvent.ACTION_UP -> {
                 listener.onRotateEnded()
+                false
+            }
+
+            else -> {
+                false
             }
 
         }

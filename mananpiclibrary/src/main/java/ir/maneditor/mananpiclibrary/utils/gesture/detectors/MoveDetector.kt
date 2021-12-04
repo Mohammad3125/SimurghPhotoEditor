@@ -16,8 +16,8 @@ class MoveDetector(var listener: OnMoveListener) : Gesture {
     // It will notify the motion event that user is gesturing a new gesture on the screen.
     private var newGesture = true
 
-    override fun onTouchEvent(event: MotionEvent?) {
-        when (event?.actionMasked) {
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        return when (event?.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 initialX = event.x
                 initialY = event.y
@@ -28,22 +28,30 @@ class MoveDetector(var listener: OnMoveListener) : Gesture {
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount == 1 && newGesture) {
 
-                    listener.onMove(event.x - initialX, event.y - initialY)
+                    val bool = listener.onMove(event.x - initialX, event.y - initialY)
 
                     initialX = event.x
                     initialY = event.y
-                }
+
+                    bool
+                } else
+                    false
             }
             MotionEvent.ACTION_POINTER_UP -> {
                 // Do not let the moving gesture continue it's work, because it
                 // shifts the view while rotating or scaling.
                 newGesture = false
+                false
             }
 
             MotionEvent.ACTION_UP -> {
                 // After all of the fingers were lifted from screen, then we can make a move gesture.
                 newGesture = true
                 listener.onMoveEnded(event.x, event.y)
+                false
+            }
+            else -> {
+                false
             }
         }
     }

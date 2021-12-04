@@ -5,9 +5,13 @@ package ir.maneditor.mananpiclibrary.utils.gesture.gestures
  */
 open class SimpleOnMoveListener : OnMoveListener {
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {}
+    override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
+        return false
+    }
 
-    override fun onMove(dx: Float, dy: Float) {}
+    override fun onMove(dx: Float, dy: Float): Boolean {
+        return true
+    }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {}
 }

@@ -85,8 +85,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private val rotateGestureListener by lazy {
         object : SimpleOnRotateListener() {
-            override fun onRotate(degree: Float) {
+            override fun onRotate(degree: Float): Boolean {
                 currentEditingView?.rotation = degree
+                return true
             }
         }
     }
@@ -95,7 +96,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private val moveGestureListener by lazy {
         object : SimpleOnMoveListener() {
-            override fun onMove(dx: Float, dy: Float) {
+            override fun onMove(dx: Float, dy: Float): Boolean {
                 val currentView = currentEditingView!!
 
                 currentView.x += dx
@@ -112,6 +113,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                 if (currentView.x < x) currentView.x = x
 
+                return true
             }
         }
     }

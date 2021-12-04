@@ -10,5 +10,5 @@ interface Gesture {
      * Binds a event to the gesture to consume it.
      * @param event Event that is going to be consumed by gesture detectors (they may invoke listeners based on user actions.)
      */
-    fun onTouchEvent(event: MotionEvent?)
+    fun onTouchEvent(event: MotionEvent?) : Boolean
 }
