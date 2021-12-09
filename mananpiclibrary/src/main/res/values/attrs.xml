@@ -30,11 +30,18 @@
         <attr name="centerCrossColor" format="color" />
         <attr name="centerCrossStrokeWidth" format="dimension" />
         <attr name="centerCrossLineSize" format="dimension" />
-        <attr name="src" format="integer" />
+        <attr name="src" />
         <attr name="imageGravity" format="enum">
             <enum name="TOP" value="48" />
             <enum name="CENTER" value="18" />
             <enum name="BOTTOM" value="80" />
         </attr>
     </declare-styleable>
+
+    <declare-styleable name="GestureImageView">
+        <attr name="src" />
+    </declare-styleable>
+
+    <attr name="src" format="integer" />
+
 </resources>
