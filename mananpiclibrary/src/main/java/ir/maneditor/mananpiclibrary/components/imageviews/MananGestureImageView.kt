@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.components
+package ir.maneditor.mananpiclibrary.components.imageviews
 
 import android.annotation.SuppressLint
 import android.content.Context

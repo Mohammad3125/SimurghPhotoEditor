@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.components
+package ir.maneditor.mananpiclibrary.components.imageviews
 
 import android.content.Context
 import android.graphics.Bitmap
