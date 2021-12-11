@@ -6,11 +6,13 @@ import android.animation.TimeInterpolator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.animation.AccelerateDecelerateInterpolator
+import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 
 /**
@@ -50,6 +52,112 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
     // then we know that if double tap get repeated another time we are going to scale down
     // and vice-versa.
     private var isDoubleTapping = false
+
+
+    /**
+     * Set the initial padding left. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingLeft = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding top. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingTop = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding right. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingRight = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding bottom. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingBottom = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding horizontal. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingHorizontal = 0f
+        set(value) {
+            initialPaddingRight = value
+
+            initialPaddingLeft = value
+
+            field = value
+
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding vertical. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingVertical = 0f
+        set(value) {
+            initialPaddingTop = value
+
+            initialPaddingBottom = value
+
+            field = value
+
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding in all sides. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPadding = 0f
+        set(value) {
+            initialPaddingRight = value
+
+            initialPaddingLeft = value
+
+            initialPaddingTop = value
+
+            initialPaddingBottom = value
+
+            field = value
+
+            invalidate()
+        }
+
+
 
     /**
      * Animation interpolator used in auto-center, over-scale and over-transform animations.
@@ -123,6 +231,56 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
 
     init {
+
+        context.theme.obtainStyledAttributes(attr, R.styleable.MananMainImageView, 0, 0)
+            .run {
+                try {
+                    var tempPadding =
+                        getDimension(R.styleable.MananMainImageView_initialPaddingLeft, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingLeft = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.MananMainImageView_initialPaddingRight, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingRight = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.MananMainImageView_initialPaddingBottom, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingBottom = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.MananMainImageView_initialPaddingTop, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingTop = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.MananMainImageView_initialPaddingHorizontal, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingHorizontal = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.MananMainImageView_initialPaddingVertical, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingVertical = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.MananMainImageView_initialPadding, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPadding = tempPadding
+
+                } finally {
+                    recycle()
+                }
+            }
 
         // Initialize gesture detectors that we're interested in.
         scaleDetector = ScaleGestureDetector(context, this).apply {
@@ -424,14 +582,32 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
     }
 
     override fun onImageLaidOut() {
-        super.onImageLaidOut()
+        val mDrawable = drawable
+        val imgMatrix = matrix
+
+        imgMatrix.setRectToRect(
+            RectF(
+                0f,
+                0f,
+                mDrawable.intrinsicWidth.toFloat(),
+                mDrawable.intrinsicHeight.toFloat()
+            ),
+            RectF(
+                initialPaddingLeft,
+                initialPaddingTop,
+                (width - paddingRight - paddingLeft - initialPaddingRight),
+                (height - paddingBottom - paddingTop - initialPaddingBottom)
+            ),
+            Matrix.ScaleToFit.CENTER
+        )
+
+        imageMatrix = imgMatrix
+        imageviewMatrix.set(imgMatrix)
 
         initialTransX = getMatrixValue(Matrix.MTRANS_X, true)
         initialTransY = getMatrixValue(Matrix.MTRANS_Y)
 
         initialImageScale = getMatrixValue(Matrix.MSCALE_X)
-
-        val mDrawable = drawable
 
         initialWidth = mDrawable.intrinsicWidth * initialImageScale
         initialHeight = mDrawable.intrinsicHeight * initialImageScale

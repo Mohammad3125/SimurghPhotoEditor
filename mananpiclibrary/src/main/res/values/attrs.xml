@@ -38,8 +38,7 @@
         </attr>
     </declare-styleable>
 
-    <declare-styleable name="GestureImageView">
-        <attr name="src" />
+    <declare-styleable name="MananMainImageView">
         <attr name="initialPaddingLeft" format="dimension" />
         <attr name="initialPaddingTop" format="dimension" />
         <attr name="initialPaddingRight" format="dimension" />
