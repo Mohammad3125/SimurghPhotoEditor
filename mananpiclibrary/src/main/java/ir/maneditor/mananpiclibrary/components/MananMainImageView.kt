@@ -11,7 +11,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.animation.AccelerateDecelerateInterpolator
-import ir.maneditor.mananpiclibrary.utils.gesture.detectors.TwoFingerMoveDetector
+import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 
 /**
  * A class that extends [MananGestureImageView] and implements scaling and transform ability to images that
@@ -123,13 +123,13 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
 
     init {
-        // Initialize gesture detectors that we're interested in.
 
+        // Initialize gesture detectors that we're interested in.
         scaleDetector = ScaleGestureDetector(context, this).apply {
             // This needs to be false because it will interfere with double-tap gesture.
             isQuickScaleEnabled = false
         }
-        moveDetector = TwoFingerMoveDetector(this)
+        moveDetector = MoveDetector(2, this)
         commonGestureDetector = GestureDetector(context, this)
         commonGestureDetector!!.setOnDoubleTapListener(this)
     }

@@ -119,7 +119,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     private val moveDetector by lazy {
-        MoveDetector(moveGestureListener)
+        MoveDetector(1, moveGestureListener)
     }
 
     init {

@@ -6,9 +6,10 @@ import ir.maneditor.mananpiclibrary.utils.gesture.gestures.OnMoveListener
 
 /**
  * Implementation of a finger move gesture.
+ * @param pointerCount Determines number of fingers that make gesture.
  * @param listener a [OnMoveListener] that gets called in appropriate situations.
  */
-class MoveDetector(var listener: OnMoveListener) : Gesture {
+class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gesture {
 
     private var initialX = 0f
     private var initialY = 0f
@@ -26,12 +27,14 @@ class MoveDetector(var listener: OnMoveListener) : Gesture {
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (event.pointerCount == 1 && newGesture) {
+                if (event.pointerCount == pointerCount && newGesture) {
+                    val currentX = event.x
+                    val currentY = event.y
 
-                    val bool = listener.onMove(event.x - initialX, event.y - initialY)
+                    val bool = listener.onMove(currentX - initialX, currentY - initialY)
 
-                    initialX = event.x
-                    initialY = event.y
+                    initialX = currentX
+                    initialY = currentY
 
                     bool
                 } else
