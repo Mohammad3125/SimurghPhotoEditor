@@ -134,6 +134,8 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         commonGestureDetector!!.setOnDoubleTapListener(this)
     }
 
+    constructor(context: Context) : this(context, null)
+
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
         // Only start moving gesture when we're not in middle of double tapping.
         return !isDoubleTapping
