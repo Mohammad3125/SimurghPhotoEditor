@@ -79,6 +79,110 @@ open class MananGestureImageView protected constructor(
      */
     protected var commonGestureDetector: GestureDetector? = null
 
+
+    /**
+     * Set the initial padding left. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingLeft = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding top. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingTop = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding right. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingRight = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding bottom. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingBottom = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding horizontal. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingHorizontal = 0f
+        set(value) {
+            initialPaddingRight = value
+
+            initialPaddingLeft = value
+
+            field = value
+
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding vertical. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPaddingVertical = 0f
+        set(value) {
+            initialPaddingTop = value
+
+            initialPaddingBottom = value
+
+            field = value
+
+            invalidate()
+        }
+
+    /**
+     * Set the initial padding in all sides. Initial padding is a padding
+     * that is temporary present when image is at it's initial scale.
+     * As user zooms in image this padding doesn't restrict the bounds
+     * of image anymore.
+     */
+    var initialPadding = 0f
+        set(value) {
+            initialPaddingRight = value
+
+            initialPaddingLeft = value
+
+            initialPaddingTop = value
+
+            initialPaddingBottom = value
+
+            field = value
+
+            invalidate()
+        }
+
     init {
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.GestureImageView, 0, 0)
             .run {
@@ -89,6 +193,50 @@ open class MananGestureImageView protected constructor(
                             0
                         )
                     )
+
+                    var tempPadding =
+                        getDimension(R.styleable.GestureImageView_initialPaddingLeft, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingLeft = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.GestureImageView_initialPaddingRight, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingRight = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.GestureImageView_initialPaddingBottom, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingBottom = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.GestureImageView_initialPaddingTop, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingTop = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.GestureImageView_initialPaddingHorizontal, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingHorizontal = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.GestureImageView_initialPaddingVertical, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPaddingVertical = tempPadding
+
+                    tempPadding =
+                        getDimension(R.styleable.GestureImageView_initialPadding, 0f)
+
+                    if (tempPadding != 0f)
+                        initialPadding = tempPadding
+
+
                 } finally {
                     recycle()
                 }
@@ -203,10 +351,10 @@ open class MananGestureImageView protected constructor(
                 mDrawable.intrinsicHeight.toFloat()
             ),
             RectF(
-                0f,
-                0f,
-                (width - paddingRight - paddingLeft).toFloat(),
-                (height - paddingBottom - paddingTop).toFloat()
+                initialPaddingLeft,
+                initialPaddingTop,
+                (width - paddingRight - paddingLeft - initialPaddingRight),
+                (height - paddingBottom - paddingTop - initialPaddingBottom)
             ),
             Matrix.ScaleToFit.CENTER
         )
