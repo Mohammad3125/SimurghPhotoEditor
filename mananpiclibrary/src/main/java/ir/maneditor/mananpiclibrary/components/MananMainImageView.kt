@@ -421,15 +421,15 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         scaleAnimator.cancel()
     }
 
-    override fun onPreChildDraw() {
-        super.onPreChildDraw()
+    override fun onImageLaidOut() {
+        super.onImageLaidOut()
 
         initialTransX = getMatrixValue(Matrix.MTRANS_X, true)
         initialTransY = getMatrixValue(Matrix.MTRANS_Y)
 
         initialImageScale = getMatrixValue(Matrix.MSCALE_X)
 
-        val mDrawable = mainImageView.drawable
+        val mDrawable = drawable
 
         initialWidth = mDrawable.intrinsicWidth * initialImageScale
         initialHeight = mDrawable.intrinsicHeight * initialImageScale

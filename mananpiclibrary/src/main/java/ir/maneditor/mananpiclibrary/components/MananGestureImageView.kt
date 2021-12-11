@@ -2,18 +2,13 @@ package ir.maneditor.mananpiclibrary.components
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.GestureDetector
-import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
-import android.widget.FrameLayout
 import android.widget.ImageView
-import androidx.annotation.DrawableRes
 import androidx.appcompat.widget.AppCompatImageView
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.utils.gesture.gestures.Gesture
@@ -25,28 +20,16 @@ import ir.maneditor.mananpiclibrary.utils.gesture.gestures.OnRotateListener
  * Derived classes could initialize gesture detectors they like and do certain thing like manipulating
  * ImageView's matrix and so on.
  */
-open class MananGestureImageView protected constructor(
+open class MananGestureImageView(
     context: Context,
     attributeSet: AttributeSet?
 ) :
-    FrameLayout(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
+    AppCompatImageView(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnMoveListener, GestureDetector.OnDoubleTapListener,
     GestureDetector.OnGestureListener {
-    /**
-     * Main [ImageView] that gestures or other operations get performed on it.
-     */
-    protected val mainImageView by lazy {
-        AppCompatImageView(context, null).apply {
-            layoutParams = LayoutParams(
-                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT,
-                Gravity.CENTER
-            )
-            scaleType = ImageView.ScaleType.MATRIX
-        }
-    }
 
     /**
-     * Matrix that we later modify and assign to [mainImageView]'s image matrix.
+     * Matrix that we later modify and assign to image matrix.
      */
     protected val imageviewMatrix by lazy { Matrix() }
 
@@ -187,13 +170,6 @@ open class MananGestureImageView protected constructor(
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.GestureImageView, 0, 0)
             .run {
                 try {
-                    setImageResource(
-                        getResourceId(
-                            R.styleable.GestureImageView_src,
-                            0
-                        )
-                    )
-
                     var tempPadding =
                         getDimension(R.styleable.GestureImageView_initialPaddingLeft, 0f)
 
@@ -241,7 +217,7 @@ open class MananGestureImageView protected constructor(
                     recycle()
                 }
             }
-        addView(mainImageView)
+        scaleType = ScaleType.MATRIX
     }
 
     override fun onRotateBegin(initialDegree: Float): Boolean {
@@ -323,16 +299,11 @@ open class MananGestureImageView protected constructor(
         return false
     }
 
-    override fun shouldDelayChildPressedState(): Boolean {
-        return false
-    }
-
-
     /**
      * This method gets called before child is about to be drawn.
      * Could be used to resize the image's matrix to fit the parent bounds and etc...
      */
-    protected open fun onPreChildDraw() {
+    protected open fun onImageLaidOut() {
         fitImageViewInsideBounds()
     }
 
@@ -340,8 +311,8 @@ open class MananGestureImageView protected constructor(
      * Fits ImageView's drawable inside ImageView bounds (only usable for [android.widget.ImageView.ScaleType] of type Matrix).
      */
     protected fun fitImageViewInsideBounds() {
-        val mDrawable = mainImageView.drawable
-        val imgMatrix = mainImageView.matrix
+        val mDrawable = drawable
+        val imgMatrix = matrix
 
         imgMatrix.setRectToRect(
             RectF(
@@ -359,13 +330,13 @@ open class MananGestureImageView protected constructor(
             Matrix.ScaleToFit.CENTER
         )
 
-        mainImageView.imageMatrix = imgMatrix
+        imageMatrix = imgMatrix
         imageviewMatrix.set(imgMatrix)
     }
 
-    override fun dispatchDraw(canvas: Canvas?) {
-        onPreChildDraw()
-        super.dispatchDraw(canvas)
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        onImageLaidOut()
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -411,21 +382,7 @@ open class MananGestureImageView protected constructor(
      * Updates imageview matrix with current matrix.
      */
     protected open fun updateImageMatrix() {
-        mainImageView.imageMatrix = imageviewMatrix
-    }
-
-    /**
-     * Sets imageview bitmap.
-     */
-    open fun setImageBitmap(bitmap: Bitmap) {
-        mainImageView.setImageBitmap(bitmap)
-    }
-
-    /**
-     * Sets imageview drawable resource.
-     */
-    open fun setImageResource(@DrawableRes resId: Int) {
-        mainImageView.setImageResource(resId)
+        imageMatrix = imageviewMatrix
     }
 
 }
