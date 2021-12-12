@@ -11,6 +11,7 @@ import androidx.core.graphics.red
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.components.imageviews.MananGestureImageView
 import ir.maneditor.mananpiclibrary.utils.dp
+import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 import kotlin.math.min
 
 /**
@@ -123,6 +124,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     private var interfaceOnColorDetected: OnColorDetected? = null
 
     init {
+        moveDetector = MoveDetector(1, this)
         scaleType = ScaleType.MATRIX
 
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.FrameDropper, 0, 0).run {
@@ -206,51 +208,54 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         return super.performClick()
     }
 
+    override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
+        // Get position of current x and y.
+        dropperXPosition = ex
+        dropperYPosition = ey
+
+        // Limit point to do not go further than view's dimensions.
+        if (dropperXPosition > rightEdge) dropperXPosition = rightEdge
+        if (dropperXPosition < leftEdge) dropperXPosition = leftEdge
+        if (dropperYPosition > bottomEdge) dropperYPosition = bottomEdge
+        if (dropperYPosition < topEdge) dropperYPosition = topEdge
+
+        // Offset the Circle in case circle exceeds the height of layout y coordinate.
+        offsetY = if (dropperYPosition - circleOffsetFromCenter * 1.5f <= 0f) {
+            (height - dropperYPosition)
+        } else 0f
+
+        // Translate enlarged bitmap by padding left and top to center it.
+        enlargedBitmapMatrix.setTranslate(
+            leftEdge,
+            topEdge
+        )
+
+        // Scale the image to be more visible to user.
+        enlargedBitmapMatrix.postScale(
+            2f,
+            2f,
+            dropperXPosition,
+            dropperYPosition + circleOffsetFromCenter - offsetY
+        )
+
+        // If user's finger is on the image, then show the circle.
+        showCircle = true
+
+        // Invalidate to draw content on the screen.
+        invalidate()
+
+        // Return true to show interest in consuming event.
+        return true
+    }
+
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         // If any bitmap hasn't been set yet then do not show interest in event.
         if (bitmapToViewInCircle == null) return false
 
         super.onTouchEvent(event)
         return when (event!!.actionMasked) {
-            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
-                // Get position of current x and y.
-                dropperXPosition = event.x
-                dropperYPosition = event.y
-
-                // Limit point to do not go further than view's dimensions.
-                if (dropperXPosition > rightEdge) dropperXPosition = rightEdge
-                if (dropperXPosition < leftEdge) dropperXPosition = leftEdge
-                if (dropperYPosition > bottomEdge) dropperYPosition = bottomEdge
-                if (dropperYPosition < topEdge) dropperYPosition = topEdge
-
-                // Offset the Circle in case circle exceeds the height of layout y coordinate.
-                offsetY = if (dropperYPosition - circleOffsetFromCenter * 1.5f <= 0f) {
-                    (height - dropperYPosition)
-                } else 0f
-
-                // Translate enlarged bitmap by padding left and top to center it.
-                enlargedBitmapMatrix.setTranslate(
-                    leftEdge,
-                    topEdge
-                )
-
-                // Scale the image to be more visible to user.
-                enlargedBitmapMatrix.postScale(
-                    2f,
-                    2f,
-                    dropperXPosition,
-                    dropperYPosition + circleOffsetFromCenter - offsetY
-                )
-
-                // If user's finger is on the image, then show the circle.
-                showCircle = true
-
-                if (event.actionMasked == MotionEvent.ACTION_DOWN)
-                    performClick()
-
-                // Invalidate to draw content on the screen.
-                invalidate()
-                // Return true to show interest in consuming event.
+            MotionEvent.ACTION_DOWN -> {
+                performClick()
                 true
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
@@ -347,8 +352,9 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 // If center cross color is white (meaning user didn't choose any preferred color)
                 // then change the color of to black if it's on a white pixel.
                 if (centerCrossColor == Color.WHITE)
-                    centerCrossPaint.color = if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
-                         Color.BLACK else Color.WHITE
+                    centerCrossPaint.color =
+                        if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
+                            Color.BLACK else Color.WHITE
 
                 // Draw horizontal cross in center of circle.
                 drawLine(
