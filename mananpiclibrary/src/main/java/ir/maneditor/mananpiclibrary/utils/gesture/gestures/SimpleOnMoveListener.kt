@@ -13,5 +13,9 @@ open class SimpleOnMoveListener : OnMoveListener {
         return true
     }
 
+    override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
+        return true
+    }
+
     override fun onMoveEnded(lastX: Float, lastY: Float) {}
 }

@@ -11,7 +11,7 @@ interface OnMoveListener {
      * @param initialY First y point that user touches.
      * @return Return true to show interest in consuming the event.
      */
-    fun onMoveBegin(initialX: Float, initialY: Float) : Boolean
+    fun onMoveBegin(initialX: Float, initialY: Float): Boolean
 
     /**
      * This method gets invoked as long as user is moving his/her finger across screen.
@@ -19,7 +19,18 @@ interface OnMoveListener {
      * @param dy Difference between initial y point and current point.
      * @return Return true to show interest in consuming the event.
      */
-    fun onMove(dx: Float, dy: Float) : Boolean
+    fun onMove(dx: Float, dy: Float): Boolean
+
+
+    /**
+     * This method gets invoked as long as user is moving his/her finger across screen.
+     * @param dx Difference between initial x point and current point.
+     * @param dy Difference between initial y point and current point.
+     * @param ex Current x coordinate of event.
+     * @param ey Current y coordinate of event.
+     * @return Return true to show interest in consuming the event.
+     */
+    fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean
 
     /**
      * This method gets invoked when user lifts his/her finger up from screen.

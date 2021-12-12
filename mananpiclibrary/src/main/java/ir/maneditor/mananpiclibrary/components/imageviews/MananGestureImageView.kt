@@ -85,6 +85,10 @@ open class MananGestureImageView(
         return false
     }
 
+    override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
+        return false
+    }
+
     override fun onMoveEnded(lastX: Float, lastY: Float) {
     }
 

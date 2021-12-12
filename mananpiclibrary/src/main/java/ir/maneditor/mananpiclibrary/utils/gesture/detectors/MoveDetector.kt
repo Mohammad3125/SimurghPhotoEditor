@@ -32,6 +32,7 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
                     val currentY = event.y
 
                     val bool = listener.onMove(currentX - initialX, currentY - initialY)
+                    listener.onMove(currentX - initialX, currentY - initialY, currentX, currentY)
 
                     initialX = currentX
                     initialY = currentY
