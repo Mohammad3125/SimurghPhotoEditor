@@ -93,9 +93,16 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     // Lazily create bitmap to view inside the circle.
     private var bitmapToViewInCircle: Bitmap? = null
 
+    // Right of bitmap + paddings and matrix translations
     private var rightEdge = 0f
+
+    // Bottom of bitmap + paddings and matrix translations.
     private var bottomEdge = 0f
+
+    // Left of bitmap = left padding + matrix translations.
     private var leftEdge = 0f
+
+    // Top of bitmap = top padding + matrix translations.
     private var topEdge = 0f
 
     /**
