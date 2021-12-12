@@ -5,6 +5,9 @@ import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import android.view.MotionEvent
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.components.imageviews.MananGestureImageView
 import ir.maneditor.mananpiclibrary.utils.dp
@@ -296,6 +299,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                     xPositionWithPadding.toInt(),
                     yPositionWithPadding.toInt()
                 )
+
                 colorRingPaint.color = lastSelectedColor
 
                 // Call interfaces.
@@ -334,41 +338,33 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 // Finally draw the enlarged bitmap inside the circle.
                 drawBitmap(bitmapToView, enlargedBitmapMatrix, enlargedBitmapPaint)
 
-                // Restore the canvas to the saved point to no mess following drawing operations.
+                // Restore the canvas to the saved point to not mess following drawing operations.
                 restore()
 
                 // Clear any paths.
                 enlargedBitmapPath.rewind()
 
-                // Calculates the position of center cross lines.
-                var crossStartX = dropperXPosition - centerCrossLineSize
-                if (crossStartX < 0f) crossStartX = 0f
-
-                var crossEndX = dropperXPosition + centerCrossLineSize
-                if (crossEndX > x + width) crossEndX = x + width
+                // If center cross color is white (meaning user didn't choose any preferred color)
+                // then change the color of to black if it's on a white pixel.
+                if (centerCrossColor == Color.WHITE)
+                    centerCrossPaint.color = if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
+                         Color.BLACK else Color.WHITE
 
                 // Draw horizontal cross in center of circle.
                 drawLine(
-                    crossStartX,
+                    dropperXPosition - centerCrossLineSize,
                     yPositionForDrawings,
-                    crossEndX,
+                    dropperXPosition + centerCrossLineSize,
                     yPositionForDrawings,
                     centerCrossPaint
                 )
 
-                // Calculates the position of center cross lines.
-                var crossStartY = dropperYPosition - centerCrossLineSize
-                if (crossStartY < 0f) crossStartY = 0f
-
-                var crossEndY = dropperYPosition + centerCrossLineSize
-                if (crossEndY > y + height) crossEndY = y + height
-
                 // Draw vertical cross in center of circle.
                 drawLine(
                     xPositionForDrawings,
-                    crossStartY - circleOffsetFromCenter + offsetY,
+                    dropperYPosition - centerCrossLineSize - circleOffsetFromCenter + offsetY,
                     xPositionForDrawings,
-                    crossEndY - circleOffsetFromCenter + offsetY,
+                    dropperYPosition + centerCrossLineSize - circleOffsetFromCenter + offsetY,
                     centerCrossPaint
                 )
             }
