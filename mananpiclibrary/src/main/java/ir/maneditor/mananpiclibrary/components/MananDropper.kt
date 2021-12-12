@@ -4,41 +4,23 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
-import android.view.Gravity
 import android.view.MotionEvent
-import android.widget.FrameLayout
-import androidx.annotation.DrawableRes
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.view.updateLayoutParams
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import ir.maneditor.mananpiclibrary.R
+import ir.maneditor.mananpiclibrary.components.imageviews.MananGestureImageView
 import ir.maneditor.mananpiclibrary.utils.dp
+import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 import kotlin.math.min
 
 /**
  * Component that let user get color from a bitmap.
  */
 class MananDropper(context: Context, attributeSet: AttributeSet?) :
-    FrameLayout(context, attributeSet) {
+    MananGestureImageView(context, attributeSet) {
 
     constructor(context: Context) : this(context, null)
-
-    // Image that later we will pick color from.
-    private val imageview by lazy {
-        AppCompatImageView(context, null).apply {
-            adjustViewBounds = true
-            layoutParams = LayoutParams(
-                LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT,
-            )
-        }
-    }
-
-    var imageviewGravity: Int = Gravity.CENTER
-        set(value) {
-            imageview.updateLayoutParams<LayoutParams> { gravity = value }
-            field = value
-        }
-
 
     // Paint for drawing enlarged bitmap.
     private val enlargedBitmapPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
@@ -109,10 +91,19 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     private var circleOffsetFromCenter = 0f
 
     // Lazily create bitmap to view inside the circle.
-    private lateinit var bitmapToViewInCircle: Bitmap
+    private var bitmapToViewInCircle: Bitmap? = null
 
-    // Will later determine if user has inserted new bitmap in Dropper or not.
-    private var isNewBitmap = false
+    // Right of bitmap + paddings and matrix translations
+    private var rightEdge = 0f
+
+    // Bottom of bitmap + paddings and matrix translations.
+    private var bottomEdge = 0f
+
+    // Left of bitmap = left padding + matrix translations.
+    private var leftEdge = 0f
+
+    // Top of bitmap = top padding + matrix translations.
+    private var topEdge = 0f
 
     /**
      * The last color that was detected by dropper.
@@ -140,31 +131,8 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     private var interfaceOnColorDetected: OnColorDetected? = null
 
     init {
-
-        // Add listener in case bitmap changes we have to wait for imageview's layout bounds
-        // to change to be able to create new bitmap.
-        imageview.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            if (isNewBitmap) {
-                bitmapToViewInCircle = getImageViewBitmap()
-
-                // If circles radius weren't set in xml file, then calculate it based on minimum dimension of
-                // current view / 10.
-                circlesRadius =
-                    min((imageview.measuredWidth), (imageview.measuredHeight)) * 0.25f
-
-                // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
-                // of circle.
-                colorRingStrokeWidth = circlesRadius * 0.1f
-
-                // This variable will later offset the circle.
-                // We offset the circle to be visible to user which
-                // area of picture they're using otherwise their finger
-                // will block it.
-                circleOffsetFromCenter = (circlesRadius * 1.5f)
-
-                isNewBitmap = false
-            }
-        }
+        moveDetector = MoveDetector(1, this)
+        scaleType = ScaleType.MATRIX
 
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.FrameDropper, 0, 0).run {
             try {
@@ -191,28 +159,44 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                     centerCrossLineSize
                 )
 
-                setImageResource(getResourceId(R.styleable.FrameDropper_src, 0))
-
-                imageviewGravity = getInteger(R.styleable.FrameDropper_imageGravity, Gravity.CENTER)
-
             } finally {
                 recycle()
             }
         }
-        // We will have drawing.
-        setWillNotDraw(false)
-        // Add imageview into view.
-        addView(imageview)
     }
 
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    override fun onImageLaidOut() {
+        super.onImageLaidOut()
+
+        bitmapToViewInCircle = getImageViewBitmap()
+        if (bitmapToViewInCircle == null) return
+
+        // Figure out bounds of image from bitmap + paddings + matrix translations
+        bitmapToViewInCircle!!.run {
+            leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X, true)
+            topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
+            rightEdge = width + leftEdge
+            bottomEdge = height + topEdge
+        }
 
         // If circles radius weren't set in xml file, then calculate it based on minimum dimension of
         // current view / 10.
         if (circlesRadius == 0f)
             circlesRadius =
-                min((imageview.measuredWidth), (imageview.measuredHeight)) * 0.25f
+                min(
+                    (bitmapToViewInCircle!!.width),
+                    (bitmapToViewInCircle!!.height)
+                ) * 0.25f
+
+        // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
+        // of circle.
+        colorRingStrokeWidth = circlesRadius * 0.1f
+
+        // This variable will later offset the circle.
+        // We offset the circle to be visible to user which
+        // area of picture they're using otherwise their finger
+        // will block it.
+        circleOffsetFromCenter = (circlesRadius * 1.5f)
 
         // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
         // of circle.
@@ -224,60 +208,61 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         // area of picture they're using otherwise their finger
         // will block it.
         circleOffsetFromCenter = (circlesRadius * 1.5f)
+
     }
 
     override fun performClick(): Boolean {
         return super.performClick()
     }
 
+    override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
+        // Get position of current x and y.
+        dropperXPosition = ex
+        dropperYPosition = ey
+
+        // Limit point to do not go further than view's dimensions.
+        if (dropperXPosition > rightEdge) dropperXPosition = rightEdge
+        if (dropperXPosition < leftEdge) dropperXPosition = leftEdge
+        if (dropperYPosition > bottomEdge) dropperYPosition = bottomEdge
+        if (dropperYPosition < topEdge) dropperYPosition = topEdge
+
+        // Offset the Circle in case circle exceeds the height of layout y coordinate.
+        offsetY = if (dropperYPosition - circleOffsetFromCenter * 1.5f <= 0f) {
+            (height - dropperYPosition)
+        } else 0f
+
+        // Translate enlarged bitmap by padding left and top to center it.
+        enlargedBitmapMatrix.setTranslate(
+            leftEdge,
+            topEdge
+        )
+
+        // Scale the image to be more visible to user.
+        enlargedBitmapMatrix.postScale(
+            2f,
+            2f,
+            dropperXPosition,
+            dropperYPosition + circleOffsetFromCenter - offsetY
+        )
+
+        // If user's finger is on the image, then show the circle.
+        showCircle = true
+
+        // Invalidate to draw content on the screen.
+        invalidate()
+
+        // Return true to show interest in consuming event.
+        return true
+    }
+
     override fun onTouchEvent(event: MotionEvent?): Boolean {
+        // If any bitmap hasn't been set yet then do not show interest in event.
+        if (bitmapToViewInCircle == null) return false
+
+        super.onTouchEvent(event)
         return when (event!!.actionMasked) {
-            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
-                // Get position of current x and y.
-                dropperXPosition = event.x
-                dropperYPosition = event.y
-
-                // Limit point to do not go further than view's dimensions.
-                if (dropperYPosition > imageview.bottom) dropperYPosition =
-                    imageview.bottom.toFloat()
-
-                if (dropperXPosition > imageview.right) dropperXPosition =
-                    imageview.right.toFloat()
-
-                if (dropperXPosition < imageview.x) dropperXPosition =
-                    imageview.x
-
-                if (dropperYPosition < imageview.y) dropperYPosition =
-                    imageview.y
-
-                // Offset the Circle in case circle exceeds the height of layout y coordinate.
-                offsetY = if (dropperYPosition - circleOffsetFromCenter * 1.5f <= 0f) {
-                    (height - dropperYPosition)
-                } else 0f
-
-                // Translate the enlarged bitmap by it's x and y position inside parent because
-                // parent might have some padding. Also we do this because the pointers position
-                // is based on parent's dimensions and we shift it to avoid shifting in enlarged
-                // bitmap.
-                enlargedBitmapMatrix.setTranslate(imageview.x, imageview.y)
-
-                // Scale the image to be more visible to user.
-                enlargedBitmapMatrix.postScale(
-                    2f,
-                    2f,
-                    dropperXPosition,
-                    dropperYPosition + circleOffsetFromCenter - offsetY
-                )
-
-                // If user's finger is on the image, then show the circle.
-                showCircle = true
-
-                if (event.actionMasked == MotionEvent.ACTION_DOWN)
-                    performClick()
-
-                // Invalidate to draw content on the screen.
-                invalidate()
-                // Return true to show interest in consuming event.
+            MotionEvent.ACTION_DOWN -> {
+                performClick()
                 true
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
@@ -303,29 +288,30 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
     override fun dispatchDraw(canvas: Canvas?) {
         super.dispatchDraw(canvas)
-        if (showCircle) {
+        if (showCircle && bitmapToViewInCircle != null) {
             canvas!!.run {
-                val bitmapToView = bitmapToViewInCircle
-                val bitmapWidth = bitmapToView.width
-                val bitmapHeight = bitmapToView.height
+                val bitmapToView = bitmapToViewInCircle!!
 
-                var xPositionWithPadding = (dropperXPosition - imageview.x).toInt()
-                var yPositionWithPadding = (dropperYPosition - imageview.y).toInt()
+                var xPositionWithPadding =
+                    dropperXPosition - leftEdge
+                var yPositionWithPadding =
+                    dropperYPosition - topEdge
 
                 // Validate the x position to not exceed bitmap dimension (otherwise it throws exception.)
-                if (xPositionWithPadding >= bitmapWidth)
-                    xPositionWithPadding = bitmapWidth - 1
+                if (xPositionWithPadding >= bitmapToView.width)
+                    xPositionWithPadding = bitmapToView.width - 1f
 
                 // Validate the y position to not exceed bitmap dimension (otherwise it throws exception.)
-                if (yPositionWithPadding >= bitmapHeight)
-                    yPositionWithPadding = bitmapHeight - 1
+                if (yPositionWithPadding >= bitmapToView.height)
+                    yPositionWithPadding = bitmapToView.height - 1f
 
                 // Finally get the color of current selected pixel (the pixel user pointing at) and set
                 // The ring color to that.
                 lastSelectedColor = bitmapToView.getPixel(
-                    xPositionWithPadding,
-                    yPositionWithPadding
+                    xPositionWithPadding.toInt(),
+                    yPositionWithPadding.toInt()
                 )
+
                 colorRingPaint.color = lastSelectedColor
 
                 // Call interfaces.
@@ -364,41 +350,34 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 // Finally draw the enlarged bitmap inside the circle.
                 drawBitmap(bitmapToView, enlargedBitmapMatrix, enlargedBitmapPaint)
 
-                // Restore the canvas to the saved point to no mess following drawing operations.
+                // Restore the canvas to the saved point to not mess following drawing operations.
                 restore()
 
                 // Clear any paths.
                 enlargedBitmapPath.rewind()
 
-                // Calculates the position of center cross lines.
-                var crossStartX = dropperXPosition - centerCrossLineSize
-                if (crossStartX < 0f) crossStartX = 0f
-
-                var crossEndX = dropperXPosition + centerCrossLineSize
-                if (crossEndX > x + width) crossEndX = x + width
+                // If center cross color is white (meaning user didn't choose any preferred color)
+                // then change the color of to black if it's on a white pixel.
+                if (centerCrossColor == Color.WHITE)
+                    centerCrossPaint.color =
+                        if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
+                            Color.BLACK else Color.WHITE
 
                 // Draw horizontal cross in center of circle.
                 drawLine(
-                    crossStartX,
+                    dropperXPosition - centerCrossLineSize,
                     yPositionForDrawings,
-                    crossEndX,
+                    dropperXPosition + centerCrossLineSize,
                     yPositionForDrawings,
                     centerCrossPaint
                 )
 
-                // Calculates the position of center cross lines.
-                var crossStartY = dropperYPosition - centerCrossLineSize
-                if (crossStartY < 0f) crossStartY = 0f
-
-                var crossEndY = dropperYPosition + centerCrossLineSize
-                if (crossEndY > y + height) crossEndY = y + height
-
                 // Draw vertical cross in center of circle.
                 drawLine(
                     xPositionForDrawings,
-                    crossStartY - circleOffsetFromCenter + offsetY,
+                    dropperYPosition - centerCrossLineSize - circleOffsetFromCenter + offsetY,
                     xPositionForDrawings,
-                    crossEndY - circleOffsetFromCenter + offsetY,
+                    dropperYPosition + centerCrossLineSize - circleOffsetFromCenter + offsetY,
                     centerCrossPaint
                 )
             }
@@ -406,32 +385,24 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
-     * Sets imageview's bitmap.
-     */
-    fun setImageBitmap(bitmap: Bitmap) {
-        imageview.setImageBitmap(bitmap)
-        isNewBitmap = true
-    }
-
-    /**
-     * Sets imageview's image resource.
-     * @param resId resource id.
-     */
-    fun setImageResource(@DrawableRes resId: Int) {
-        imageview.setImageResource(resId)
-        isNewBitmap = true
-    }
-
-    /**
      * Returns bitmap from imageview via it's drawable. This method resizes the returned drawable into
      * view's bounds.
      * @return resized [Bitmap] that user is going to pick color from.
      */
-    private fun getImageViewBitmap(): Bitmap {
-        val mDrawable = imageview.drawable
-        return if (mDrawable != null && mDrawable is BitmapDrawable)
-            Bitmap.createScaledBitmap(mDrawable.bitmap, imageview.width, imageview.height, false)
-        else Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+    private fun getImageViewBitmap(): Bitmap? {
+        val mDrawable = drawable
+        return if (mDrawable != null && mDrawable is BitmapDrawable) {
+            val currentScale = getMatrixValue(
+                Matrix.MSCALE_X,
+                true
+            )
+            Bitmap.createScaledBitmap(
+                mDrawable.bitmap,
+                (mDrawable.intrinsicWidth.toFloat() * currentScale).toInt(),
+                (mDrawable.intrinsicHeight.toFloat() * currentScale).toInt(),
+                true
+            )
+        } else null
     }
 
     /**
@@ -470,7 +441,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
 
     /**
-     * Interface definition of callback that get invoked when any color changes by
+     * Interface definition of a callback that get invoked when any color changes by
      * dropper get detected.
      */
     interface OnColorDetected {
@@ -478,7 +449,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
-     * Interface definition of callback that get invoked when user lifts his/her finger
+     * Interface definition of a callback that get invoked when user lifts his/her finger
      * up. This callback should be used when you want to get the last color that was
      * detected by dropper.
      */
