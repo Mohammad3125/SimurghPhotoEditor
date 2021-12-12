@@ -2,6 +2,7 @@ package ir.maneditor.mananpiclibrary.components.imageviews
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.util.AttributeSet
@@ -61,6 +62,54 @@ open class MananGestureImageView(
      */
     protected var commonGestureDetector: GestureDetector? = null
 
+    /**
+     * Left edge of bitmap = leftPadding + matrix translation x.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var leftEdge = 0f
+
+    /**
+     * Top edge of bitmap = topPadding + matrix translation y.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var topEdge = 0f
+
+    /**
+     * Right edge of bitmap = scaled drawable width + leftPadding + matrix translation x.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var rightEdge = 0f
+
+    /**
+     * Bottom edge of bitmap = scaled drawable height + topPadding + matrix translation y.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var bottomEdge = 0f
+
+
+    /**
+     * Real width of current image's bitmap.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var bitmapWidth = 0f
+
+    /**
+     * Real height of current image's bitmap.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var bitmapHeight = 0f
+
+
+    /**
+     * This value represents scale value of matrix after calling [Matrix.setRectToRect].
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var initialScale = 0f
+
+    /**
+     * Later will be used to notify if imageview's bitmap has been changed.
+     */
+    private var isNewBitmap = false
 
     init {
         scaleType = ScaleType.MATRIX
@@ -154,13 +203,13 @@ open class MananGestureImageView(
      * Could be used to resize the image's matrix to fit the parent bounds and etc...
      */
     protected open fun onImageLaidOut() {
-        fitImageViewInsideBounds()
     }
 
     /**
-     * Fits ImageView's drawable inside ImageView bounds (only usable for [android.widget.ImageView.ScaleType] of type Matrix).
+     * Called when drawable is about to be resized to fit the view's dimensions.
+     * @return Modified matrix.
      */
-    protected fun fitImageViewInsideBounds() {
+    protected open fun resizeDrawable() {
         val mDrawable = drawable
         val imgMatrix = matrix
 
@@ -186,7 +235,38 @@ open class MananGestureImageView(
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        onImageLaidOut()
+
+        if (changed || isNewBitmap) {
+            resizeDrawable()
+
+            val mDrawable = drawable
+
+            initialScale = getMatrixValue(Matrix.MSCALE_X, true)
+
+            leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X)
+            topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
+
+            bitmapWidth = (mDrawable.intrinsicWidth * initialScale)
+            bitmapHeight = (mDrawable.intrinsicHeight * initialScale)
+
+            rightEdge = bitmapWidth + leftEdge
+            bottomEdge = bitmapHeight + topEdge
+
+            isNewBitmap = false
+
+            onImageLaidOut()
+        }
+
+    }
+
+    override fun setImageBitmap(bm: Bitmap?) {
+        super.setImageBitmap(bm)
+        isNewBitmap = true
+    }
+
+    override fun setImageResource(resId: Int) {
+        super.setImageResource(resId)
+        isNewBitmap = true
     }
 
     @SuppressLint("ClickableViewAccessibility")

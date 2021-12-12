@@ -33,16 +33,9 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
     private var drawableWidth: Int = 0
     private var drawableHeight: Int = 0
 
-    // Initial scale factor of image.
-    private var initialImageScale = 0f
-
     // Initial translation of image.
     private var initialTransX = 0f
     private var initialTransY = 0f
-
-    // Initial width and height of image.
-    private var initialHeight = 0f
-    private var initialWidth = 0f
 
     // Pivot point of scaling gesture (later will be used by 'Matrix.postScale' and other methods.)
     private var pivotPointX = 0f
@@ -156,7 +149,6 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
             invalidate()
         }
-
 
 
     /**
@@ -340,17 +332,11 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
         if (e == null) return false
 
-        // Get values of matrix to later validate if touch point is inside
-        // the image bounds.
-        val tx = getMatrixValue(Matrix.MTRANS_X, true)
-        val ty = getMatrixValue(Matrix.MTRANS_Y)
-        val scaled = getMatrixValue(Matrix.MSCALE_X)
-        val maxWidth = drawableWidth * scaled + initialTransX
-        val maxHeight = drawableHeight * scaled + initialTransY
+        val scaled = getMatrixValue(Matrix.MSCALE_X, true)
 
         // If event coordinate (user touch) isn't in image bounds then do not
         // count that event as a double tap.
-        if (e.x < tx || e.y < ty || e.y > maxHeight || e.x > maxWidth) return false
+        if (e.x < leftEdge || e.y < topEdge || e.y > bottomEdge || e.x > rightEdge) return false
 
         // Only start double-tap animations when we're not in middle of any other animations.
         if (!isAnyAnimationRunning()) {
@@ -369,7 +355,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             // a zoom-out or else we zoom-in.
             animateScale(
                 scaled,
-                if (!isZooming) initialImageScale else maximumZoomFactor
+                if (!isZooming) initialScale else maximumZoomFactor
             ).run {
                 addListener(object : AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: Animator?) {
@@ -388,8 +374,8 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             // Checking to see if user is zoomed without double tapping.
             // If did so then animate translations to their initial state.
             if (!isZooming) {
-                animateXAxis(tx, initialTransX)
-                animateYAxis(ty, initialTransY)
+                animateXAxis(getMatrixValue(Matrix.MTRANS_X, true), initialTransX)
+                animateYAxis(getMatrixValue(Matrix.MTRANS_Y), initialTransY)
             }
         }
         return true
@@ -455,20 +441,20 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         val matrixTransY = getMatrixValue(Matrix.MTRANS_Y)
 
         // Here we calculate the edge of right side to later do not go further that point.
-        val rightEdge =
-            calculateEdge(scaled, initialImageScale, initialWidth, initialTransX)
+        val rEdge =
+            calculateEdge(scaled, initialScale, bitmapWidth, initialTransX)
 
         // Here we calculate the edge of bottom side to later do not go further that point.
-        val bottomEdge =
-            calculateEdge(scaled, initialImageScale, initialHeight, initialTransY)
+        val bEdge =
+            calculateEdge(scaled, initialScale, bitmapHeight, initialTransY)
 
         // Calculate the valid scale (scale greater than maximum allowable scale and less than initial scale)
         val validatedScale =
-            if (scaled > MAXIMUM_SCALE_FACTOR) MAXIMUM_SCALE_FACTOR else if (scaled < initialImageScale) initialImageScale else scaled
+            if (scaled > MAXIMUM_SCALE_FACTOR) MAXIMUM_SCALE_FACTOR else if (scaled < initialScale) initialScale else scaled
 
         // If scaled value is greater than maximum scale allowed or less than initial scale then
         // animate it to a valid scale.
-        if (scaled < initialImageScale || scaled > MAXIMUM_SCALE_FACTOR) {
+        if (scaled < initialScale || scaled > MAXIMUM_SCALE_FACTOR) {
 
             // Perform over-scale animations with pivot point in center of layout.
             pivotPointX = pivotX
@@ -476,41 +462,41 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
             animateScale(
                 scaled,
-                if (scaled < initialImageScale) initialImageScale else MAXIMUM_SCALE_FACTOR
+                if (scaled < initialScale) initialScale else MAXIMUM_SCALE_FACTOR
             )
         }
 
         // If we translated the image more than the edge (we use less than operator because edge is a negative value) or
         // translated image further from initial translation point then animate it back to a valid range.
-        if (matrixTransX < rightEdge || matrixTransX > initialTransX) {
+        if (matrixTransX < rEdge || matrixTransX > initialTransX) {
             // Calculate the width with validated scale.
             val edgeWithNormalizedScale = calculateEdge(
                 validatedScale,
-                initialImageScale,
-                initialWidth,
+                initialScale,
+                bitmapWidth,
                 initialTransX
             )
 
             animateXAxis(
                 matrixTransX,
-                if (matrixTransX > initialTransX || scaled < initialImageScale) initialTransX else edgeWithNormalizedScale
+                if (matrixTransX > initialTransX || scaled < initialScale) initialTransX else edgeWithNormalizedScale
             )
         }
 
         // If we translated the image more than the edge (we use less than operator because edge is a negative value) or
         // translated image further from initial translation point then animate it back to a valid range.
-        if (matrixTransY < bottomEdge || matrixTransY > initialTransY) {
+        if (matrixTransY < bEdge || matrixTransY > initialTransY) {
             // Calculate the height with validated scale.
             val edgeWithNormalizedScale = calculateEdge(
                 validatedScale,
-                initialImageScale,
-                initialHeight,
+                initialScale,
+                bitmapHeight,
                 initialTransY
             )
 
             animateYAxis(
                 matrixTransY,
-                if (matrixTransY > initialTransY || scaled < initialImageScale) initialTransY else edgeWithNormalizedScale
+                if (matrixTransY > initialTransY || scaled < initialScale) initialTransY else edgeWithNormalizedScale
             )
         }
     }
@@ -560,17 +546,17 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
     /**
      * Calculates the edge of image with current applied scale.
      * @param scaled Total scale factor that user scaled the image.
-     * @param initialScale Initial scale of the image.
+     * @param initScale Initial scale of the image.
      * @param initialSize Initial size of current axis we're trying to calculate (x or y).
      * @param initialOffset Initial offset of that axis (initial translation)
      */
     private fun calculateEdge(
         scaled: Float,
-        initialScale: Float,
+        initScale: Float,
         initialSize: Float,
         initialOffset: Float
     ): Float =
-        -((scaled * initialSize / initialScale) - initialSize - initialOffset)
+        -((scaled * initialSize / initScale) - initialSize - initialOffset)
 
     /**
      * Cancels all running animations.
@@ -581,7 +567,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         scaleAnimator.cancel()
     }
 
-    override fun onImageLaidOut() {
+    override fun resizeDrawable() {
         val mDrawable = drawable
         val imgMatrix = matrix
 
@@ -606,11 +592,6 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
         initialTransX = getMatrixValue(Matrix.MTRANS_X, true)
         initialTransY = getMatrixValue(Matrix.MTRANS_Y)
-
-        initialImageScale = getMatrixValue(Matrix.MSCALE_X)
-
-        initialWidth = mDrawable.intrinsicWidth * initialImageScale
-        initialHeight = mDrawable.intrinsicHeight * initialImageScale
 
         drawableWidth = mDrawable.intrinsicWidth
         drawableHeight = mDrawable.intrinsicHeight

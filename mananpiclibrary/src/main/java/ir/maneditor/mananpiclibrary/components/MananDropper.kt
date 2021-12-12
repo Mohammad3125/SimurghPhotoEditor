@@ -93,18 +93,6 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     // Lazily create bitmap to view inside the circle.
     private var bitmapToViewInCircle: Bitmap? = null
 
-    // Right of bitmap + paddings and matrix translations
-    private var rightEdge = 0f
-
-    // Bottom of bitmap + paddings and matrix translations.
-    private var bottomEdge = 0f
-
-    // Left of bitmap = left padding + matrix translations.
-    private var leftEdge = 0f
-
-    // Top of bitmap = top padding + matrix translations.
-    private var topEdge = 0f
-
     /**
      * The last color that was detected by dropper.
      */
@@ -132,7 +120,6 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
     init {
         moveDetector = MoveDetector(1, this)
-        scaleType = ScaleType.MATRIX
 
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.FrameDropper, 0, 0).run {
             try {
@@ -171,14 +158,6 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         bitmapToViewInCircle = getImageViewBitmap()
         if (bitmapToViewInCircle == null) return
 
-        // Figure out bounds of image from bitmap + paddings + matrix translations
-        bitmapToViewInCircle!!.run {
-            leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X, true)
-            topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
-            rightEdge = width + leftEdge
-            bottomEdge = height + topEdge
-        }
-
         // If circles radius weren't set in xml file, then calculate it based on minimum dimension of
         // current view / 10.
         if (circlesRadius == 0f)
@@ -208,7 +187,6 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         // area of picture they're using otherwise their finger
         // will block it.
         circleOffsetFromCenter = (circlesRadius * 1.5f)
-
     }
 
     override fun performClick(): Boolean {
@@ -392,14 +370,10 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     private fun getImageViewBitmap(): Bitmap? {
         val mDrawable = drawable
         return if (mDrawable != null && mDrawable is BitmapDrawable) {
-            val currentScale = getMatrixValue(
-                Matrix.MSCALE_X,
-                true
-            )
             Bitmap.createScaledBitmap(
                 mDrawable.bitmap,
-                (mDrawable.intrinsicWidth.toFloat() * currentScale).toInt(),
-                (mDrawable.intrinsicHeight.toFloat() * currentScale).toInt(),
+                (bitmapWidth).toInt(),
+                (bitmapHeight).toInt(),
                 true
             )
         } else null
