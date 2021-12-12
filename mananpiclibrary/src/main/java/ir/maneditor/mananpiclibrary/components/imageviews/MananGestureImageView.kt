@@ -236,10 +236,10 @@ open class MananGestureImageView(
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
 
+        val mDrawable = drawable ?: return
+
         if (changed || isNewBitmap) {
             resizeDrawable()
-
-            val mDrawable = drawable
 
             initialScale = getMatrixValue(Matrix.MSCALE_X, true)
 
