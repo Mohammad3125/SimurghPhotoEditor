@@ -621,16 +621,13 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             ) return AspectRatioFree()
             else {
                 // Trim the string and split it with hyphen.
-                val listRatios = aspectRatioString.run {
-                    trim()
-                    split("-")
-                }
+                val listRatios = aspectRatioString.trim().split("-")
+
                 // If either it's size is greater than 2 or it's empty or null then this is not a valid string.
                 if (listRatios.size > 2 || listRatios.isNullOrEmpty()) return AspectRatioFree()
 
                 // Check that strings in list are digits only.
-                for (string in listRatios)
-                    if (!string.isDigitsOnly()) return AspectRatioFree()
+                listRatios.forEach { string -> if (!string.isDigitsOnly()) return AspectRatioFree() }
 
                 // Finally return 'AspectRatioLocked' with given width and height ratio.
                 return AspectRatioLocked(listRatios[0].toFloat(), listRatios[1].toFloat())
