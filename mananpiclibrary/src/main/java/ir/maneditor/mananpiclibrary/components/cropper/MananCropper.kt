@@ -562,34 +562,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    /**
-     * This method converts a string representation of aspect-ratio into aspect ratio class.
-     * String SHOULD be in this format: either "FREE" or ratio of width to height separated with hyphen like "16-9".
-     * @param aspectRatioString String to convert it into [AspectRatio]. if null returns [AspectRatioFree]
-     */
-    fun convertStringToAspectRatio(aspectRatioString: String?): AspectRatio {
-        // If string is null or it's value is "FREE" return 'AspectRatioFree'.
-        if (aspectRatioString == null || (aspectRatioString.trim() == "FREE")) return AspectRatioFree()
-        else {
-            // Trim the string and split it with hyphen.
-            val listRatios = aspectRatioString.run {
-                trim()
-                split("-")
-            }
-            // If either it's size is greater than 2 or it's empty or null then this is not a valid string.
-            if (listRatios.size > 2 || listRatios.isNullOrEmpty()) return AspectRatioFree()
-
-            // Check that strings in list are digits only.
-            for (string in listRatios)
-                if (!string.isDigitsOnly()) return AspectRatioFree()
-
-            // Finally return 'AspectRatioLocked' with given width and height ratio.
-            return AspectRatioLocked(listRatios[0].toFloat(), listRatios[1].toFloat())
-
-        }
-
-    }
-
     fun setAspectRatio(newAspectRatio: AspectRatio) {
         if (newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked)
             if ((aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio())
@@ -628,6 +600,37 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
                 mDrawable.toBitmap(),
                 l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
             )
+        }
+    }
+
+    companion object {
+        /**
+         * This method converts a string representation of aspect-ratio into aspect ratio class.
+         * String SHOULD be in this format: either "FREE" or ratio of width to height separated with hyphen like "16-9".
+         * @param aspectRatioString String to convert it into [AspectRatio]. if null returns [AspectRatioFree]
+         */
+        fun convertStringToAspectRatio(aspectRatioString: String?): AspectRatio {
+            // If string is null or it's value is "FREE" return 'AspectRatioFree'.
+            if (aspectRatioString == null || (aspectRatioString.trim()
+                    .uppercase() == "FREE")
+            ) return AspectRatioFree()
+            else {
+                // Trim the string and split it with hyphen.
+                val listRatios = aspectRatioString.run {
+                    trim()
+                    split("-")
+                }
+                // If either it's size is greater than 2 or it's empty or null then this is not a valid string.
+                if (listRatios.size > 2 || listRatios.isNullOrEmpty()) return AspectRatioFree()
+
+                // Check that strings in list are digits only.
+                for (string in listRatios)
+                    if (!string.isDigitsOnly()) return AspectRatioFree()
+
+                // Finally return 'AspectRatioLocked' with given width and height ratio.
+                return AspectRatioLocked(listRatios[0].toFloat(), listRatios[1].toFloat())
+
+            }
         }
     }
 }
