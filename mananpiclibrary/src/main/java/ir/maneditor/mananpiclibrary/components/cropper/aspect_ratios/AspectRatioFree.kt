@@ -40,15 +40,8 @@ class AspectRatioFree : AspectRatio() {
         return rect
     }
 
-    override fun validate(
-        rect: RectF,
-        dirtyRect: RectF,
-        maxWidth: Float,
-        maxHeight: Float
-    ): RectF {
+    override fun validate(rect: RectF, dirtyRect: RectF, limitRect: RectF): RectF {
         rect.run {
-//            val frameWidth = width()
-//            val frameHeight = height()
 
             var finalLeft = dirtyRect.left
             var finalTop = dirtyRect.top
@@ -56,14 +49,14 @@ class AspectRatioFree : AspectRatio() {
             var finalBottom = dirtyRect.bottom
 
             // If resized rectangle's right side exceeds maximum width don't let it go further.
-            if (dirtyRect.right > maxWidth) finalRight = maxWidth
+            if (dirtyRect.right > limitRect.right) finalRight = limitRect.right
             // If left side of rectangle reaches limit of x axis don't let it go further.
-            if (dirtyRect.left < 0f) finalLeft = 0f
+            if (dirtyRect.left < limitRect.left) finalLeft = limitRect.left
 
             // If resized rectangle's bottom side exceeds maximum height don't let it go further.
-            if (dirtyRect.bottom > maxHeight) finalBottom = maxHeight
+            if (dirtyRect.bottom > limitRect.bottom) finalBottom = limitRect.bottom
             // If top side of rectangle reaches limit of y axis don't let it go further.
-            if (dirtyRect.top < 0f) finalTop = 0f
+            if (dirtyRect.top < limitRect.top) finalTop = limitRect.top
 
             // This piece of code makes rectangle to don't get resized less than minimum width and height.
 //            if (frameWidth - (dirtyRect.left - left) < minWidth)

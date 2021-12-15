@@ -2,16 +2,15 @@ package ir.maneditor.mananpiclibrary.components.cropper
 
 import android.content.Context
 import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.view.ViewGroup
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.components.cropper.HandleBar.*
 import ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios.AspectRatioFree
 import ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios.AspectRatioLocked
+import ir.maneditor.mananpiclibrary.components.imageviews.MananGestureImageView
 import ir.maneditor.mananpiclibrary.utils.dp
 import ir.maneditor.mananpiclibrary.utils.invalidateAfter
 import kotlin.math.roundToInt
@@ -19,7 +18,7 @@ import kotlin.math.roundToInt
 /**
  * A resizable view that shows guidelines and let user define an area of interest to crop images and etc....
  */
-class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(context, attr) {
+class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageView(context, attr) {
 
     // Paint used for drawing the frame.
     private val framePaint by lazy {
@@ -131,6 +130,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
     private var initialX = 0f
     private var initialY = 0f
 
+    private lateinit var limitRect: RectF
+
     // Variable to save aspect ratio of cropper.
     private var aspectRatio: AspectRatio = AspectRatioFree()
 
@@ -181,53 +182,26 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
                 recycle()
             }
         }
-        adjustViewBounds = true
     }
 
+    override fun onImageLaidOut() {
+        super.onImageLaidOut()
 
-    /**
-     * This method converts a string representation of aspect-ratio into aspect ratio class.
-     * String SHOULD be in this format: either "FREE" or ratio of width to height separated with hyphen like "16-9".
-     * @param aspectRatioString String to convert it into [AspectRatio]. if null returns [AspectRatioFree]
-     */
-    fun convertStringToAspectRatio(aspectRatioString: String?): AspectRatio {
-        // If string is null or it's value is "FREE" return 'AspectRatioFree'.
-        if (aspectRatioString == null || (aspectRatioString.trim() == "FREE")) return AspectRatioFree()
-        else {
-            // Trim the string and split it with hyphen.
-            val listRatios = aspectRatioString.run {
-                trim()
-                split("-")
-            }
-            // If either it's size is greater than 2 or it's empty or null then this is not a valid string.
-            if (listRatios.size > 2 || listRatios.isNullOrEmpty()) return AspectRatioFree()
+        // Initialize limit rect that later will be used to limit resizing.
+        limitRect = RectF(leftEdge, topEdge, rightEdge, bottomEdge)
 
-            // Check that strings in list are digits only.
-            for (string in listRatios)
-                if (!string.isDigitsOnly()) return AspectRatioFree()
-
-            // Finally return 'AspectRatioLocked' with given width and height ratio.
-            return AspectRatioLocked(listRatios[0].toFloat(), listRatios[1].toFloat())
-
+        // Initialize drawing objects after the width and height has been determined.
+        if (aspectRatio is AspectRatioLocked) {
+            val pair = (aspectRatio as AspectRatioLocked).normalizeAspectRatio(
+                bitmapWidth,
+                bitmapHeight
+            )
+            initializeDrawingObjects(pair.first + leftEdge, pair.second + topEdge)
+            return
         }
+        // Initialize drawing object if aspect ratio is not locked.
+        initializeDrawingObjects(rightEdge, bottomEdge)
 
-    }
-
-    // Secondary constructor to initialize the view programmatically.
-    constructor(context: Context, width: Int, height: Int) : this(context, null) {
-        layoutParams = ViewGroup.LayoutParams(width, height)
-        initializeDrawingObjects(width, height)
-    }
-
-    fun setAspectRatio(newAspectRatio: AspectRatio) {
-        if (newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked)
-            if ((aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio())
-                return
-
-        if (newAspectRatio is AspectRatioFree && aspectRatio is AspectRatioFree) return
-
-        aspectRatio = newAspectRatio
-        requestLayout()
     }
 
     /**
@@ -235,8 +209,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
      * @param width Width of objects.
      * @param height Height of objects.
      */
-    private fun initializeDrawingObjects(width: Int, height: Int) {
-        frameRect = createFrameRect(width.toFloat(), height.toFloat())
+    private fun initializeDrawingObjects(width: Float, height: Float) {
+        frameRect = createFrameRect(width, height)
         setDrawingDimensions()
     }
 
@@ -302,53 +276,15 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
         return frame.run {
             listOf(
                 // Top shadow.
-                RectF(0f, 0f, width.toFloat(), top),
+                RectF(leftEdge, topEdge, rightEdge, top),
                 // Left shadow.
-                RectF(0f, top, left, height.toFloat()),
+                RectF(leftEdge, top, left, bottom),
                 // Right shadow.
-                RectF(right, top, width.toFloat(), bottom),
+                RectF(right, top, rightEdge, bottom),
                 // Bottom shadow.
-                RectF(left, bottom, width.toFloat(), height.toFloat())
+                RectF(leftEdge, bottom, rightEdge, bottomEdge)
             )
         }
-    }
-
-    override fun onDraw(canvas: Canvas?) {
-        // Draw image.
-        super.onDraw(canvas)
-
-        canvas!!.run {
-            // Draw frame.
-            drawRect(frameRect, framePaint)
-
-            // Draw handle bars.
-            drawLines(frameHandleBar, handleBarPaint)
-
-            // Draw guidelines.
-            if (isDrawGuidelineEnabled)
-                drawLines(guideLineDimension, frameGuidelinePaint)
-
-            // Draw shadows around frame.
-            for (rect in frameShadows)
-                drawRect(rect, frameShadowsPaint)
-        }
-    }
-
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        // Initialize drawing objects after the width and height has been determined.
-        if (aspectRatio is AspectRatioLocked) {
-            val pair = (aspectRatio as AspectRatioLocked).normalizeAspectRatio(
-                measuredWidth,
-                measuredHeight,
-                measuredWidth,
-                measuredHeight
-            )
-            initializeDrawingObjects(pair.first, pair.second)
-            return
-        }
-        // Initialize drawing object if aspect ratio is not locked.
-        initializeDrawingObjects(measuredWidth, measuredHeight)
     }
 
     override fun performClick(): Boolean {
@@ -374,10 +310,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
 
                 performClick()
 
-                // Only show interest if user touched a handle bar, otherwise don't
-                // request to intercept the event because the parent is going to move
-                // the cropper and if we intercept it, it won't work.
-                parent.requestDisallowInterceptTouchEvent(true)
                 return true
             }
 
@@ -388,9 +320,10 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
 
 
                 invalidateAfter {
-                    // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size
+                    // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
                     val changedRect =
                         aspectRatio.resize(RectF(frameRect), handleBar, differenceX, differenceY)
+
 
                     initialY += differenceY
                     initialX += differenceX
@@ -398,14 +331,16 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
                     if (handleBar != null) {
 
                         // After validation set the frame's dimensions.
-                        frameRect.set(
-                            aspectRatio.validate(
-                                frameRect,
-                                changedRect,
-                                width.toFloat(),
-                                height.toFloat()
-                            )
+                        val validatedRect = aspectRatio.validate(
+                            frameRect,
+                            changedRect,
+                            limitRect
                         )
+
+                        frameRect.set(
+                            validatedRect
+                        )
+
                     } else {
                         // If non of handle bars has been pressed, move the rectangle inside the view.
                         frameRect.run {
@@ -419,15 +354,15 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
                             // Validate that the rectangle is inside the view's bounds.
                             val finalX =
                                 when {
-                                    right > width -> width - right
-                                    left < 0f -> -left
+                                    right > rightEdge -> rightEdge - right
+                                    left < leftEdge -> leftEdge - left
                                     else -> 0f
                                 }
 
                             val finalY =
                                 when {
-                                    bottom > height -> height - bottom
-                                    top < 0f -> -top
+                                    bottom > bottomEdge -> bottomEdge - bottom
+                                    top < topEdge -> topEdge - top
                                     else -> 0f
                                 }
 
@@ -441,14 +376,33 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
                     // Reset the shadows,handle bar dimensions, handle bar map and etc based on new frame size.
                     setDrawingDimensions()
                 }
-                parent.requestDisallowInterceptTouchEvent(true)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                parent.requestDisallowInterceptTouchEvent(false)
                 return false
             }
         }
         return true
+    }
+
+    override fun onDraw(canvas: Canvas?) {
+        // Draw image.
+        super.onDraw(canvas)
+
+        canvas!!.run {
+            // Draw frame.
+            drawRect(frameRect, framePaint)
+
+            // Draw handle bars.
+            drawLines(frameHandleBar, handleBarPaint)
+
+            // Draw guidelines.
+            if (isDrawGuidelineEnabled)
+                drawLines(guideLineDimension, frameGuidelinePaint)
+
+            // Draw shadows around frame.
+            for (rect in frameShadows)
+                drawRect(rect, frameShadowsPaint)
+        }
     }
 
     /**
@@ -471,7 +425,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
      * @return Returns a [RectF] representing the overlay window.
      */
     private fun createFrameRect(width: Float, height: Float): RectF {
-        return RectF(0f, 0f, width, height)
+        return RectF(leftEdge, topEdge, width, height)
     }
 
     /**
@@ -487,10 +441,11 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
             val handleBarSizeX = width() / 10
             val handleBarSizeY = height() / 10
 
-            val leftOffset = left + 1.dp
-            val topOffset = top + 1.dp
-            val rightOffset = right - 1.dp
-            val bottomOffset = bottom - 1.dp
+            val offset = 1.dp
+            val leftOffset = left + offset
+            val topOffset = top + offset
+            val rightOffset = right - offset
+            val bottomOffset = bottom - offset
             return floatArrayOf(
                 // Left
                 leftOffset,
@@ -577,7 +532,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
         return frame.run {
 
             // Figure out some extra touch area for better touch experience.
-            val excessTouchArea = 24.dp
+            val excessTouchArea = 32.dp
 
             // Store areas that handle are located + excess area.
             mutableMapOf<Pair<PointF, PointF>, HandleBar>(
@@ -644,18 +599,77 @@ class MananCropper(context: Context, attr: AttributeSet?) : AppCompatImageView(c
     }
 
     /**
+     * This method converts a string representation of aspect-ratio into aspect ratio class.
+     * String SHOULD be in this format: either "FREE" or ratio of width to height separated with hyphen like "16-9".
+     * @param aspectRatioString String to convert it into [AspectRatio]. if null returns [AspectRatioFree]
+     */
+    fun convertStringToAspectRatio(aspectRatioString: String?): AspectRatio {
+        // If string is null or it's value is "FREE" return 'AspectRatioFree'.
+        if (aspectRatioString == null || (aspectRatioString.trim() == "FREE")) return AspectRatioFree()
+        else {
+            // Trim the string and split it with hyphen.
+            val listRatios = aspectRatioString.run {
+                trim()
+                split("-")
+            }
+            // If either it's size is greater than 2 or it's empty or null then this is not a valid string.
+            if (listRatios.size > 2 || listRatios.isNullOrEmpty()) return AspectRatioFree()
+
+            // Check that strings in list are digits only.
+            for (string in listRatios)
+                if (!string.isDigitsOnly()) return AspectRatioFree()
+
+            // Finally return 'AspectRatioLocked' with given width and height ratio.
+            return AspectRatioLocked(listRatios[0].toFloat(), listRatios[1].toFloat())
+
+        }
+
+    }
+
+    fun setAspectRatio(newAspectRatio: AspectRatio) {
+        if (newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked)
+            if ((aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio())
+                return
+
+        if (newAspectRatio is AspectRatioFree && aspectRatio is AspectRatioFree) return
+
+        aspectRatio = newAspectRatio
+        requestLayout()
+    }
+
+    /**
      * Crops image with current dimension of cropper.
      * @return Cropped bitmap.
      */
-    fun cropImage(): Bitmap {
+    fun cropImage(): Bitmap? {
         frameRect.run {
-            return Bitmap.createBitmap(
-                drawable.toBitmap(width, height),
-                left.roundToInt(),
-                top.roundToInt(),
-                width().roundToInt(),
-                height().roundToInt()
-            )
+            val mDrawable = drawable
+            return if (mDrawable != null && mDrawable is BitmapDrawable) {
+
+                val l = (left - leftEdge).roundToInt()
+                val t = (top - topEdge).roundToInt()
+                var r = (right - l - leftEdge).roundToInt()
+                var b = (bottom - t - topEdge).roundToInt()
+
+                if (r > bitmapWidth) r = bitmapWidth.roundToInt()
+                if (b > bitmapHeight) b = bitmapHeight.roundToInt()
+
+                val scaledBitmap = Bitmap.createScaledBitmap(
+                    mDrawable.bitmap,
+                    bitmapWidth.roundToInt(),
+                    bitmapHeight.roundToInt(),
+                    true
+                )
+
+                val createdBitmap = Bitmap.createBitmap(
+                    scaledBitmap,
+                    l, t, r, b
+                )
+
+                scaledBitmap.recycle()
+
+                createdBitmap
+            } else null
         }
     }
 }
