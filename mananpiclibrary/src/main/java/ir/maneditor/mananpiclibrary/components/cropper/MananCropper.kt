@@ -3,7 +3,6 @@ package ir.maneditor.mananpiclibrary.components.cropper
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
@@ -290,7 +289,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             )
         )
 
-        Log.i("1", "onMoveBegin: $handleBar")
         return true
     }
 
