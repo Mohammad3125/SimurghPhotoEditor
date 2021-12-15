@@ -279,10 +279,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    override fun performClick(): Boolean {
-        return super.performClick()
-    }
-
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
 
         // Figure out which handle bar is in range of the event.
