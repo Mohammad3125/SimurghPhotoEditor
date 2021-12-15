@@ -2,8 +2,8 @@ package ir.maneditor.mananpiclibrary.components.cropper
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.components.cropper.HandleBar.*
@@ -609,29 +609,28 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
      * Crops image with current dimension of cropper.
      * @return Cropped bitmap.
      */
-    fun cropImage(): Bitmap? {
+    fun cropImage(): Bitmap {
         frameRect.run {
-            val mDrawable = drawable
-            return if (mDrawable != null && mDrawable is BitmapDrawable) {
 
-                // Calculate bounds of drawable by dividing it by initial scale of current image.
-                val le = (left - leftEdge)
-                val te = (top - topEdge)
-                val l = (le / initialScale)
-                val t = (te / initialScale)
-                var r = ((right - le - leftEdge) / initialScale)
-                var b = ((bottom - te - topEdge) / initialScale)
+            val mDrawable = drawable ?: throw IllegalStateException("Cannot crop a null drawable")
 
-                if (r > mDrawable.intrinsicWidth) r = mDrawable.intrinsicWidth.toFloat()
-                if (b > mDrawable.intrinsicHeight) b = mDrawable.intrinsicHeight.toFloat()
+            // Calculate bounds of drawable by dividing it by initial scale of current image.
+            val le = (left - leftEdge)
+            val te = (top - topEdge)
+            val l = (le / initialScale)
+            val t = (te / initialScale)
+            var r = ((right - le - leftEdge) / initialScale)
+            var b = ((bottom - te - topEdge) / initialScale)
 
-                val createdBitmap = Bitmap.createBitmap(
-                    mDrawable.bitmap,
-                    l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
-                )
+            if (r > mDrawable.intrinsicWidth) r = mDrawable.intrinsicWidth.toFloat()
+            if (b > mDrawable.intrinsicHeight) b = mDrawable.intrinsicHeight.toFloat()
 
-                createdBitmap
-            } else null
+            val createdBitmap = Bitmap.createBitmap(
+                mDrawable.toBitmap(),
+                l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
+            )
+
+            return createdBitmap
         }
     }
 }
