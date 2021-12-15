@@ -80,6 +80,13 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
         dirtyRect.run {
             val ratio = getRatio()
 
+            val minSize = (if (ratio > 1f) limitRect.height() else limitRect.width()) / 4.5f
+
+            if (height() < minSize) {
+                set(rect)
+                return dirtyRect
+            }
+
             // If right side of rectangle is greater than maximum width do not allow it
             // to go further.
             if (right > limitRect.right) {
@@ -94,8 +101,9 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                 // so change the top side of rectangle to maintain aspect ratio.
                 else if (bottom == rect.bottom)
                     top -= (width() / ratio) - height()
+
             }
-            // If left side of rectangle got less than 0 that means we have reached the boundary of view.
+            // If left side of rectangle got less than limit that means we have reached the boundary of view.
             if (left < limitRect.left) {
                 left = limitRect.left
                 // If top hasn't been changed that means user has been moving cropper with bottom left handle,
@@ -131,10 +139,6 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                 else if (right == rect.right)
                     left -= height() * ratio - width()
             }
-
-            // Validation for minimum width and height.
-//            if (width() < minWidth || height() < minHeight)
-//                set(rect)
 
             return dirtyRect
         }

@@ -3,6 +3,7 @@ package ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios
 import android.graphics.RectF
 import ir.maneditor.mananpiclibrary.components.cropper.AspectRatio
 import ir.maneditor.mananpiclibrary.components.cropper.HandleBar
+import kotlin.math.min
 
 /**
  * Class representing aspect-ratio-free resizing.
@@ -43,6 +44,11 @@ class AspectRatioFree : AspectRatio() {
             var finalRight = dirtyRect.right
             var finalBottom = dirtyRect.bottom
 
+            val minSize = min(limitRect.width(), limitRect.height()) / 4.5f
+
+            val frameWidth = width()
+            val frameHeight = height()
+
             // If resized rectangle's right side exceeds maximum width don't let it go further.
             if (dirtyRect.right > limitRect.right) finalRight = limitRect.right
             // If left side of rectangle reaches limit of x axis don't let it go further.
@@ -54,14 +60,14 @@ class AspectRatioFree : AspectRatio() {
             if (dirtyRect.top < limitRect.top) finalTop = limitRect.top
 
             // This piece of code makes rectangle to don't get resized less than minimum width and height.
-//            if (frameWidth - (dirtyRect.left - left) < minWidth)
-//                finalLeft = left + (frameWidth - minWidth)
-//            if (frameWidth - (right - dirtyRect.right) < minWidth)
-//                finalRight = right
-//            if (frameHeight - (dirtyRect.top - top) < minHeight)
-//                finalTop = top + (frameHeight - minHeight)
-//            if (frameHeight - (bottom - dirtyRect.bottom) < minHeight)
-//                finalBottom = bottom
+            if (frameWidth - (dirtyRect.left - left) < minSize)
+                finalLeft = left + (frameWidth - minSize)
+            if (frameWidth - (right - dirtyRect.right) < minSize)
+                finalRight = right
+            if (frameHeight - (dirtyRect.top - top) < minSize)
+                finalTop = top + (frameHeight - minSize)
+            if (frameHeight - (bottom - dirtyRect.bottom) < minSize)
+                finalBottom = bottom
 
 
             return RectF(finalLeft, finalTop, finalRight, finalBottom)
