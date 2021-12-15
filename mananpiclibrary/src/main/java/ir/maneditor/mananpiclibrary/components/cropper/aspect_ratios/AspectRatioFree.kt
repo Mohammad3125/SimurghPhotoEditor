@@ -12,28 +12,23 @@ class AspectRatioFree : AspectRatio() {
     override fun resize(rect: RectF, handleBar: HandleBar?, dx: Float, dy: Float): RectF {
         rect.run {
             when (handleBar) {
-                HandleBar.TOP, HandleBar.BOTTOM -> {
-                    if (handleBar == HandleBar.BOTTOM)
-                        bottom += dy
-                    else top += dy
-                }
                 HandleBar.RIGHT, HandleBar.LEFT -> {
                     if (handleBar == HandleBar.RIGHT)
                         right += dx
                     else left += dx
                 }
-                HandleBar.TOP_LEFT, HandleBar.TOP_RIGHT -> {
+                HandleBar.TOP_LEFT, HandleBar.TOP_RIGHT, HandleBar.TOP -> {
                     top += dy
                     if (handleBar == HandleBar.TOP_LEFT)
                         left += dx
-                    else right += dx
+                    else if (handleBar == HandleBar.TOP_RIGHT) right += dx
 
                 }
-                HandleBar.BOTTOM_LEFT, HandleBar.BOTTOM_RIGHT -> {
+                HandleBar.BOTTOM_LEFT, HandleBar.BOTTOM_RIGHT, HandleBar.BOTTOM -> {
                     bottom += dy
                     if (handleBar == HandleBar.BOTTOM_LEFT)
                         left += dx
-                    else right += dx
+                    else if (handleBar == HandleBar.BOTTOM_RIGHT) right += dx
                 }
             }
         }
