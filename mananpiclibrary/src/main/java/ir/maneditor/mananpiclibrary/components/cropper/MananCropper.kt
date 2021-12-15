@@ -191,17 +191,11 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         limitRect = RectF(leftEdge, topEdge, rightEdge, bottomEdge)
 
         // Initialize drawing objects after the width and height has been determined.
-        if (aspectRatio is AspectRatioLocked) {
-            val pair = (aspectRatio as AspectRatioLocked).normalizeAspectRatio(
-                bitmapWidth,
-                bitmapHeight
-            )
-            initializeDrawingObjects(pair.first + leftEdge, pair.second + topEdge)
-            return
-        }
-        // Initialize drawing object if aspect ratio is not locked.
-        initializeDrawingObjects(rightEdge, bottomEdge)
-
+        val pair = aspectRatio.normalizeAspectRatio(
+            bitmapWidth,
+            bitmapHeight
+        )
+        initializeDrawingObjects(pair.first + leftEdge, pair.second + topEdge)
     }
 
     /**

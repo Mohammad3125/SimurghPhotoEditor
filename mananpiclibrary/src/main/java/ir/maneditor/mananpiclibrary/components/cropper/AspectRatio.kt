@@ -31,4 +31,17 @@ abstract class AspectRatio {
         limitRect: RectF
     ): RectF
 
+
+    /**
+     * Applies aspect ratio to width or height.
+     * If final width or height exceeds the maximum amount, it normalizes them to fit inside bounds.
+     * @param maxWidth Maximum width allowed for aspect-ratio.
+     * @param maxHeight Maximum height allowed for aspect-ratio.
+     * @return A [Pair]. First element is aspect-ratio applied width and second is aspect-ratio applied height.
+     */
+    abstract fun normalizeAspectRatio(
+        maxWidth: Float,
+        maxHeight: Float
+    ): Pair<Float, Float>
+
 }

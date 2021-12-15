@@ -72,4 +72,8 @@ class AspectRatioFree : AspectRatio() {
             return RectF(finalLeft, finalTop, finalRight, finalBottom)
         }
     }
+
+    override fun normalizeAspectRatio(maxWidth: Float, maxHeight: Float): Pair<Float, Float> {
+        return Pair(maxWidth, maxHeight)
+    }
 }
