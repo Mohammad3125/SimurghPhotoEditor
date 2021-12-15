@@ -291,10 +291,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         return true
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        super.onMoveEnded(lastX, lastY)
-    }
-
     override fun onMove(dx: Float, dy: Float): Boolean {
         // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
         val changedRect =
@@ -602,7 +598,10 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         if (newAspectRatio is AspectRatioFree && aspectRatio is AspectRatioFree) return
 
         aspectRatio = newAspectRatio
-        requestLayout()
+
+        val pair = aspectRatio.normalizeAspectRatio(bitmapWidth, bitmapHeight)
+        initializeDrawingObjects(leftEdge + pair.first, topEdge + pair.second)
+        invalidate()
     }
 
     /**
