@@ -625,12 +625,10 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             if (r > mDrawable.intrinsicWidth) r = mDrawable.intrinsicWidth.toFloat()
             if (b > mDrawable.intrinsicHeight) b = mDrawable.intrinsicHeight.toFloat()
 
-            val createdBitmap = Bitmap.createBitmap(
+            return Bitmap.createBitmap(
                 mDrawable.toBitmap(),
                 l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
             )
-
-            return createdBitmap
         }
     }
 }
