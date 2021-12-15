@@ -581,6 +581,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
 
     /**
      * Crops image with current dimension of cropper.
+     * @throws [IllegalStateException] if drawable is null.
      * @return Cropped bitmap.
      */
     fun cropImage(): Bitmap {
