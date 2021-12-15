@@ -618,24 +618,20 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             val mDrawable = drawable
             return if (mDrawable != null && mDrawable is BitmapDrawable) {
 
-                val l = (left - leftEdge).roundToInt()
-                val t = (top - topEdge).roundToInt()
-                var r = (right - l - leftEdge).roundToInt()
-                var b = (bottom - t - topEdge).roundToInt()
+                // Calculate bounds of drawable by dividing it by initial scale of current image.
+                val le = (left - leftEdge)
+                val te = (top - topEdge)
+                val l = (le / initialScale)
+                val t = (te / initialScale)
+                var r = ((right - le - leftEdge) / initialScale)
+                var b = ((bottom - te - topEdge) / initialScale)
 
-                if (r > bitmapWidth) r = bitmapWidth.roundToInt()
-                if (b > bitmapHeight) b = bitmapHeight.roundToInt()
-
-                val scaledBitmap = Bitmap.createScaledBitmap(
-                    mDrawable.bitmap,
-                    bitmapWidth.roundToInt(),
-                    bitmapHeight.roundToInt(),
-                    true
-                )
+                if (r > mDrawable.intrinsicWidth) r = mDrawable.intrinsicWidth.toFloat()
+                if (b > mDrawable.intrinsicHeight) b = mDrawable.intrinsicHeight.toFloat()
 
                 val createdBitmap = Bitmap.createBitmap(
-                    scaledBitmap,
-                    l, t, r, b
+                    mDrawable.bitmap,
+                    l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
                 )
 
                 createdBitmap
