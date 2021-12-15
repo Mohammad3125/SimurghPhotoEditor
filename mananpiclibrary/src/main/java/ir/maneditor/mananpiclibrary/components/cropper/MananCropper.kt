@@ -3,6 +3,7 @@ package ir.maneditor.mananpiclibrary.components.cropper
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
@@ -288,6 +289,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
                 initialY
             )
         )
+
+        Log.i("1", "onMoveBegin: $handleBar")
         return true
     }
 
@@ -496,7 +499,9 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         return frame.run {
 
             // Figure out some extra touch area for better touch experience.
-            val excessTouchArea = 32.dp
+            val excessTouchArea = 52.dp
+            val excessTouchAreaHalf = excessTouchArea / 2
+
 
             // Store areas that handle are located + excess area.
             mutableMapOf<Pair<PointF, PointF>, HandleBar>(
@@ -506,17 +511,17 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
                 ),
                 Pair(
                     Pair(
-                        PointF(centerX() - excessTouchArea, top),
-                        PointF(centerX() + excessTouchArea, top + excessTouchArea)
+                        PointF(centerX() - excessTouchAreaHalf, top),
+                        PointF(centerX() + excessTouchAreaHalf, top + excessTouchArea)
                     ), TOP
                 ),
                 Pair(
                     Pair(
                         PointF(
                             right - excessTouchArea,
-                            centerY() - excessTouchArea
+                            centerY() - excessTouchAreaHalf
                         ),
-                        PointF(right, centerY() + excessTouchArea)
+                        PointF(right, centerY() + excessTouchAreaHalf)
                     ), RIGHT
                 ),
                 Pair(
@@ -528,24 +533,24 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
                 ),
                 Pair(
                     Pair(
-                        PointF(left, centerY() - excessTouchArea),
-                        PointF(left + excessTouchArea, centerY() + excessTouchArea)
+                        PointF(left, centerY() - excessTouchAreaHalf),
+                        PointF(left + excessTouchArea, centerY() + excessTouchAreaHalf)
                     ), LEFT
                 ),
                 Pair(
                     Pair(
                         PointF(left, bottom - excessTouchArea),
-                        PointF(left + excessTouchArea, bottom + excessTouchArea)
+                        PointF(left + excessTouchArea, bottom)
                     ),
                     BOTTOM_LEFT
                 ),
                 Pair(
                     Pair(
                         PointF(
-                            centerX() - excessTouchArea,
+                            centerX() - excessTouchAreaHalf,
                             bottom - excessTouchArea
                         ),
-                        PointF(centerX() + excessTouchArea, bottom)
+                        PointF(centerX() + excessTouchAreaHalf, bottom)
                     ),
                     BOTTOM
                 ),
