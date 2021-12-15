@@ -275,7 +275,12 @@ open class MananGestureImageView(
         rotationDetector?.onTouchEvent(event)
         moveDetector?.onTouchEvent(event)
         commonGestureDetector?.onTouchEvent(event)
-        return super.onTouchEvent(event)
+        return if (areGesturesNull()) super.onTouchEvent(event)
+        else true
+    }
+
+    private fun areGesturesNull(): Boolean {
+        return (scaleDetector == null && rotationDetector == null && moveDetector == null && commonGestureDetector == null)
     }
 
     /**
