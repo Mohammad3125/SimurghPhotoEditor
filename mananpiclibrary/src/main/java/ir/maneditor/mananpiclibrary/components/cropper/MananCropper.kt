@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
-import android.view.MotionEvent
 import androidx.core.text.isDigitsOnly
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.components.cropper.HandleBar.*
@@ -12,7 +11,7 @@ import ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios.AspectRatio
 import ir.maneditor.mananpiclibrary.components.cropper.aspect_ratios.AspectRatioLocked
 import ir.maneditor.mananpiclibrary.components.imageviews.MananGestureImageView
 import ir.maneditor.mananpiclibrary.utils.dp
-import ir.maneditor.mananpiclibrary.utils.invalidateAfter
+import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 import kotlin.math.roundToInt
 
 /**
@@ -126,16 +125,15 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     // Later in code determines which handle bar has been pressed.
     private var handleBar: HandleBar? = null
 
-    // Used for saving initial touch points.
-    private var initialX = 0f
-    private var initialY = 0f
-
     private lateinit var limitRect: RectF
 
     // Variable to save aspect ratio of cropper.
     private var aspectRatio: AspectRatio = AspectRatioFree()
 
     init {
+
+        moveDetector = MoveDetector(1, this)
+
         context.theme.obtainStyledAttributes(attr, R.styleable.MananCropper, 0, 0).apply {
             try {
                 guidelineColor =
@@ -285,96 +283,76 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         return super.performClick()
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        when (event!!.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
+    override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
 
-                // Figure out which handle bar is in range of the event.
-                handleBar = figureOutWhichHandleIsInRangeOfEvent(
-                    PointF(
-                        event.x,
-                        event.y
-                    )
+        // Figure out which handle bar is in range of the event.
+        handleBar = figureOutWhichHandleIsInRangeOfEvent(
+            PointF(
+                initialX,
+                initialY
+            )
+        )
+        return true
+    }
+
+    override fun onMoveEnded(lastX: Float, lastY: Float) {
+        super.onMoveEnded(lastX, lastY)
+    }
+
+    override fun onMove(dx: Float, dy: Float): Boolean {
+        // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
+        val changedRect =
+            aspectRatio.resize(RectF(frameRect), handleBar, dx, dy)
+
+        if (handleBar != null) {
+
+            // After validation set the frame's dimensions.
+            val validatedRect = aspectRatio.validate(
+                frameRect,
+                changedRect,
+                limitRect
+            )
+
+            frameRect.set(
+                validatedRect
+            )
+
+        } else {
+            // If non of handle bars has been pressed, move the rectangle inside the view.
+            frameRect.run {
+
+                // Offset the rectangle.
+                offset(
+                    dx,
+                    dy
                 )
 
-                // Save the initial points the user touched to later calculate the difference between
-                // Initial point and ongoing event to figure out how much the view should resize.
-                initialX = event.x
-                initialY = event.y
-
-                performClick()
-
-                return true
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                // Difference between initial touch point and current ongoing event.
-                val differenceY = (event.y - initialY)
-                val differenceX = (event.x - initialX)
-
-
-                invalidateAfter {
-                    // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
-                    val changedRect =
-                        aspectRatio.resize(RectF(frameRect), handleBar, differenceX, differenceY)
-
-
-                    initialY += differenceY
-                    initialX += differenceX
-
-                    if (handleBar != null) {
-
-                        // After validation set the frame's dimensions.
-                        val validatedRect = aspectRatio.validate(
-                            frameRect,
-                            changedRect,
-                            limitRect
-                        )
-
-                        frameRect.set(
-                            validatedRect
-                        )
-
-                    } else {
-                        // If non of handle bars has been pressed, move the rectangle inside the view.
-                        frameRect.run {
-
-                            // Offset the rectangle.
-                            offset(
-                                differenceX,
-                                differenceY
-                            )
-
-                            // Validate that the rectangle is inside the view's bounds.
-                            val finalX =
-                                when {
-                                    right > rightEdge -> rightEdge - right
-                                    left < leftEdge -> leftEdge - left
-                                    else -> 0f
-                                }
-
-                            val finalY =
-                                when {
-                                    bottom > bottomEdge -> bottomEdge - bottom
-                                    top < topEdge -> topEdge - top
-                                    else -> 0f
-                                }
-
-                            // If rectangle wasn't inside bounds, offset them back.
-                            offset(
-                                finalX,
-                                finalY
-                            )
-                        }
+                // Validate that the rectangle is inside the view's bounds.
+                val finalX =
+                    when {
+                        right > rightEdge -> rightEdge - right
+                        left < leftEdge -> leftEdge - left
+                        else -> 0f
                     }
-                    // Reset the shadows,handle bar dimensions, handle bar map and etc based on new frame size.
-                    setDrawingDimensions()
-                }
-            }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                return false
+
+                val finalY =
+                    when {
+                        bottom > bottomEdge -> bottomEdge - bottom
+                        top < topEdge -> topEdge - top
+                        else -> 0f
+                    }
+
+                // If rectangle wasn't inside bounds, offset them back.
+                offset(
+                    finalX,
+                    finalY
+                )
             }
         }
+        // Reset the shadows,handle bar dimensions, handle bar map and etc based on new frame size.
+        setDrawingDimensions()
+        invalidate()
+
         return true
     }
 
@@ -659,8 +637,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
                     scaledBitmap,
                     l, t, r, b
                 )
-
-                scaledBitmap.recycle()
 
                 createdBitmap
             } else null
