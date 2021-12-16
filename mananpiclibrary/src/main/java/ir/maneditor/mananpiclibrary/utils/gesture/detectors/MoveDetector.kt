@@ -8,6 +8,7 @@ import ir.maneditor.mananpiclibrary.utils.gesture.gestures.OnMoveListener
  * Implementation of a finger move gesture.
  * @param pointerCount Determines number of fingers that make gesture.
  * @param listener a [OnMoveListener] that gets called in appropriate situations.
+ * @throws IllegalStateException if pointer count <= 0
  */
 class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gesture {
 
@@ -16,6 +17,11 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
 
     // It will notify the motion event that user is gesturing a new gesture on the screen.
     private var newGesture = true
+
+
+    init {
+        if (pointerCount <= 0) throw IllegalStateException("pointer count should be more than 0")
+    }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return when (event?.actionMasked) {
