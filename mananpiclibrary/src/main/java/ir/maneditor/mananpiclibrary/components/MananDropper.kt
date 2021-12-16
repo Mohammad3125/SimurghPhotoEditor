@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
-import android.view.MotionEvent
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
@@ -193,6 +192,11 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         return super.performClick()
     }
 
+    override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
+        // If any bitmap hasn't been set yet then do not show interest in event.
+        return bitmapToViewInCircle != null
+    }
+
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
         // Get position of current x and y.
         dropperXPosition = ex
@@ -233,35 +237,17 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         return true
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        // If any bitmap hasn't been set yet then do not show interest in event.
-        if (bitmapToViewInCircle == null) return false
+    override fun onMoveEnded(lastX: Float, lastY: Float) {
+        // Call interfaces.
+        onLastColorDetected?.invoke(lastSelectedColor)
+        interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)
 
-        super.onTouchEvent(event)
-        return when (event!!.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                performClick()
-                true
-            }
-            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
-                // Call interfaces.
-                onLastColorDetected?.invoke(lastSelectedColor)
-                interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)
-
-                // If user lifts his/her finger then don't show the circle anymore.
-                showCircle = false
-                // Reset offset.
-                offsetY = 0f
-                // Invalidate to draw content on the screen.
-                invalidate()
-                // We're no longer interested in consuming event.
-                false
-            }
-            else -> {
-                false
-            }
-
-        }
+        // If user lifts his/her finger then don't show the circle anymore.
+        showCircle = false
+        // Reset offset.
+        offsetY = 0f
+        // Invalidate to draw content on the screen.
+        invalidate()
     }
 
     override fun dispatchDraw(canvas: Canvas?) {
