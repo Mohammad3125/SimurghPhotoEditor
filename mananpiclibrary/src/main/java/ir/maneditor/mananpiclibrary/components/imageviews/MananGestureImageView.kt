@@ -5,6 +5,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -259,6 +261,13 @@ open class MananGestureImageView(
 
     }
 
+    override fun setImageDrawable(drawable: Drawable?) {
+        if (drawable !is BitmapDrawable) throw IllegalArgumentException(
+            "Type of drawable should only be BitmapDrawable"
+        )
+        super.setImageDrawable(drawable)
+    }
+
     override fun setImageBitmap(bm: Bitmap?) {
         super.setImageBitmap(bm)
         isNewBitmap = true
@@ -275,7 +284,12 @@ open class MananGestureImageView(
         rotationDetector?.onTouchEvent(event)
         moveDetector?.onTouchEvent(event)
         commonGestureDetector?.onTouchEvent(event)
-        return super.onTouchEvent(event)
+        return if (areGesturesNull()) super.onTouchEvent(event)
+        else true
+    }
+
+    private fun areGesturesNull(): Boolean {
+        return (scaleDetector == null && rotationDetector == null && moveDetector == null && commonGestureDetector == null)
     }
 
     /**

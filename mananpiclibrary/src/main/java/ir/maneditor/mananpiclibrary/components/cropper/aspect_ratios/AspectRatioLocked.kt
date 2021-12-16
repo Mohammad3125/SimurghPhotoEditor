@@ -76,19 +76,21 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
         }
     }
 
-    override fun validate(
-        rect: RectF,
-        dirtyRect: RectF,
-        maxWidth: Float,
-        maxHeight: Float
-    ): RectF {
+    override fun validate(rect: RectF, dirtyRect: RectF, limitRect: RectF): RectF {
         dirtyRect.run {
             val ratio = getRatio()
 
+            val minSize = (if (ratio > 1f) limitRect.height() else limitRect.width()) / 4.5f
+
+            if (height() < minSize || width() < minSize) {
+                set(rect)
+                return dirtyRect
+            }
+
             // If right side of rectangle is greater than maximum width do not allow it
             // to go further.
-            if (right > maxWidth) {
-                right = maxWidth
+            if (right > limitRect.right) {
+                right = limitRect.right
                 // If we got to maximum width then change bottom or top to maintain
                 // aspect ratio.
                 // If top hasn't been changed that means user has been moving cropper with bottom right handle,
@@ -99,10 +101,11 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                 // so change the top side of rectangle to maintain aspect ratio.
                 else if (bottom == rect.bottom)
                     top -= (width() / ratio) - height()
+
             }
-            // If left side of rectangle got less than 0 that means we have reached the boundary of view.
-            if (left < 0f) {
-                left = 0f
+            // If left side of rectangle got less than limit that means we have reached the boundary of view.
+            if (left < limitRect.left) {
+                left = limitRect.left
                 // If top hasn't been changed that means user has been moving cropper with bottom left handle,
                 // so change the bottom side of rectangle to maintain aspect ratio.
                 if (top == rect.top)
@@ -113,8 +116,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                     top -= (width() / ratio) - height()
             }
             // If bottom side of rectangle exceeds the maximum height then don't allow it to go further.
-            if (bottom > maxHeight) {
-                bottom = maxHeight
+            if (bottom > limitRect.bottom) {
+                bottom = limitRect.bottom
                 // If left side of rectangle hasn't been changed that means the user has been changing cropper size
                 // with bottom right handle.
                 if (left == rect.left)
@@ -125,8 +128,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                     left -= height() * ratio - width()
             }
             // If top side of rectangle reaches the limit don't let it go further.
-            if (top < 0f) {
-                top = 0f
+            if (top < limitRect.top) {
+                top = limitRect.top
                 // If left side of rectangle hasn't been changed that means the user has been resizing the cropper
                 // with top right handle.
                 if (left == rect.left)
@@ -136,10 +139,6 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                 else if (right == rect.right)
                     left -= height() * ratio - width()
             }
-
-            // Validation for minimum width and height.
-//            if (width() < minWidth || height() < minHeight)
-//                set(rect)
 
             return dirtyRect
         }
@@ -152,44 +151,36 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
      */
     fun getRatio(): Float = widthRatio / heightRatio
 
-    /**
-     * Applies aspect ratio to width or height.
-     * If final width or height exceeds the maximum amount, it normalizes them to fit inside bounds.
-     * @param width Width to be normalized.
-     * @param height Height to be normalized.
-     * @param maxWidth Maximum width allowed for aspect-ratio.
-     * @param maxHeight Maximum height allowed for aspect-ratio.
-     * @return A [Pair]. First element is aspect-ratio applied width and second is aspect-ratio applied height.
-     */
-    fun normalizeAspectRatio(
-        width: Int,
-        height: Int,
-        maxWidth: Int,
-        maxHeight: Int
-    ): Pair<Int, Int> {
+    override fun normalizeAspectRatio(
+        maxWidth: Float,
+        maxHeight: Float
+    ): Pair<Float, Float> {
         val ratio = getRatio()
+
         // If ratio is less than 1 then the height of aspect ratio is bigger than the width.
         return if (ratio < 1f) {
             // Apply aspect ratio.
-            var normalizedWidth = (height * ratio).toInt()
-            var finalHeight = height
+            var normalizedWidth = (maxHeight * ratio)
+            var finalHeight = maxHeight
 
             // If it exceeds the maximum width.
             if (normalizedWidth > maxWidth) {
                 // Then normalize height to fit inside bounds.
-                finalHeight = (maxWidth / ratio).toInt()
-                normalizedWidth = (finalHeight * ratio).toInt()
+                finalHeight = (maxWidth / ratio)
+                normalizedWidth = (finalHeight * ratio)
             }
 
             Pair(normalizedWidth, finalHeight)
         } else {
-            var normalizedHeight = (width / ratio).toInt()
-            var finalWidth = width
+            var normalizedHeight = (maxWidth / ratio)
+            var finalWidth = maxWidth
 
+            // If it exceeds the maximum width.
             if (normalizedHeight > maxHeight) {
-                finalWidth = (maxHeight * ratio).toInt()
-                normalizedHeight = (finalWidth / ratio).toInt()
+                finalWidth = (maxHeight * ratio)
+                normalizedHeight = (finalWidth / ratio)
             }
+
             Pair(finalWidth, normalizedHeight)
         }
     }

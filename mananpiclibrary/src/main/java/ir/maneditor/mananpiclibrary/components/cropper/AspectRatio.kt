@@ -22,15 +22,26 @@ abstract class AspectRatio {
      * This class checks if rectangles width and height is between minimum width,height and maximum width,height.
      * @param rect Current cropper rectangle.
      * @param dirtyRect Rectangle that has been modified(resized).
-     * @param maxWidth Maximum width allowed for view.
-     * @param maxHeight Maximum height allowed for rectangle.
+     * @param limitRect Rectangle that represents the limit bounds (to limit dirty rect resizing)
      * @return Validated rectangle with correct aspect-ratio(if has any.)
      */
     abstract fun validate(
         rect: RectF,
         dirtyRect: RectF,
+        limitRect: RectF
+    ): RectF
+
+
+    /**
+     * Applies aspect ratio to width or height.
+     * If final width or height exceeds the maximum amount, it normalizes them to fit inside bounds.
+     * @param maxWidth Maximum width allowed for aspect-ratio.
+     * @param maxHeight Maximum height allowed for aspect-ratio.
+     * @return A [Pair]. First element is aspect-ratio applied width and second is aspect-ratio applied height.
+     */
+    abstract fun normalizeAspectRatio(
         maxWidth: Float,
         maxHeight: Float
-    ): RectF
+    ): Pair<Float, Float>
 
 }
