@@ -194,10 +194,16 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
         // If any bitmap hasn't been set yet then do not show interest in event.
-        return bitmapToViewInCircle != null
+        if (bitmapToViewInCircle == null) return false
+
+        return showDropper(initialX, initialY)
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
+        return showDropper(ex, ey)
+    }
+
+    private fun showDropper(ex: Float, ey: Float): Boolean {
         // Get position of current x and y.
         dropperXPosition = ex
         dropperYPosition = ey
