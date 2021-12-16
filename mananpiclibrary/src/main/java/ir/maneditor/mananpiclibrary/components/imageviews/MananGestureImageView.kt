@@ -278,6 +278,16 @@ open class MananGestureImageView(
         isNewBitmap = true
     }
 
+    /**
+     * Creates a bitmap from current drawable.
+     */
+    open fun toBitmap(): Bitmap {
+        val mDrawable =
+            drawable ?: throw IllegalStateException("drawable is null")
+
+        return (mDrawable as BitmapDrawable).bitmap
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         scaleDetector?.onTouchEvent(event)
