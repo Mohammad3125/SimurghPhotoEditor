@@ -82,7 +82,7 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
 
             val minSize = (if (ratio > 1f) limitRect.height() else limitRect.width()) / 4.5f
 
-            if (height() < minSize) {
+            if (height() < minSize || width() < minSize) {
                 set(rect)
                 return dirtyRect
             }
