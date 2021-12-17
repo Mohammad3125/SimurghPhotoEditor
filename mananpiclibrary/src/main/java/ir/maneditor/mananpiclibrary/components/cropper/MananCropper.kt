@@ -103,6 +103,12 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             field = value
         }
 
+    /**
+     * Determines color of handle bars when they are selected.
+     * By default this value is same as [handleBarColor].
+     */
+    var selectedHandleBarColor = handleBarColor
+
 
     // Rectangle that represents the crop frame.
     private lateinit var frameRect: RectF
@@ -175,6 +181,9 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
 
                 aspectRatio =
                     convertStringToAspectRatio(getString(R.styleable.MananCropper_aspectRatio))
+
+                selectedHandleBarColor =
+                    getColor(R.styleable.MananCropper_selectedHandlerBarColor, handleBarColor)
 
             } finally {
                 recycle()
@@ -298,6 +307,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             aspectRatio.resize(RectF(frameRect), handleBar, dx, dy)
 
         if (handleBar != null) {
+            // Change color of handle bar indicating that user is changing size of cropper.
+            handleBarPaint.color = selectedHandleBarColor
 
             // After validation set the frame's dimensions.
             val validatedRect = aspectRatio.validate(
@@ -347,6 +358,11 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         invalidate()
 
         return true
+    }
+
+    override fun onMoveEnded(lastX: Float, lastY: Float) {
+        handleBarPaint.color = handleBarColor
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas?) {
