@@ -26,12 +26,12 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    var frameColor = 0
+    var frameColor = Color.DKGRAY
         set(value) {
             framePaint.color = value
             field = value
         }
-    var frameStrokeWidth = 0f
+    var frameStrokeWidth = 2.dp
         set(value) {
             framePaint.strokeWidth = value
             field = value
@@ -44,12 +44,12 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    var guidelineStrokeWidth = 0f
+    var guidelineStrokeWidth = 1.dp
         set(value) {
             frameGuidelinePaint.strokeWidth = value
             field = value
         }
-    var guidelineColor = 0
+    var guidelineColor = Color.DKGRAY
         set(value) {
             frameGuidelinePaint.color = value
             field = value
@@ -66,12 +66,12 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    var backgroundShadowColor = 0
+    var backgroundShadowColor = Color.BLACK
         set(value) {
             frameShadowsPaint.color = value
             field = value
         }
-    var backgroundShadowAlpha = 0
+    var backgroundShadowAlpha = 255 / 3
         set(value) {
             frameShadowsPaint.alpha = value
             field = value
@@ -85,12 +85,12 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    var handleBarStrokeWidth = 0f
+    var handleBarStrokeWidth = 3.dp
         set(value) {
             handleBarPaint.strokeWidth = value
             field = value
         }
-    var handleBarColor = 0
+    var handleBarColor = Color.DKGRAY
         set(value) {
             handleBarPaint.color = value
             field = value
