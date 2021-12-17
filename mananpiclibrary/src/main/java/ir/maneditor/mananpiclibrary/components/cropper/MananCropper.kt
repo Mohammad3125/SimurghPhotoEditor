@@ -635,7 +635,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         fun convertStringToAspectRatio(aspectRatioString: String?): AspectRatio {
             // If string is null or it's value is "FREE" return 'AspectRatioFree'.
             if (aspectRatioString == null || (aspectRatioString.trim()
-                    .uppercase() == "FREE")
+                    .equals("FREE", true))
             ) return AspectRatioFree()
             else {
                 // Trim the string and split it with hyphen.
