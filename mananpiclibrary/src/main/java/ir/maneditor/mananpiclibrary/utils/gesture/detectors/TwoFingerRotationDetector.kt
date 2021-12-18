@@ -49,6 +49,13 @@ class TwoFingerRotationDetector(var listener: OnRotateListener) : Gesture {
         }
     }
 
+    /**
+     * Resets rotation of detector to a degree (default is 0).
+     */
+    fun resetRotation(toDegree: Float = 0f) {
+        initialRotation = toDegree
+    }
+
     private fun calculateAngle(event: MotionEvent): Float {
         event.run {
             return GestureUtils.calculateAngle(
