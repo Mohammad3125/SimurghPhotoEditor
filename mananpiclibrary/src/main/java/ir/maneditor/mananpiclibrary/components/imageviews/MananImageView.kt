@@ -21,8 +21,9 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
     private var imageRatio = 0f
 
     override fun setImageBitmap(bm: Bitmap?) {
+        if (bm == null) return
         // Update aspect ratio.
-        imageRatio = bm!!.width.toFloat() / bm.height.toFloat()
+        imageRatio = bm.width.toFloat() / bm.height.toFloat()
 
         // Resize to fit into new aspect ratio,
         applyScale(1f, bm.width, bm.height)
