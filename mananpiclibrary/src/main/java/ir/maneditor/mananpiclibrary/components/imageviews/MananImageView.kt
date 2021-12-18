@@ -24,7 +24,6 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
         if (bm == null) return
         // Update aspect ratio.
         imageRatio = bm.width.toFloat() / bm.height.toFloat()
-
         // Resize to fit into new aspect ratio,
         applyScale(1f, bm.width, bm.height)
         super.setImageBitmap(bm)
@@ -33,9 +32,14 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         if (isInitialScaling) {
-            minimumScalingWidth = measuredWidth / 4
-            minimumScalingHeight = measuredHeight / 4
-            imageRatio = measuredWidth.toFloat() / measuredHeight.toFloat()
+
+            minimumScalingWidth = width / 4
+            minimumScalingHeight = height / 4
+
+            val viewDrawable = drawable
+            imageRatio =
+                viewDrawable.intrinsicWidth.toFloat() / viewDrawable.intrinsicHeight.toFloat()
+
             isInitialScaling = false
         }
     }
