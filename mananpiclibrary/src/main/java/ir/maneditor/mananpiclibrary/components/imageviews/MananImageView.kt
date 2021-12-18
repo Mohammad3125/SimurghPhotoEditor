@@ -30,16 +30,22 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
 
     override fun setImageBitmap(bm: Bitmap?) {
         if (bm == null) return
-        // Update aspect ratio.
-        imageRatio = bm.width.toFloat() / bm.height.toFloat()
-        // Resize to fit into new aspect ratio,
-        applyScale(1f, bm.width, bm.height)
+
+        // If current drawable is not null that means we already had image in image view
+        // and we should not update the bounds and ratio.
+        if (drawable != null) {
+            // Update aspect ratio.
+            imageRatio = bm.width.toFloat() / bm.height.toFloat()
+            // Resize to fit into new aspect ratio,
+            applyScale(1f, bm.width, bm.height)
+        }
+
         super.setImageBitmap(bm)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        if (isInitialScaling) {
+        if (isInitialScaling && drawable != null) {
 
             minimumScalingWidth = width / 4
             minimumScalingHeight = height / 4
