@@ -2,9 +2,9 @@ package ir.maneditor.mananpiclibrary.components.imageviews
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.updateLayoutParams
@@ -19,6 +19,14 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
     private var minimumScalingWidth = 0
     private var minimumScalingHeight = 0
     private var imageRatio = 0f
+
+    override fun setImageDrawable(drawable: Drawable?) {
+
+        if (drawable !is BitmapDrawable) throw IllegalArgumentException(
+            "Type of drawable should only be BitmapDrawable"
+        )
+        super.setImageDrawable(drawable)
+    }
 
     override fun setImageBitmap(bm: Bitmap?) {
         if (bm == null) return
@@ -90,21 +98,12 @@ class MananImageView(context: Context, attr: AttributeSet?) : AppCompatImageView
     /**
      * Returns original bitmap/drawing of current imageview.
      * This is helpful if user wants to perform processing on image with higher quality (even if imageview is scaled down.)
-     * @param bitmapConfig config of bitmap to return (if imageview's drawable wasn't a [BitmapDrawable]).
+     * @throws IllegalStateException if drawable is null.
      */
     fun getOriginalBitmap(
-        bitmapConfig: Bitmap.Config = Bitmap.Config.ARGB_8888
     ): Bitmap {
+        if (drawable == null) throw IllegalStateException("Drawable should not be null")
 
-        val mDrawable = drawable
-        if (mDrawable is BitmapDrawable)
-            return mDrawable.bitmap
-
-        val bitmap =
-            Bitmap.createBitmap(mDrawable.intrinsicWidth, mDrawable.intrinsicHeight, bitmapConfig)
-
-        mDrawable.draw(Canvas(bitmap))
-
-        return bitmap
+        return (drawable as BitmapDrawable).bitmap
     }
 }
