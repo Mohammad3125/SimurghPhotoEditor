@@ -36,8 +36,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    val boxPoints = PointF()
-
     /**
      * stroke width of box around current editing view (if [isDrawingBoxEnabled] is true.)
      */
