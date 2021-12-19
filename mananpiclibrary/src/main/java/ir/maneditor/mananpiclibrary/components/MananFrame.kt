@@ -1,10 +1,8 @@
 package ir.maneditor.mananpiclibrary.components
 
+import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.MotionEvent
@@ -12,6 +10,7 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.FrameLayout
 import androidx.core.graphics.withRotation
+import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.properties.Scalable
@@ -36,6 +35,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             style = Paint.Style.STROKE
         }
     }
+
+    val boxPoints = PointF()
 
     /**
      * stroke width of box around current editing view (if [isDrawingBoxAroundEditingViewEnabled] is true.)
@@ -96,24 +97,44 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private val moveGestureListener by lazy {
         object : SimpleOnMoveListener() {
+
+            override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
+                performClick()
+
+                val childAtPosition = getChildAtPoint(initialX, initialY)
+
+                // If returned child is not null and it is not referencing the same object that
+                // current editable view is referencing then change editing view.
+                if (childAtPosition != null && currentEditingView !== childAtPosition) {
+                    rotateDetector.resetRotation(childAtPosition.rotation)
+                    currentEditingView = childAtPosition
+                    if (isDrawingBoxAroundEditingViewEnabled)
+                        invalidate()
+                }
+
+                return currentEditingView != null
+            }
+
             override fun onMove(dx: Float, dy: Float): Boolean {
-                val currentView = currentEditingView!!
+                return if (currentEditingView != null) {
+                    val currentView = currentEditingView!!
 
-                currentView.x += dx
-                currentView.y += dy
+                    currentView.x += dx
+                    currentView.y += dy
 
-                // Don't let the view go beyond the phone's display and limit it's y axis.
-                if ((currentView.y + currentView.height) > height) currentView.y =
-                    (height - currentView.height).toFloat()
+                    // Don't let the view go beyond the phone's display and limit it's y axis.
+                    if ((currentView.y + currentView.height) > height) currentView.y =
+                        (height - currentView.height).toFloat()
 
-                if (currentView.y < y) currentView.y = y
+                    if (currentView.y < y) currentView.y = y
 
-                if ((currentView.x + currentView.width) > width) currentView.x =
-                    (width - currentView.width).toFloat()
+                    if ((currentView.x + currentView.width) > width) currentView.x =
+                        (width - currentView.width).toFloat()
 
-                if (currentView.x < x) currentView.x = x
+                    if (currentView.x < x) currentView.x = x
 
-                return true
+                    true
+                } else false
             }
         }
     }
@@ -166,31 +187,19 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (currentEditingView != null) {
-
-            // Bind appropriate gestures to the ongoing event.
-            scaleDetector.onTouchEvent(event)
-            rotateDetector.onTouchEvent(event)
-            moveDetector.onTouchEvent(event)
-
-            val currentView = currentEditingView!!
-
-            when (event?.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    currentView.performClick()
-                    performClick()
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    // Only invalidate if we're drawing box around the view.
-                    if (isDrawingBoxAroundEditingViewEnabled)
-                        invalidate()
-                }
-
+        // Bind appropriate gestures to the ongoing event.
+        scaleDetector.onTouchEvent(event)
+        rotateDetector.onTouchEvent(event)
+        moveDetector.onTouchEvent(event)
+        when (event?.actionMasked) {
+            MotionEvent.ACTION_MOVE -> {
+                if (isDrawingBoxAroundEditingViewEnabled)
+                    invalidate()
             }
-            return true
         }
-        return false
+        return true
     }
 
     override fun draw(canvas: Canvas?) {
@@ -228,24 +237,85 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     /**
+     * Returns the child at given coordinates.
+     * If two child overlap it swaps between them on each tap.
+     * @param x X coordinate of current touch.
+     * @param y Y coordinate of current touch.
+     */
+    private fun getChildAtPoint(x: Float, y: Float): View? {
+        if (childCount == 0) return null
+
+        // Create a matrix and later apply view rotation to it
+        // to apply rotation to event coordinates in case
+        // view has been rotated.
+        val rotationMatrix = Matrix()
+        children.forEach { v ->
+            if (v !== currentEditingView) {
+                // Converting points to float array is required to use matrix 'mapPoints' method.
+                val touchPoints = floatArrayOf(x, y)
+
+                // Rotate matrix to amount of view's rotation with pivot points being center of
+                // view in each coordinate.
+                rotationMatrix.setRotate(
+                    -v.rotation,
+                    (v.x + v.pivotX),
+                    (v.y + v.pivotY)
+                )
+
+                // Finally apply rotation to the current coordinate of touch x and y.
+                rotationMatrix.mapPoints(touchPoints)
+
+                boxPoints.x = touchPoints[0]
+                boxPoints.y = touchPoints[1]
+
+                val viewX = v.x
+                val viewY = v.y
+
+                rotationMatrix.reset()
+
+                // TouchPoints[0] is rotation applied x and TouchPoints[1] is rotation applied y.
+                if (touchPoints[0] in viewX..viewX + v.width && touchPoints[1] in viewY..viewY + v.height) {
+                    return v
+                }
+            }
+        }
+        return null
+    }
+
+    /**
      * Draws content of the layout onto a bitmap.
      * This method first makes the background color white and draws the content on a bitmap then makes background transparent.
      * @param bitmap The bitmap that is going to be drawn on.
      */
     fun drawToBitmap(bitmap: Bitmap) {
         setBackgroundColor(Color.WHITE)
+        val lastSelectedView = currentEditingView
+        currentEditingView = null
+        if (isDrawingBoxAroundEditingViewEnabled)
+            invalidate()
         draw(Canvas(bitmap))
         setBackgroundColor(Color.TRANSPARENT)
+        currentEditingView = lastSelectedView
     }
 
-    /**
-     * Adds the view to the editing view and it becomes editable.
-     * @param view The view that is going to be added.
-     */
-    fun addViewToEdit(view: View) {
-        currentEditingView = view
-        currentEditingView!!.updateLayoutParams<LayoutParams> {
-            gravity = Gravity.CENTER
+    override fun addView(child: View?, index: Int) {
+        initializeChild(child)
+        super.addView(child, index)
+    }
+
+    override fun addView(child: View?) {
+        initializeChild(child)
+        super.addView(child)
+    }
+
+    private fun initializeChild(child: View?) {
+        child?.run {
+            updateLayoutParams<LayoutParams> {
+                gravity = Gravity.CENTER
+            }
+
+            currentEditingView = this
         }
     }
+
 }
