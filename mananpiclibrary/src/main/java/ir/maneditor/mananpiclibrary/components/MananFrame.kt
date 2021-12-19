@@ -39,7 +39,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     val boxPoints = PointF()
 
     /**
-     * stroke width of box around current editing view (if [isDrawingBoxAroundEditingViewEnabled] is true.)
+     * stroke width of box around current editing view (if [isDrawingBoxEnabled] is true.)
      */
     var frameBoxStrokeWidth = 2.dp
         set(value) {
@@ -48,7 +48,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
 
     /**
-     * Color of box around current editing view (if [isDrawingBoxAroundEditingViewEnabled] is true.)
+     * Color of box around current editing view (if [isDrawingBoxEnabled] is true.)
      */
     var frameBoxColor = Color.BLACK
         set(value) {
@@ -59,10 +59,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     /**
      * If true, this ViewGroup draws a box around the current editing view.
      */
-    var isDrawingBoxAroundEditingViewEnabled = false
+    var isDrawingBoxEnabled = false
         set(value) {
             field = value
-            invalidate()
+
+            // Determine if ViewGroup is going to do drawing operations or not.
+            setWillNotDraw(!value)
+
+            if (value)
+                invalidate()
         }
 
 
@@ -145,10 +150,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
             try {
-                isDrawingBoxAroundEditingViewEnabled =
+                isDrawingBoxEnabled =
                     getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
 
-                if (isDrawingBoxAroundEditingViewEnabled) {
+                if (isDrawingBoxEnabled) {
 
                     frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
 
@@ -163,8 +168,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Let some components like TextView be able to draw things outside their bounds (shadow layer and etc...)
         clipChildren = false
 
-        // Determine if ViewGroup is going to do drawing operations or not.
-        setWillNotDraw(!isDrawingBoxAroundEditingViewEnabled)
     }
 
     override fun performClick(): Boolean {
@@ -203,7 +206,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     override fun draw(canvas: Canvas?) {
         super.draw(canvas)
         // Draw the box around view.
-        if (currentEditingView != null && isDrawingBoxAroundEditingViewEnabled) {
+        if (currentEditingView != null && isDrawingBoxEnabled) {
             val view = currentEditingView!!
             val editingViewX = view.x
             val editingViewY = view.y
@@ -263,9 +266,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // Finally apply rotation to the current coordinate of touch x and y.
                 rotationMatrix.mapPoints(touchPoints)
 
-                boxPoints.x = touchPoints[0]
-                boxPoints.y = touchPoints[1]
-
                 val viewX = v.x
                 val viewY = v.y
 
@@ -297,7 +297,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     override fun invalidate() {
         // Only invalidate if drawing box is enabled.
-        if (isDrawingBoxAroundEditingViewEnabled)
+        if (isDrawingBoxEnabled)
             super.invalidate()
     }
 
