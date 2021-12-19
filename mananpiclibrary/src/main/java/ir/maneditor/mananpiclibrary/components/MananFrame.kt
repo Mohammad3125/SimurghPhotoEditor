@@ -85,10 +85,12 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    private val scaleDetector by lazy { ScaleGestureDetector(context, scaleGestureListener).apply {
-        // This needs to be false because it will interfere with other gestures.
-        isQuickScaleEnabled = false
-    } }
+    private val scaleDetector by lazy {
+        ScaleGestureDetector(context, scaleGestureListener).apply {
+            // This needs to be false because it will interfere with other gestures.
+            isQuickScaleEnabled = false
+        }
+    }
 
     private val rotateGestureListener by lazy {
         object : SimpleOnRotateListener() {
@@ -294,6 +296,20 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         draw(Canvas(bitmap))
         setBackgroundColor(Color.TRANSPARENT)
         currentEditingView = lastSelectedView
+    }
+
+    /**
+     * Selects a view in view group to enter editing state.
+     * It does not throw exception if child in given index is null.
+     * @param index Index of view that is going to be selected.
+     */
+    fun selectView(index: Int) {
+        val selectedChild = getChildAt(index)
+        if (selectedChild != null) {
+            currentEditingView = selectedChild
+            rotateDetector.resetRotation(currentEditingView!!.rotation)
+            invalidate()
+        }
     }
 
     override fun invalidate() {
