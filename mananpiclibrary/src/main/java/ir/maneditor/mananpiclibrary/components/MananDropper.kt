@@ -59,7 +59,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     }
 
     // Stroke width of center cross.
-    var centerCrossStrokeWidth = 1.dp
+    var centerCrossStrokeWidth = dp(1)
         set(value) {
             centerCrossPaint.strokeWidth = value
             field = value
@@ -73,7 +73,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         }
 
     // Determines the size of cross lines (not to be confused with stroke width).
-    var centerCrossLineSize = 4.dp
+    var centerCrossLineSize = dp(4)
 
     // Later indicating current position of user fingers.
     private var dropperXPosition = 0f

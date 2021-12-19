@@ -3,6 +3,7 @@ package ir.maneditor.mananpiclibrary.components
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import ir.maneditor.mananpiclibrary.properties.*
@@ -19,8 +20,18 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     private var fontSize = textSize
 
+    /**
+     * Minimum size of text allowed.
+     * Dimension is in SP format: [android.util.TypedValue.COMPLEX_UNIT_SP]
+     */
+    var minimumTextSize = sp(4)
+
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
+    }
+
+    init {
+        Log.i("1", "min text size $minimumTextSize text size $textSize")
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
@@ -122,7 +133,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int) {
         if (width < widthLimit && height < heightLimit || scaleFactor < 1f) {
             fontSize *= scaleFactor
-            if (fontSize < MINIMUM_TEXT_SIZE) fontSize = MINIMUM_TEXT_SIZE
+            if (fontSize < minimumTextSize) fontSize = minimumTextSize
             textSize = fontSize
         }
     }
@@ -187,10 +198,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         return shader.apply {
             setLocalMatrix(rotationMatrix)
         }
-    }
-
-    companion object {
-        val MINIMUM_TEXT_SIZE = 4.sp
     }
 
 }

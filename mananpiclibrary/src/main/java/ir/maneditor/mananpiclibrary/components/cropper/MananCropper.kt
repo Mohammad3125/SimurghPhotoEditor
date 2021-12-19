@@ -31,7 +31,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             framePaint.color = value
             field = value
         }
-    var frameStrokeWidth = 2.dp
+    var frameStrokeWidth = dp(2)
         set(value) {
             framePaint.strokeWidth = value
             field = value
@@ -44,7 +44,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    var guidelineStrokeWidth = 1.dp
+    var guidelineStrokeWidth = dp(1)
         set(value) {
             frameGuidelinePaint.strokeWidth = value
             field = value
@@ -85,7 +85,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    var handleBarStrokeWidth = 3.dp
+    var handleBarStrokeWidth = dp(3)
         set(value) {
             handleBarPaint.strokeWidth = value
             field = value
@@ -146,20 +146,27 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
                     getColor(R.styleable.MananCropper_guidelineColor, Color.DKGRAY)
 
                 guidelineStrokeWidth =
-                    getDimension(R.styleable.MananCropper_guidelineStrokeWidth, 1.dp)
+                    getDimension(
+                        R.styleable.MananCropper_guidelineStrokeWidth,
+                        guidelineStrokeWidth
+                    )
 
                 isDrawGuidelineEnabled =
                     getBoolean(R.styleable.MananCropper_isGuidelineEnabled, true)
 
                 frameColor = getColor(R.styleable.MananCropper_frameColor, Color.DKGRAY)
 
-                frameStrokeWidth = getDimension(R.styleable.MananCropper_frameStrokeWidth, 2.dp)
+                frameStrokeWidth =
+                    getDimension(R.styleable.MananCropper_frameStrokeWidth, frameStrokeWidth)
 
                 handleBarColor =
                     getColor(R.styleable.MananCropper_handleBarColor, Color.DKGRAY)
 
                 handleBarStrokeWidth =
-                    getDimension(R.styleable.MananCropper_handleBarStrokeWidth, 3.dp)
+                    getDimension(
+                        R.styleable.MananCropper_handleBarStrokeWidth,
+                        handleBarStrokeWidth
+                    )
 
                 handleBarCornerType =
                     Paint.Cap.values()[getInt(
@@ -422,7 +429,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             val handleBarSizeX = width() / 10
             val handleBarSizeY = height() / 10
 
-            val offset = 1.dp
+            val offset = dp(1)
             val leftOffset = left + offset
             val topOffset = top + offset
             val rightOffset = right - offset
@@ -513,7 +520,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         return frame.run {
 
             // Figure out some extra touch area for better touch experience.
-            val excessTouchArea = 40.dp
+            val excessTouchArea = dp(40)
             val excessTouchAreaHalf = excessTouchArea / 2
 
 

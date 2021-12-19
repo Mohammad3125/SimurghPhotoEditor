@@ -39,7 +39,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     /**
      * stroke width of box around current editing view (if [isDrawingBoxEnabled] is true.)
      */
-    var frameBoxStrokeWidth = 2.dp
+    var frameBoxStrokeWidth = dp(2)
         set(value) {
             boxPaint.strokeWidth = value
             field = value
@@ -161,7 +161,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
 
                     frameBoxStrokeWidth =
-                        getDimension(R.styleable.MananFrame_frameBoxStrokeWidth, 2.dp)
+                        getDimension(
+                            R.styleable.MananFrame_frameBoxStrokeWidth,
+                            frameBoxStrokeWidth
+                        )
                 }
 
             } finally {
