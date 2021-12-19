@@ -108,8 +108,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 if (childAtPosition != null && currentEditingView !== childAtPosition) {
                     rotateDetector.resetRotation(childAtPosition.rotation)
                     currentEditingView = childAtPosition
-                    if (isDrawingBoxAroundEditingViewEnabled)
-                        invalidate()
+                    invalidate()
                 }
 
                 return currentEditingView != null
@@ -195,8 +194,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         moveDetector.onTouchEvent(event)
         when (event?.actionMasked) {
             MotionEvent.ACTION_MOVE -> {
-                if (isDrawingBoxAroundEditingViewEnabled)
-                    invalidate()
+                invalidate()
             }
         }
         return true
@@ -291,11 +289,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         setBackgroundColor(Color.WHITE)
         val lastSelectedView = currentEditingView
         currentEditingView = null
-        if (isDrawingBoxAroundEditingViewEnabled)
-            invalidate()
+        invalidate()
         draw(Canvas(bitmap))
         setBackgroundColor(Color.TRANSPARENT)
         currentEditingView = lastSelectedView
+    }
+
+    override fun invalidate() {
+        // Only invalidate if drawing box is enabled.
+        if (isDrawingBoxAroundEditingViewEnabled)
+            super.invalidate()
     }
 
     override fun addView(child: View?, index: Int) {
