@@ -85,7 +85,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    private val scaleDetector by lazy { ScaleGestureDetector(context, scaleGestureListener) }
+    private val scaleDetector by lazy { ScaleGestureDetector(context, scaleGestureListener).apply {
+        // This needs to be false because it will interfere with other gestures.
+        isQuickScaleEnabled = false
+    } }
 
     private val rotateGestureListener by lazy {
         object : SimpleOnRotateListener() {
