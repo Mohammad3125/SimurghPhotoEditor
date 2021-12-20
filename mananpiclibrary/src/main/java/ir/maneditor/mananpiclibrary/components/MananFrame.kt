@@ -4,10 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.view.Gravity
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
-import android.view.View
+import android.view.*
 import android.widget.FrameLayout
 import androidx.core.graphics.withRotation
 import androidx.core.view.children
@@ -150,6 +147,69 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         MoveDetector(1, moveGestureListener)
     }
 
+    private val commonGestureDetector by lazy {
+        GestureDetector(context, commonGestureListener).apply {
+            setOnDoubleTapListener(doubleTapListener)
+        }
+    }
+
+    private val doubleTapListener by lazy {
+        object : GestureDetector.OnDoubleTapListener {
+            override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+                return true
+            }
+
+            override fun onDoubleTap(e: MotionEvent?): Boolean {
+                if (e != null) {
+                    currentEditingView = null
+                    return true
+                }
+                return false
+            }
+
+            override fun onDoubleTapEvent(e: MotionEvent?): Boolean {
+                return false
+            }
+        }
+    }
+
+    private val commonGestureListener by lazy {
+        object : GestureDetector.OnGestureListener {
+            override fun onDown(e: MotionEvent?): Boolean {
+                return true
+            }
+
+            override fun onShowPress(e: MotionEvent?) {
+            }
+
+            override fun onSingleTapUp(e: MotionEvent?): Boolean {
+                return true
+            }
+
+            override fun onScroll(
+                e1: MotionEvent?,
+                e2: MotionEvent?,
+                distanceX: Float,
+                distanceY: Float
+            ): Boolean {
+                return false
+            }
+
+            override fun onLongPress(e: MotionEvent?) {
+
+            }
+
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent?,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                return false
+            }
+        }
+    }
+
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
             try {
@@ -201,6 +261,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         scaleDetector.onTouchEvent(event)
         rotateDetector.onTouchEvent(event)
         moveDetector.onTouchEvent(event)
+        commonGestureDetector.onTouchEvent(event)
         when (event?.actionMasked) {
             MotionEvent.ACTION_MOVE -> {
                 invalidate()
