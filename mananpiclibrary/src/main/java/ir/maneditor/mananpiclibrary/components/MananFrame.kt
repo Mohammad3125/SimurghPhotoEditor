@@ -386,6 +386,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
+    /**
+     * Returns currently selected child.
+     */
+    fun getSelectedView(): View? {
+        return currentEditingView
+    }
+
     override fun invalidate() {
         // Only invalidate if drawing box is enabled.
         if (isDrawingBoxEnabled)
