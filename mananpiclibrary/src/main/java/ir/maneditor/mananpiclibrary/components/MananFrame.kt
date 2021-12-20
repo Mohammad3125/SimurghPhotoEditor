@@ -420,6 +420,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             if (this is ImageView) adjustViewBounds = true
 
+            rotateDetector.resetRotation(child.rotation)
+
             currentEditingView = this
         }
     }
