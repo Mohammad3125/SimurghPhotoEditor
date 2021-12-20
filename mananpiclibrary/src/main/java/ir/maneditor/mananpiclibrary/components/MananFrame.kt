@@ -376,6 +376,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
+    /**
+     * Removes the view that is currently selected.
+     */
+    fun removeSelectedView() {
+        if (currentEditingView != null) {
+            removeView(currentEditingView)
+            currentEditingView = null
+        }
+    }
+
     override fun invalidate() {
         // Only invalidate if drawing box is enabled.
         if (isDrawingBoxEnabled)
