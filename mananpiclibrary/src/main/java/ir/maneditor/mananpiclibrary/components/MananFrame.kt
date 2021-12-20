@@ -6,9 +6,9 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.core.graphics.withRotation
 import androidx.core.view.children
-import androidx.core.view.updateLayoutParams
 import ir.maneditor.mananpiclibrary.R
 import ir.maneditor.mananpiclibrary.properties.Scalable
 import ir.maneditor.mananpiclibrary.utils.dp
@@ -411,9 +411,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private fun initializeChild(child: View?) {
         child?.run {
-            updateLayoutParams<LayoutParams> {
-                gravity = Gravity.CENTER
-            }
+            layoutParams =
+                LayoutParams(
+                    LayoutParams.WRAP_CONTENT,
+                    LayoutParams.WRAP_CONTENT,
+                    Gravity.CENTER
+                )
+
+            if (this is ImageView) adjustViewBounds = true
 
             currentEditingView = this
         }
