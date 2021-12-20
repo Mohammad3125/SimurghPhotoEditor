@@ -130,12 +130,12 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     if ((currentView.y + currentView.height) > height) currentView.y =
                         (height - currentView.height).toFloat()
 
-                    if (currentView.y < y) currentView.y = y
+                    if (currentView.y < 0f) currentView.y = 0f
 
                     if ((currentView.x + currentView.width) > width) currentView.x =
-                        (width - currentView.width).toFloat()
+                        ((width) - currentView.width).toFloat()
 
-                    if (currentView.x < x) currentView.x = x
+                    if (currentView.x < 0f) currentView.x = 0f
 
                     true
                 } else false
