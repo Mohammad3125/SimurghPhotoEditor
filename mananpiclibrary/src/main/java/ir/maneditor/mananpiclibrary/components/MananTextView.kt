@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
-import androidx.core.content.ContextCompat
 import ir.maneditor.mananpiclibrary.properties.*
 import ir.maneditor.mananpiclibrary.utils.sp
 
@@ -14,7 +13,7 @@ import ir.maneditor.mananpiclibrary.utils.sp
  */
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
-    Texturable, Colorable,
+    Texturable,
     Scalable, Gradientable {
 
 
@@ -111,14 +110,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun removeGradient() {
         paint.shader = null
         invalidate()
-    }
-
-    override fun applyColorResource(color: Int) {
-        setTextColor(ContextCompat.getColor(context, color))
-    }
-
-    override fun applyColor(color: Int) {
-        setTextColor(color)
     }
 
     override fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int) {
