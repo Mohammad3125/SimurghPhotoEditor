@@ -162,6 +162,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             override fun onDoubleTap(e: MotionEvent?): Boolean {
                 if (e != null) {
                     currentEditingView = null
+                    invalidate()
                     return true
                 }
                 return false
