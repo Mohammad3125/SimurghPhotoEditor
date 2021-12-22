@@ -23,14 +23,8 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
     constructor(context: Context) : this(context, null)
 
-    // Paint for drawing enlarged bitmap.
-    private val enlargedBitmapPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
-
     // Matrix to later enlarge the bitmap with.
     private val enlargedBitmapMatrix by lazy { Matrix() }
-
-    // Path to clip a circle and drawing enlarge bitmap in it.
-    private val enlargedBitmapPath by lazy { Path() }
 
     // Ring around circle showing color of current pixel that user is pointing at.
     private val colorRingPaint by lazy {
@@ -45,6 +39,11 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
             colorRingPaint.strokeWidth = value
             field = value
         }
+
+    // Paint that later be used to draw circle shaped bitmap with help of BitmapShader.
+    private val bitmapCirclePaint by lazy {
+        Paint()
+    }
 
     // Inner circle radius for enlarged bitmap.
     var circlesRadius = 0f
@@ -270,6 +269,17 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
                     Color.BLACK else Color.WHITE
 
+        // Create a new BitmapShader to later be used to draw on circle.
+        // Note that although creating objects in a method that is
+        // called few times a second is a bad idea but if bitmap
+        // size or view size get changed then shader would be
+        // set to last bitmap and it would mess up the color
+        // picking mechanism.
+        bitmapCirclePaint.shader =
+            BitmapShader(bitmapToView, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                setLocalMatrix(enlargedBitmapMatrix)
+            }
+
 
         // Invalidate to draw content on the screen.
         invalidate()
@@ -309,6 +319,12 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                     colorRingPaint
                 )
 
+                // Same logic as shader but with clipping.
+                // Since clipping is not available in lower
+                // APIs we use BitmapShader instead.
+
+                /*
+
                 // Add circle to path object to later clip it and draw bitmap in it.
                 enlargedBitmapPath.addCircle(
                     xPositionForDrawings,
@@ -317,7 +333,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                     Path.Direction.CW
                 )
 
-                // Save the canvas to current state.
+                  // Save the canvas to current state.
                 save()
 
                 // Clip the circle.
@@ -334,6 +350,17 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
                 // Clear any paths.
                 enlargedBitmapPath.rewind()
+
+                 */
+
+                // Draw a circle shaped bitmap with paint that contains
+                // bitmap shader.
+                drawCircle(
+                    xPositionForDrawings,
+                    yPositionForDrawings,
+                    circlesRadius - colorRingPaint.strokeWidth * 0.47f,
+                    bitmapCirclePaint
+                )
 
                 // Draw horizontal cross in center of circle.
                 drawLine(
