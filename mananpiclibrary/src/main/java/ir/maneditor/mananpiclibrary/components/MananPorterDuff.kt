@@ -36,7 +36,7 @@ class MananPorterDuff {
         }
 
         /**
-         * Determines if 'destination image' is out of bounds of 'source image'
+         * Determines if 'destination image' is out of bounds of 'source image'.
          */
         private fun isOutOfBounds(sourceImage: ImageView, destinationImage: ImageView): Boolean {
             return (destinationImage.x + destinationImage.width < sourceImage.x) ||
@@ -136,7 +136,7 @@ class MananPorterDuff {
 
             // Reset source image's rotation.
             // If user is going to set newly masked bitmap to be previewed by source imageview, then result
-            // would be rotated(because the image view is rotated) so we reset it to prevent that to happen.
+            // would be rotated (because the image view is rotated) so we reset it to prevent that to happen.
             sourceImage.rotation = 0f
 
             return baseBitmap

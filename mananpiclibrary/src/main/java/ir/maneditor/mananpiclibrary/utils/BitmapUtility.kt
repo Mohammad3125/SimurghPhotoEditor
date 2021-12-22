@@ -45,11 +45,11 @@ class BitmapUtility {
                         if (b == 0) {
                             // Set x to 0 because then it will be returned by function (if we don't set it, it's default value will mess the output.)
                             visiblePixelX = 0
-                            // Do not check x anymore, only focus on width and y and height
+                            // Do not check x anymore, only focus on width and y and height.
                             continueCheckingX = false
                         }
 
-                        // Set the first pixel occurrence as y
+                        // Set the first pixel occurrence as y.
                         if (!firstPixelOccurrence) {
                             visiblePixelY = i
                             // Do not let that happen again.
@@ -172,7 +172,7 @@ class BitmapUtility {
 
         /**
          * Down sizes the given bitmap to given rectangle boundaries.
-         * @param bitmap bitmap to be down sized
+         * @param bitmap bitmap to be down sized.
          * @param rect rect to set bitmap size to it.
          * @return down sized bitmap.
          */

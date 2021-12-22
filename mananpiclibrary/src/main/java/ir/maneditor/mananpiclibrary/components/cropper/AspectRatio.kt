@@ -22,7 +22,7 @@ abstract class AspectRatio {
      * This class checks if rectangles width and height is between minimum width,height and maximum width,height.
      * @param rect Current cropper rectangle.
      * @param dirtyRect Rectangle that has been modified(resized).
-     * @param limitRect Rectangle that represents the limit bounds (to limit dirty rect resizing)
+     * @param limitRect Rectangle that represents the limit bounds. (to limit dirty rect resizing)
      * @return Validated rectangle with correct aspect-ratio(if has any.)
      */
     abstract fun validate(

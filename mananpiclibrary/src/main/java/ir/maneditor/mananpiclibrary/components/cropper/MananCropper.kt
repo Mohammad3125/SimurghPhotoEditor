@@ -15,7 +15,9 @@ import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 import kotlin.math.roundToInt
 
 /**
- * A resizable view that shows guidelines and let user define an area of interest to crop images and etc....
+ * A Component that draws guidelines and a resizable rectangle with shadows for unselected areas
+ * representing an area of interest for image to crop.
+ * This class is also responsible for cropping the image.
  */
 class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageView(context, attr) {
 
@@ -435,25 +437,25 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             val rightOffset = right - offset
             val bottomOffset = bottom - offset
             return floatArrayOf(
-                // Left
+                // Left.
                 leftOffset,
                 frameCenterY + handleBarSizeY,
                 leftOffset,
                 frameCenterY - handleBarSizeY,
 
-                // Bottom
+                // Bottom.
                 frameCenterX - handleBarSizeX,
                 bottomOffset,
                 frameCenterX + handleBarSizeX,
                 bottomOffset,
 
-                // Right
+                // Right.
                 rightOffset,
                 frameCenterY - handleBarSizeY,
                 rightOffset,
                 frameCenterY + handleBarSizeY,
 
-                // Top
+                // Top.
                 frameCenterX - handleBarSizeX,
                 topOffset,
                 frameCenterX + handleBarSizeX,
@@ -637,7 +639,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         /**
          * This method converts a string representation of aspect-ratio into aspect ratio class.
          * String SHOULD be in this format: either "FREE" or ratio of width to height separated with hyphen like "16-9".
-         * @param aspectRatioString String to convert it into [AspectRatio]. if null returns [AspectRatioFree]
+         * @param aspectRatioString String to convert it into [AspectRatio]. if null returns [AspectRatioFree].
          */
         fun convertStringToAspectRatio(aspectRatioString: String?): AspectRatio {
             // If string is null or it's value is "FREE" return 'AspectRatioFree'.

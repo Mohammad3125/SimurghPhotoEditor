@@ -23,7 +23,7 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
 
             when (handleBar) {
                 TOP_LEFT -> {
-                    // If width is greater than height
+                    // If width is greater than height.
                     if (ratio > 1f) {
                         left += differenceForTopLeftAndBottomRight
                         top -= ((width() / ratio) - height())

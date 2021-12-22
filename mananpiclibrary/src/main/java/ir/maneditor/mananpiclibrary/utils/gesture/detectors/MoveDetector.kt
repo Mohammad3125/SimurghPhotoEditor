@@ -8,7 +8,7 @@ import ir.maneditor.mananpiclibrary.utils.gesture.gestures.OnMoveListener
  * Implementation of a finger move gesture.
  * @param pointerCount Determines number of fingers that make gesture.
  * @param listener a [OnMoveListener] that gets called in appropriate situations.
- * @throws IllegalStateException if pointer count <= 0
+ * @throws IllegalStateException if pointer count <= 0.
  */
 class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gesture {
 

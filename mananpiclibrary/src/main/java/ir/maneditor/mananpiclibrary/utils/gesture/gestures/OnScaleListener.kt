@@ -5,7 +5,7 @@ package ir.maneditor.mananpiclibrary.utils.gesture.gestures
  */
 interface OnScaleListener {
     /**
-     * When first time user touches the screen
+     * When first time user touches the screen.
      * @return Return true to show interest in consuming the event.
      */
     fun onScaleBegin(): Boolean

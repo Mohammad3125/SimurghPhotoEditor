@@ -6,7 +6,7 @@ package ir.maneditor.mananpiclibrary.utils.gesture.gestures
  */
 interface OnMoveListener {
     /**
-     * First point on the screen that user touches
+     * First point on the screen that user touches.
      * @param initialX First x point that user touches.
      * @param initialY First y point that user touches.
      * @return Return true to show interest in consuming the event.
