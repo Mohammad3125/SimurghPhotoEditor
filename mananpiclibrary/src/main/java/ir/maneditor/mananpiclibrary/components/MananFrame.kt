@@ -3,6 +3,7 @@ package ir.maneditor.mananpiclibrary.components
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
+import android.os.Build
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
@@ -84,8 +85,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private val scaleDetector by lazy {
         ScaleGestureDetector(context, scaleGestureListener).apply {
-            // This needs to be false because it will interfere with other gestures.
-            isQuickScaleEnabled = false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                // This needs to be false because it will interfere with other gestures.
+                isQuickScaleEnabled = false
+            }
         }
     }
 
