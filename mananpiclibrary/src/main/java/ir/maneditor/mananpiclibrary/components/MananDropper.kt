@@ -23,14 +23,8 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
     constructor(context: Context) : this(context, null)
 
-    // Paint for drawing enlarged bitmap.
-    private val enlargedBitmapPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
-
     // Matrix to later enlarge the bitmap with.
     private val enlargedBitmapMatrix by lazy { Matrix() }
-
-    // Path to clip a circle and drawing enlarge bitmap in it.
-    private val enlargedBitmapPath by lazy { Path() }
 
     // Ring around circle showing color of current pixel that user is pointing at.
     private val colorRingPaint by lazy {
@@ -45,6 +39,11 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
             colorRingPaint.strokeWidth = value
             field = value
         }
+
+    // Paint that later be used to draw circle shaped bitmap with help of BitmapShader.
+    private val bitmapCirclePaint by lazy {
+        Paint()
+    }
 
     // Inner circle radius for enlarged bitmap.
     var circlesRadius = 0f
@@ -238,6 +237,50 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         // If user's finger is on the image, then show the circle.
         showCircle = true
 
+
+        val bitmapToView = bitmapToViewInCircle!!
+
+        var xPositionWithPadding =
+            dropperXPosition - leftEdge
+        var yPositionWithPadding =
+            dropperYPosition - topEdge
+
+        // Validate the x position to not exceed bitmap dimension (otherwise it throws exception.)
+        if (xPositionWithPadding >= bitmapToView.width)
+            xPositionWithPadding = bitmapToView.width - 1f
+
+        // Validate the y position to not exceed bitmap dimension (otherwise it throws exception.)
+        if (yPositionWithPadding >= bitmapToView.height)
+            yPositionWithPadding = bitmapToView.height - 1f
+
+        // Finally get the color of current selected pixel (the pixel user pointing at) and set
+        // The ring color to that.
+        lastSelectedColor =
+            bitmapToView.getPixel(xPositionWithPadding.toInt(), yPositionWithPadding.toInt())
+
+        // Call interfaces.
+        interfaceOnColorDetected?.onColorDetected(lastSelectedColor)
+        onColorDetected?.invoke(lastSelectedColor)
+
+        // If center cross color is white (meaning user didn't choose any preferred color)
+        // then change the color of to black if it's on a white pixel.
+        if (centerCrossColor == Color.WHITE)
+            centerCrossPaint.color =
+                if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
+                    Color.BLACK else Color.WHITE
+
+        // Create a new BitmapShader to later be used to draw on circle.
+        // Note that although creating objects in a method that is
+        // called few times a second is a bad idea but if bitmap
+        // size or view size get changed then shader would be
+        // set to last bitmap and it would mess up the color
+        // picking mechanism.
+        bitmapCirclePaint.shader =
+            BitmapShader(bitmapToView, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                setLocalMatrix(enlargedBitmapMatrix)
+            }
+
+
         // Invalidate to draw content on the screen.
         invalidate()
 
@@ -261,34 +304,8 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     override fun dispatchDraw(canvas: Canvas?) {
         super.dispatchDraw(canvas)
         if (showCircle && bitmapToViewInCircle != null) {
-            canvas!!.run {
-                val bitmapToView = bitmapToViewInCircle!!
-
-                var xPositionWithPadding =
-                    dropperXPosition - leftEdge
-                var yPositionWithPadding =
-                    dropperYPosition - topEdge
-
-                // Validate the x position to not exceed bitmap dimension (otherwise it throws exception.)
-                if (xPositionWithPadding >= bitmapToView.width)
-                    xPositionWithPadding = bitmapToView.width - 1f
-
-                // Validate the y position to not exceed bitmap dimension (otherwise it throws exception.)
-                if (yPositionWithPadding >= bitmapToView.height)
-                    yPositionWithPadding = bitmapToView.height - 1f
-
-                // Finally get the color of current selected pixel (the pixel user pointing at) and set
-                // The ring color to that.
-                lastSelectedColor = bitmapToView.getPixel(
-                    xPositionWithPadding.toInt(),
-                    yPositionWithPadding.toInt()
-                )
-
+            canvas?.run {
                 colorRingPaint.color = lastSelectedColor
-
-                // Call interfaces.
-                interfaceOnColorDetected?.onColorDetected(lastSelectedColor)
-                onColorDetected?.invoke(lastSelectedColor)
 
                 // Variables to store positions of drawing to reuse them.
                 val xPositionForDrawings = dropperXPosition
@@ -302,6 +319,12 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                     colorRingPaint
                 )
 
+                // Same logic as shader but with clipping.
+                // Since clipping is not available in lower
+                // APIs we use BitmapShader instead.
+
+                /*
+
                 // Add circle to path object to later clip it and draw bitmap in it.
                 enlargedBitmapPath.addCircle(
                     xPositionForDrawings,
@@ -310,7 +333,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                     Path.Direction.CW
                 )
 
-                // Save the canvas to current state.
+                  // Save the canvas to current state.
                 save()
 
                 // Clip the circle.
@@ -320,7 +343,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 drawColor(Color.WHITE)
 
                 // Finally draw the enlarged bitmap inside the circle.
-                drawBitmap(bitmapToView, enlargedBitmapMatrix, enlargedBitmapPaint)
+                drawBitmap(bitmapToViewInCircle!!, enlargedBitmapMatrix, enlargedBitmapPaint)
 
                 // Restore the canvas to the saved point to not mess following drawing operations.
                 restore()
@@ -328,12 +351,16 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 // Clear any paths.
                 enlargedBitmapPath.rewind()
 
-                // If center cross color is white (meaning user didn't choose any preferred color)
-                // then change the color of to black if it's on a white pixel.
-                if (centerCrossColor == Color.WHITE)
-                    centerCrossPaint.color =
-                        if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
-                            Color.BLACK else Color.WHITE
+                 */
+
+                // Draw a circle shaped bitmap with paint that contains
+                // bitmap shader.
+                drawCircle(
+                    xPositionForDrawings,
+                    yPositionForDrawings,
+                    circlesRadius - colorRingPaint.strokeWidth * 0.47f,
+                    bitmapCirclePaint
+                )
 
                 // Draw horizontal cross in center of circle.
                 drawLine(

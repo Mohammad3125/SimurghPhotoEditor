@@ -121,6 +121,7 @@ class BitmapUtility {
                         }
                     }
                 }
+                0
             }, Callable {
                 for (y in bitmap.height - 1 downTo 0) {
                     for (x in bitmap.width - 1 downTo 0) {
@@ -129,6 +130,7 @@ class BitmapUtility {
                         }
                     }
                 }
+                0
             }, Callable {
                 for (x in 0 until bitmap.width) {
                     for (y in 0 until bitmap.height) {
@@ -137,6 +139,7 @@ class BitmapUtility {
                         }
                     }
                 }
+                0
             }, Callable {
                 for (x in bitmap.width - 1 downTo 0) {
                     for (y in bitmap.height - 1 downTo 0) {
@@ -145,6 +148,7 @@ class BitmapUtility {
                         }
                     }
                 }
+                0
             })
 
             // Invoke all of task at once.

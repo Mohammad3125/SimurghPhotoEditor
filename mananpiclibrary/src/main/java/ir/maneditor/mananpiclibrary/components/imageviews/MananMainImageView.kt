@@ -7,6 +7,7 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.os.Build
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -276,8 +277,10 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
         // Initialize gesture detectors that we're interested in.
         scaleDetector = ScaleGestureDetector(context, this).apply {
-            // This needs to be false because it will interfere with double-tap gesture.
-            isQuickScaleEnabled = false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                // This needs to be false because it will interfere with double-tap gesture.
+                isQuickScaleEnabled = false
+            }
         }
         moveDetector = MoveDetector(2, this)
         commonGestureDetector = GestureDetector(context, this)
@@ -569,7 +572,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
     override fun resizeDrawable() {
         val mDrawable = drawable
-        val imgMatrix = matrix
+        val imgMatrix = Matrix(matrix)
 
         imgMatrix.setRectToRect(
             RectF(

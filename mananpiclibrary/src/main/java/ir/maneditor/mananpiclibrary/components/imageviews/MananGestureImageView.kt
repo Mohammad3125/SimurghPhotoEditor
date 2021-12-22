@@ -213,7 +213,7 @@ open class MananGestureImageView(
      */
     protected open fun resizeDrawable() {
         val mDrawable = drawable
-        val imgMatrix = matrix
+        val imgMatrix = Matrix(matrix)
 
         imgMatrix.setRectToRect(
             RectF(
