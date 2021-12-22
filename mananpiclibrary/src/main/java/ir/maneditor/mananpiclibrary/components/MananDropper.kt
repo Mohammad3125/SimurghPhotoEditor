@@ -14,7 +14,9 @@ import ir.maneditor.mananpiclibrary.utils.gesture.detectors.MoveDetector
 import kotlin.math.min
 
 /**
- * Component that let user get color from a bitmap.
+ * Component that lets user pick a color from a bitmap by enlarging the bitmap and viewing it in a circle.
+ * This component has listeners like [setOnColorDetected] and [setOnLastColorDetected] to report the selected
+ * colors from user.
  */
 class MananDropper(context: Context, attributeSet: AttributeSet?) :
     MananGestureImageView(context, attributeSet) {

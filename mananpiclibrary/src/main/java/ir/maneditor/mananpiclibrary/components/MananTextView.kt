@@ -9,6 +9,10 @@ import ir.maneditor.mananpiclibrary.properties.*
 import ir.maneditor.mananpiclibrary.utils.invalidateAfter
 import ir.maneditor.mananpiclibrary.utils.sp
 
+/**
+ * Component that extends the current [AppCompatTextView] class and adds few functionalities like
+ * implementing [Pathable] and [Blurable] and [Scalable] etc...
+ */
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
     Texturable, Colorable,
