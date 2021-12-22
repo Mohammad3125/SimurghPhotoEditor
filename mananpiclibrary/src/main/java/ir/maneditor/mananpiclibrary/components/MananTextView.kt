@@ -6,7 +6,6 @@ import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import ir.maneditor.mananpiclibrary.properties.*
-import ir.maneditor.mananpiclibrary.utils.invalidateAfter
 import ir.maneditor.mananpiclibrary.utils.sp
 
 /**
@@ -34,17 +33,16 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
-        invalidateAfter {
-            paint.apply {
-                style = Paint.Style.STROKE
-                this.strokeWidth = strokeWidth
+        paint.apply {
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeWidth
 
-                pathEffect = ComposePathEffect(
-                    DashPathEffect(floatArrayOf(on, off), 0f),
-                    CornerPathEffect(radius)
-                )
-            }
+            pathEffect = ComposePathEffect(
+                DashPathEffect(floatArrayOf(on, off), 0f),
+                CornerPathEffect(radius)
+            )
         }
+        invalidate()
     }
 
     override fun applyPath(onAndOff: Float, radius: Float, strokeWidth: Float) {
@@ -65,10 +63,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      * @param filter Represents style of the shadow with enums.
      */
     override fun applyBlur(shadowRadius: Float, filter: BlurMaskFilter.Blur) {
-        invalidateAfter {
-            setLayerType(LAYER_TYPE_SOFTWARE, null)
-            paint.maskFilter = BlurMaskFilter(shadowRadius, filter)
-        }
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        paint.maskFilter = BlurMaskFilter(shadowRadius, filter)
+        invalidate()
     }
 
     /**
@@ -86,39 +83,34 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
-        invalidateAfter {
-            paint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
-                alpha = opacity
-            }
+        paint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
+            alpha = opacity
         }
+        invalidate()
     }
 
 
     override fun removeBlur() {
-        invalidateAfter {
-            paint.maskFilter = null
-            setLayerType(LAYER_TYPE_HARDWARE, null)
-        }
+        paint.maskFilter = null
+        setLayerType(LAYER_TYPE_HARDWARE, null)
+        invalidate()
     }
 
     override fun removePath() {
-        invalidateAfter {
-            paint.pathEffect = null
-            paint.style = Paint.Style.FILL
-        }
+        paint.pathEffect = null
+        paint.style = Paint.Style.FILL
+        invalidate()
     }
 
 
     override fun removeTexture() {
-        invalidateAfter {
-            paint.shader = null
-        }
+        paint.shader = null
+        invalidate()
     }
 
     override fun removeGradient() {
-        invalidateAfter {
-            paint.shader = null
-        }
+        paint.shader = null
+        invalidate()
     }
 
     override fun applyColorResource(color: Int) {
@@ -147,12 +139,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         tileMode: Shader.TileMode,
         rotation: Float
     ) {
-        invalidateAfter {
-            paint.shader = applyRotationToTheShader(
-                LinearGradient(x0, y0, x1, y1, colors, position, tileMode),
-                rotation
-            )
-        }
+        paint.shader = applyRotationToTheShader(
+            LinearGradient(x0, y0, x1, y1, colors, position, tileMode),
+            rotation
+        )
+        invalidate()
     }
 
     override fun applyRadialGradient(
@@ -164,19 +155,18 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         tileMode: Shader.TileMode,
         rotation: Float
     ) {
-        invalidateAfter {
-            paint.shader =
-                applyRotationToTheShader(
-                    RadialGradient(
-                        centerX,
-                        centerY,
-                        radius,
-                        colors,
-                        stops,
-                        tileMode
-                    ), rotation
-                )
-        }
+        paint.shader =
+            applyRotationToTheShader(
+                RadialGradient(
+                    centerX,
+                    centerY,
+                    radius,
+                    colors,
+                    stops,
+                    tileMode
+                ), rotation
+            )
+        invalidate()
     }
 
     override fun applySweepGradient(
@@ -186,10 +176,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         positions: FloatArray?,
         rotation: Float
     ) {
-        invalidateAfter {
-            paint.shader =
-                applyRotationToTheShader(SweepGradient(cx, cy, colors, positions), rotation)
-        }
+        paint.shader =
+            applyRotationToTheShader(SweepGradient(cx, cy, colors, positions), rotation)
+        invalidate()
     }
 
     private fun applyRotationToTheShader(shader: Shader, rotation: Float): Shader {

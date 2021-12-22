@@ -25,11 +25,3 @@ fun View.sp(number: Number): Float {
 
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, number.toFloat(), metric)
 }
-
-/**
- * This extension function invokes a block and invalidate the view afterwards.
- */
-inline fun View.invalidateAfter(block: (Unit) -> Unit) {
-    block(Unit)
-    invalidate()
-}
