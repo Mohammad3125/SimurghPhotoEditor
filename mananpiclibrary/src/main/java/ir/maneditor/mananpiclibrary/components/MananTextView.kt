@@ -3,7 +3,6 @@ package ir.maneditor.mananpiclibrary.components
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.util.Log
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import ir.maneditor.mananpiclibrary.properties.*
@@ -28,10 +27,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
-    }
-
-    init {
-        Log.i("1", "min text size $minimumTextSize text size $textSize")
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
