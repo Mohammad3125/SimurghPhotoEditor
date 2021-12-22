@@ -137,7 +137,9 @@ class MananPorterDuff {
             // Reset source image's rotation.
             // If user is going to set newly masked bitmap to be previewed by source imageview, then result
             // would be rotated (because the image view is rotated) so we reset it to prevent that to happen.
-            sourceImage.rotation = 0f
+            sourceImage.post {
+                sourceImage.rotation = 0f
+            }
 
             return baseBitmap
         }
