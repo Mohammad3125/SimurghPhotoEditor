@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="MananCropper">
+        <attr name="guidelineColor" format="color" />
+        <attr name="guidelineStrokeWidth" format="dimension" />
+        <attr name="isGuidelineEnabled" format="boolean" />
+        <attr name="frameColor" format="color" />
+        <attr name="frameStrokeWidth" format="dimension" />
+        <attr name="handleBarColor" format="color" />
+        <attr name="handleBarStrokeWidth" format="dimension" />
+        <attr name="handleBarStrokeType" format="enum">
+            <enum name="Butt" value="0" />
+            <enum name="Round" value="1" />
+            <enum name="Square" value="2" />
+        </attr>
+        <attr name="backgroundShadowColor" format="color" />
+        <attr name="backgroundShadowAlpha" format="integer" />
+        <attr name="aspectRatio" format="string" />
+        <attr name="selectedHandlerBarColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="MananFrame">
+        <attr name="frameBoxStrokeWidth" format="dimension" />
+        <attr name="frameBoxColor" format="color" />
+        <attr name="isDrawingBoxEnabled" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="FrameDropper">
+        <attr name="colorRingStrokeWidth" format="dimension" />
+        <attr name="colorRingCircleRadius" format="dimension" />
+        <attr name="centerCrossColor" format="color" />
+        <attr name="centerCrossStrokeWidth" format="dimension" />
+        <attr name="centerCrossLineSize" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="MananMainImageView">
+        <attr name="initialPaddingLeft" format="dimension" />
+        <attr name="initialPaddingTop" format="dimension" />
+        <attr name="initialPaddingRight" format="dimension" />
+        <attr name="initialPaddingBottom" format="dimension" />
+        <attr name="initialPaddingHorizontal" format="dimension" />
+        <attr name="initialPaddingVertical" format="dimension" />
+        <attr name="initialPadding" format="dimension" />
+    </declare-styleable>
+
+</resources>

@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.properties
+package ir.manan.mananpic.properties
 
 import android.graphics.ColorFilter
 

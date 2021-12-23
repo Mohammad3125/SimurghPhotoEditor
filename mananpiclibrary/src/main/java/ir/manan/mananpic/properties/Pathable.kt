@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.properties
+package ir.manan.mananpic.properties
 
 /**
  * Interface definition for a view that is capable of path effect.

@@ -1,4 +1,4 @@
-package ir.maneditor.mananpiclibrary.properties
+package ir.manan.mananpic.properties
 
 
 /**
@@ -10,5 +10,5 @@ interface Scalable {
      * Applies the scale with given scale factor.
      * @param scaleFactor Determines how much should a view scale.
      */
-    fun applyScale(scaleFactor: Float)
+    fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int)
 }
