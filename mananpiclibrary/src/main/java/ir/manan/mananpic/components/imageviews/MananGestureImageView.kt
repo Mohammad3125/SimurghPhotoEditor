@@ -113,6 +113,11 @@ open class MananGestureImageView(
      */
     private var isNewBitmap = false
 
+
+    // Image's drawable size.
+    protected var drawableWidth: Int = 0
+    protected var drawableHeight: Int = 0
+
     init {
         scaleType = ScaleType.MATRIX
     }
@@ -248,8 +253,11 @@ open class MananGestureImageView(
             leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X)
             topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
 
-            bitmapWidth = (mDrawable.intrinsicWidth * initialScale)
-            bitmapHeight = (mDrawable.intrinsicHeight * initialScale)
+            drawableWidth = mDrawable.intrinsicWidth
+            drawableHeight = mDrawable.intrinsicHeight
+
+            bitmapWidth = (drawableWidth * initialScale)
+            bitmapHeight = (drawableHeight * initialScale)
 
             rightEdge = bitmapWidth + leftEdge
             bottomEdge = bitmapHeight + topEdge

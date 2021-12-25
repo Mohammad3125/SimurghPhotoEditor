@@ -30,10 +30,6 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         const val MAXIMUM_SCALE_FACTOR = 10f
     }
 
-    // Image's drawable size.
-    private var drawableWidth: Int = 0
-    private var drawableHeight: Int = 0
-
     // Initial translation of image.
     private var initialTransX = 0f
     private var initialTransY = 0f
@@ -595,9 +591,5 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
         initialTransX = getMatrixValue(Matrix.MTRANS_X, true)
         initialTransY = getMatrixValue(Matrix.MTRANS_Y)
-
-        drawableWidth = mDrawable.intrinsicWidth
-        drawableHeight = mDrawable.intrinsicHeight
-
     }
 }
