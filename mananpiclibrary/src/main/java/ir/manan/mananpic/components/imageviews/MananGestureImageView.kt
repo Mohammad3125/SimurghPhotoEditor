@@ -16,7 +16,7 @@ import androidx.appcompat.widget.AppCompatImageView
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
-import kotlin.math.sqrt
+import kotlin.math.*
 
 /**
  * A base class for all features that work on a view especially ones that modify [ImageView]'s matrix.
@@ -118,6 +118,15 @@ open class MananGestureImageView(
     // Image's drawable size.
     protected var drawableWidth: Int = 0
     protected var drawableHeight: Int = 0
+
+
+    // Image pivot points which is centered by default.
+    protected var imagePivotX = 0f
+    protected var imagePivotY = 0f
+
+    // Image rotation.
+    protected var imageRotation = 0f
+
 
     init {
         scaleType = ScaleType.MATRIX
@@ -350,10 +359,10 @@ open class MananGestureImageView(
         leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X, true)
         topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
 
-        // Calculate real scale since rotation does affect it.
         val sx = getMatrixValue(Matrix.MSCALE_X)
         val skewY = getMatrixValue(Matrix.MSKEW_Y)
 
+        // Calculate real scale since rotation does affect it.
         val scale = sqrt(sx * sx + skewY * skewY)
 
         bitmapWidth = (drawableWidth * scale)
@@ -361,5 +370,27 @@ open class MananGestureImageView(
 
         rightEdge = bitmapWidth + leftEdge
         bottomEdge = bitmapHeight + topEdge
+
+        val r = -atan2(
+            getMatrixValue(Matrix.MSKEW_X),
+            (getMatrixValue(Matrix.MSCALE_X))
+        ) * (180f / PI)
+
+        imageRotation = r.toFloat()
+
+        // Calculate pivot points.
+        // Rotation does affect pivot points and it should be calculated.
+        val cx = bitmapWidth * 0.5f
+        val cy = bitmapHeight * 0.5f
+
+        val radian = Math.toRadians(r)
+
+        val cosTheta = cos(radian)
+        val sinTheta = sin(radian)
+
+        // Calculates the rotated bounds' center.
+        imagePivotX = (leftEdge + cx * cosTheta - cy * sinTheta).toFloat()
+        imagePivotY = (topEdge + cx * sinTheta + cy * cosTheta).toFloat()
+
     }
 }
