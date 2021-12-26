@@ -16,6 +16,7 @@ import androidx.appcompat.widget.AppCompatImageView
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
+import kotlin.math.sqrt
 
 /**
  * A base class for all features that work on a view especially ones that modify [ImageView]'s matrix.
@@ -245,22 +246,16 @@ open class MananGestureImageView(
 
         val mDrawable = drawable ?: return
 
+        drawableWidth = mDrawable.intrinsicWidth
+        drawableHeight = mDrawable.intrinsicHeight
+
         if (changed || isNewBitmap) {
+
             resizeDrawable()
 
             initialScale = getMatrixValue(Matrix.MSCALE_X, true)
 
-            leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X)
-            topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
-
-            drawableWidth = mDrawable.intrinsicWidth
-            drawableHeight = mDrawable.intrinsicHeight
-
-            bitmapWidth = (drawableWidth * initialScale)
-            bitmapHeight = (drawableHeight * initialScale)
-
-            rightEdge = bitmapWidth + leftEdge
-            bottomEdge = bitmapHeight + topEdge
+            calculateBounds()
 
             isNewBitmap = false
 
@@ -345,6 +340,26 @@ open class MananGestureImageView(
      */
     protected open fun updateImageMatrix() {
         imageMatrix = imageviewMatrix
+        calculateBounds()
     }
 
+    /**
+     * Calculates bounds of image with matrix values.
+     */
+    private fun calculateBounds() {
+        leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X, true)
+        topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
+
+        // Calculate real scale since rotation does affect it.
+        val sx = getMatrixValue(Matrix.MSCALE_X)
+        val skewY = getMatrixValue(Matrix.MSKEW_Y)
+
+        val scale = sqrt(sx * sx + skewY * skewY)
+
+        bitmapWidth = (drawableWidth * scale)
+        bitmapHeight = (drawableHeight * scale)
+
+        rightEdge = bitmapWidth + leftEdge
+        bottomEdge = bitmapHeight + topEdge
+    }
 }
