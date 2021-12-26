@@ -30,6 +30,9 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         const val MAXIMUM_SCALE_FACTOR = 10f
     }
 
+    private var initialRightEdge = 0f
+    private var initialBottomEdge = 0f
+
     // Initial translation of image.
     private var initialTransX = 0f
     private var initialTransY = 0f
@@ -441,11 +444,11 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
         // Here we calculate the edge of right side to later do not go further that point.
         val rEdge =
-            calculateEdge(scaled, initialScale, bitmapWidth, initialTransX)
+            calculateEdge(scaled, initialScale, initialRightEdge, initialTransX)
 
         // Here we calculate the edge of bottom side to later do not go further that point.
         val bEdge =
-            calculateEdge(scaled, initialScale, bitmapHeight, initialTransY)
+            calculateEdge(scaled, initialScale, initialBottomEdge, initialTransY)
 
         // Calculate the valid scale (scale greater than maximum allowable scale and less than initial scale)
         val validatedScale =
@@ -461,7 +464,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
             animateScale(
                 scaled,
-                if (scaled < initialScale) initialScale else MAXIMUM_SCALE_FACTOR
+                validatedScale
             )
         }
 
@@ -472,7 +475,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             val edgeWithNormalizedScale = calculateEdge(
                 validatedScale,
                 initialScale,
-                bitmapWidth,
+                initialRightEdge,
                 initialTransX
             )
 
@@ -489,7 +492,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             val edgeWithNormalizedScale = calculateEdge(
                 validatedScale,
                 initialScale,
-                bitmapHeight,
+                initialBottomEdge,
                 initialTransY
             )
 
@@ -566,16 +569,23 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         scaleAnimator.cancel()
     }
 
+    override fun onImageLaidOut() {
+        initialRightEdge = rightEdge
+        initialBottomEdge = bottomEdge
+
+        initialTransX = leftEdge
+        initialTransY = topEdge
+    }
+
     override fun resizeDrawable() {
-        val mDrawable = drawable
         val imgMatrix = Matrix(matrix)
 
         imgMatrix.setRectToRect(
             RectF(
                 0f,
                 0f,
-                mDrawable.intrinsicWidth.toFloat(),
-                mDrawable.intrinsicHeight.toFloat()
+                drawableWidth.toFloat(),
+                drawableHeight.toFloat()
             ),
             RectF(
                 initialPaddingLeft,
@@ -588,8 +598,5 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
         imageMatrix = imgMatrix
         imageviewMatrix.set(imgMatrix)
-
-        initialTransX = getMatrixValue(Matrix.MTRANS_X, true)
-        initialTransY = getMatrixValue(Matrix.MTRANS_Y)
     }
 }
