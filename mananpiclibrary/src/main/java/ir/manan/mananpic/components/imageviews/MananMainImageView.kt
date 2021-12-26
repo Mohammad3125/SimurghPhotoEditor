@@ -172,17 +172,12 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
                 val lastScale = getMatrixValue(Matrix.MSCALE_X, true)
 
-                val scaledValue =
-                    animatedValue / lastScale
-
-                imageviewMatrix.postScale(
-                    scaledValue,
-                    scaledValue,
+                postScale(
+                    animatedValue / lastScale,
                     pivotPointX,
                     pivotPointY
                 )
 
-                updateImageMatrix()
             }
         }
     }
@@ -196,9 +191,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
                 val lastAnimatedValue = getMatrixValue(Matrix.MTRANS_X, true)
 
-                imageviewMatrix.postTranslate(animatedValue - lastAnimatedValue, 0f)
-
-                updateImageMatrix()
+                postTranslate(animatedValue - lastAnimatedValue, 0f)
             }
         }
     }
@@ -213,9 +206,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
                 val lastAnimatedValue = getMatrixValue(Matrix.MTRANS_Y, true)
 
-                imageviewMatrix.postTranslate(0f, animatedValue - lastAnimatedValue)
-
-                updateImageMatrix()
+                postTranslate(0f, animatedValue - lastAnimatedValue)
             }
 
         }
@@ -223,7 +214,6 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
 
     init {
-
         context.theme.obtainStyledAttributes(attr, R.styleable.MananMainImageView, 0, 0)
             .run {
                 try {
@@ -298,9 +288,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         pivotPointX += dx
         pivotPointY += dy
 
-        imageviewMatrix.postTranslate(dx, dy)
-
-        updateImageMatrix()
+        postTranslate(dx, dy)
 
         return true
     }
@@ -318,13 +306,11 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             val diffCenterAndCurrentPivotX = pivotX - pivotPointX
             val diffCenterAndCurrentPivotY = pivotY - pivotPointY
 
-            imageviewMatrix.postScale(
-                scalingFactor,
+            postScale(
                 scalingFactor,
                 if (scalingFactor > 1) pivotPointX - diffCenterAndCurrentPivotX else pivotPointX + diffCenterAndCurrentPivotX,
                 if (scalingFactor > 1) pivotPointY - diffCenterAndCurrentPivotY else pivotPointY + diffCenterAndCurrentPivotY
             )
-            updateImageMatrix()
 
             true
         } else false
@@ -595,8 +581,6 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             ),
             Matrix.ScaleToFit.CENTER
         )
-
-        imageMatrix = imgMatrix
-        imageviewMatrix.set(imgMatrix)
+        setToMatrix(imgMatrix)
     }
 }
