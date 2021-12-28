@@ -13,7 +13,7 @@ import ir.manan.mananpic.properties.*
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
     Texturable,
-    Gradientable, MatrixComponent, EditableComponent {
+    Gradientable, MananComponent {
 
 
     constructor(context: Context) : this(context, null)

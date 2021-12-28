@@ -13,7 +13,6 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
-import ir.manan.mananpic.properties.MatrixComponent
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
@@ -30,7 +29,7 @@ open class MananGestureImageView(
 ) :
     AppCompatImageView(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnMoveListener, GestureDetector.OnDoubleTapListener,
-    GestureDetector.OnGestureListener, MatrixComponent {
+    GestureDetector.OnGestureListener {
 
     /**
      * Matrix that we later modify and assign to image matrix.
@@ -389,30 +388,6 @@ open class MananGestureImageView(
         imagePivotY = (topEdge + cx * sinTheta + cy * cosTheta).toFloat()
 
         boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
-    }
-
-    override fun reportBound(): RectF {
-        return boundsRectangle
-    }
-
-    override fun reportRotation(): Float {
-        return imageRotation
-    }
-
-    override fun reportBoundPivotX(): Float {
-        return leftEdge
-    }
-
-    override fun reportBoundPivotY(): Float {
-        return topEdge
-    }
-
-    override fun reportPivotX(): Float {
-        return imagePivotX
-    }
-
-    override fun reportPivotY(): Float {
-        return imagePivotY
     }
 
     /**

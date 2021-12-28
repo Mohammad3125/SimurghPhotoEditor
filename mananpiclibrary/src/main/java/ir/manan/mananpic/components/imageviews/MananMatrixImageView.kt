@@ -2,12 +2,13 @@ package ir.manan.mananpic.components.imageviews
 
 import android.content.Context
 import android.graphics.ColorFilter
+import android.graphics.RectF
 import android.util.AttributeSet
-import ir.manan.mananpic.properties.EditableComponent
 import ir.manan.mananpic.properties.Filterable
+import ir.manan.mananpic.properties.MananComponent
 
 class MananMatrixImageView(context: Context, attributeSet: AttributeSet?) :
-    MananGestureImageView(context, attributeSet), EditableComponent, Filterable {
+    MananGestureImageView(context, attributeSet), MananComponent, Filterable {
 
     constructor(context: Context) : this(context, null)
 
@@ -30,4 +31,29 @@ class MananMatrixImageView(context: Context, attributeSet: AttributeSet?) :
     override fun removeFilter() {
         clearColorFilter()
     }
+
+    override fun reportBound(): RectF {
+        return boundsRectangle
+    }
+
+    override fun reportRotation(): Float {
+        return imageRotation
+    }
+
+    override fun reportBoundPivotX(): Float {
+        return leftEdge
+    }
+
+    override fun reportBoundPivotY(): Float {
+        return topEdge
+    }
+
+    override fun reportPivotX(): Float {
+        return imagePivotX
+    }
+
+    override fun reportPivotY(): Float {
+        return imagePivotY
+    }
+
 }
