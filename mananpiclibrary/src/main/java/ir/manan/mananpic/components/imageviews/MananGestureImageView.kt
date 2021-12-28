@@ -13,6 +13,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
+import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
@@ -29,7 +30,7 @@ open class MananGestureImageView(
 ) :
     AppCompatImageView(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnMoveListener, GestureDetector.OnDoubleTapListener,
-    GestureDetector.OnGestureListener {
+    GestureDetector.OnGestureListener, Bitmapable {
 
     /**
      * Matrix that we later modify and assign to image matrix.
@@ -292,10 +293,7 @@ open class MananGestureImageView(
         isNewBitmap = true
     }
 
-    /**
-     * Creates a bitmap from current drawable.
-     */
-    open fun toBitmap(): Bitmap {
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
         val mDrawable =
             drawable ?: throw IllegalStateException("drawable is null")
 

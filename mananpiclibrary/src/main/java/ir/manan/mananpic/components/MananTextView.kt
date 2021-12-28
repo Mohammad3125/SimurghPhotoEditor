@@ -13,7 +13,7 @@ import ir.manan.mananpic.properties.*
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
     Texturable,
-    Gradientable, MananComponent {
+    Gradientable, MananComponent, Bitmapable {
 
 
     constructor(context: Context) : this(context, null)
@@ -202,5 +202,20 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     override fun reportPivotY(): Float {
         return pivotY
+    }
+
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
+        val textBounds = reportBound()
+        val outputBitmap =
+            Bitmap.createBitmap(
+                textBounds.width().toInt(),
+                textBounds.height().toInt(),
+                config
+            )
+
+        val canvas = Canvas(outputBitmap)
+        draw(canvas)
+
+        return outputBitmap
     }
 }
