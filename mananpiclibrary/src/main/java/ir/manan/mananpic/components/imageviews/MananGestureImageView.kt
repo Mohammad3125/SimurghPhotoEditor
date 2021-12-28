@@ -399,6 +399,14 @@ open class MananGestureImageView(
         return imageRotation
     }
 
+    override fun reportBoundPivotX(): Float {
+        return leftEdge
+    }
+
+    override fun reportBoundPivotY(): Float {
+        return topEdge
+    }
+
     override fun reportPivotX(): Float {
         return imagePivotX
     }
