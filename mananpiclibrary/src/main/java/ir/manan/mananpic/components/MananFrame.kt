@@ -8,6 +8,7 @@ import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
 import androidx.core.view.children
+import androidx.core.view.updateLayoutParams
 import ir.manan.mananpic.R
 import ir.manan.mananpic.properties.EditableComponent
 import ir.manan.mananpic.properties.MatrixComponent
@@ -420,12 +421,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private fun initializeChild(child: View?) {
 
         child?.run {
-            layoutParams =
-                LayoutParams(
-                    LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT,
-                    Gravity.CENTER
-                )
+
+            updateLayoutParams<LayoutParams> {
+                gravity = Gravity.CENTER
+            }
 
             if (child is MatrixComponent)
                 rotateDetector.resetRotation(child.reportRotation())
