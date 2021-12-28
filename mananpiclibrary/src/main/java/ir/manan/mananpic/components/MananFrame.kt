@@ -404,26 +404,21 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             super.invalidate()
     }
 
-    override fun addView(child: View?, index: Int) {
+    override fun onViewAdded(child: View?) {
+        if (child !is MananComponent) throw IllegalStateException("only components that implement MananComponent can be added")
+
         initializeChild(child)
-        super.addView(child, index)
+        super.onViewAdded(child)
     }
 
-    override fun addView(child: View?) {
-        initializeChild(child)
-        super.addView(child)
-    }
-
-    private fun initializeChild(child: View?) {
-
-        child?.run {
+    private fun initializeChild(child: View) {
+        child.run {
 
             updateLayoutParams<LayoutParams> {
                 gravity = Gravity.CENTER
             }
 
-            if (child is MananComponent)
-                rotateDetector.resetRotation(child.reportRotation())
+            rotateDetector.resetRotation((child as MananComponent).reportRotation())
 
             currentEditingView = this as MananComponent
         }
