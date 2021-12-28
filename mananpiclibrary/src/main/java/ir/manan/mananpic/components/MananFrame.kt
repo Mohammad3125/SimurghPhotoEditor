@@ -295,7 +295,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                     // Match the rotation of canvas to view to be able to
                     // draw rotated rectangle.
-                    rotate(view.reportRotation(), bound.left, bound.top)
+                    rotate(view.reportRotation(), view.reportPivotX(), view.reportPivotY())
 
                     // Draw a box around component.
                     drawRect(
@@ -341,8 +341,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // view in each coordinate.
                 rotationMatrix.setRotate(
                     -v.reportRotation(),
-                    bounds.left,
-                    bounds.top
+                    v.reportPivotX(),
+                    v.reportPivotY()
                 )
 
                 // Finally apply rotation to the current coordinate of touch x and y.
