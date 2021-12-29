@@ -7,7 +7,7 @@ import android.util.AttributeSet
 import ir.manan.mananpic.properties.Filterable
 import ir.manan.mananpic.properties.MananComponent
 
-class MananMatrixImageView(context: Context, attributeSet: AttributeSet?) :
+class MananImageView(context: Context, attributeSet: AttributeSet?) :
     MananGestureImageView(context, attributeSet), MananComponent, Filterable {
 
     constructor(context: Context) : this(context, null)
