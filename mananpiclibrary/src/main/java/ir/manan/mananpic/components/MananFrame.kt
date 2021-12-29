@@ -7,11 +7,10 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
-import android.widget.ImageView
-import androidx.core.graphics.withRotation
 import androidx.core.view.children
+import androidx.core.view.updateLayoutParams
 import ir.manan.mananpic.R
-import ir.manan.mananpic.properties.Scalable
+import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
@@ -26,7 +25,7 @@ import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, attr) {
     constructor(context: Context) : this(context, null)
 
-    private var currentEditingView: View? = null
+    private var currentEditingView: MananComponent? = null
 
     private val boxPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -70,14 +69,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val scaleGestureListener by lazy {
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector?): Boolean {
-                val currentView = currentEditingView
-                if (currentView is Scalable) {
-                    currentView.applyScale(
-                        detector!!.scaleFactor,
-                        width,
-                        height
-                    )
-                }
+                currentEditingView?.applyScale(detector!!.scaleFactor)
                 return true
             }
         }
@@ -95,7 +87,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val rotateGestureListener by lazy {
         object : SimpleOnRotateListener() {
             override fun onRotate(degree: Float): Boolean {
-                currentEditingView?.rotation = degree
+                currentEditingView?.applyRotation(degree)
                 return true
             }
         }
@@ -109,12 +101,12 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
                 performClick()
 
-                val childAtPosition = getChildAtPoint(initialX, initialY)
+                val childAtPosition = getChildAtPoint(initialX, initialY) as? MananComponent
 
                 // If returned child is not null and it is not referencing the same object that
                 // current editable view is referencing then change editing view.
-                if (childAtPosition != null && currentEditingView !== childAtPosition) {
-                    rotateDetector.resetRotation(childAtPosition.rotation)
+                if (currentEditingView !== childAtPosition && childAtPosition != null) {
+                    rotateDetector.resetRotation(childAtPosition.reportRotation())
                     currentEditingView = childAtPosition
                     invalidate()
                 }
@@ -124,21 +116,27 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             override fun onMove(dx: Float, dy: Float): Boolean {
                 return if (currentEditingView != null) {
-                    val currentView = currentEditingView!!
+                    currentEditingView!!.applyMovement(dx, dy)
 
-                    currentView.x += dx
-                    currentView.y += dy
+//                        if (currentView is MatrixComponent) {
+//                            val bounds = currentView.reportBound()
+//
+//                            var totalXToMove = 0f
+//                            var totalYToMove = 0f
+//
+//                            if (bounds.left < 0f)
+//                                totalXToMove = abs(bounds.left)
+//                            else if (bounds.right > width)
+//                                totalXToMove = width - bounds.right
+//
+//                            if (bounds.top < 0f)
+//                                totalYToMove = abs(bounds.top)
+//                            else if (bounds.bottom > height)
+//                                totalYToMove = height - bounds.bottom
+//
+//                            currentView.applyMovement(totalXToMove, totalYToMove)
+//                        }
 
-                    // Don't let the view go beyond the phone's display and limit it's y axis.
-                    if ((currentView.y + currentView.height) > height) currentView.y =
-                        (height - currentView.height).toFloat()
-
-                    if (currentView.y < 0f) currentView.y = 0f
-
-                    if ((currentView.x + currentView.width) > width) currentView.x =
-                        ((width) - currentView.width).toFloat()
-
-                    if (currentView.x < 0f) currentView.x = 0f
 
                     true
                 } else false
@@ -279,32 +277,37 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Draw the box around view.
         if (currentEditingView != null && isDrawingBoxEnabled) {
             val view = currentEditingView!!
-            val editingViewX = view.x
-            val editingViewY = view.y
 
-            val editingViewWidth = view.width
-            val editingViewHeight = view.height
-
-            val editingViewRotation = view.rotation
-
-            val pivotPointX = (editingViewX + editingViewWidth * 0.5f)
-            val pivotPointY = (editingViewY + editingViewHeight * 0.5f)
+            // Get bounds of component to create a rectangle with it.
+            val bound = view.reportBound()
 
             canvas!!.run {
-                withRotation(
-                    editingViewRotation,
-                    pivotPointX,
-                    pivotPointY
-                ) {
-                    drawRect(
-                        editingViewX,
-                        editingViewY,
-                        editingViewWidth + editingViewX,
-                        editingViewHeight + editingViewY,
-                        boxPaint
-                    )
-                }
+
+                // Take a snapshot of current state of canvas.
+                save()
+
+                // Match the rotation of canvas to view to be able to
+                // draw rotated rectangle.
+                rotate(
+                    view.reportRotation(),
+                    view.reportBoundPivotX(),
+                    view.reportBoundPivotY()
+                )
+
+                // Draw a box around component.
+                drawRect(
+                    bound.left,
+                    bound.top,
+                    bound.right,
+                    bound.bottom,
+                    boxPaint
+                )
+
+                // Restore the previous state of canvas which is not rotated.
+                restore()
+
             }
+
         }
     }
 
@@ -322,30 +325,28 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // view has been rotated.
         val rotationMatrix = Matrix()
         children.forEach { v ->
+            v as MananComponent
             if (v !== currentEditingView) {
                 // Converting points to float array is required to use matrix 'mapPoints' method.
                 val touchPoints = floatArrayOf(x, y)
 
+                // Get bounds of current component to later validate if touch is in area of
+                // that component or not.
+                val bounds = v.reportBound()
+
                 // Rotate matrix to amount of view's rotation with pivot points being center of
                 // view in each coordinate.
                 rotationMatrix.setRotate(
-                    -v.rotation,
-                    (v.x + v.pivotX),
-                    (v.y + v.pivotY)
+                    -v.reportRotation(),
+                    v.reportBoundPivotX(),
+                    v.reportBoundPivotY()
                 )
 
                 // Finally apply rotation to the current coordinate of touch x and y.
                 rotationMatrix.mapPoints(touchPoints)
 
-                val viewX = v.x
-                val viewY = v.y
-
-                rotationMatrix.reset()
-
-                // TouchPoints[0] is rotation applied x and TouchPoints[1] is rotation applied y.
-                if (touchPoints[0] in viewX..viewX + v.width && touchPoints[1] in viewY..viewY + v.height) {
+                if (touchPoints[0] in bounds.left..bounds.right && touchPoints[1] in bounds.top..bounds.bottom)
                     return v
-                }
             }
         }
         return null
@@ -372,10 +373,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * @param index Index of view that is going to be selected.
      */
     fun selectView(index: Int) {
-        val selectedChild = getChildAt(index)
+        val selectedChild = getChildAt(index) as? MananComponent
         if (selectedChild != null) {
             currentEditingView = selectedChild
-            rotateDetector.resetRotation(currentEditingView!!.rotation)
+            rotateDetector.resetRotation(selectedChild.reportRotation())
             invalidate()
         }
     }
@@ -385,7 +386,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     fun removeSelectedView() {
         if (currentEditingView != null) {
-            removeView(currentEditingView)
+            removeView(currentEditingView as View)
             currentEditingView = null
         }
     }
@@ -394,7 +395,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * Returns currently selected child.
      */
     fun getSelectedView(): View? {
-        return currentEditingView
+        return currentEditingView as? View
     }
 
     override fun invalidate() {
@@ -403,30 +404,23 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             super.invalidate()
     }
 
-    override fun addView(child: View?, index: Int) {
+    override fun onViewAdded(child: View?) {
+        if (child !is MananComponent) throw IllegalStateException("only components that implement MananComponent can be added")
+
         initializeChild(child)
-        super.addView(child, index)
+        super.onViewAdded(child)
     }
 
-    override fun addView(child: View?) {
-        initializeChild(child)
-        super.addView(child)
-    }
+    private fun initializeChild(child: View) {
+        child.run {
 
-    private fun initializeChild(child: View?) {
-        child?.run {
-            layoutParams =
-                LayoutParams(
-                    LayoutParams.WRAP_CONTENT,
-                    LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER
-                )
+            updateLayoutParams<LayoutParams> {
+                gravity = Gravity.CENTER
+            }
 
-            if (this is ImageView) adjustViewBounds = true
+            rotateDetector.resetRotation((child as MananComponent).reportRotation())
 
-            rotateDetector.resetRotation(child.rotation)
-
-            currentEditingView = this
+            currentEditingView = this as MananComponent
         }
     }
 

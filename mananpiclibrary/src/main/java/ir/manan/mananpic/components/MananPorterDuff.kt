@@ -1,9 +1,7 @@
 package ir.manan.mananpic.components
 
 import android.graphics.*
-import android.widget.ImageView
 import androidx.core.graphics.withRotation
-import androidx.core.view.drawToBitmap
 
 /**
  * Class for applying porter duff methods on two images.
@@ -11,134 +9,162 @@ import androidx.core.view.drawToBitmap
 class MananPorterDuff {
     companion object {
         /**
-         * Applies porter duff methods on given images and mode on a canvas with size of source image.
-         * This method removes any color filter on given images and returns them after applying the porter duff(prevents color filter duplication).
-         * Rotation on source image will be set to 0 degrees after applying porter duff.
-         * @param sourceImage SRC in porter duff.
-         * @param destinationImage DST in porter duff.
-         * @param porterDuffMode Mode of porter duff that is going to be applied to both images.
-         * @return The masked bitmap.
+         * Applies porter-duff methods on two bitmaps with given boundaries.
+         * It is beneficial to use original bitmaps to preserve the quality (bitmap directly from [android.graphics.drawable.BitmapDrawable]).
+         * This method first calculates how much the original bitmap is scaled compared to it's current boundaries and then
+         * uses total scaled amount to scale up the destination image boundaries to have better quality.
+         * @param sourceBitmap Bitmap that represents SRC in porter-duff.
+         * @param sourceBounds Boundaries of source bitmap on screen.
+         * @param sourceRotation Total rotation of source image.
+         * @param destinationBitmap Bitmap that represents DST in porter-duff.
+         * @param sourceBounds Boundaries of destination bitmap on screen.
+         * @param sourceRotation Total rotation of destination image.
+         * @param porterDuffMode Defines mode of Porter duff method.
          */
+
         fun applyPorterDuff(
-            sourceImage: ImageView,
-            destinationImage: ImageView,
+            sourceBitmap: Bitmap,
+            sourceBounds: RectF,
+            sourceRotation: Float,
+            destinationBitmap: Bitmap,
+            destinationBounds: RectF,
+            destinationRotation: Float,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
-            // Create a bitmap to perform drawings on.
+            // Create a bitmap same size as source bitmap to perform drawings on.
             val newBitmap =
                 Bitmap.createBitmap(
-                    sourceImage.width,
-                    sourceImage.height,
+                    sourceBitmap.width,
+                    sourceBitmap.height,
                     Bitmap.Config.ARGB_8888
                 )
 
-            return applyPorterDuff(newBitmap, sourceImage, destinationImage, porterDuffMode)
+            return applyPorterDuff(
+                newBitmap,
+                sourceBitmap,
+                sourceBounds,
+                sourceRotation,
+                destinationBitmap,
+                destinationBounds,
+                destinationRotation,
+                porterDuffMode
+            )
         }
 
         /**
          * Determines if 'destination image' is out of bounds of 'source image'.
+         * @return True if bounds don't intersect each other.
          */
-        private fun isOutOfBounds(sourceImage: ImageView, destinationImage: ImageView): Boolean {
-            return (destinationImage.x + destinationImage.width < sourceImage.x) ||
-                    (destinationImage.x > (sourceImage.x + sourceImage.width)) ||
-                    (destinationImage.y + destinationImage.height < sourceImage.y) ||
-                    (destinationImage.y > (sourceImage.y + sourceImage.height))
+        private fun isOutOfBounds(srcBounds: RectF, dstBounds: RectF): Boolean {
+            return !srcBounds.intersects(
+                dstBounds.left,
+                dstBounds.top,
+                dstBounds.right,
+                dstBounds.bottom
+            )
         }
 
         /**
-         * Applies porter duff methods on given images and mode on a canvas with size base bitmap.
-         * This method removes any color filter on given images and returns them after applying the porter duff(prevents color filter duplication).
-         * Rotation on source image will be set to 0 degrees after applying porter duff.
-         * @param baseBitmap Base bitmap that drawings and masks will be drawn on it.
-         * @param sourceImage SRC in porter duff.
-         * @param destinationImage DST in porter duff.
-         * @param porterDuffMode Mode of porter duff that is going to be applied to both images.
-         * @return The masked bitmap.
+         * Applies porter-duff methods on two bitmaps with given boundaries.
+         * It is beneficial to use original bitmaps to preserve the quality (bitmap directly from [android.graphics.drawable.BitmapDrawable]).
+         * This method first calculates how much the original bitmap is scaled compared to it's current boundaries and then
+         * uses total scaled amount to scale up the destination image boundaries to have better quality.
+         * @param baseBitmap Base bitmap that drawing operations are drawn on it.
+         * @param sourceBitmap Bitmap that represents SRC in porter-duff.
+         * @param sourceBounds Boundaries of source bitmap on screen.
+         * @param sourceRotation Total rotation of source image.
+         * @param destinationBitmap Bitmap that represents DST in porter-duff.
+         * @param sourceBounds Boundaries of destination bitmap on screen.
+         * @param sourceRotation Total rotation of destination image.
+         * @param porterDuffMode Defines mode of Porter duff method.
          */
         fun applyPorterDuff(
             baseBitmap: Bitmap,
-            sourceImage: ImageView,
-            destinationImage: ImageView,
+            sourceBitmap: Bitmap,
+            sourceBounds: RectF,
+            sourceRotation: Float,
+            destinationBitmap: Bitmap,
+            destinationBounds: RectF,
+            destinationRotation: Float,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
-            if (isOutOfBounds(
-                    sourceImage,
-                    destinationImage
-                )
-            ) {
-                // Recycle the image to be free to garbage collected.
+            if (isOutOfBounds(sourceBounds, destinationBounds)) {
+                // Recycle the image to be free to get garbage collected.
                 baseBitmap.recycle()
                 throw IllegalStateException("two images do not intersect each other")
             }
-
 
             // Create a canvas with size of base bitmap.
             val canvas = Canvas(baseBitmap)
 
             // Create a paint for bitmaps.
             val paint = Paint()
-            // Set color filter of newly created paint to destination bitmap color filter.
-            paint.colorFilter = destinationImage.colorFilter
 
-            // Store the color filter to later re-apply it to the image.
-            var imagesColorFilterBuffer = destinationImage.colorFilter
-            // Remove the color filter to prevent color filter duplication.
-            destinationImage.colorFilter = null
+            // Figure out how much the bounds scaled down compared to original width of bitmap.
+            // Note that we don't calculate height of bitmap because bitmap has aspect ratio
+            // and value basically is the same.
+            val totalSourceScale = sourceBitmap.width / sourceBounds.width()
+
+            // Scale up the destination bitmap amount that source bitmap is scaled down.
+            val destinationScaledBitmap = Bitmap.createScaledBitmap(
+                destinationBitmap,
+                (destinationBounds.width() * totalSourceScale).toInt(),
+                (destinationBounds.height() * totalSourceScale).toInt(),
+                false
+            )
+
+            // Create float array with bounds of images inside it to later use it
+            // inside matrix to point values to new coordinates.
+            val pointsFloat = floatArrayOf(
+                destinationBounds.left - sourceBounds.left,
+                destinationBounds.top - sourceBounds.top,
+                destinationBounds.right,
+                destinationBounds.bottom
+            )
+
+            // Create a matrix and apply scale then point new bounds.
+            Matrix().apply {
+                setScale(totalSourceScale, totalSourceScale)
+                mapPoints(pointsFloat)
+            }
 
             canvas.run {
                 // Rotate canvas as much as destination image is rotated.
                 withRotation(
-                    destinationImage.rotation,
-                    (destinationImage.x - sourceImage.x) + (destinationImage.width * 0.5f),
-                    (destinationImage.y - sourceImage.y) + (destinationImage.height * 0.5f)
+                    destinationRotation,
+                    pointsFloat[0],
+                    pointsFloat[1]
                 ) {
                     // Draw bitmap while canvas is rotated.
-                    // Left and right coordinated of destination bitmap is calculated
-                    // with DestinationImage's x and y plus the source image coordinates.
+                    // Coordinates that bitmap would lay down is calculated by mapping points
+                    // of original boundaries via matrix.
                     drawBitmap(
-                        destinationImage.drawToBitmap(),
-                        destinationImage.x - sourceImage.x,
-                        destinationImage.y - sourceImage.y,
+                        destinationScaledBitmap,
+                        pointsFloat[0],
+                        pointsFloat[1],
                         paint
                     )
                 }
-                // Re-apply color filter.
-                destinationImage.colorFilter = imagesColorFilterBuffer
+
 
                 // Now configure the same paint used for destination bitmap and set
                 // it's transfer mode.
                 paint.xfermode = PorterDuffXfermode(porterDuffMode)
-                // Remove source image's color filter to prevent duplication.
-                imagesColorFilterBuffer = sourceImage.colorFilter
 
-                sourceImage.colorFilter = null
 
                 // Rotate the canvas again as much as source image is rotated.
                 withRotation(
-                    sourceImage.rotation,
-                    sourceImage.pivotX,
-                    sourceImage.pivotY
+                    sourceRotation,
+                    sourceBounds.centerX(),
+                    sourceBounds.centerY()
                 ) {
                     drawBitmap(
-                        sourceImage.drawToBitmap(),
+                        sourceBitmap,
                         0f,
                         0f,
                         paint
                     )
                 }
-
-                // Return the source color filter.
-                sourceImage.colorFilter = imagesColorFilterBuffer
-                // Make the cache color filter null.
-                imagesColorFilterBuffer = null
-            }
-
-
-            // Reset source image's rotation.
-            // If user is going to set newly masked bitmap to be previewed by source imageview, then result
-            // would be rotated (because the image view is rotated) so we reset it to prevent that to happen.
-            sourceImage.post {
-                sourceImage.rotation = 0f
             }
 
             return baseBitmap

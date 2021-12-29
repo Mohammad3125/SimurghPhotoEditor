@@ -5,7 +5,6 @@ import android.graphics.*
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import ir.manan.mananpic.properties.*
-import ir.manan.mananpic.utils.sp
 
 /**
  * Component that extends the current [AppCompatTextView] class and adds few functionalities like
@@ -14,18 +13,14 @@ import ir.manan.mananpic.utils.sp
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
     Texturable,
-    Scalable, Gradientable {
+    Gradientable, MananComponent, Bitmapable {
 
 
     constructor(context: Context) : this(context, null)
 
     private var fontSize = textSize
 
-    /**
-     * Minimum size of text allowed.
-     * Dimension is in SP format: [android.util.TypedValue.COMPLEX_UNIT_SP]
-     */
-    var minimumTextSize = sp(4)
+    private val bounds = RectF()
 
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
@@ -101,6 +96,19 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         invalidate()
     }
 
+    override fun applyRotation(degree: Float) {
+        rotation = degree
+    }
+
+    override fun applyScale(scaleFactor: Float) {
+        fontSize *= scaleFactor
+        textSize = fontSize
+    }
+
+    override fun applyMovement(dx: Float, dy: Float) {
+        x += dx
+        y += dy
+    }
 
     override fun removeTexture() {
         paint.shader = null
@@ -110,14 +118,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun removeGradient() {
         paint.shader = null
         invalidate()
-    }
-
-    override fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int) {
-        if (width < widthLimit && height < heightLimit || scaleFactor < 1f) {
-            fontSize *= scaleFactor
-            if (fontSize < minimumTextSize) fontSize = minimumTextSize
-            textSize = fontSize
-        }
     }
 
     override fun applyLinearGradient(
@@ -179,4 +179,43 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         }
     }
 
+    override fun reportBound(): RectF {
+        bounds.set(x, y, x + width, y + height)
+        return bounds
+    }
+
+    override fun reportRotation(): Float {
+        return rotation
+    }
+
+    override fun reportBoundPivotX(): Float {
+        return bounds.centerX()
+    }
+
+    override fun reportBoundPivotY(): Float {
+        return bounds.centerY()
+    }
+
+    override fun reportPivotX(): Float {
+        return pivotX
+    }
+
+    override fun reportPivotY(): Float {
+        return pivotY
+    }
+
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
+        val textBounds = reportBound()
+        val outputBitmap =
+            Bitmap.createBitmap(
+                textBounds.width().toInt(),
+                textBounds.height().toInt(),
+                config
+            )
+
+        val canvas = Canvas(outputBitmap)
+        draw(canvas)
+
+        return outputBitmap
+    }
 }
