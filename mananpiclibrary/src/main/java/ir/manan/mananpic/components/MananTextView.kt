@@ -20,7 +20,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     private var fontSize = textSize
 
-    val bounds = RectF()
+    private val bounds = RectF()
 
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
