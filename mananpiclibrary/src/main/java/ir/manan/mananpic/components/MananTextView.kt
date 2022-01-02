@@ -8,7 +8,7 @@ import ir.manan.mananpic.properties.*
 
 /**
  * Component that extends the current [AppCompatTextView] class and adds few functionalities like
- * implementing [Pathable] and [Blurable] and [Scalable] etc...
+ * implementing [Pathable] and [Blurable] etc...
  */
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
