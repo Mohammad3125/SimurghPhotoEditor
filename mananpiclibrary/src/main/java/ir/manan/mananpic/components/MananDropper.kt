@@ -26,6 +26,17 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     // Matrix to later enlarge the bitmap with.
     private val enlargedBitmapMatrix by lazy { Matrix() }
 
+    // Colors for shadow behind enlarged bitmap circle.
+    private val circleShadowColors by lazy {
+        intArrayOf(Color.BLACK, Color.TRANSPARENT)
+    }
+
+    // Paint used for drawing shadow behind enlarged bitmap circle.
+    // This paint will later use RadialGradient to create shadow.
+    private val circleShadowPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG)
+    }
+
     // Ring around circle showing color of current pixel that user is pointing at.
     private val colorRingPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -126,7 +137,8 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
 
         // Calculate circles radius by taking smallest size between width and height of device and device
         // it by 5.
-        circlesRadius = min(displayMetrics.widthPixels, displayMetrics.heightPixels).toFloat() / 5f
+        circlesRadius =
+            min(displayMetrics.widthPixels, displayMetrics.heightPixels).toFloat() / 5f
 
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.FrameDropper, 0, 0).run {
             try {
@@ -277,6 +289,16 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 setLocalMatrix(enlargedBitmapMatrix)
             }
 
+        // Create a RadialGradient for shadow behind the enlarged bitmap circle.
+        circleShadowPaint.shader = RadialGradient(
+            dropperXPosition,
+            dropperYPosition - circleOffsetFromCenter + offsetY,
+            circlesRadius + (circlesRadius * 0.2f),
+            circleShadowColors,
+            null,
+            Shader.TileMode.CLAMP
+        )
+
 
         // Invalidate to draw content on the screen.
         invalidate()
@@ -307,6 +329,14 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 // Variables to store positions of drawing to reuse them.
                 val xPositionForDrawings = dropperXPosition
                 val yPositionForDrawings = dropperYPosition - circleOffsetFromCenter + offsetY
+
+                // Draw shadow behind the enlarged bitmap circle.
+                drawCircle(
+                    xPositionForDrawings,
+                    yPositionForDrawings,
+                    circlesRadius + (circlesRadius * 0.2f),
+                    circleShadowPaint
+                )
 
                 // Draw ring that indicates color of current pixel.
                 drawCircle(
