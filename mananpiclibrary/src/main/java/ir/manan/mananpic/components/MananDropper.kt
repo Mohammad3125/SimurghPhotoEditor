@@ -121,6 +121,13 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     init {
         moveDetector = MoveDetector(1, this)
 
+        // Get display matrix to use width and height of device to pick a size for circle.
+        val displayMetrics = context.resources.displayMetrics
+
+        // Calculate circles radius by taking smallest size between width and height of device and device
+        // it by 5.
+        circlesRadius = min(displayMetrics.widthPixels, displayMetrics.heightPixels).toFloat() / 5f
+
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.FrameDropper, 0, 0).run {
             try {
                 colorRingStrokeWidth =
@@ -150,22 +157,6 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 recycle()
             }
         }
-    }
-
-    override fun onImageLaidOut() {
-        super.onImageLaidOut()
-
-        bitmapToViewInCircle = getImageViewBitmap()
-        if (bitmapToViewInCircle == null) return
-
-        // If circles radius weren't set in xml file, then calculate it based on minimum dimension of
-        // current view / 10.
-        if (circlesRadius == 0f)
-            circlesRadius =
-                min(
-                    (bitmapToViewInCircle!!.width),
-                    (bitmapToViewInCircle!!.height)
-                ) * 0.25f
 
         // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
         // of circle.
@@ -187,6 +178,12 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         // area of picture they're using otherwise their finger
         // will block it.
         circleOffsetFromCenter = (circlesRadius * 1.5f)
+
+    }
+
+    override fun onImageLaidOut() {
+        super.onImageLaidOut()
+        bitmapToViewInCircle = getImageViewBitmap()
     }
 
     override fun performClick(): Boolean {
