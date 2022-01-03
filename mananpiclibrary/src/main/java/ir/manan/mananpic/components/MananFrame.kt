@@ -33,6 +33,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
+    private var onChildClicked: ((View, Boolean) -> Unit)? = null
+    private var onChildClickedListener: OnChildClickedListener? = null
+
     /**
      * stroke width of box around current editing view (if [isDrawingBoxEnabled] is true.)
      */
@@ -107,6 +110,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // current editable view is referencing then change editing view.
                 if (currentEditingView !== childAtPosition && childAtPosition != null) {
                     rotateDetector.resetRotation(childAtPosition.reportRotation())
+                    callListeners(childAtPosition as View, true)
                     currentEditingView = childAtPosition
                     invalidate()
                 }
@@ -374,6 +378,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     fun selectView(index: Int) {
         val selectedChild = getChildAt(index) as? MananComponent
         if (selectedChild != null) {
+            callListeners(selectedChild as View, true)
             currentEditingView = selectedChild
             rotateDetector.resetRotation(selectedChild.reportRotation())
             invalidate()
@@ -386,6 +391,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     fun deselectSelectedView() {
         if (currentEditingView != null) {
+
+            callListeners(currentEditingView as View, false)
+
             currentEditingView = null
             invalidate()
         }
@@ -396,9 +404,18 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     fun removeSelectedView() {
         if (currentEditingView != null) {
+
+            callListeners(currentEditingView as View, false)
+
             removeView(currentEditingView as View)
             currentEditingView = null
         }
+    }
+
+    private fun callListeners(view: View, isSelected: Boolean) {
+        onChildClicked?.invoke(view, isSelected)
+        onChildClickedListener?.onClicked(view, isSelected)
+
     }
 
     /**
@@ -430,8 +447,40 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             rotateDetector.resetRotation((child as MananComponent).reportRotation())
 
+            callListeners(child, true)
+
             currentEditingView = this as MananComponent
         }
+    }
+
+    /**
+     * Sets listener for when child get clicked.
+     * This listener will not get re-invoked if user click the selected component again.
+     */
+    fun setOnChildClicked(listener: (View, Boolean) -> Unit) {
+        onChildClicked = listener
+    }
+
+    /**
+     * Sets listener for when child get clicked.
+     * This listener will not get re-invoked if user click the selected component again.
+     */
+    fun setOnChildClicked(listener: OnChildClickedListener) {
+        onChildClickedListener = listener
+    }
+
+
+    /**
+     * Interface definition for callback that get invoked when selection state of
+     * a child in [MananFrame] changes.
+     */
+    interface OnChildClickedListener {
+        /**
+         * This method get invoked when child selection state chagnes.
+         * @param view Clicked view.
+         * @param isSelected Determines if view is in selected state or deselected state.
+         */
+        fun onClicked(view: View, isSelected: Boolean)
     }
 
 }
