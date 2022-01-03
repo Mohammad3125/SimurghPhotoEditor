@@ -162,8 +162,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             override fun onDoubleTap(e: MotionEvent?): Boolean {
                 if (e != null) {
-                    currentEditingView = null
-                    invalidate()
+                    deselectSelectedView()
                     return true
                 }
                 return false
@@ -377,6 +376,17 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         if (selectedChild != null) {
             currentEditingView = selectedChild
             rotateDetector.resetRotation(selectedChild.reportRotation())
+            invalidate()
+        }
+    }
+
+    /**
+     * Deselects the current selected view.
+     * This method doesn't throw exception if there isn't any child selected.
+     */
+    fun deselectSelectedView() {
+        if (currentEditingView != null) {
+            currentEditingView = null
             invalidate()
         }
     }
