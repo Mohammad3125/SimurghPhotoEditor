@@ -101,8 +101,7 @@ abstract class PathBasedSelector : Selector() {
                 drawable.draw(this)
             }
 
-            path.rewind()
-            isPathClose = false
+            resetSelection()
 
             return createdBitmap
         }
