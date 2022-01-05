@@ -37,6 +37,15 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         Paint(Paint.ANTI_ALIAS_FLAG)
     }
 
+    // Circle that would be drawn on shadow circle to prevent shadow
+    // to be visible on transparent pixels.
+    private val circleShadowOverlayPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        }
+    }
+
     // Ring around circle showing color of current pixel that user is pointing at.
     private val colorRingPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -336,6 +345,14 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                     yPositionForDrawings,
                     circlesRadius + (circlesRadius * 0.2f),
                     circleShadowPaint
+                )
+
+                // Draw circle on top of shadow to prevent shadow to be visible
+                // on transparent pixels.
+                drawCircle(
+                    xPositionForDrawings,
+                    yPositionForDrawings,
+                    circlesRadius - colorRingPaint.strokeWidth * 0.46f, circleShadowOverlayPaint
                 )
 
                 // Draw ring that indicates color of current pixel.
