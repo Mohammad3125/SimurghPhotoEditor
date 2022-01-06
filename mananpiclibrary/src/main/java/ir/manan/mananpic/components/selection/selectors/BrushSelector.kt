@@ -38,11 +38,14 @@ class BrushSelector : PathBasedSelector() {
     /**
      * Brush alpha. Default values is 128
      * View will get invalidated after setting this value.
+     * Value should be between 0 and 255. If value exceeds
+     * the range then nearest allowable value is replaced.
      */
     var brushAlpha = 128
         set(value) {
-            brushPaint.alpha = value
-            field = value
+            val finalVal = if (value > 255) 255 else if (value < 0) 0 else value
+            brushPaint.alpha = finalVal
+            field = finalVal
             view.invalidate()
         }
 
