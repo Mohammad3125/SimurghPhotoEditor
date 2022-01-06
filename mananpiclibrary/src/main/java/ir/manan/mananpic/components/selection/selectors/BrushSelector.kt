@@ -2,7 +2,6 @@ package ir.manan.mananpic.components.selection.selectors
 
 import android.graphics.*
 import android.view.View
-import ir.manan.mananpic.utils.dp
 
 class BrushSelector : PathBasedSelector() {
 
@@ -14,10 +13,10 @@ class BrushSelector : PathBasedSelector() {
     }
 
     /**
-     * Brush size. Default is 32dp.
+     * Brush size. Default is 32px.
      * View will get invalidated after setting this value.
      */
-    var brushSize = 0f
+    var brushSize = 32f
         set(value) {
             brushPaint.strokeWidth = value
             field = value
@@ -55,7 +54,6 @@ class BrushSelector : PathBasedSelector() {
 
         this.view = view
         view.run {
-            brushSize = dp(32)
             brushPaint.alpha = brushAlpha
         }
     }
