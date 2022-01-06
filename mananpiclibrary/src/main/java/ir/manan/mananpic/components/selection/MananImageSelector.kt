@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
-import ir.manan.mananpic.components.selection.selectors.BrushSelector
 import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 
@@ -18,7 +17,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private var onCloseListener: OnCloseListener? = null
     private var onCloseCallBack: (() -> Unit)? = null
 
-    var selector: Selector = BrushSelector()
+    var selector: Selector? = null
         set(value) {
             field = value
             requestLayout()
@@ -31,7 +30,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         // Initialize the selector.
-        selector.initialize(
+        selector?.initialize(
             this,
             getImageBitmap(),
             boundsRectangle,
@@ -50,35 +49,35 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
-        selector.onMoveBegin(initialX, initialY)
+        selector?.onMoveBegin(initialX, initialY)
         return true
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
-        selector.onMove(dx, dy, ex, ey)
+        selector?.onMove(dx, dy, ex, ey)
         return true
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         super.onMoveEnded(lastX, lastY)
-        selector.onMoveEnded(lastX, lastY)
-        if (selector.isClosed()) callCloseListeners()
+        selector?.onMoveEnded(lastX, lastY)
+        if (selector != null && selector!!.isClosed()) callCloseListeners()
     }
 
     fun select(): Bitmap? {
-        if (drawable != null)
-            return selector.select(drawable)
+        if (drawable != null && selector != null)
+            return selector?.select(drawable)
 
         return null
     }
 
     fun resetSelection() {
-        selector.resetSelection()
+        selector?.resetSelection()
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        selector.draw(canvas)
+        selector?.draw(canvas)
     }
 
     fun setOnCloseListener(listener: OnCloseListener) {
