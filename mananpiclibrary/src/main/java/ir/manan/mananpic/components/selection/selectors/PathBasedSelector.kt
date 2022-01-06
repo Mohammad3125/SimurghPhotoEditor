@@ -33,6 +33,19 @@ abstract class PathBasedSelector : Selector() {
     override fun select(drawable: Drawable): Bitmap? {
         // Only select if path is closed.
         if (isClosed()) {
+            // Get selected bound of normal path (path that is not scaled.)
+            val currentPointBounds = RectF()
+            path.computeBounds(currentPointBounds, true)
+
+            // If rect area of path doesn't intersect the visible part of
+            // image, then return null.
+            if (!currentPointBounds.intersects(
+                    leftEdge,
+                    topEdge,
+                    rightEdge,
+                    bottomEdge
+                )
+            ) return null
 
             // Get how much the current bitmap displayed is scaled comparing to original drawable size.
             val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
@@ -47,10 +60,6 @@ abstract class PathBasedSelector : Selector() {
             // Get selected bound of scaled path.
             val selectedBounds = RectF()
             scaledPoint.computeBounds(selectedBounds, true)
-
-            // Get selected bound of normal path (path that is not scaled.)
-            val currentPointBounds = RectF()
-            path.computeBounds(currentPointBounds, true)
 
             // Create two variables determining final size of bitmap that is returned.
             var finalBitmapWidth = selectedBounds.width()
