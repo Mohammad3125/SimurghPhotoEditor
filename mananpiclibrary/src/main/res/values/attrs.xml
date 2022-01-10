@@ -23,6 +23,7 @@
         <attr name="frameBoxStrokeWidth" format="dimension" />
         <attr name="frameBoxColor" format="color" />
         <attr name="isDrawingBoxEnabled" format="boolean" />
+        <attr name="pageBackgroundColor" format="color" />
     </declare-styleable>
 
     <declare-styleable name="FrameDropper">

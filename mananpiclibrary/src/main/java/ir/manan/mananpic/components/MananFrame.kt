@@ -33,10 +33,19 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     // Paint used to draw page.
     private val pagePaint by lazy {
         Paint().apply {
-            color = Color.WHITE
             style = Paint.Style.FILL
         }
     }
+
+    /**
+     * Color of page drawn.
+     */
+    var pageBackgroundColor = Color.WHITE
+        set(value) {
+            field = value
+            pagePaint.color = value
+            invalidate()
+        }
 
     // Rectangle that later we create to draw an area that we consider as page.
     private var pageRect = RectF()
@@ -232,16 +241,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 isDrawingBoxEnabled =
                     getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
 
-                if (isDrawingBoxEnabled) {
+                frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
 
-                    frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
+                frameBoxStrokeWidth =
+                    getDimension(
+                        R.styleable.MananFrame_frameBoxStrokeWidth,
+                        frameBoxStrokeWidth
+                    )
 
-                    frameBoxStrokeWidth =
-                        getDimension(
-                            R.styleable.MananFrame_frameBoxStrokeWidth,
-                            frameBoxStrokeWidth
-                        )
-                }
+                pageBackgroundColor =
+                    getColor(R.styleable.MananFrame_pageBackgroundColor, Color.WHITE)
 
             } finally {
                 recycle()
