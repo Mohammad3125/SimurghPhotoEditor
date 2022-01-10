@@ -312,26 +312,64 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // but aspect ratio is the same, so we can later scale these to match our desired page size.
         if (pageWidth != 0 && pageHeight != 0) {
             if (pageSizeRatio > 1f) {
-                val widthF = width.toFloat() - paddingStart - paddingEnd
-                val bottomPage = (widthF / pageSizeRatio)
+
+                var widthF = width.toFloat() - paddingStart - paddingEnd
+
+                var bottomPage = (widthF / pageSizeRatio)
+
+                // Later will be used to center the rect in x dimension
+                // If (bottomPage > height) is true.
+                var rightHalf = 0f
+
+                // If after applying aspect ratio the height was greater than view's width
+                // then reduce the size and set view height (max height available) as baseline
+                // for width and then again calculate the height.
+                if (bottomPage > height) {
+                    widthF = (height - paddingTop - paddingBottom) * pageSizeRatio
+                    bottomPage = widthF / pageSizeRatio
+                    rightHalf = (width - widthF) * 0.5f
+                }
+
+                // Calculate extra space available by subtracting view height and calculated height
+                // then divide by 2 to get how much we should shift view to center it in screen.
                 val bottomHalf = (height - bottomPage) * 0.5f
 
+                // Finally set the rectangle with paddings.
                 pageRect.set(
-                    paddingStart.toFloat(),
+                    rightHalf + paddingStart,
                     bottomHalf,
-                    widthF + paddingEnd,
+                    widthF + rightHalf + paddingEnd,
                     bottomPage + bottomHalf
                 )
             } else {
-                val heightF = height.toFloat() - paddingBottom - paddingTop
-                val rightPage = (heightF * pageSizeRatio)
+                var heightF =
+                    height.toFloat() - paddingBottom - paddingTop
+
+                var rightPage = (heightF * pageSizeRatio)
+
+                // Later will be used to center the rect in y dimension
+                // If (rightPage > width) is true.
+                var bottomHalf = 0f
+
+                // If after applying aspect ratio the width was greater than view's width
+                // then reduce the size and set view width (max width available) as baseline
+                // for height and then again calculate the width.
+                if (rightPage > width) {
+                    heightF = (width - paddingLeft - paddingRight) / pageSizeRatio
+                    rightPage = heightF * pageSizeRatio
+                    bottomHalf = (height - heightF) * 0.5f
+                }
+
+                // Calculate extra space available by subtracting view width and calculated width
+                // then divide by 2 to get how much we should shift view to center it in screen.
                 val rightHalf = (width - rightPage) * 0.5f
 
+                // Finally set the rectangle with paddings.
                 pageRect.set(
                     rightHalf,
-                    paddingTop.toFloat(),
+                    bottomHalf + paddingTop,
                     rightPage + rightHalf,
-                    heightF + paddingBottom
+                    heightF + paddingBottom + bottomHalf
                 )
             }
         }
