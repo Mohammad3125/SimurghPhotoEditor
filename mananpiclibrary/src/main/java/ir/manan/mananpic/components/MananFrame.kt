@@ -350,16 +350,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // draw rotated rectangle.
                 rotate(
                     view.reportRotation(),
-                    view.reportBoundPivotX(),
-                    view.reportBoundPivotY()
+                    view.reportBoundPivotX() + paddingStart,
+                    view.reportBoundPivotY() + paddingTop
                 )
 
                 // Draw a box around component.
                 drawRect(
-                    bound.left,
-                    bound.top,
-                    bound.right,
-                    bound.bottom,
+                    bound.left + paddingStart,
+                    bound.top + paddingTop,
+                    bound.right + paddingEnd,
+                    bound.bottom + paddingBottom,
                     boxPaint
                 )
 
