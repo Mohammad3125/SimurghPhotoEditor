@@ -252,6 +252,12 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 pageBackgroundColor =
                     getColor(R.styleable.MananFrame_pageBackgroundColor, Color.WHITE)
 
+                pageWidth = getInteger(R.styleable.MananFrame_pageWidth, 0)
+
+                pageHeight = getInteger(R.styleable.MananFrame_pageHeight, 0)
+
+                pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
+
             } finally {
                 recycle()
             }
@@ -304,28 +310,30 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Create a page rect with aspect ratio of page.
         // Note that this page rect dimensions might be different comparing to given width and height of page
         // but aspect ratio is the same, so we can later scale these to match our desired page size.
-        if (pageSizeRatio > 1f) {
-            val widthF = width.toFloat() - paddingStart - paddingEnd
-            val bottomPage = (widthF / pageSizeRatio)
-            val bottomHalf = (height - bottomPage) * 0.5f
+        if (pageWidth != 0 && pageHeight != 0) {
+            if (pageSizeRatio > 1f) {
+                val widthF = width.toFloat() - paddingStart - paddingEnd
+                val bottomPage = (widthF / pageSizeRatio)
+                val bottomHalf = (height - bottomPage) * 0.5f
 
-            pageRect.set(
-                paddingStart.toFloat(),
-                bottomHalf,
-                widthF + paddingEnd,
-                bottomPage + bottomHalf
-            )
-        } else {
-            val heightF = height.toFloat() - paddingBottom - paddingTop
-            val rightPage = (heightF * pageSizeRatio)
-            val rightHalf = (width - rightPage) * 0.5f
+                pageRect.set(
+                    paddingStart.toFloat(),
+                    bottomHalf,
+                    widthF + paddingEnd,
+                    bottomPage + bottomHalf
+                )
+            } else {
+                val heightF = height.toFloat() - paddingBottom - paddingTop
+                val rightPage = (heightF * pageSizeRatio)
+                val rightHalf = (width - rightPage) * 0.5f
 
-            pageRect.set(
-                rightHalf,
-                paddingTop.toFloat(),
-                rightPage + rightHalf,
-                heightF + paddingBottom
-            )
+                pageRect.set(
+                    rightHalf,
+                    paddingTop.toFloat(),
+                    rightPage + rightHalf,
+                    heightF + paddingBottom
+                )
+            }
         }
     }
 
@@ -416,8 +424,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * This method converts page into Bitmap.
      * Any pixels outside of page bounds will not be converted.
      * @return Bitmap of current page content with bitmap having matching size with page.
+     * @throws IllegalStateException If page size hasn't been set.
      */
     fun convertPageToBitmap(): Bitmap {
+        if (pageWidth == 0 || pageHeight == 0) throw IllegalStateException("Page size should not be 0")
 
         // Create bitmap with size of page.
         val bitmapWithPageSize =
@@ -455,7 +465,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Return last selected view to selection.
         currentEditingView = lastSelectedView
 
-        // Finnaly return bitmap.
+        // Finally return bitmap.
         return bitmapWithPageSize
     }
 

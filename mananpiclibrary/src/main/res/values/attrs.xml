@@ -24,6 +24,8 @@
         <attr name="frameBoxColor" format="color" />
         <attr name="isDrawingBoxEnabled" format="boolean" />
         <attr name="pageBackgroundColor" format="color" />
+        <attr name="pageWidth" format="integer" />
+        <attr name="pageHeight" format="integer" />
     </declare-styleable>
 
     <declare-styleable name="FrameDropper">
