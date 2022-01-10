@@ -424,6 +424,54 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         currentEditingView = lastSelectedView
     }
 
+
+    /**
+     * This method converts page into Bitmap.
+     * Any pixels outside of page bounds will not be converted.
+     * @return Bitmap of current page content with bitmap having matching size with page.
+     */
+    fun convertPageToBitmap(): Bitmap {
+
+        // Create bitmap with size of page.
+        val bitmapWithPageSize =
+            Bitmap.createBitmap(pageWidth, pageHeight, Bitmap.Config.ARGB_8888)
+
+        // Determine how much the rect is scaled down comparing to actual page size.
+        // Note that we took width as a number to determine aspect ratio, since aspect ratio is applied
+        // then it wouldn't matter if we use height or width.
+        val totalScale = pageWidth.toFloat() / pageRect.width()
+
+        // Store last selected view and make current selected null to disappear drawing rect around it.
+        val lastSelectedView = currentEditingView
+        currentEditingView = null
+
+        // Invalidate to disappear rectangle drawn around selected component.
+        invalidate()
+
+        // Create a canvas with created bitmap.
+        val canvas = Canvas(bitmapWithPageSize)
+
+        // Scale it to match content of current canvas to size of bitmap.
+        // This way we can have better quality than to not scaling it.
+        canvas.scale(totalScale, totalScale)
+
+        // Translate it back to page bounds because page is
+        // centered in view then we have to translate the content back.
+        canvas.translate(-pageRect.left, -pageRect.top)
+
+        // Fill canvas with white color.
+        canvas.drawColor(Color.WHITE)
+
+        // Finally draw content of page to bitmap.
+        draw(canvas)
+
+        // Return last selected view to selection.
+        currentEditingView = lastSelectedView
+
+        // Finnaly return bitmap.
+        return bitmapWithPageSize
+    }
+
     /**
      * Selects a view in view group to enter editing state.
      * It does not throw exception if child in given index is null.
