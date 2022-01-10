@@ -301,36 +301,32 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
 
-        if (changed) {
-            // Create a page rect with aspect ratio of page.
-            // Note that this page rect dimensions might be different comparing to given width and height of page
-            // but aspect ratio is the same, so we can later scale these to match our desired page size.
-            if (pageSizeRatio > 1f) {
-                val widthF = width.toFloat() - paddingStart - paddingEnd
-                val bottomPage = (widthF / pageSizeRatio)
-                val bottomHalf = (height - bottomPage) * 0.5f
+        // Create a page rect with aspect ratio of page.
+        // Note that this page rect dimensions might be different comparing to given width and height of page
+        // but aspect ratio is the same, so we can later scale these to match our desired page size.
+        if (pageSizeRatio > 1f) {
+            val widthF = width.toFloat() - paddingStart - paddingEnd
+            val bottomPage = (widthF / pageSizeRatio)
+            val bottomHalf = (height - bottomPage) * 0.5f
 
-                pageRect.set(
-                    paddingStart.toFloat(),
-                    bottomHalf,
-                    widthF + paddingEnd,
-                    bottomPage + bottomHalf
-                )
-            } else {
-                val heightF = height.toFloat() - paddingBottom - paddingTop
-                val rightPage = (heightF * pageSizeRatio)
-                val rightHalf = (width - rightPage) * 0.5f
+            pageRect.set(
+                paddingStart.toFloat(),
+                bottomHalf,
+                widthF + paddingEnd,
+                bottomPage + bottomHalf
+            )
+        } else {
+            val heightF = height.toFloat() - paddingBottom - paddingTop
+            val rightPage = (heightF * pageSizeRatio)
+            val rightHalf = (width - rightPage) * 0.5f
 
-                pageRect.set(
-                    rightHalf,
-                    paddingTop.toFloat(),
-                    rightPage + rightHalf,
-                    heightF + paddingBottom
-                )
-            }
+            pageRect.set(
+                rightHalf,
+                paddingTop.toFloat(),
+                rightPage + rightHalf,
+                heightF + paddingBottom
+            )
         }
-
-
     }
 
     override fun draw(canvas: Canvas?) {
