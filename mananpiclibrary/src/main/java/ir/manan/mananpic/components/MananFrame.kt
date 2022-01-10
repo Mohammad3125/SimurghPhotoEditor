@@ -337,11 +337,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
+    override fun dispatchDraw(canvas: Canvas?) {
+        // Draws page rectangle to be visible to user.
+        canvas?.drawRect(pageRect, pagePaint)
+
+        super.dispatchDraw(canvas)
+    }
+
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            // Draws page rectangle to be visible to user.
-            drawRect(pageRect, pagePaint)
-
             super.draw(this)
 
             // Draw the box around view.
