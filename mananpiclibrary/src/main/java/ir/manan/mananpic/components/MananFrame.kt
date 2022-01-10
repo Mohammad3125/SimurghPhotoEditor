@@ -26,8 +26,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     constructor(context: Context) : this(context, null)
 
     // Page settings.
-    private var pageWidth = 0
-    private var pageHeight = 0
+    var pageWidth = 0
+    var pageHeight = 0
     private var pageSizeRatio: Float = 0f
 
     // Paint used to draw page.
