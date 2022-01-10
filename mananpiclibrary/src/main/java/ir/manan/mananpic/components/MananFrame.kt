@@ -426,7 +426,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * @return Bitmap of current page content with bitmap having matching size with page.
      * @throws IllegalStateException If page size hasn't been set.
      */
-    fun convertPageToBitmap(): Bitmap {
+    fun convertPageToBitmap(transparentBackground: Boolean = false): Bitmap {
         if (pageWidth == 0 || pageHeight == 0) throw IllegalStateException("Page size should not be 0")
 
         // Create bitmap with size of page.
@@ -442,6 +442,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         val lastSelectedView = currentEditingView
         currentEditingView = null
 
+        val pageColor = pagePaint.color
+        if (transparentBackground)
+            pagePaint.color = Color.TRANSPARENT
+
         // Invalidate to disappear rectangle drawn around selected component.
         invalidate()
 
@@ -456,14 +460,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // centered in view then we have to translate the content back.
         canvas.translate(-pageRect.left, -pageRect.top)
 
-        // Fill canvas with white color.
-        canvas.drawColor(Color.WHITE)
-
         // Finally draw content of page to bitmap.
         draw(canvas)
 
         // Return last selected view to selection.
         currentEditingView = lastSelectedView
+
+        pagePaint.color = pageColor
 
         // Finally return bitmap.
         return bitmapWithPageSize
