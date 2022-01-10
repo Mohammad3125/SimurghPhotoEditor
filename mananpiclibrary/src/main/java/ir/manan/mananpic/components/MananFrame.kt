@@ -76,12 +76,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     var isDrawingBoxEnabled = false
         set(value) {
             field = value
-
-            // Determine if ViewGroup is going to do drawing operations or not.
-            setWillNotDraw(!value)
-
-            if (value)
-                invalidate()
+            invalidate()
         }
 
 
@@ -254,6 +249,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
         // Let some components like TextView be able to draw things outside their bounds (shadow layer and etc...)
         clipChildren = false
+
+        // Always draws.
+        setWillNotDraw(false)
 
     }
 
@@ -509,12 +507,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     fun getSelectedView(): View? {
         return currentEditingView as? View
-    }
-
-    override fun invalidate() {
-        // Only invalidate if drawing box is enabled.
-        if (isDrawingBoxEnabled)
-            super.invalidate()
     }
 
     override fun onViewAdded(child: View?) {
