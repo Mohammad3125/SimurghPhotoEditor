@@ -410,22 +410,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     /**
-     * Draws content of the layout onto a bitmap.
-     * This method first makes the background color white and draws the content on a bitmap then makes background transparent.
-     * @param bitmap The bitmap that is going to be drawn on.
-     */
-    fun drawToBitmap(bitmap: Bitmap) {
-        setBackgroundColor(Color.WHITE)
-        val lastSelectedView = currentEditingView
-        currentEditingView = null
-        invalidate()
-        draw(Canvas(bitmap))
-        setBackgroundColor(Color.TRANSPARENT)
-        currentEditingView = lastSelectedView
-    }
-
-
-    /**
      * This method converts page into Bitmap.
      * Any pixels outside of page bounds will not be converted.
      * @return Bitmap of current page content with bitmap having matching size with page.
