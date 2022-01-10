@@ -25,6 +25,22 @@ import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, attr) {
     constructor(context: Context) : this(context, null)
 
+    // Page settings.
+    private var pageWidth = 0
+    private var pageHeight = 0
+    private var pageSizeRatio: Float = 0f
+
+    // Paint used to draw page.
+    private val pagePaint by lazy {
+        Paint().apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        }
+    }
+
+    // Rectangle that later we create to draw an area that we consider as page.
+    private var pageRect = RectF()
+
     private var currentEditingView: MananComponent? = null
 
     private val boxPaint by lazy {
@@ -275,16 +291,54 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         return true
     }
 
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+
+        if (changed) {
+            // Create a page rect with aspect ratio of page.
+            // Note that this page rect dimensions might be different comparing to given width and height of page
+            // but aspect ratio is the same, so we can later scale these to match our desired page size.
+            if (pageSizeRatio > 1f) {
+                val widthF = width.toFloat() - paddingStart - paddingEnd
+                val bottomPage = (widthF / pageSizeRatio)
+                val bottomHalf = (height - bottomPage) * 0.5f
+
+                pageRect.set(
+                    paddingStart.toFloat(),
+                    bottomHalf,
+                    widthF + paddingEnd,
+                    bottomPage + bottomHalf
+                )
+            } else {
+                val heightF = height.toFloat() - paddingBottom - paddingTop
+                val rightPage = (heightF * pageSizeRatio)
+                val rightHalf = (width - rightPage) * 0.5f
+
+                pageRect.set(
+                    rightHalf,
+                    paddingTop.toFloat(),
+                    rightPage + rightHalf,
+                    heightF + paddingBottom
+                )
+            }
+        }
+
+
+    }
+
     override fun draw(canvas: Canvas?) {
-        super.draw(canvas)
-        // Draw the box around view.
-        if (currentEditingView != null && isDrawingBoxEnabled) {
-            val view = currentEditingView!!
+        canvas?.run {
+            // Draws page rectangle to be visible to user.
+            drawRect(pageRect, pagePaint)
 
-            // Get bounds of component to create a rectangle with it.
-            val bound = view.reportBound()
+            super.draw(this)
 
-            canvas!!.run {
+            // Draw the box around view.
+            if (currentEditingView != null && isDrawingBoxEnabled) {
+                val view = currentEditingView!!
+
+                // Get bounds of component to create a rectangle with it.
+                val bound = view.reportBound()
 
                 // Take a snapshot of current state of canvas.
                 save()
@@ -451,6 +505,18 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             currentEditingView = this as MananComponent
         }
+    }
+
+    /**
+     * Sets page size. Only children within page bounds can be converted to image files.
+     * @param desiredWidth Width of page in pixels.
+     * @param desiredHeight Height of page in pixels.
+     */
+    fun setPageSize(desiredWidth: Int, desiredHeight: Int) {
+        pageWidth = desiredWidth
+        pageHeight = desiredHeight
+        pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
+        requestLayout()
     }
 
     /**
