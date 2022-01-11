@@ -44,21 +44,21 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
 
-    override fun applyBlur(shadowRadius: Float) {
-        applyBlur(shadowRadius, BlurMaskFilter.Blur.NORMAL)
+    override fun applyBlur(blurRadius: Float) {
+        applyBlur(blurRadius, BlurMaskFilter.Blur.NORMAL)
     }
 
 
     /**
-     * This method applies shadow on the text with provided radius and filter.
+     * This method applies blur on the text with provided radius and filter.
      * This method might force the view to run in software rendering.
      *
-     * @param shadowRadius Shadow radius that is going to be applied.
-     * @param filter Represents style of the shadow with enums.
+     * @param blurRadius Blur radius that is going to be applied.
+     * @param filter Represents style of the blur with enums.
      */
-    override fun applyBlur(shadowRadius: Float, filter: BlurMaskFilter.Blur) {
+    override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
         setLayerType(LAYER_TYPE_SOFTWARE, null)
-        paint.maskFilter = BlurMaskFilter(shadowRadius, filter)
+        paint.maskFilter = BlurMaskFilter(blurRadius, filter)
         invalidate()
     }
 
