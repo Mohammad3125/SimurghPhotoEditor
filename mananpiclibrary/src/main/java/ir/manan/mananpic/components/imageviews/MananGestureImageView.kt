@@ -11,7 +11,6 @@ import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
-import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
 import ir.manan.mananpic.properties.Bitmapable
@@ -350,10 +349,8 @@ open class MananGestureImageView(
      * Calculates bounds of image with matrix values.
      */
     private fun calculateBounds() {
-        val parentViewGroup = parent as ViewGroup
-
-        leftEdge = paddingLeft + parentViewGroup.paddingLeft + getMatrixValue(Matrix.MTRANS_X, true)
-        topEdge = paddingTop + parentViewGroup.paddingTop + getMatrixValue(Matrix.MTRANS_Y)
+        leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X, true)
+        topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
 
         val sx = getMatrixValue(Matrix.MSCALE_X)
         val skewY = getMatrixValue(Matrix.MSKEW_Y)
