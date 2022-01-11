@@ -2,6 +2,7 @@ package ir.manan.mananpic.utils
 
 import android.content.Context
 import android.content.res.Resources
+import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.View
 
@@ -12,7 +13,7 @@ import android.view.View
  */
 fun View.dp(number: Number): Float {
     val metric =
-        if (context != null) context.resources.displayMetrics else Resources.getSystem().displayMetrics
+        getDisplayMetric(context)
 
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, number.toFloat(), metric)
 }
@@ -24,10 +25,32 @@ fun View.dp(number: Number): Float {
  */
 fun View.sp(number: Number): Float {
     val metric =
-        if (context != null) context.resources.displayMetrics else Resources.getSystem().displayMetrics
+        getDisplayMetric(context)
 
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, number.toFloat(), metric)
 }
+
+/**
+ * Extension function for converting mm(millimeter) to pixels.
+ * This extension function runs inside a view.
+ * @param number Number to be converted.
+ */
+fun View.mm(number: Number): Float {
+    val metric =
+        getDisplayMetric(context)
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_MM, number.toFloat(), metric)
+}
+
+
+/**
+ * This method returns DisplayMetric of current device.
+ * If Context is null the default system display metric would be returned which has default
+ * density etc...
+ */
+fun getDisplayMetric(context: Context?): DisplayMetrics {
+    return if (context != null) context.resources.displayMetrics else Resources.getSystem().displayMetrics
+}
+
 
 /**
  * Extension function for converting a dp value to pixels.
@@ -36,7 +59,7 @@ fun View.sp(number: Number): Float {
  */
 fun Context?.dp(number: Number): Float {
     val metric =
-        if (this != null) this.resources.displayMetrics else Resources.getSystem().displayMetrics
+        getDisplayMetric(this)
 
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, number.toFloat(), metric)
 }
@@ -48,9 +71,21 @@ fun Context?.dp(number: Number): Float {
  */
 fun Context?.sp(number: Number): Float {
     val metric =
-        if (this != null) this.resources.displayMetrics else Resources.getSystem().displayMetrics
+        getDisplayMetric(this)
 
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, number.toFloat(), metric)
+}
+
+/**
+ * Extension function for converting mm(millimeter) to pixels.
+ * This extension function runs inside a context.
+ * @param number Number to be converted.
+ */
+fun Context?.mm(number: Number): Float {
+    val metric =
+        getDisplayMetric(this)
+
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_MM, number.toFloat(), metric)
 }
 
 
