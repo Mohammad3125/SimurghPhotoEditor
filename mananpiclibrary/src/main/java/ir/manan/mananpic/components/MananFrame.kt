@@ -318,7 +318,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Create a page rect with aspect ratio of page.
         // Note that this page rect dimensions might be different comparing to given width and height of page
         // but aspect ratio is the same, so we can later scale these to match our desired page size.
-        if (pageWidth != 0 && pageHeight != 0) {
+        if (pageWidth != 0 && pageHeight != 0 && pageRect.isEmpty) {
 
             // Get difference of paddings to then apply to rectangle.
             val diffHorizontalPadding = paddingLeft - paddingRight
@@ -634,6 +634,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         pageWidth = desiredWidth
         pageHeight = desiredHeight
         pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
+        pageRect.setEmpty()
         requestLayout()
     }
 
