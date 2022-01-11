@@ -331,8 +331,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // for width and then again calculate the height.
                 val heightWithPadding = (height - paddingTop - paddingBottom)
                 if (bottomPage > heightWithPadding) {
+                    bottomPage = heightWithPadding.toFloat()
                     widthF = heightWithPadding * pageSizeRatio
-                    bottomPage = widthF / pageSizeRatio
                 }
 
                 // Calculate the extra space after finalizing the dimensions values by subtracting
@@ -360,8 +360,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // for height and then again calculate the width.
                 val widthWithPadding = (width - paddingLeft - paddingRight)
                 if (rightPage > widthWithPadding) {
+                    rightPage = widthWithPadding.toFloat()
                     heightF = widthWithPadding / pageSizeRatio
-                    rightPage = heightF * pageSizeRatio
                 }
 
                 // Calculate the extra space after finalizing the dimensions values by subtracting
