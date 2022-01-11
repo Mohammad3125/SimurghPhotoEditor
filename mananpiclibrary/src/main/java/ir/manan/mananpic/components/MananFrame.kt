@@ -146,27 +146,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             override fun onMove(dx: Float, dy: Float): Boolean {
                 return if (currentEditingView != null) {
                     currentEditingView!!.applyMovement(dx, dy)
-
-//                        if (currentView is MatrixComponent) {
-//                            val bounds = currentView.reportBound()
-//
-//                            var totalXToMove = 0f
-//                            var totalYToMove = 0f
-//
-//                            if (bounds.left < 0f)
-//                                totalXToMove = abs(bounds.left)
-//                            else if (bounds.right > width)
-//                                totalXToMove = width - bounds.right
-//
-//                            if (bounds.top < 0f)
-//                                totalYToMove = abs(bounds.top)
-//                            else if (bounds.bottom > height)
-//                                totalYToMove = height - bounds.bottom
-//
-//                            currentView.applyMovement(totalXToMove, totalYToMove)
-//                        }
-
-
                     true
                 } else false
             }
