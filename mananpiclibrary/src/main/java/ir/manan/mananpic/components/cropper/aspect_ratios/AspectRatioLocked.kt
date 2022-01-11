@@ -71,6 +71,9 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                 RIGHT -> {
 
                 }
+                else -> {
+
+                }
             }
             return rect
         }
@@ -166,8 +169,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
             // If it exceeds the maximum width.
             if (normalizedWidth > maxWidth) {
                 // Then normalize height to fit inside bounds.
+                normalizedWidth = maxWidth
                 finalHeight = (maxWidth / ratio)
-                normalizedWidth = (finalHeight * ratio)
             }
 
             Pair(normalizedWidth, finalHeight)
@@ -177,8 +180,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
 
             // If it exceeds the maximum width.
             if (normalizedHeight > maxHeight) {
+                normalizedHeight = maxHeight
                 finalWidth = (maxHeight * ratio)
-                normalizedHeight = (finalWidth / ratio)
             }
 
             Pair(finalWidth, normalizedHeight)
