@@ -265,6 +265,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Let some components like TextView be able to draw things outside their bounds (shadow layer and etc...)
         clipChildren = false
 
+        // Don't clip children to padding.
+        clipToPadding = false
+
         // Always draws.
         setWillNotDraw(false)
 
