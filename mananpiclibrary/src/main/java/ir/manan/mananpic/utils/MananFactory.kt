@@ -3,6 +3,7 @@ package ir.manan.mananpic.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.os.Build
 import android.widget.FrameLayout
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.components.imageviews.MananImageView
@@ -34,6 +35,9 @@ class MananFactory {
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
                 )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    clipToOutline = false
+                }
                 this.text = text
                 setTextColor(Color.BLACK)
             }
