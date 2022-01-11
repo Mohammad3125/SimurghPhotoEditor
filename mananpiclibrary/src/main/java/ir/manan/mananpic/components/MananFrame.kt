@@ -16,6 +16,8 @@ import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A class that extends [FrameLayout] class and overrides certain functions such as
@@ -25,7 +27,35 @@ import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, attr) {
     constructor(context: Context) : this(context, null)
 
+    // Page settings.
+    var pageWidth = 0
+    var pageHeight = 0
+    private var pageSizeRatio: Float = 0f
+
+    // Paint used to draw page.
+    private val pagePaint by lazy {
+        Paint().apply {
+            style = Paint.Style.FILL
+        }
+    }
+
+    /**
+     * Color of page drawn.
+     */
+    var pageBackgroundColor = Color.WHITE
+        set(value) {
+            field = value
+            pagePaint.color = value
+            invalidate()
+        }
+
+    // Rectangle that later we create to draw an area that we consider as page.
+    private var pageRect = RectF()
+
     private var currentEditingView: MananComponent? = null
+
+    // Determines if child has been scaled down to fit page bounds.
+    private var isChildScaleNormalized: Boolean = false
 
     private val boxPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -60,12 +90,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     var isDrawingBoxEnabled = false
         set(value) {
             field = value
-
-            // Determine if ViewGroup is going to do drawing operations or not.
-            setWillNotDraw(!value)
-
-            if (value)
-                invalidate()
+            invalidate()
         }
 
 
@@ -121,27 +146,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             override fun onMove(dx: Float, dy: Float): Boolean {
                 return if (currentEditingView != null) {
                     currentEditingView!!.applyMovement(dx, dy)
-
-//                        if (currentView is MatrixComponent) {
-//                            val bounds = currentView.reportBound()
-//
-//                            var totalXToMove = 0f
-//                            var totalYToMove = 0f
-//
-//                            if (bounds.left < 0f)
-//                                totalXToMove = abs(bounds.left)
-//                            else if (bounds.right > width)
-//                                totalXToMove = width - bounds.right
-//
-//                            if (bounds.top < 0f)
-//                                totalYToMove = abs(bounds.top)
-//                            else if (bounds.bottom > height)
-//                                totalYToMove = height - bounds.bottom
-//
-//                            currentView.applyMovement(totalXToMove, totalYToMove)
-//                        }
-
-
                     true
                 } else false
             }
@@ -221,16 +225,22 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 isDrawingBoxEnabled =
                     getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
 
-                if (isDrawingBoxEnabled) {
+                frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
 
-                    frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
+                frameBoxStrokeWidth =
+                    getDimension(
+                        R.styleable.MananFrame_frameBoxStrokeWidth,
+                        frameBoxStrokeWidth
+                    )
 
-                    frameBoxStrokeWidth =
-                        getDimension(
-                            R.styleable.MananFrame_frameBoxStrokeWidth,
-                            frameBoxStrokeWidth
-                        )
-                }
+                pageBackgroundColor =
+                    getColor(R.styleable.MananFrame_pageBackgroundColor, Color.WHITE)
+
+                pageWidth = getInteger(R.styleable.MananFrame_pageWidth, 0)
+
+                pageHeight = getInteger(R.styleable.MananFrame_pageHeight, 0)
+
+                pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
 
             } finally {
                 recycle()
@@ -238,6 +248,12 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
         // Let some components like TextView be able to draw things outside their bounds (shadow layer and etc...)
         clipChildren = false
+
+        // Don't clip children to padding.
+        clipToPadding = false
+
+        // Always draws.
+        setWillNotDraw(false)
 
     }
 
@@ -275,16 +291,116 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         return true
     }
 
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+
+        // Create a page rect with aspect ratio of page.
+        // Note that this page rect dimensions might be different comparing to given width and height of page
+        // but aspect ratio is the same, so we can later scale these to match our desired page size.
+        if (pageWidth != 0 && pageHeight != 0 && pageRect.isEmpty) {
+
+            // Get difference of paddings to then apply to rectangle.
+            val diffHorizontalPadding = paddingLeft - paddingRight
+            val diffVerticalPadding = paddingTop - paddingBottom
+
+            if (pageSizeRatio > 1f) {
+
+                var widthF =
+                    width.toFloat() - paddingLeft - paddingRight - paddingTop - paddingBottom
+
+                var bottomPage = (widthF / pageSizeRatio)
+
+                // If after applying aspect ratio the height was greater than view's width
+                // then reduce the size and set view height (max height available) as baseline
+                // for width and then again calculate the height.
+                val heightWithPadding = (height - paddingTop - paddingBottom)
+                if (bottomPage > heightWithPadding) {
+                    bottomPage = heightWithPadding.toFloat()
+                    widthF = heightWithPadding * pageSizeRatio
+                }
+
+                // Calculate the extra space after finalizing the dimensions values by subtracting
+                // it with view dimension and then dividing by two to find how much we should
+                // shift rectangle to center it inside the view.
+                val bottomHalf = (height - bottomPage) * 0.5f
+                val rightHalf = (width - widthF) * 0.5f
+
+
+                // Finally set the rectangle with paddings.
+                pageRect.set(
+                    rightHalf + diffHorizontalPadding,
+                    bottomHalf + diffVerticalPadding,
+                    widthF + rightHalf + diffHorizontalPadding,
+                    bottomPage + bottomHalf + diffVerticalPadding
+                )
+            } else {
+                var heightF =
+                    height.toFloat() - paddingBottom - paddingTop - paddingLeft - paddingRight
+
+                var rightPage = (heightF * pageSizeRatio)
+
+                // If after applying aspect ratio the width was greater than view's width
+                // then reduce the size and set view width (max width available) as baseline
+                // for height and then again calculate the width.
+                val widthWithPadding = (width - paddingLeft - paddingRight)
+                if (rightPage > widthWithPadding) {
+                    rightPage = widthWithPadding.toFloat()
+                    heightF = widthWithPadding / pageSizeRatio
+                }
+
+                // Calculate the extra space after finalizing the dimensions values by subtracting
+                // it with view dimension and then dividing by two to find how much we should
+                // shift rectangle to center it inside the view.
+                val rightHalf: Float = (width - rightPage) * 0.5f
+                val bottomHalf: Float = (height - heightF) * 0.5f
+
+                // Finally set the rectangle with paddings.
+                pageRect.set(
+                    rightHalf + diffHorizontalPadding,
+                    bottomHalf + diffVerticalPadding,
+                    rightPage + rightHalf + diffHorizontalPadding,
+                    heightF + bottomHalf + diffVerticalPadding
+                )
+            }
+        }
+
+
+        if (!isChildScaleNormalized) {
+            currentEditingView?.run {
+                val bound = reportBound()
+                // Take maximum dimension of component and compare it to minimum dimension of page.
+                if (max(bound.width(), bound.height()) > min(pageRect.width(), pageRect.height())) {
+                    // Then determine how much we should scale to fit image within bounds.
+                    this.applyScale(
+                        min(pageRect.width(), pageRect.height()) / max(
+                            bound.width(),
+                            bound.height()
+                        )
+                    )
+                }
+            }
+            isChildScaleNormalized = true
+        }
+
+    }
+
+    override fun dispatchDraw(canvas: Canvas?) {
+        // Draws page rectangle to be visible to user.
+        canvas?.drawRect(pageRect, pagePaint)
+
+        super.dispatchDraw(canvas)
+    }
+
     override fun draw(canvas: Canvas?) {
-        super.draw(canvas)
-        // Draw the box around view.
-        if (currentEditingView != null && isDrawingBoxEnabled) {
-            val view = currentEditingView!!
+        canvas?.run {
+            super.draw(this)
 
-            // Get bounds of component to create a rectangle with it.
-            val bound = view.reportBound()
+            // Draw the box around view.
+            if (currentEditingView != null && isDrawingBoxEnabled) {
+                val view = currentEditingView!!
 
-            canvas!!.run {
+                // Get bounds of component to create a rectangle with it.
+                val bound = view.reportBound()
 
                 // Take a snapshot of current state of canvas.
                 save()
@@ -356,18 +472,55 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     /**
-     * Draws content of the layout onto a bitmap.
-     * This method first makes the background color white and draws the content on a bitmap then makes background transparent.
-     * @param bitmap The bitmap that is going to be drawn on.
+     * This method converts page into Bitmap.
+     * Any pixels outside of page bounds will not be converted.
+     * @return Bitmap of current page content with bitmap having matching size with page.
+     * @throws IllegalStateException If page size hasn't been set.
      */
-    fun drawToBitmap(bitmap: Bitmap) {
-        setBackgroundColor(Color.WHITE)
+    fun convertPageToBitmap(transparentBackground: Boolean = false): Bitmap {
+        if (pageWidth == 0 || pageHeight == 0) throw IllegalStateException("Page size should not be 0")
+
+        // Create bitmap with size of page.
+        val bitmapWithPageSize =
+            Bitmap.createBitmap(pageWidth, pageHeight, Bitmap.Config.ARGB_8888)
+
+        // Determine how much the rect is scaled down comparing to actual page size.
+        // Note that we took width as a number to determine aspect ratio, since aspect ratio is applied
+        // then it wouldn't matter if we use height or width.
+        val totalScale = pageWidth.toFloat() / pageRect.width()
+
+        // Store last selected view and make current selected null to disappear drawing rect around it.
         val lastSelectedView = currentEditingView
         currentEditingView = null
+
+        val pageColor = pagePaint.color
+        if (transparentBackground)
+            pagePaint.color = Color.TRANSPARENT
+
+        // Invalidate to disappear rectangle drawn around selected component.
         invalidate()
-        draw(Canvas(bitmap))
-        setBackgroundColor(Color.TRANSPARENT)
+
+        // Create a canvas with created bitmap.
+        val canvas = Canvas(bitmapWithPageSize)
+
+        // Scale it to match content of current canvas to size of bitmap.
+        // This way we can have better quality than to not scaling it.
+        canvas.scale(totalScale, totalScale)
+
+        // Translate it back to page bounds because page is
+        // centered in view then we have to translate the content back.
+        canvas.translate(-pageRect.left, -pageRect.top)
+
+        // Finally draw content of page to bitmap.
+        draw(canvas)
+
+        // Return last selected view to selection.
         currentEditingView = lastSelectedView
+
+        pagePaint.color = pageColor
+
+        // Finally return bitmap.
+        return bitmapWithPageSize
     }
 
     /**
@@ -425,12 +578,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         return currentEditingView as? View
     }
 
-    override fun invalidate() {
-        // Only invalidate if drawing box is enabled.
-        if (isDrawingBoxEnabled)
-            super.invalidate()
-    }
-
     override fun onViewAdded(child: View?) {
         if (child !is MananComponent) throw IllegalStateException("only components that implement MananComponent can be added")
 
@@ -445,12 +592,29 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 gravity = Gravity.CENTER
             }
 
-            rotateDetector.resetRotation((child as MananComponent).reportRotation())
+            val component = (child as MananComponent)
+
+            rotateDetector.resetRotation(component.reportRotation())
 
             callListeners(child, true)
 
-            currentEditingView = this as MananComponent
+            currentEditingView = component
+
+            isChildScaleNormalized = false
         }
+    }
+
+    /**
+     * Sets page size. Only children within page bounds can be converted to image files.
+     * @param desiredWidth Width of page in pixels.
+     * @param desiredHeight Height of page in pixels.
+     */
+    fun setPageSize(desiredWidth: Int, desiredHeight: Int) {
+        pageWidth = desiredWidth
+        pageHeight = desiredHeight
+        pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
+        pageRect.setEmpty()
+        requestLayout()
     }
 
     /**
