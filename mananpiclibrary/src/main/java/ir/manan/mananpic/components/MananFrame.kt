@@ -54,6 +54,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private var currentEditingView: MananComponent? = null
 
+    // Determines if child has been scaled down to fit page bounds.
+    private var isChildScaleNormalized: Boolean = false
+
     private val boxPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
@@ -380,7 +383,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     heightF + bottomHalf + diffVerticalPadding
                 )
             }
+        }
 
+
+        if (!isChildScaleNormalized) {
             currentEditingView?.run {
                 val bound = reportBound()
                 // Take maximum dimension of component and compare it to minimum dimension of page.
@@ -393,9 +399,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         )
                     )
                 }
-
             }
-
+            isChildScaleNormalized = true
         }
 
     }
@@ -615,6 +620,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             callListeners(child, true)
 
             currentEditingView = component
+
+            isChildScaleNormalized = false
         }
     }
 
