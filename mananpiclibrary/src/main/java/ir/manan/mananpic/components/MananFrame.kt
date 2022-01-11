@@ -16,6 +16,8 @@ import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A class that extends [FrameLayout] class and overrides certain functions such as
@@ -378,7 +380,24 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     heightF + bottomHalf + diffVerticalPadding
                 )
             }
+
+            currentEditingView?.run {
+                val bound = reportBound()
+                // Take maximum dimension of component and compare it to minimum dimension of page.
+                if (max(bound.width(), bound.height()) > min(pageRect.width(), pageRect.height())) {
+                    // Then determine how much we should scale to fit image within bounds.
+                    this.applyScale(
+                        min(pageRect.width(), pageRect.height()) / max(
+                            bound.width(),
+                            bound.height()
+                        )
+                    )
+                }
+
+            }
+
         }
+
     }
 
     override fun dispatchDraw(canvas: Canvas?) {
@@ -589,11 +608,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 gravity = Gravity.CENTER
             }
 
-            rotateDetector.resetRotation((child as MananComponent).reportRotation())
+            val component = (child as MananComponent)
+
+            rotateDetector.resetRotation(component.reportRotation())
 
             callListeners(child, true)
 
-            currentEditingView = this as MananComponent
+            currentEditingView = component
         }
     }
 
