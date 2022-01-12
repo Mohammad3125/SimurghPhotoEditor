@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.imageviews
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
@@ -298,6 +299,32 @@ open class MananGestureImageView(
             drawable ?: throw IllegalStateException("drawable is null")
 
         return (mDrawable as BitmapDrawable).bitmap
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+
+        if (drawable == null) throw IllegalStateException("drawable is null")
+
+        // Determine how much the desired width and height is scaled base on
+        // smallest desired dimension divided by maximum image dimension.
+        val totalScaled =
+            min(width, height) / max(boundsRectangle.width(), boundsRectangle.height())
+
+        // Create output bitmap matching desired width,height and config.
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        // Calculate extra width and height remaining to later use to center the image inside bitmap.
+        val extraWidth = (width / totalScaled) - boundsRectangle.width()
+        val extraHeight = (height / totalScaled) - boundsRectangle.height()
+
+        Canvas(outputBitmap).run {
+            scale(totalScaled, totalScaled)
+            // Finally translate to center the content.
+            translate(-leftEdge + extraWidth * 0.5f, -topEdge + extraHeight * 0.5f)
+            draw(this)
+        }
+
+        return outputBitmap
     }
 
     @SuppressLint("ClickableViewAccessibility")

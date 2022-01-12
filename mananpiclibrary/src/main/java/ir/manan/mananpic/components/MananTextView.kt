@@ -5,6 +5,8 @@ import android.graphics.*
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import ir.manan.mananpic.properties.*
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Component that extends the current [AppCompatTextView] class and adds few functionalities like
@@ -215,6 +217,30 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
         val canvas = Canvas(outputBitmap)
         draw(canvas)
+
+        return outputBitmap
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+        val textBounds = reportBound()
+
+        // Determine how much the desired width and height is scaled base on
+        // smallest desired dimension divided by maximum text dimension.
+        val totalScaled = min(width, height) / max(textBounds.width(), textBounds.height())
+
+        // Create output bitmap matching desired width,height and config.
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        // Calculate extra width and height remaining to later use to center the image inside bitmap.
+        val extraWidth = (width / totalScaled) - textBounds.width()
+        val extraHeight = (height / totalScaled) - textBounds.height()
+
+        Canvas(outputBitmap).run {
+            scale(totalScaled, totalScaled)
+            // Finally translate to center the content.
+            translate(extraWidth * 0.5f, extraHeight * 0.5f)
+            draw(this)
+        }
 
         return outputBitmap
     }
