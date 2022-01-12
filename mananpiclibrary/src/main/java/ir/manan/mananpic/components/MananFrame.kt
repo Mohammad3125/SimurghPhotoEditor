@@ -368,24 +368,41 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
         }
 
-
-        if (!isChildScaleNormalized) {
-            currentEditingView?.run {
-                val bound = reportBound()
-                // Take maximum dimension of component and compare it to minimum dimension of page.
-                if (max(bound.width(), bound.height()) > min(pageRect.width(), pageRect.height())) {
-                    // Then determine how much we should scale to fit image within bounds.
-                    this.applyScale(
-                        min(pageRect.width(), pageRect.height()) / max(
-                            bound.width(),
-                            bound.height()
-                        )
-                    )
-                }
+        if (!isChildScaleNormalized || changed) {
+            if (currentEditingView != null) {
+                fitChildInsidePage(currentEditingView!!)
+                isChildScaleNormalized = true
             }
-            isChildScaleNormalized = true
         }
+    }
 
+    private fun fitChildInsidePage(child: MananComponent) {
+        child.run {
+            val bound = reportBound()
+            // Take maximum dimension of component and compare it to minimum dimension of page.
+            if (max(bound.width(), bound.height()) > min(
+                    pageRect.width(),
+                    pageRect.height()
+                )
+            ) {
+                // Then determine how much we should scale to fit image within bounds.
+                this.applyScale(
+                    min(pageRect.width(), pageRect.height()) / max(
+                        bound.width(),
+                        bound.height()
+                    )
+                )
+            }
+
+            // Determine how much we should shift the view to center it.
+            val totalXToShift = pageRect.left - bound.left
+            val totalYToShift = pageRect.top - bound.top
+
+            if (totalXToShift > 0)
+                applyMovement(totalXToShift, 0f)
+            if (totalYToShift > 0)
+                applyMovement(0f, totalYToShift)
+        }
     }
 
     override fun dispatchDraw(canvas: Canvas?) {
