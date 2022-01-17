@@ -114,7 +114,7 @@ class MananPorterDuff {
          * @param sourceRotation Total rotation of destination image.
          * @param porterDuffMode Defines mode of Porter duff method.
          */
-        fun applyPorterDuff(
+        private fun applyPorterDuff(
             baseBitmap: Bitmap,
             sourceBitmap: Bitmap,
             sourceBounds: RectF,
