@@ -30,24 +30,59 @@ class MananPorterDuff {
             destinationRotation: Float,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
-            // Create a bitmap same size as source bitmap to perform drawings on.
-            val newBitmap =
-                Bitmap.createBitmap(
-                    sourceBitmap.width,
-                    sourceBitmap.height,
-                    Bitmap.Config.ARGB_8888
+            Matrix().run {
+
+                // Copy source bounds.
+                val rotatedRect = RectF(sourceBounds)
+
+                // Determine how much source bounds have scaled to bitmap bounds.
+                val totalToScale = sourceBitmap.width / sourceBounds.width()
+
+                // Create vectors of source bounds rectangle.
+                val vectors = sourceBounds.run {
+                    floatArrayOf(
+                        left, top,
+                        right, top,
+                        right, bottom,
+                        left, bottom
+                    )
+                }
+
+                // Scale it to match bitmap bounds.
+                setScale(
+                    totalToScale,
+                    totalToScale
                 )
 
-            return applyPorterDuff(
-                newBitmap,
-                sourceBitmap,
-                sourceBounds,
-                sourceRotation,
-                destinationBitmap,
-                destinationBounds,
-                destinationRotation,
-                porterDuffMode
-            )
+                // Rotate it as much as source image is rotated.
+                postRotate(sourceRotation)
+
+                // Map vectors to later determine how much we should shift the canvas to center source image inside if (if rotated).
+                mapVectors(vectors)
+                // Map rect to determine final size of bitmap while source image is rotated.
+                mapRect(rotatedRect)
+
+                // Finally create a base bitmap that all drawing happen on it.
+                val newBitmap =
+                    Bitmap.createBitmap(
+                        rotatedRect.width().toInt(),
+                        rotatedRect.height().toInt(),
+                        Bitmap.Config.ARGB_8888
+                    )
+
+                return applyPorterDuff(
+                    newBitmap,
+                    sourceBitmap,
+                    sourceBounds,
+                    if (sourceRotation < 0f) vectors[1] - vectors[3] else 0f,
+                    if (sourceRotation > 0f) vectors[0] - vectors[6] else 0f,
+                    sourceRotation,
+                    destinationBitmap,
+                    destinationBounds,
+                    destinationRotation,
+                    porterDuffMode
+                )
+            }
         }
 
         /**
@@ -72,6 +107,8 @@ class MananPorterDuff {
          * @param sourceBitmap Bitmap that represents SRC in porter-duff.
          * @param sourceBounds Boundaries of source bitmap on screen.
          * @param sourceRotation Total rotation of source image.
+         * @param shiftTop How much canvas should translate from top.
+         * @param shiftLeft How much canvas should translate from left.
          * @param destinationBitmap Bitmap that represents DST in porter-duff.
          * @param sourceBounds Boundaries of destination bitmap on screen.
          * @param sourceRotation Total rotation of destination image.
@@ -81,6 +118,8 @@ class MananPorterDuff {
             baseBitmap: Bitmap,
             sourceBitmap: Bitmap,
             sourceBounds: RectF,
+            shiftTop: Float,
+            shiftLeft: Float,
             sourceRotation: Float,
             destinationBitmap: Bitmap,
             destinationBounds: RectF,
@@ -120,6 +159,9 @@ class MananPorterDuff {
             }
 
             canvas.run {
+
+                // Shift to fit inside screen if source bitmap is rotated.
+                translate(shiftLeft, shiftTop)
 
                 // Save canvas state to later restore it and continue other drawings.
                 save()
