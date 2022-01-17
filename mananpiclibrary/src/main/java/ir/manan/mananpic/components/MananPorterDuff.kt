@@ -1,7 +1,6 @@
 package ir.manan.mananpic.components
 
 import android.graphics.*
-import androidx.core.graphics.withRotation
 
 /**
  * Class for applying porter duff methods on two images.
@@ -105,14 +104,6 @@ class MananPorterDuff {
             // and value basically is the same.
             val totalSourceScale = sourceBitmap.width / sourceBounds.width()
 
-            // Scale up the destination bitmap amount that source bitmap is scaled down.
-            val destinationScaledBitmap = Bitmap.createScaledBitmap(
-                destinationBitmap,
-                (destinationBounds.width() * totalSourceScale).toInt(),
-                (destinationBounds.height() * totalSourceScale).toInt(),
-                false
-            )
-
             // Create float array with bounds of images inside it to later use it
             // inside matrix to point values to new coordinates.
             val pointsFloat = floatArrayOf(
@@ -129,42 +120,54 @@ class MananPorterDuff {
             }
 
             canvas.run {
-                // Rotate canvas as much as destination image is rotated.
-                withRotation(
+
+                // Save canvas state to later restore it and continue other drawings.
+                save()
+
+                // Rotate the canvas as much as destination image is rotated.
+                rotate(
                     destinationRotation,
                     pointsFloat[0],
                     pointsFloat[1]
-                ) {
-                    // Draw bitmap while canvas is rotated.
-                    // Coordinates that bitmap would lay down is calculated by mapping points
-                    // of original boundaries via matrix.
-                    drawBitmap(
-                        destinationScaledBitmap,
-                        pointsFloat[0],
-                        pointsFloat[1],
-                        paint
-                    )
-                }
+                )
+
+                // Determine how much to scale the destination bitmap.
+                val toScale =
+                    (destinationBounds.width() * totalSourceScale) / destinationBitmap.width
+
+                // Scale the canvas to later draw scaled bitmap on it.
+                scale(
+                    toScale,
+                    toScale,
+                    pointsFloat[0],
+                    pointsFloat[1]
+                )
+
+                // Finally draw DST bitmap with respect to scaled x and y.
+                drawBitmap(
+                    destinationBitmap,
+                    pointsFloat[0],
+                    pointsFloat[1],
+                    paint
+                )
+
+                restore()
 
 
                 // Now configure the same paint used for destination bitmap and set
                 // it's transfer mode.
                 paint.xfermode = PorterDuffXfermode(porterDuffMode)
 
+                // Rotate the source bitmap(since source bitmap starts drawing from point 0 and 0 then we don't have to provide a pivot point.)
+                rotate(sourceRotation)
 
-                // Rotate the canvas again as much as source image is rotated.
-                withRotation(
-                    sourceRotation,
-                    sourceBounds.centerX(),
-                    sourceBounds.centerY()
-                ) {
-                    drawBitmap(
-                        sourceBitmap,
-                        0f,
-                        0f,
-                        paint
-                    )
-                }
+                // Draw SRC bitmap.
+                drawBitmap(
+                    sourceBitmap,
+                    0f,
+                    0f,
+                    paint
+                )
             }
 
             return baseBitmap
