@@ -90,15 +90,30 @@ class MananPorterDuff {
 
         /**
          * Determines if 'destination image' is out of bounds of 'source image'.
+         * This method does take care of rectangles rotation.
          * @return True if bounds don't intersect each other.
          */
-        private fun isOutOfBounds(srcBounds: RectF, dstBounds: RectF): Boolean {
-            return !srcBounds.intersects(
-                dstBounds.left,
-                dstBounds.top,
-                dstBounds.right,
-                dstBounds.bottom
-            )
+        private fun isOutOfBounds(
+            srcBounds: RectF,
+            srcRotation: Float,
+            dstBounds: RectF,
+            dstRotation: Float
+        ): Boolean {
+            Matrix().run {
+                val srcRectCopy = RectF(srcBounds)
+                setRotate(srcRotation, srcBounds.left, srcBounds.top)
+                mapRect(srcRectCopy)
+                val dstRectCopy = RectF(dstBounds)
+                setRotate(dstRotation, dstBounds.left, dstBounds.top)
+                mapRect(dstRectCopy)
+
+                return !srcRectCopy.intersects(
+                    dstRectCopy.left,
+                    dstRectCopy.top,
+                    dstRectCopy.right,
+                    dstRectCopy.bottom
+                )
+            }
         }
 
         /**
@@ -130,7 +145,13 @@ class MananPorterDuff {
             shiftLeft: Float,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
-            if (isOutOfBounds(sourceBounds, destinationBounds)) {
+            if (isOutOfBounds(
+                    sourceBounds,
+                    sourceRotation,
+                    destinationBounds,
+                    destinationRotation
+                )
+            ) {
                 // Recycle the image to be free to get garbage collected.
                 baseBitmap.recycle()
                 throw IllegalStateException("two images do not intersect each other")
