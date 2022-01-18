@@ -18,6 +18,7 @@ class MananPorterDuff {
          * @param destinationBitmap Bitmap that represents DST in porter-duff.
          * @param sourceBounds Boundaries of destination bitmap on screen.
          * @param sourceRotation Total rotation of destination image.
+         * @param resetRotation If true final bitmap rotation will reset.
          * @param porterDuffMode Defines mode of Porter duff method.
          */
 
@@ -28,6 +29,7 @@ class MananPorterDuff {
             destinationBitmap: Bitmap,
             destinationBounds: RectF,
             destinationRotation: Float,
+            resetRotation: Boolean = false,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
             Matrix().run {
@@ -80,6 +82,7 @@ class MananPorterDuff {
                     destinationBitmap,
                     destinationBounds,
                     destinationRotation,
+                    resetRotation,
                     porterDuffMode
                 )
             }
@@ -124,6 +127,7 @@ class MananPorterDuff {
             destinationBitmap: Bitmap,
             destinationBounds: RectF,
             destinationRotation: Float,
+            resetRotation: Boolean,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
             if (isOutOfBounds(sourceBounds, destinationBounds)) {
@@ -212,7 +216,19 @@ class MananPorterDuff {
                 )
             }
 
-            return baseBitmap
+            // If 'resetRotation' is true then rotate the bitmap back to reset source image rotation, otherwise return the original bitmap.
+            return if (!resetRotation) baseBitmap else {
+                Bitmap.createBitmap(
+                    baseBitmap,
+                    0,
+                    0,
+                    baseBitmap.width,
+                    baseBitmap.height,
+                    Matrix().apply {
+                        setRotate(-sourceRotation)
+                    }, false
+                )
+            }
         }
     }
 }
