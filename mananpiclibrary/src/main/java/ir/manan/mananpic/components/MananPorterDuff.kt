@@ -29,7 +29,7 @@ class MananPorterDuff {
             destinationBitmap: Bitmap,
             destinationBounds: RectF,
             destinationRotation: Float,
-            resetRotation: Boolean = false,
+            resetRotation: Boolean,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
             Matrix().run {
@@ -76,13 +76,13 @@ class MananPorterDuff {
                     newBitmap,
                     sourceBitmap,
                     sourceBounds,
-                    if (sourceRotation < 0f) vectors[1] - vectors[3] else 0f,
-                    if (sourceRotation > 0f) vectors[0] - vectors[6] else 0f,
                     sourceRotation,
                     destinationBitmap,
                     destinationBounds,
                     destinationRotation,
                     resetRotation,
+                    if (sourceRotation < 0f) vectors[1] - vectors[3] else 0f,
+                    if (sourceRotation > 0f) vectors[0] - vectors[6] else 0f,
                     porterDuffMode
                 )
             }
@@ -121,13 +121,13 @@ class MananPorterDuff {
             baseBitmap: Bitmap,
             sourceBitmap: Bitmap,
             sourceBounds: RectF,
-            shiftTop: Float,
-            shiftLeft: Float,
             sourceRotation: Float,
             destinationBitmap: Bitmap,
             destinationBounds: RectF,
             destinationRotation: Float,
             resetRotation: Boolean,
+            shiftTop: Float,
+            shiftLeft: Float,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
             if (isOutOfBounds(sourceBounds, destinationBounds)) {
