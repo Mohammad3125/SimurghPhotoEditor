@@ -84,6 +84,7 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
         dirtyRect.run {
             val ratio = getRatio()
 
+            // Limit the dirty rect to do not resize less than minimum dimension of limit rect divided by 4.
             if (min(width(), height()) < min(limitRect.width(), limitRect.height()) / 4f) {
                 set(rect)
                 return dirtyRect
