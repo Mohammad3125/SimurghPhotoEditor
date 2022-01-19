@@ -1,5 +1,7 @@
 package ir.manan.mananpic.components
 
+import android.animation.PropertyValuesHolder
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
@@ -10,6 +12,7 @@ import android.widget.FrameLayout
 import androidx.core.view.children
 import androidx.core.view.doOnLayout
 import androidx.core.view.updateLayoutParams
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.dp
@@ -27,6 +30,10 @@ import kotlin.math.min
  */
 class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, attr) {
     constructor(context: Context) : this(context, null)
+
+    companion object {
+        const val MAXIMUM_SCALE_FACTOR = 10f
+    }
 
     // Page settings.
     var pageWidth = 0
@@ -98,14 +105,165 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
 
 
-    private val scaleGestureListener by lazy {
-        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-            override fun onScale(detector: ScaleGestureDetector?): Boolean {
-                currentEditingView?.applyScale(detector!!.scaleFactor)
-                return true
+    private val canvasMatrix = Matrix()
+
+    private val canvasMatrixAnimator by lazy {
+        ValueAnimator().apply {
+            interpolator = FastOutSlowInInterpolator()
+            duration = 300
+
+            addUpdateListener {
+                // Get animating properties.
+                val s = getAnimatedValue("scale")
+                val tx = getAnimatedValue("translationX")
+                val ty = getAnimatedValue("translationY")
+
+                canvasMatrix.run {
+                    val matrixValueHolder = FloatArray(9)
+                    getValues(matrixValueHolder)
+
+                    // If translation isn't null or in other words, we should animate the translation, then animate it.
+                    if (tx != null) {
+                        postTranslate(
+                            tx as Float - matrixValueHolder[Matrix.MTRANS_X],
+                            0f
+                        )
+                    }
+
+                    // If translation isn't null or in other words, we should animate the translation, then animate it.
+                    if (ty != null) {
+                        postTranslate(
+                            0f,
+                            ty as Float - matrixValueHolder[Matrix.MTRANS_Y]
+                        )
+                    }
+
+                    // If scale property isn't null then scale it.
+                    if (s != null) {
+                        val totalScale = (s as Float) / matrixValueHolder[Matrix.MSCALE_X]
+                        postScale(totalScale, totalScale, pivotX, pivotY)
+                    }
+
+                    invalidate()
+                }
+
             }
         }
     }
+
+
+    private val scaleGestureListener by lazy {
+        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector?): Boolean {
+                if (detector != null) {
+                    val sf = detector.scaleFactor
+                    if (currentEditingView != null) {
+                        currentEditingView!!.applyScale(sf)
+                    } else {
+                        // If there isn't any component selected, scale the canvas.
+                        canvasMatrix.postScale(
+                            sf,
+                            sf,
+                            detector.focusX,
+                            detector.focusY
+                        )
+                    }
+                    return true
+                }
+                return false
+            }
+
+            override fun onScaleEnd(detector: ScaleGestureDetector?) {
+                super.onScaleEnd(detector)
+                animateCanvasBack()
+            }
+        }
+    }
+
+    private fun animateCanvasBack() {
+        if (!canvasMatrixAnimator.isRunning) {
+
+            val matrixValueHolder = FloatArray(9)
+            canvasMatrix.getValues(matrixValueHolder)
+
+            // Get matrix values.
+            val scale = matrixValueHolder[Matrix.MSCALE_X]
+            val tx = matrixValueHolder[Matrix.MTRANS_X]
+            val ty = matrixValueHolder[Matrix.MTRANS_Y]
+
+            // Here we calculate the edge of right side to later do not go further that point.
+            val rEdge =
+                calculateEdge(scale, 1f, width.toFloat(), 0f)
+
+            // Here we calculate the edge of bottom side to later do not go further that point.
+            val bEdge =
+                calculateEdge(scale, 1f, height.toFloat(), 0f)
+
+            // Calculate the valid scale (scale greater than maximum allowable scale and less than initial scale)
+            val validatedScale =
+                if (scale > MAXIMUM_SCALE_FACTOR) MAXIMUM_SCALE_FACTOR else if (scale < 1f) 1f else scale
+
+
+            canvasMatrixAnimator.run {
+                val animationPropertyHolderList = ArrayList<PropertyValuesHolder>()
+                // Add PropertyValuesHolder for each animation property if they should be animated.
+                if (scale < 1f || scale > MAXIMUM_SCALE_FACTOR)
+                    animationPropertyHolderList.add(
+                        PropertyValuesHolder.ofFloat(
+                            "scale",
+                            scale,
+                            validatedScale
+                        )
+                    )
+
+                if (tx < rEdge || tx > 0f)
+                    animationPropertyHolderList.add(
+                        PropertyValuesHolder.ofFloat(
+                            "translationX",
+                            tx,
+                            if (tx > 0f || scale < 1f) 0f else rEdge
+                        )
+                    )
+
+                if (ty < bEdge || ty > 0f)
+                    animationPropertyHolderList.add(
+                        PropertyValuesHolder.ofFloat(
+                            "translationY",
+                            ty,
+                            if (ty > 0f || scale < 1f) 0f else bEdge
+                        )
+                    )
+
+
+                // Finally convert the array list to array and set values of animator.
+                setValues(
+                    *animationPropertyHolderList.toArray(
+                        Array(
+                            animationPropertyHolderList.size
+                        ) {
+                            animationPropertyHolderList.get(it)
+                        })
+                )
+
+                start()
+            }
+        }
+    }
+
+    /**
+     * Calculates the edge of view with current applied scale.
+     * @param scaled Total scale factor that user scaled the image.
+     * @param initScale Initial scale of the image.
+     * @param initialSize Initial size of current axis we're trying to calculate (x or y).
+     * @param initialOffset Initial offset of that axis (initial translation)
+     */
+    private fun calculateEdge(
+        scaled: Float,
+        initScale: Float,
+        initialSize: Float,
+        initialOffset: Float
+    ): Float =
+        -((scaled * initialSize / initScale) - initialSize - initialOffset)
 
     private val scaleDetector by lazy {
         ScaleGestureDetector(context, scaleGestureListener).apply {
@@ -148,10 +306,18 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
 
             override fun onMove(dx: Float, dy: Float): Boolean {
-                return if (currentEditingView != null) {
+                if (currentEditingView != null) {
                     currentEditingView!!.applyMovement(dx, dy)
-                    true
-                } else false
+                } else {
+                    // If there isn't any component selected, translate the canvas.
+                    canvasMatrix.postTranslate(dx, dy)
+                }
+                return true
+            }
+
+            override fun onMoveEnded(lastX: Float, lastY: Float) {
+                super.onMoveEnded(lastX, lastY)
+                animateCanvasBack()
             }
         }
     }
@@ -259,10 +425,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Always draws.
         setWillNotDraw(false)
 
-    }
-
-    override fun performClick(): Boolean {
-        return super.performClick()
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
@@ -414,6 +576,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
+            // Set canvas matrix to matrix that we manipulate.
+            setMatrix(canvasMatrix)
+
             super.draw(this)
 
             // Draw the box around view.
