@@ -104,9 +104,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             invalidate()
         }
 
+    // Flag that determines if canvas should use matrix to manipulate scale and translation.
+    private var isCanvasMatrixEnabled = true
 
+    // Matrix that we later use to manipulate canvas scale and translation.
     private val canvasMatrix = Matrix()
 
+    // This animator is used to animate the matrix changes.
     private val canvasMatrixAnimator by lazy {
         ValueAnimator().apply {
             interpolator = FastOutSlowInInterpolator()
@@ -577,7 +581,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     override fun draw(canvas: Canvas?) {
         canvas?.run {
             // Set canvas matrix to matrix that we manipulate.
-            setMatrix(canvasMatrix)
+            if (isCanvasMatrixEnabled)
+                setMatrix(canvasMatrix)
 
             super.draw(this)
 
@@ -683,6 +688,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         if (transparentBackground)
             pagePaint.color = Color.TRANSPARENT
 
+        // Temporarily disable canvas matrix manipulation to correctly render the content of page into bitmap.
+        isCanvasMatrixEnabled = false
+
         // Invalidate to disappear rectangle drawn around selected component.
         invalidate()
 
@@ -704,6 +712,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         currentEditingView = lastSelectedView
 
         pagePaint.color = pageColor
+
+        // Return the state of canvas matrix.
+        isCanvasMatrixEnabled = true
 
         // Finally return bitmap.
         return bitmapWithPageSize
