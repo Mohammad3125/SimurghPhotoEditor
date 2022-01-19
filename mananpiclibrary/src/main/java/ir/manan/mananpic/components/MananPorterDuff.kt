@@ -7,6 +7,8 @@ import android.graphics.*
  */
 class MananPorterDuff {
     companion object {
+        private val matrix = Matrix()
+
         /**
          * Applies porter-duff methods on two bitmaps with given boundaries.
          * It is beneficial to use original bitmaps to preserve the quality (bitmap directly from [android.graphics.drawable.BitmapDrawable]).
@@ -32,7 +34,7 @@ class MananPorterDuff {
             resetRotation: Boolean,
             porterDuffMode: PorterDuff.Mode
         ): Bitmap {
-            Matrix().run {
+            matrix.run {
 
                 // Copy source bounds.
                 val rotatedRect = RectF(sourceBounds)
@@ -99,7 +101,7 @@ class MananPorterDuff {
             dstBounds: RectF,
             dstRotation: Float
         ): Boolean {
-            Matrix().run {
+            matrix.run {
                 val srcRectCopy = RectF(srcBounds)
                 setRotate(srcRotation, srcBounds.left, srcBounds.top)
                 mapRect(srcRectCopy)
@@ -178,7 +180,7 @@ class MananPorterDuff {
             )
 
             // Create a matrix and apply scale then point new bounds.
-            Matrix().apply {
+            matrix.apply {
                 setScale(totalSourceScale, totalSourceScale)
                 mapPoints(pointsFloat)
             }
@@ -245,7 +247,7 @@ class MananPorterDuff {
                     0,
                     baseBitmap.width,
                     baseBitmap.height,
-                    Matrix().apply {
+                    matrix.apply {
                         setRotate(-sourceRotation)
                     }, false
                 )
