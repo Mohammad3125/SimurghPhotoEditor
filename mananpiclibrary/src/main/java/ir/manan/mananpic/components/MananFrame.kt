@@ -36,9 +36,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         const val MAXIMUM_SCALE_FACTOR = 10f
     }
 
-    var drawingX = 0f
-    var drawingY = 0f
-
     // Page settings.
     var pageWidth = 0
     var pageHeight = 0
@@ -314,7 +311,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             override fun onMove(dx: Float, dy: Float): Boolean {
                 if (currentEditingView != null) {
-                    currentEditingView!!.applyMovement(dx, dy)
+                    // Slow down the translation if canvas matrix is zoomed.
+                    val matrixValue = FloatArray(9)
+                    canvasMatrix.getValues(matrixValue)
+                    val s = 1f / matrixValue[Matrix.MSCALE_X]
+                    currentEditingView!!.applyMovement(dx * s, dy * s)
                 } else {
                     // If there isn't any component selected, translate the canvas.
                     canvasMatrix.postTranslate(dx, dy)
