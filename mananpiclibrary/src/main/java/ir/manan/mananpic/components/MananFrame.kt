@@ -20,6 +20,7 @@ import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -632,10 +633,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private fun getChildAtPoint(x: Float, y: Float): View? {
         if (childCount == 0) return null
 
-        // Create a matrix and later apply view rotation to it
-        // to apply rotation to event coordinates in case
-        // view has been rotated.
-        val rotationMatrix = Matrix()
+        // Matrix that later will be used to map the touch point
+        // from screen coordinates to current view window inside canvas.
+        val touchMatrix = Matrix()
         children.forEach { v ->
             v as MananComponent
             if (v !== currentEditingView) {
@@ -646,16 +646,32 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // that component or not.
                 val bounds = v.reportBound()
 
-                // Rotate matrix to amount of view's rotation with pivot points being center of
-                // view in each coordinate.
-                rotationMatrix.setRotate(
-                    -v.reportRotation(),
-                    v.reportBoundPivotX(),
-                    v.reportBoundPivotY()
-                )
+                touchMatrix.run {
+                    val matrixValues = FloatArray(9)
+                    canvasMatrix.getValues(matrixValues)
 
-                // Finally apply rotation to the current coordinate of touch x and y.
-                rotationMatrix.mapPoints(touchPoints)
+                    setTranslate(
+                        abs(matrixValues[Matrix.MTRANS_X]),
+                        abs(matrixValues[Matrix.MTRANS_Y])
+                    )
+
+                    // Scale down the current matrix as much as canvas matrix scale up.
+                    // We do this because if we zoom in image, the rectangle our area that we see
+                    // is also smaller so we do this to successfully map our touch points to that area (zoomed area).
+                    val scale = 1f / matrixValues[Matrix.MSCALE_X]
+                    postScale(scale, scale)
+
+                    // Finally handle the rotation of component.
+                    postRotate(
+                        -v.reportRotation(),
+                        v.reportBoundPivotX(),
+                        v.reportBoundPivotY()
+                    )
+
+                }
+
+                // Finally map the touch points.
+                touchMatrix.mapPoints(touchPoints)
 
                 if (touchPoints[0] in bounds.left..bounds.right && touchPoints[1] in bounds.top..bounds.bottom)
                     return v
