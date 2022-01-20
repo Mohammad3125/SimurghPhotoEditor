@@ -3,6 +3,7 @@ package ir.manan.mananpic.components
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.TypedValue
 import androidx.appcompat.widget.AppCompatTextView
 import ir.manan.mananpic.properties.*
 import kotlin.math.max
@@ -19,8 +20,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
 
     constructor(context: Context) : this(context, null)
-
-    private var fontSize = textSize
 
     private val bounds = RectF()
 
@@ -103,8 +102,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
     override fun applyScale(scaleFactor: Float) {
-        fontSize *= scaleFactor
-        textSize = fontSize
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
     }
 
     override fun applyMovement(dx: Float, dy: Float) {
