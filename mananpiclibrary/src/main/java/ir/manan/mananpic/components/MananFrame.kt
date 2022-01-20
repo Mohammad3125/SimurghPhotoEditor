@@ -591,6 +591,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             // Draw the box around view.
             if (currentEditingView != null && isDrawingBoxEnabled) {
+                if (isCanvasMatrixEnabled) {
+                    val matrixValues = FloatArray(9)
+                    canvasMatrix.getValues(matrixValues)
+
+                    boxPaint.strokeWidth =
+                        frameBoxStrokeWidth * (1f / matrixValues[Matrix.MSCALE_X])
+                }
                 val view = currentEditingView!!
 
                 // Get bounds of component to create a rectangle with it.
