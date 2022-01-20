@@ -35,6 +35,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         const val MAXIMUM_SCALE_FACTOR = 10f
     }
 
+    var drawingX = 0f
+    var drawingY = 0f
+
     // Page settings.
     var pageWidth = 0
     var pageHeight = 0
@@ -241,12 +244,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                 // Finally convert the array list to array and set values of animator.
                 setValues(
-                    *animationPropertyHolderList.toArray(
-                        Array(
-                            animationPropertyHolderList.size
-                        ) {
-                            animationPropertyHolderList.get(it)
-                        })
+                    *Array(
+                        animationPropertyHolderList.size
+                    ) {
+                        animationPropertyHolderList.get(it)
+                    }
                 )
 
                 start()
