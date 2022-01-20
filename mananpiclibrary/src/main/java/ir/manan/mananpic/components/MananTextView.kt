@@ -87,7 +87,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     override fun removeBlur() {
         paint.maskFilter = null
-        setLayerType(LAYER_TYPE_HARDWARE, null)
+        setLayerType(LAYER_TYPE_NONE, null)
         invalidate()
     }
 
