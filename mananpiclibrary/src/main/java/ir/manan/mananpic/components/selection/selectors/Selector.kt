@@ -1,23 +1,24 @@
 package ir.manan.mananpic.components.selection.selectors
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
-import android.view.View
 
 /**
  * Base class for selection tools.
  */
 abstract class Selector {
 
+    var invalidateListener: OnDispatchToInvalidate? = null
+
     /**
      * Initializes the selector.
-     * @param view View that this selector is in it. A selector might use a view to invalidate it.
-     * @param bitmap Image Bitmap that a selector like [PenSelector] will use.
      * @param bounds Bounds of visible image.
+     * @param context Context of view. A selector might use it to use methods such as [ir.manan.mananpic.utils.dp] and such.
      */
-    abstract fun initialize(view: View, bitmap: Bitmap?, bounds: RectF)
+    abstract fun initialize(context: Context, bounds: RectF)
 
     /**
      * Called when user starts to move his/her finger on screen.
@@ -68,4 +69,8 @@ abstract class Selector {
      * A closed selection is ready to be cropper/clipped.
      */
     abstract fun isClosed(): Boolean
+
+    interface OnDispatchToInvalidate {
+        fun invalidateDrawings()
+    }
 }

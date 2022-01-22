@@ -1,8 +1,8 @@
 package ir.manan.mananpic.components.selection.selectors
 
+import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
-import android.view.View
 import kotlin.math.abs
 
 abstract class PathBasedSelector : Selector() {
@@ -23,7 +23,7 @@ abstract class PathBasedSelector : Selector() {
         }
     }
 
-    override fun initialize(view: View, bitmap: Bitmap?, bounds: RectF) {
+    override fun initialize(context: Context, bounds: RectF) {
         leftEdge = bounds.left
         topEdge = bounds.top
         rightEdge = bounds.right

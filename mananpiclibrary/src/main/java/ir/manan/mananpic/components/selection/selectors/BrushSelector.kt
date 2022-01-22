@@ -1,7 +1,7 @@
 package ir.manan.mananpic.components.selection.selectors
 
+import android.content.Context
 import android.graphics.*
-import android.view.View
 
 class BrushSelector : PathBasedSelector() {
 
@@ -20,24 +20,22 @@ class BrushSelector : PathBasedSelector() {
         set(value) {
             brushPaint.strokeWidth = value
             field = value
-            view.invalidate()
+            invalidateListener?.invalidateDrawings()
         }
 
     /**
      * Brush color. Default is [Color.BLACK]
-     * View will get invalidated after setting this value.
      */
     var brushColor = Color.BLACK
         set(value) {
             brushPaint.color = value
             brushPaint.alpha = brushAlpha
             field = value
-            view.invalidate()
+            invalidateListener?.invalidateDrawings()
         }
 
     /**
      * Brush alpha. Default values is 128
-     * View will get invalidated after setting this value.
      * Value should be between 0 and 255. If value exceeds
      * the range then nearest allowable value is replaced.
      */
@@ -46,19 +44,12 @@ class BrushSelector : PathBasedSelector() {
             val finalVal = if (value > 255) 255 else if (value < 0) 0 else value
             brushPaint.alpha = finalVal
             field = finalVal
-            view.invalidate()
+            invalidateListener?.invalidateDrawings()
         }
 
-    // Reference to view to invalidate it.
-    private lateinit var view: View
-
-    override fun initialize(view: View, bitmap: Bitmap?, bounds: RectF) {
-        super.initialize(view, bitmap, bounds)
-
-        this.view = view
-        view.run {
-            brushPaint.alpha = brushAlpha
-        }
+    override fun initialize(context: Context, bounds: RectF) {
+        super.initialize(context, bounds)
+        brushPaint.alpha = brushAlpha
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
@@ -74,7 +65,7 @@ class BrushSelector : PathBasedSelector() {
 
     private fun drawCircles(touchX: Float, touchY: Float) {
         path.addCircle(touchX, touchY, brushSize, Path.Direction.CW)
-        view.invalidate()
+        invalidateListener?.invalidateDrawings()
         isPathClose = true
     }
 
@@ -88,6 +79,6 @@ class BrushSelector : PathBasedSelector() {
     override fun resetSelection() {
         path.rewind()
         isPathClose = false
-        view.invalidate()
+        invalidateListener?.invalidateDrawings()
     }
 }
