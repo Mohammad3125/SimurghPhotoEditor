@@ -15,6 +15,9 @@ abstract class PathBasedSelector : Selector() {
 
     protected var isPathClose = false
 
+    protected var matrixValueHolder = FloatArray(9)
+    protected var canvasMatrix: Matrix? = null
+
     // Path that adds circles into it and later will be used to
     // clip the drawable content.
     protected val path by lazy {
@@ -23,11 +26,12 @@ abstract class PathBasedSelector : Selector() {
         }
     }
 
-    override fun initialize(context: Context, bounds: RectF) {
+    override fun initialize(context: Context, matrix: Matrix?, bounds: RectF) {
         leftEdge = bounds.left
         topEdge = bounds.top
         rightEdge = bounds.right
         bottomEdge = bounds.bottom
+        canvasMatrix = matrix
     }
 
     override fun select(drawable: Drawable): Bitmap? {

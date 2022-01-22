@@ -56,9 +56,17 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    private var pointsPaintStrokeWidth: Float = 0.0f
+        set(value) {
+            field = value
+            pointsPaint.strokeWidth = field
+        }
 
-    override fun initialize(context: Context, bounds: RectF) {
-        super.initialize(context, bounds)
+    private var enlargedPaintStrokeWidth = 0f
+
+
+    override fun initialize(context: Context, matrix: Matrix?, bounds: RectF) {
+        super.initialize(context, matrix, bounds)
         this.context = context
 
         context.run {
@@ -67,7 +75,9 @@ class PenSelector : PathBasedSelector() {
 
             touchRange = dp(8)
 
-            pointsPaint.strokeWidth = dp(2)
+            pointsPaintStrokeWidth = dp(3)
+
+            enlargedPaintStrokeWidth = dp(1)
         }
     }
 
@@ -132,6 +142,15 @@ class PenSelector : PathBasedSelector() {
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
+            var scale = 1f
+            if (canvasMatrix != null) {
+                canvasMatrix!!.getValues(matrixValueHolder)
+                scale = matrixValueHolder[Matrix.MSCALE_X]
+            }
+
+            pointsPaint.strokeWidth =
+                if (scale > 3f) enlargedPaintStrokeWidth else pointsPaintStrokeWidth
+
             drawPath(path, pointsPaint)
         }
     }

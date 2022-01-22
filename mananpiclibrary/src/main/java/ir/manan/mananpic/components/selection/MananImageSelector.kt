@@ -17,6 +17,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     constructor(context: Context) : this(context, null)
 
+    companion object {
+        const val MAXIMUM_SCALE_ZOOM = 15f
+        const val MINIMUM_SCALE_ZOOM = 0.5f
+    }
+
     private var onCloseListener: OnCloseListener? = null
     private var onCloseCallBack: (() -> Unit)? = null
 
@@ -49,6 +54,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         // Initialize the selector.
         selector?.initialize(
             context,
+            canvasMatrix,
             boundsRectangle
         )
     }
