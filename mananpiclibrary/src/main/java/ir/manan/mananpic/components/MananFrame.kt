@@ -697,6 +697,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     fun convertPageToBitmap(transparentBackground: Boolean = false): Bitmap {
         if (pageWidth == 0 || pageHeight == 0) throw IllegalStateException("Page size should not be 0")
 
+        // Set children layer type to none to get better quality for rendering.
+        children.forEach {
+            it.setLayerType(LAYER_TYPE_NONE, null)
+        }
+
         // Create bitmap with size of page.
         val bitmapWithPageSize =
             Bitmap.createBitmap(pageWidth, pageHeight, Bitmap.Config.ARGB_8888)
