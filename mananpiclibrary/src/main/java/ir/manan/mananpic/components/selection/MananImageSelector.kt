@@ -30,6 +30,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
      */
     var isZoomMode = false
 
+    // Holds value of matrix.
+    private val matrixValueHolder by lazy {
+        FloatArray(9)
+    }
+
     private val canvasMatrix by lazy {
         Matrix()
     }
@@ -81,10 +86,16 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             canvasMatrix.postTranslate(dx, dy)
             invalidate()
         } else {
+            canvasMatrix.getValues(matrixValueHolder)
+            // Calculate how much the canvas is scaled then use
+            // that to slow down the translation by that factor.
+            // Note that we divide 1 by matrix scale to get reverse of current
+            // scale, for example if scale is 2 the we get 0.5 by doing that.
+            val s = 1f / matrixValueHolder[Matrix.MSCALE_X]
             val exactMapPoints = mapTouchPoints(ex, ey)
             selector?.onMove(
-                dx ,
-                dy,
+                dx * s,
+                dy * s,
                 exactMapPoints[0],
                 exactMapPoints[1]
             )
