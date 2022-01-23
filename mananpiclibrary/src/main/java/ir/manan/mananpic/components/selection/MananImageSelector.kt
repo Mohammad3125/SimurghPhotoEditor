@@ -212,6 +212,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         canvas?.run {
             setMatrix(canvasMatrix)
             super.onDraw(this)
+            // Set matrix to null to let the selector scale it self base on canvas we passed earlier to it.
+            setMatrix(null)
             selector?.draw(this)
         }
     }

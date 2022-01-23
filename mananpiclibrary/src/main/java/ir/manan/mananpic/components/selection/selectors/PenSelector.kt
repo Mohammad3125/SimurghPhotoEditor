@@ -4,7 +4,6 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.view.animation.LinearInterpolator
-import ir.manan.mananpic.components.selection.MananImageSelector
 import ir.manan.mananpic.utils.dp
 
 class PenSelector : PathBasedSelector() {
@@ -64,9 +63,6 @@ class PenSelector : PathBasedSelector() {
             pointsPaint.strokeWidth = field
         }
 
-    private var enlargedPaintStrokeWidth = 0f
-    private var superEnlargedPaintStrokeWidth = 0f
-
 
     override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
@@ -79,10 +75,6 @@ class PenSelector : PathBasedSelector() {
             touchRange = dp(10)
 
             pointsPaintStrokeWidth = dp(3)
-
-            enlargedPaintStrokeWidth = dp(1)
-
-            superEnlargedPaintStrokeWidth = dp(0.5f)
         }
     }
 
@@ -151,17 +143,22 @@ class PenSelector : PathBasedSelector() {
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            canvasMatrix.getValues(matrixValueHolder)
-            val scale = matrixValueHolder[Matrix.MSCALE_X]
 
-            pointsPaint.strokeWidth =
-                when {
-                    scale < MananImageSelector.MAXIMUM_SCALE_FACTOR * 0.3f -> pointsPaintStrokeWidth
-                    scale < MananImageSelector.MAXIMUM_SCALE_FACTOR * 0.6f -> enlargedPaintStrokeWidth
-                    else -> superEnlargedPaintStrokeWidth
-                }
+            // Create a copy of path to later transform the transformed path to it.
+            val pathCopy = Path(path)
 
+            // Apply matrix to path.
+            path.transform(canvasMatrix)
+
+            // Draw the transformed path.
             drawPath(path, pointsPaint)
+
+            // Revert it back.
+            path.set(pathCopy)
+
+            // Reset path copy to release memory.
+            pathCopy.reset()
+
         }
     }
 }

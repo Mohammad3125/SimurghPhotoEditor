@@ -71,8 +71,20 @@ class BrushSelector : PathBasedSelector() {
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            // Draw circles.
+            // Create a copy of path to later transform the transformed path to it.
+            val pathCopy = Path(path)
+
+            // Apply matrix to path.
+            path.transform(canvasMatrix)
+
+            // Draw the transformed path.
             drawPath(path, brushPaint)
+
+            // Revert it back.
+            path.set(pathCopy)
+
+            // Reset the pathCopy to release memory.
+            pathCopy.reset()
         }
     }
 
