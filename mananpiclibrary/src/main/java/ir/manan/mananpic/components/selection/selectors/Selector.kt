@@ -12,7 +12,7 @@ import android.graphics.drawable.Drawable
  */
 abstract class Selector {
 
-    var invalidateListener: OnDispatchToInvalidate? = null
+    internal var invalidateListener: OnDispatchToInvalidate? = null
 
     /**
      * Initializes the selector.
@@ -20,7 +20,7 @@ abstract class Selector {
      * @param matrix Transformation Matrix of target canvas (avoid changing it. It's only for reading matrix values.)
      * @param context Context of view. A selector might use it to use methods such as [ir.manan.mananpic.utils.dp] and such.
      */
-    abstract fun initialize(context: Context, matrix: Matrix, bounds: RectF)
+    internal abstract fun initialize(context: Context, matrix: Matrix, bounds: RectF)
 
     /**
      * Called when user starts to move his/her finger on screen.
@@ -28,7 +28,7 @@ abstract class Selector {
      * @param initialX Coordinate of current x.
      * @param initialY Coordinate of current y.
      */
-    abstract fun onMoveBegin(initialX: Float, initialY: Float)
+    internal abstract fun onMoveBegin(initialX: Float, initialY: Float)
 
     /**
      * Called when user is currently moving his/her finger on screen.
@@ -38,7 +38,7 @@ abstract class Selector {
      * @param ex Exact location of current x.
      * @param ey Exact location of current y.
      */
-    abstract fun onMove(dx: Float, dy: Float, ex: Float, ey: Float)
+    internal abstract fun onMove(dx: Float, dy: Float, ex: Float, ey: Float)
 
     /**
      * Called when user raises his/her finger on screen.
@@ -46,31 +46,31 @@ abstract class Selector {
      * @param lastX Exact location of last x user touched.
      * @param lastY Exact location of last y user touched.
      */
-    abstract fun onMoveEnded(lastX: Float, lastY: Float)
+    internal abstract fun onMoveEnded(lastX: Float, lastY: Float)
 
     /**
      * Selects(Crops/Clips) the selected area by user.
      * @param drawable That is going to be clipped/cropped.
      */
-    abstract fun select(drawable: Drawable): Bitmap?
+    internal abstract fun select(drawable: Drawable): Bitmap?
 
     /**
      * Draws any content that a selector might draw; for example [BrushSelector] draws circle indicating
      * interested areas in image.
      * @param canvas Canvas that selector draws content on.
      */
-    abstract fun draw(canvas: Canvas?)
+    internal abstract fun draw(canvas: Canvas?)
 
     /**
      * Resets current selection if there is any.
      */
-    abstract fun resetSelection()
+    internal abstract fun resetSelection()
 
     /**
      * Determines if the selection is closed or not.
      * A closed selection is ready to be cropper/clipped.
      */
-    abstract fun isClosed(): Boolean
+    internal abstract fun isClosed(): Boolean
 
     interface OnDispatchToInvalidate {
         fun invalidateDrawings()

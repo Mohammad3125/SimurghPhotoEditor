@@ -14,10 +14,8 @@ class PenSelector : PathBasedSelector() {
     private var firstY = 0f
 
     /**
-     * This range will later determine the range of acceptance
-     * for current touch location to close the path. Default value is 10dp (after selector is initialized).
-     * If matrix is scaled then this value also changes in final calculation (but remains the same) or in other words if
-     * target image is zoomed then this value will be smaller in final calculation to get more precise in selecting.
+     * This range will later determine the range of acceptance for current touch
+     * location to close the path. Default value is 10dp (after selector is initialized).
      */
     var touchRange = 0f
 
