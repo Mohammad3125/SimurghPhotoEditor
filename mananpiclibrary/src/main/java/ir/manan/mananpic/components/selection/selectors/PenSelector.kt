@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.view.animation.LinearInterpolator
+import ir.manan.mananpic.components.selection.MananImageSelector
 import ir.manan.mananpic.utils.dp
 
 class PenSelector : PathBasedSelector() {
@@ -64,6 +65,7 @@ class PenSelector : PathBasedSelector() {
         }
 
     private var enlargedPaintStrokeWidth = 0f
+    private var superEnlargedPaintStrokeWidth = 0f
 
 
     override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
@@ -79,6 +81,8 @@ class PenSelector : PathBasedSelector() {
             pointsPaintStrokeWidth = dp(3)
 
             enlargedPaintStrokeWidth = dp(1)
+
+            superEnlargedPaintStrokeWidth = dp(0.5f)
         }
     }
 
@@ -151,7 +155,11 @@ class PenSelector : PathBasedSelector() {
             val scale = matrixValueHolder[Matrix.MSCALE_X]
 
             pointsPaint.strokeWidth =
-                if (scale > 3f) enlargedPaintStrokeWidth else pointsPaintStrokeWidth
+                when {
+                    scale < MananImageSelector.MAXIMUM_SCALE_FACTOR * 0.3f -> pointsPaintStrokeWidth
+                    scale < MananImageSelector.MAXIMUM_SCALE_FACTOR * 0.6f -> enlargedPaintStrokeWidth
+                    else -> superEnlargedPaintStrokeWidth
+                }
 
             drawPath(path, pointsPaint)
         }
