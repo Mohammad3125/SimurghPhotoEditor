@@ -81,9 +81,13 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             canvasMatrix.postTranslate(dx, dy)
             invalidate()
         } else {
-            val mappedPoints = mapTouchPoints(dx, dy)
             val exactMapPoints = mapTouchPoints(ex, ey)
-            selector?.onMove(mappedPoints[0], mappedPoints[1], exactMapPoints[0], exactMapPoints[1])
+            selector?.onMove(
+                dx ,
+                dy,
+                exactMapPoints[0],
+                exactMapPoints[1]
+            )
         }
         return true
     }
