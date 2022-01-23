@@ -15,10 +15,11 @@ class PenSelector : PathBasedSelector() {
 
     /**
      * This range will later determine the range of acceptance
-     * for current touch location to close the path. Default value is 8dp.
+     * for current touch location to close the path. Default value is 10dp (after selector is initialized).
+     * If matrix is scaled then this value also changes in final calculation (but remains the same) or in other words if
+     * target image is zoomed then this value will be smaller in final calculation to get more precise in selecting.
      */
     var touchRange = 0f
-
 
     private lateinit var context: Context
 
@@ -73,7 +74,7 @@ class PenSelector : PathBasedSelector() {
 
             cornerPathEffect = CornerPathEffect(dp(2))
 
-            touchRange = dp(8)
+            touchRange = dp(10)
 
             pointsPaintStrokeWidth = dp(3)
 
@@ -123,7 +124,12 @@ class PenSelector : PathBasedSelector() {
     }
 
     private fun isNearFirstLine(initialX: Float, initialY: Float): Boolean {
-        return (initialX in (firstX - touchRange)..(firstX + touchRange) && initialY in (firstY - touchRange)..(firstY + touchRange))
+        var finalTouchRange = touchRange
+        if (canvasMatrix != null) {
+            canvasMatrix!!.getValues(matrixValueHolder)
+            finalTouchRange = touchRange * (1f / matrixValueHolder[Matrix.MSCALE_X])
+        }
+        return (initialX in (firstX - finalTouchRange)..(firstX + finalTouchRange) && initialY in (firstY - finalTouchRange)..(firstY + finalTouchRange))
     }
 
     override fun resetSelection() {
