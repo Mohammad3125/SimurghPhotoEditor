@@ -66,7 +66,7 @@ class PenSelector : PathBasedSelector() {
     private var enlargedPaintStrokeWidth = 0f
 
 
-    override fun initialize(context: Context, matrix: Matrix?, bounds: RectF) {
+    override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         this.context = context
 
@@ -124,11 +124,10 @@ class PenSelector : PathBasedSelector() {
     }
 
     private fun isNearFirstLine(initialX: Float, initialY: Float): Boolean {
-        var finalTouchRange = touchRange
-        if (canvasMatrix != null) {
-            canvasMatrix!!.getValues(matrixValueHolder)
-            finalTouchRange = touchRange * (1f / matrixValueHolder[Matrix.MSCALE_X])
-        }
+        // Calculate the touch range if user is zoomed in image.
+        canvasMatrix.getValues(matrixValueHolder)
+        val finalTouchRange = touchRange * (1f / matrixValueHolder[Matrix.MSCALE_X])
+
         return (initialX in (firstX - finalTouchRange)..(firstX + finalTouchRange) && initialY in (firstY - finalTouchRange)..(firstY + finalTouchRange))
     }
 
@@ -148,11 +147,8 @@ class PenSelector : PathBasedSelector() {
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            var scale = 1f
-            if (canvasMatrix != null) {
-                canvasMatrix!!.getValues(matrixValueHolder)
-                scale = matrixValueHolder[Matrix.MSCALE_X]
-            }
+            canvasMatrix.getValues(matrixValueHolder)
+            val scale = matrixValueHolder[Matrix.MSCALE_X]
 
             pointsPaint.strokeWidth =
                 if (scale > 3f) enlargedPaintStrokeWidth else pointsPaintStrokeWidth

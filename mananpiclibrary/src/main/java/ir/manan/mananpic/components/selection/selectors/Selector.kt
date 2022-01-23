@@ -20,7 +20,7 @@ abstract class Selector {
      * @param matrix Transformation Matrix of target canvas (avoid changing it. It's only for reading matrix values.)
      * @param context Context of view. A selector might use it to use methods such as [ir.manan.mananpic.utils.dp] and such.
      */
-    abstract fun initialize(context: Context, matrix: Matrix?, bounds: RectF)
+    abstract fun initialize(context: Context, matrix: Matrix, bounds: RectF)
 
     /**
      * Called when user starts to move his/her finger on screen.

@@ -47,7 +47,7 @@ class BrushSelector : PathBasedSelector() {
             invalidateListener?.invalidateDrawings()
         }
 
-    override fun initialize(context: Context, matrix: Matrix?, bounds: RectF) {
+    override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         brushPaint.alpha = brushAlpha
     }
