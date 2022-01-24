@@ -71,6 +71,15 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    private val firstPointCirclePaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#69a2ff")
+            style = Paint.Style.FILL
+        }
+    }
+
+    private var firstPointCircleRadius = 0f
+
     private var pointsPaintStrokeWidth: Float = 0.0f
         set(value) {
             field = value
@@ -88,6 +97,8 @@ class PenSelector : PathBasedSelector() {
             touchRange = dp(10)
 
             pointsPaintStrokeWidth = dp(3)
+
+            firstPointCircleRadius = dp(4)
         }
     }
 
@@ -214,6 +225,23 @@ class PenSelector : PathBasedSelector() {
                 bezierPath.set(bezierCopy)
 
                 bezierCopy.reset()
+            }
+
+            // Draw circle if it's first point that user touches so it will be visible that user
+            // has touch the first point.
+            if (pointCounter == 1) {
+
+                // Get scale and divide 1 by it to get factor to resize the circle radius.
+                canvasMatrix.getValues(matrixValueHolder)
+                val scale = 1f / matrixValueHolder[Matrix.MSCALE_X]
+
+                // Set matrix to 'canvasMatrix' to transform the circle.
+                setMatrix(canvasMatrix)
+                // Draw first point circle.
+                drawCircle(firstX, firstY, firstPointCircleRadius * scale, firstPointCirclePaint)
+
+                // Finally set canvas matrix to null to prevent affecting other drawings.
+                setMatrix(null)
             }
         }
     }
