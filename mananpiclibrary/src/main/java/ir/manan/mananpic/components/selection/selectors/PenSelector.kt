@@ -13,11 +13,27 @@ class PenSelector : PathBasedSelector() {
     private var firstX = 0f
     private var firstY = 0f
 
+
+    // These two variables store the end point of quad bezier.
+    private var bx = 0f
+    private var by = 0f
+
     /**
      * This range will later determine the range of acceptance for current touch
      * location to close the path. Default value is 10dp (after selector is initialized).
      */
     var touchRange = 0f
+
+    /**
+     * If true selector draws quad bezier instead of straight line.
+     */
+    var isQuadBezier = false
+
+    private val bezierPath by lazy {
+        Path().apply {
+            fillType = Path.FillType.WINDING
+        }
+    }
 
     private lateinit var context: Context
 
@@ -67,7 +83,6 @@ class PenSelector : PathBasedSelector() {
         this.context = context
 
         context.run {
-
             cornerPathEffect = CornerPathEffect(dp(2))
 
             touchRange = dp(10)
@@ -77,7 +92,17 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-
+        // If use is in quad bezier mode and path is not empty,
+        // save to location of current touch to later use it to draw
+        // quad bezier to that point. We check if path is empty because
+        // 'quadTo' method draws the first point from 0,0 if there aren't
+        // any line or path available, so if use is in quad bezier mode and
+        // it's the first line that user wants to draw, then we first move
+        // the path to that current location then we draw a bezier.
+        if (!path.isEmpty && isQuadBezier) {
+            bx = initialX
+            by = initialY
+        }
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
@@ -85,6 +110,16 @@ class PenSelector : PathBasedSelector() {
         if (isPathClose) {
             path.offset(dx, dy)
             invalidateListener?.invalidateDrawings()
+        } else if (isQuadBezier && !path.isEmpty) {
+            bezierPath.run {
+                // Reset the bezier path to original path.
+                set(path)
+                // Draw a quad to points that user first touched(bx,by)
+                // and put 'ex''ey' as handle bar points.
+                quadTo(ex, ey, bx, by)
+
+                invalidateListener?.invalidateDrawings()
+            }
         }
     }
 
@@ -92,29 +127,39 @@ class PenSelector : PathBasedSelector() {
         // If path is closed.
         if (!isPathClose) {
             // If path is empty store the first touch location.
-            if (path.isEmpty) {
+            if (pointCounter == 0) {
                 firstX = lastX
                 firstY = lastY
                 path.moveTo(lastX, lastY)
-                pointCounter++
             } else {
-                // If current touch position is close to first line and we have more that 2 line (to make at least a triangle)
-                // close the line.
-                if (isNearFirstLine(lastX, lastY) && pointCounter > 2) {
-                    path.close()
-                    pathEffectAnimator.start()
-                    isPathClose = true
+                if (isQuadBezier && pointCounter > 0) {
+                    path.set(bezierPath)
                 } else {
-                    // Else just add the point to the path.
                     path.lineTo(lastX, lastY)
-                    pointCounter++
+                }
+
+                // If line is close to first point that user touched and we have at least 3 lines, then
+                // close the path.
+                if ((isNearFirstLine(lastX, lastY) || isNearFirstLine(
+                        bx,
+                        by
+                    )) && pointCounter > 2
+                ) {
+                    closePath()
                 }
             }
+            pointCounter++
         }
 
         // Invalidate to hide the circle.
         invalidateListener?.invalidateDrawings()
 
+    }
+
+    private fun closePath() {
+        path.close()
+        pathEffectAnimator.start()
+        isPathClose = true
     }
 
     private fun isNearFirstLine(initialX: Float, initialY: Float): Boolean {
@@ -127,6 +172,7 @@ class PenSelector : PathBasedSelector() {
 
     override fun resetSelection() {
         path.rewind()
+        bezierPath.reset()
         isPathClose = false
         pointCounter = 0
 
@@ -157,6 +203,18 @@ class PenSelector : PathBasedSelector() {
             // Reset path copy to release memory.
             pathCopy.reset()
 
+            // Only draw bezier path if we're in quad bezier mode.
+            if (isQuadBezier) {
+                val bezierCopy = Path(bezierPath)
+
+                bezierPath.transform(canvasMatrix)
+
+                drawPath(bezierPath, pointsPaint)
+
+                bezierPath.set(bezierCopy)
+
+                bezierCopy.reset()
+            }
         }
     }
 }

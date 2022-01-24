@@ -127,8 +127,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
-        val mappedPoints = mapTouchPoints(initialX, initialY)
-        selector?.onMoveBegin(mappedPoints[0], mappedPoints[1])
+        if (!isZoomMode) {
+            val mappedPoints = mapTouchPoints(initialX, initialY)
+            selector?.onMoveBegin(mappedPoints[0], mappedPoints[1])
+        }
         return true
     }
 
