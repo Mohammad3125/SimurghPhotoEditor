@@ -169,6 +169,7 @@ class PenSelector : PathBasedSelector() {
 
     private fun closePath() {
         path.close()
+        bezierPath.reset()
         pathEffectAnimator.start()
         isPathClose = true
     }
