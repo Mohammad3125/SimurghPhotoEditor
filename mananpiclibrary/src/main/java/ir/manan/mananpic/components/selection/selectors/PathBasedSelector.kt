@@ -1,8 +1,8 @@
 package ir.manan.mananpic.components.selection.selectors
 
+import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
-import android.view.View
 import kotlin.math.abs
 
 abstract class PathBasedSelector : Selector() {
@@ -15,6 +15,9 @@ abstract class PathBasedSelector : Selector() {
 
     protected var isPathClose = false
 
+    protected var matrixValueHolder = FloatArray(9)
+    protected lateinit var canvasMatrix: Matrix
+
     // Path that adds circles into it and later will be used to
     // clip the drawable content.
     protected val path by lazy {
@@ -23,11 +26,12 @@ abstract class PathBasedSelector : Selector() {
         }
     }
 
-    override fun initialize(view: View, bitmap: Bitmap?, bounds: RectF) {
+    override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
         leftEdge = bounds.left
         topEdge = bounds.top
         rightEdge = bounds.right
         bottomEdge = bounds.bottom
+        canvasMatrix = matrix
     }
 
     override fun select(drawable: Drawable): Bitmap? {

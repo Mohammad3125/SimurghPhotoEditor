@@ -3,104 +3,44 @@ package ir.manan.mananpic.components.selection.selectors
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
-import android.view.View
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.utils.dp
-import kotlin.math.min
 
 class PenSelector : PathBasedSelector() {
-
-    // Paint for drawing cross in center of circle for better indicating selected pixels.
-    private val centerCrossPaint by lazy {
-        Paint().apply {
-            style = Paint.Style.FILL
-        }
-    }
-
-    // Stroke width of center cross.
-    var centerCrossStrokeWidth = 0f
-        set(value) {
-            centerCrossPaint.strokeWidth = value
-            field = value
-        }
-
-    // Color of center cross.
-    var centerCrossColor = Color.WHITE
-        set(value) {
-            centerCrossPaint.color = value
-            field = value
-        }
-
-    private val enlargedBitmapPaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG)
-    }
-
-    private val shadowCirclePaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-        }
-    }
-
-    private val circleShadowColors by lazy {
-        intArrayOf(Color.BLACK, Color.TRANSPARENT)
-    }
-
-    private val enlargedBitmapMatrix by lazy {
-        Matrix()
-    }
-
-    // Determines the size of cross lines (not to be confused with stroke width).
-    var centerCrossLineSize = 0f
 
     // These two variables determine the location of first touch to later
     // use to close a path.
     private var firstX = 0f
     private var firstY = 0f
 
-    // Determines if magnifier is enabled.
-    var isZoomEnabled = false
 
-    // Radius of magnifier circle
-    private var circleRadius = 0f
-
-    // Total offset of magnifier circle from center of touch.
-    // We offset the circle to better view the location that user
-    // is currently touching, otherwise magnifier circle would go
-    // under user finger.
-    private var circleOffsetFromCenter = 0f
-
-    // This offset is for times when the magnifier circle
-    // exceeds the view y position.
-    private var offsetY: Float = 0f
-
-    // Determines current location of touch (defined in global to be accessible to other methods.)
-    private var currentX = 0f
-    private var currentY = 0f
+    // These two variables store the end point of quad bezier.
+    private var bx = 0f
+    private var by = 0f
 
     /**
-     * This range will later determine the range of acceptance
-     * for current touch location to close the path. Default value is 8dp.
+     * This range will later determine the range of acceptance for current touch
+     * location to close the path. Default value is 10dp (after selector is initialized).
      */
     var touchRange = 0f
 
-    // Flag used to indicate whether show the magnifier circle of not.
-    private var showCircle = false
+    /**
+     * If true selector draws quad bezier instead of straight line.
+     */
+    var isQuadBezier = false
+
+    private val bezierPath by lazy {
+        Path().apply {
+            fillType = Path.FillType.WINDING
+        }
+    }
 
     private lateinit var context: Context
-
-    // Height of view (is different to 'bottomEdge' because scale type of image view is Matrix)
-    private var height = 0
 
     // Counts total number of points on screen.
     // This variable will later be used to only select bitmap if our points are more than 2 otherwise
     // we cannot make a side or shape with it to be able to select.
     private var pointCounter = 0
-
-    // Reference to view to later invalidate the view in appropriate situations.
-    private lateinit var view: View
-
-    // Bitmap that will be enlarged by matrix and drawn on circle.
-    private var bitmapToShowInsideCircle: Bitmap? = null
 
     // Path effect for corner of path.
     private lateinit var cornerPathEffect: CornerPathEffect
@@ -120,7 +60,7 @@ class PenSelector : PathBasedSelector() {
                     cornerPathEffect
                 )
 
-            view.invalidate()
+            invalidateListener?.invalidateDrawings()
         }
     }
 
@@ -131,211 +71,178 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    private val firstPointCirclePaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#69a2ff")
+            style = Paint.Style.FILL
+        }
+    }
 
-    override fun initialize(view: View, bitmap: Bitmap?, bounds: RectF) {
-        super.initialize(view, bitmap, bounds)
-        this.context = view.context
-        this.view = view
-        height = view.height
+    private var firstPointCircleRadius = 0f
 
-        bitmapToShowInsideCircle = bitmap
-
-        // Get display metrics.
-        val displayMetrics = context.resources.displayMetrics
-
-        // Take the minimum size of display and divide it by 5 to get the circle radius
-        circleRadius = min(displayMetrics.widthPixels, displayMetrics.heightPixels).toFloat() / 5f
-        // Offset value of
-        circleOffsetFromCenter = circleRadius * 1.5f
-
-        centerCrossPaint.run {
-            color = centerCrossColor
-            strokeWidth = centerCrossStrokeWidth
+    private var pointsPaintStrokeWidth: Float = 0.0f
+        set(value) {
+            field = value
+            pointsPaint.strokeWidth = field
         }
 
+
+    override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
+        super.initialize(context, matrix, bounds)
+        this.context = context
+
         context.run {
-
-            centerCrossLineSize = dp(4)
-
-            centerCrossStrokeWidth = dp(1)
-
             cornerPathEffect = CornerPathEffect(dp(2))
 
-            touchRange = dp(8)
+            touchRange = dp(10)
 
-            pointsPaint.strokeWidth = dp(2)
+            pointsPaintStrokeWidth = dp(3)
+
+            firstPointCircleRadius = dp(4)
         }
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        if (!isPathClose && bitmapToShowInsideCircle != null)
-            initializeMagnifier(initialX, initialY)
+        // If use is in quad bezier mode and path is not empty,
+        // save to location of current touch to later use it to draw
+        // quad bezier to that point. We check if path is empty because
+        // 'quadTo' method draws the first point from 0,0 if there aren't
+        // any line or path available, so if use is in quad bezier mode and
+        // it's the first line that user wants to draw, then we first move
+        // the path to that current location then we draw a bezier.
+        if (!path.isEmpty && isQuadBezier) {
+            bx = initialX
+            by = initialY
+        }
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
         // If path is closed then offset (move around) path if user moves his/her finger.
         if (isPathClose) {
             path.offset(dx, dy)
-            view.invalidate()
-        }
-        // Otherwise show the magnifier.
-        else if (isZoomEnabled && bitmapToShowInsideCircle != null) {
-            initializeMagnifier(ex, ey)
-        }
-    }
+            invalidateListener?.invalidateDrawings()
+        } else if (isQuadBezier && !path.isEmpty) {
+            bezierPath.run {
+                // Reset the bezier path to original path.
+                set(path)
+                // Draw a quad to points that user first touched(bx,by)
+                // and put 'ex''ey' as handle bar points.
+                quadTo(ex, ey, bx, by)
 
-    private fun initializeMagnifier(ex: Float, ey: Float) {
-        currentX = ex
-        currentY = ey
-
-        // Limit point to do not go further than view's dimensions.
-        if (currentX > rightEdge) currentX = rightEdge
-        if (currentX < leftEdge) currentX = leftEdge
-        if (currentY > bottomEdge) currentY = bottomEdge
-        if (currentY < topEdge) currentY = topEdge
-
-        // Offset the Circle in case circle exceeds the height of view y coordinate.
-        offsetY = if (currentY - circleOffsetFromCenter * 1.5f <= 0f) {
-            (height - currentY)
-        } else 0f
-
-        // Translate to left/top of visible part of image.
-        enlargedBitmapMatrix.setTranslate(leftEdge, topEdge)
-
-        // Scale the bitmap two times with pivot point of current
-        // touch points + offsets.
-        enlargedBitmapMatrix.postScale(
-            2f,
-            2f,
-            currentX,
-            currentY + circleOffsetFromCenter - offsetY
-        )
-
-        // Initialize the shader.
-        enlargedBitmapPaint.shader =
-            BitmapShader(
-                bitmapToShowInsideCircle!!,
-                Shader.TileMode.CLAMP,
-                Shader.TileMode.CLAMP
-            ).apply {
-                setLocalMatrix(enlargedBitmapMatrix)
+                invalidateListener?.invalidateDrawings()
             }
-
-        // Initialize the RadialGradient for shadow behind the enlarged bitmap circle.
-        shadowCirclePaint.shader = RadialGradient(
-            currentX,
-            currentY - circleOffsetFromCenter + offsetY,
-            circleRadius + (circleRadius * 0.2f),
-            circleShadowColors,
-            null,
-            Shader.TileMode.CLAMP
-        )
-        // Show the circle.
-        showCircle = true
-        view.invalidate()
+        }
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         // If path is closed.
         if (!isPathClose) {
             // If path is empty store the first touch location.
-            if (path.isEmpty) {
+            if (pointCounter == 0) {
                 firstX = lastX
                 firstY = lastY
                 path.moveTo(lastX, lastY)
-                pointCounter++
             } else {
-                // If current touch position is close to first line and we have more that 2 line (to make at least a triangle)
-                // close the line.
-                if (isNearFirstLine(lastX, lastY) && pointCounter > 2) {
-                    path.close()
-                    pathEffectAnimator.start()
-                    isPathClose = true
+                if (isQuadBezier && pointCounter > 0) {
+                    path.set(bezierPath)
                 } else {
-                    // Else just add the point to the path.
                     path.lineTo(lastX, lastY)
-                    pointCounter++
+                }
+
+                // If line is close to first point that user touched and we have at least 3 lines, then
+                // close the path.
+                if ((isNearFirstLine(lastX, lastY) || isNearFirstLine(
+                        bx,
+                        by
+                    )) && pointCounter > 2
+                ) {
+                    closePath()
                 }
             }
+            pointCounter++
         }
 
-        // Don't show the circle anymore.
-        showCircle = false
         // Invalidate to hide the circle.
-        view.invalidate()
+        invalidateListener?.invalidateDrawings()
 
     }
 
+    private fun closePath() {
+        path.close()
+        bezierPath.reset()
+        pathEffectAnimator.start()
+        isPathClose = true
+    }
+
     private fun isNearFirstLine(initialX: Float, initialY: Float): Boolean {
-        return (initialX in (firstX - touchRange)..(firstX + touchRange) && initialY in (firstY - touchRange)..(firstY + touchRange))
+        // Calculate the touch range if user is zoomed in image.
+        canvasMatrix.getValues(matrixValueHolder)
+        val finalTouchRange = touchRange * (1f / matrixValueHolder[Matrix.MSCALE_X])
+
+        return (initialX in (firstX - finalTouchRange)..(firstX + finalTouchRange) && initialY in (firstY - finalTouchRange)..(firstY + finalTouchRange))
     }
 
     override fun resetSelection() {
         path.rewind()
+        bezierPath.reset()
         isPathClose = false
+        pointCounter = 0
 
         if (pathEffectAnimator.isRunning || pathEffectAnimator.isStarted) {
             pointsPaint.pathEffect = null
             pathEffectAnimator.cancel()
         }
 
-        view.invalidate()
+        invalidateListener?.invalidateDrawings()
     }
 
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
 
+            // Create a copy of path to later transform the transformed path to it.
+            val pathCopy = Path(path)
+
+            // Apply matrix to path.
+            path.transform(canvasMatrix)
+
+            // Draw the transformed path.
             drawPath(path, pointsPaint)
 
-            if (isZoomEnabled && bitmapToShowInsideCircle != null && showCircle) {
+            // Revert it back.
+            path.set(pathCopy)
 
-                val drawingPositionX = currentX
-                val drawingPositionY = currentY - circleOffsetFromCenter + offsetY
+            // Reset path copy to release memory.
+            pathCopy.reset()
 
-                // Draw a shadow circle with RadialGradient.
-                drawCircle(
-                    drawingPositionX,
-                    drawingPositionY,
-                    circleRadius + (circleRadius * 0.2f),
-                    shadowCirclePaint
-                )
+            // Only draw bezier path if we're in quad bezier mode.
+            if (isQuadBezier) {
+                val bezierCopy = Path(bezierPath)
 
-                // Draw a white circle for times when image has transparent pixels,
-                // otherwise the shadow circle will be fully visible.
-                drawCircle(
-                    drawingPositionX,
-                    drawingPositionY,
-                    circleRadius,
-                    centerCrossPaint
-                )
+                bezierPath.transform(canvasMatrix)
 
-                // Draw enlarged bitmap inside circle by using BitmapShader.
-                drawCircle(
-                    drawingPositionX,
-                    drawingPositionY,
-                    circleRadius,
-                    enlargedBitmapPaint
-                )
+                drawPath(bezierPath, pointsPaint)
 
-                // Draw horizontal cross in center of circle.
-                drawLine(
-                    drawingPositionX - centerCrossLineSize,
-                    drawingPositionY,
-                    drawingPositionX + centerCrossLineSize,
-                    drawingPositionY,
-                    centerCrossPaint
-                )
+                bezierPath.set(bezierCopy)
 
-                // Draw vertical cross in center of circle.
-                drawLine(
-                    drawingPositionX,
-                    currentY - centerCrossLineSize - circleOffsetFromCenter + offsetY,
-                    drawingPositionX,
-                    currentY + centerCrossLineSize - circleOffsetFromCenter + offsetY,
-                    centerCrossPaint
-                )
+                bezierCopy.reset()
+            }
 
+            // Draw circle if it's first point that user touches so it will be visible that user
+            // has touch the first point.
+            if (pointCounter == 1) {
+
+                // Get scale and divide 1 by it to get factor to resize the circle radius.
+                canvasMatrix.getValues(matrixValueHolder)
+                val scale = 1f / matrixValueHolder[Matrix.MSCALE_X]
+
+                // Set matrix to 'canvasMatrix' to transform the circle.
+                setMatrix(canvasMatrix)
+                // Draw first point circle.
+                drawCircle(firstX, firstY, firstPointCircleRadius * scale, firstPointCirclePaint)
+
+                // Finally set canvas matrix to null to prevent affecting other drawings.
+                setMatrix(null)
             }
         }
     }
