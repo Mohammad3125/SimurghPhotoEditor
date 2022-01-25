@@ -236,13 +236,13 @@ class PenSelector : PathBasedSelector() {
                 canvasMatrix.getValues(matrixValueHolder)
                 val scale = 1f / matrixValueHolder[Matrix.MSCALE_X]
 
-                // Set matrix to 'canvasMatrix' to transform the circle.
-                setMatrix(canvasMatrix)
+                save()
+                // Concat the canvas matrix to 'canvasMatrix' to transform the circle.
+                concat(canvasMatrix)
                 // Draw first point circle.
                 drawCircle(firstX, firstY, firstPointCircleRadius * scale, firstPointCirclePaint)
-
-                // Finally set canvas matrix to null to prevent affecting other drawings.
-                setMatrix(null)
+                // Restore the state of canvas.
+                restore()
             }
         }
     }

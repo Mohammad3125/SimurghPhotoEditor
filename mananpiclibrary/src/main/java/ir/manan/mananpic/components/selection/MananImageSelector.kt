@@ -212,10 +212,13 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     override fun onDraw(canvas: Canvas?) {
         canvas?.run {
-            setMatrix(canvasMatrix)
+            // Save state of canvas.
+            save()
+            // Concat the canvas to 'canvasMatrix'.
+            concat(canvasMatrix)
             super.onDraw(this)
-            // Set matrix to null to let the selector scale it self base on canvas we passed earlier to it.
-            setMatrix(null)
+            // Restore canvas state and let the selector scale itself based on canvas we passed earlier to it.
+            restore()
             selector?.draw(this)
         }
     }

@@ -584,9 +584,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            // Set canvas matrix to matrix that we manipulate.
+            // concat the canvas matrix to matrix that we manipulate.
             if (isCanvasMatrixEnabled)
-                setMatrix(canvasMatrix)
+                concat(canvasMatrix)
 
             super.draw(this)
 
