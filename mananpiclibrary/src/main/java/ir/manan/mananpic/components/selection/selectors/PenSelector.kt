@@ -35,10 +35,15 @@ class PenSelector : PathBasedSelector() {
 
     /**
      * This range will later determine the range of acceptance for current touch
-     * location to close the path. Default value is 10dp (after selector is initialized).
+     * location to close the path in pixels. Default value is 10dp (later will be transformed to pixel after selector is initialized.)
      */
     var touchRange = 0f
 
+    /**
+     * Acceptable range for handle bars in bezier mode to be accepted that
+     * user has touched the handle bar (range is in pixels).
+     * Default is 24dp (later will be transformed to pixel after selector is initialized.)
+     */
     var handleTouchRange = 0f
 
     /**
@@ -111,9 +116,11 @@ class PenSelector : PathBasedSelector() {
         context.run {
             cornerPathEffect = CornerPathEffect(dp(2))
 
-            touchRange = dp(10)
+            if (touchRange == 0f)
+                touchRange = dp(10)
 
-            handleTouchRange = dp(24)
+            if (handleTouchRange == 0f)
+                handleTouchRange = dp(24)
 
             pointsPaintStrokeWidth = dp(3)
 
