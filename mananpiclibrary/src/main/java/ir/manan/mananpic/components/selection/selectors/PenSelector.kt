@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.*
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.utils.dp
+import kotlin.math.abs
 
 class PenSelector : PathBasedSelector() {
 
@@ -13,16 +14,32 @@ class PenSelector : PathBasedSelector() {
     private var firstX = 0f
     private var firstY = 0f
 
-
     // These two variables store the end point of quad bezier.
     private var bx = 0f
     private var by = 0f
+
+    // Handle position for quad bezier.
+    private var handleX = 0f
+    private var handleY = 0f
+
+    // These variables are used to store last location that user touched.
+    private var lbx = 0f
+    private var lby = 0f
+
+    // Determines if initial bezier is drawn.
+    private var isBezierDrawn = false
+
+    // Variable that holds information about which handle is user currenly touching in bezier mode.
+    private var currentHandleSelected: Handle = Handle.NONE
+
 
     /**
      * This range will later determine the range of acceptance for current touch
      * location to close the path. Default value is 10dp (after selector is initialized).
      */
     var touchRange = 0f
+
+    var handleTouchRange = 0f
 
     /**
      * If true selector draws quad bezier instead of straight line.
@@ -96,6 +113,8 @@ class PenSelector : PathBasedSelector() {
 
             touchRange = dp(10)
 
+            handleTouchRange = dp(24)
+
             pointsPaintStrokeWidth = dp(3)
 
             firstPointCircleRadius = dp(4)
@@ -103,16 +122,31 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        // If use is in quad bezier mode and path is not empty,
-        // save to location of current touch to later use it to draw
-        // quad bezier to that point. We check if path is empty because
-        // 'quadTo' method draws the first point from 0,0 if there aren't
-        // any line or path available, so if use is in quad bezier mode and
-        // it's the first line that user wants to draw, then we first move
-        // the path to that current location then we draw a bezier.
-        if (!path.isEmpty && isQuadBezier) {
-            bx = initialX
-            by = initialY
+        // If we're currently in bezier mode then figure out
+        // which handle currently user is touching and then move it
+        // as user moves his/her finger across screen in 'onMove' method.
+        if (isBezierDrawn) {
+            currentHandleSelected =
+                when {
+                    isNearFirstLine(
+                        initialX,
+                        initialY,
+                        handleX,
+                        handleY,
+                        handleTouchRange,
+                        true
+                    ) -> Handle.BEZIER_HANDLE
+                    isNearFirstLine(
+                        initialX,
+                        initialY,
+                        bx,
+                        by,
+                        handleTouchRange,
+                        true
+                    ) -> Handle.END_HANDLE
+                    else -> Handle.NONE
+                }
+
         }
     }
 
@@ -121,15 +155,40 @@ class PenSelector : PathBasedSelector() {
         if (isPathClose) {
             path.offset(dx, dy)
             invalidateListener?.invalidateDrawings()
-        } else if (isQuadBezier && !path.isEmpty) {
+        } else if (isQuadBezier && isBezierDrawn && !path.isEmpty) {
             bezierPath.run {
-                // Reset the bezier path to original path.
-                set(path)
-                // Draw a quad to points that user first touched(bx,by)
-                // and put 'ex''ey' as handle bar points.
-                quadTo(ex, ey, bx, by)
+                when (currentHandleSelected) {
+                    Handle.BEZIER_HANDLE -> {
+                        // Reset the bezier path to original path.
+                        set(path)
 
-                invalidateListener?.invalidateDrawings()
+                        // Change location of handle that is shown on screen.
+                        handleX += dx
+                        handleY += dy
+
+                        // Draw quad bezier with new handle points.
+                        quadTo(handleX, handleY, bx, by)
+
+                        invalidateListener?.invalidateDrawings()
+                    }
+                    Handle.END_HANDLE -> {
+                        // Reset the bezier to current path to discard last drawn quad bezier.
+                        set(path)
+
+                        // Draw quad bezier with new end point.
+                        quadTo(handleX, handleY, ex, ey)
+
+                        // Change the end point of current path.
+                        bx = ex
+                        by = ey
+
+                        invalidateListener?.invalidateDrawings()
+                    }
+                    Handle.NONE -> {
+
+                    }
+                }
+                return@run
             }
         }
     }
@@ -143,22 +202,60 @@ class PenSelector : PathBasedSelector() {
                 firstY = lastY
                 path.moveTo(lastX, lastY)
             } else {
-                if (isQuadBezier && pointCounter > 0) {
+
+                // If bezier is drawn and user touched somewhere else instead of bezier handles, then
+                // replace the current path by bezier path and set 'isBezierDrawn' to false to create a
+                // new bezier.
+                if (isBezierDrawn && currentHandleSelected == Handle.NONE) {
                     path.set(bezierPath)
+                    isBezierDrawn = false
+                }
+
+                if (isQuadBezier) {
+                    if (!isBezierDrawn && pointCounter > 0) {
+
+                        // Determine width and height of current line to later
+                        // get center of that line to use as handle for bezier.
+                        val halfX = abs(lastX - lbx) * 0.5f
+                        val halfY = abs(lastY - lby) * 0.5f
+
+                        // Determine if we have to append or subtract from last
+                        // points touched to find center of line to use as handle
+                        // location.
+                        handleX = if (lastX > lbx) lbx + halfX else lbx - halfX
+                        handleY = if (lastY > lby) lby + halfY else lby - halfY
+
+                        // Reset bezier path to original path to draw a bezier
+                        // from last point in 'path'.
+                        bezierPath.set(path)
+                        bezierPath.quadTo(handleX, handleY, lastX, lastY)
+
+                        isBezierDrawn = true
+
+                        // Store last point of current bezier to variables.
+                        bx = lastX
+                        by = lastY
+                    }
                 } else {
                     path.lineTo(lastX, lastY)
                 }
 
                 // If line is close to first point that user touched and we have at least 3 lines, then
                 // close the path.
-                if ((isNearFirstLine(lastX, lastY) || isNearFirstLine(
+                if ((isNearFirstLine(lastX, lastY, firstX, firstY, touchRange) || isNearFirstLine(
                         bx,
-                        by
+                        by,
+                        firstX,
+                        firstY,
+                        touchRange
                     )) && pointCounter > 2
                 ) {
                     closePath()
                 }
             }
+            // Store the last location that user has touched.
+            lbx = lastX
+            lby = lastY
             pointCounter++
         }
 
@@ -170,22 +267,36 @@ class PenSelector : PathBasedSelector() {
     private fun closePath() {
         path.close()
         bezierPath.reset()
+        isBezierDrawn = false
         pathEffectAnimator.start()
         isPathClose = true
     }
 
-    private fun isNearFirstLine(initialX: Float, initialY: Float): Boolean {
-        // Calculate the touch range if user is zoomed in image.
-        canvasMatrix.getValues(matrixValueHolder)
-        val finalTouchRange = touchRange * (1f / matrixValueHolder[Matrix.MSCALE_X])
+    private fun isNearFirstLine(
+        x: Float,
+        y: Float,
+        targetX: Float,
+        targetY: Float,
+        range: Float,
+        scaleDown: Boolean = true
+    ): Boolean {
+        var finalTouchRange = touchRange
+        if (scaleDown) {
+            // Calculate the touch range if user is zoomed in image.
+            canvasMatrix.getValues(matrixValueHolder)
+            finalTouchRange = range * (1f / matrixValueHolder[Matrix.MSCALE_X])
+        }
 
-        return (initialX in (firstX - finalTouchRange)..(firstX + finalTouchRange) && initialY in (firstY - finalTouchRange)..(firstY + finalTouchRange))
+        return (x in (targetX - finalTouchRange)..(targetX + finalTouchRange) && y in (targetY - finalTouchRange)..(targetY + finalTouchRange))
     }
 
     override fun resetSelection() {
         path.rewind()
         bezierPath.reset()
+
+        isBezierDrawn = false
         isPathClose = false
+
         pointCounter = 0
 
         if (pathEffectAnimator.isRunning || pathEffectAnimator.isStarted) {
@@ -228,22 +339,38 @@ class PenSelector : PathBasedSelector() {
                 bezierCopy.reset()
             }
 
+            save()
+            // Concat the canvas matrix to 'canvasMatrix' to transform the circle.
+            concat(canvasMatrix)
+
+            // Get scale and divide 1 by it to get factor to resize the circle radius.
+            canvasMatrix.getValues(matrixValueHolder)
+            val scale = 1f / matrixValueHolder[Matrix.MSCALE_X]
+
             // Draw circle if it's first point that user touches so it will be visible that user
             // has touch the first point.
             if (pointCounter == 1) {
-
-                // Get scale and divide 1 by it to get factor to resize the circle radius.
-                canvasMatrix.getValues(matrixValueHolder)
-                val scale = 1f / matrixValueHolder[Matrix.MSCALE_X]
-
-                save()
-                // Concat the canvas matrix to 'canvasMatrix' to transform the circle.
-                concat(canvasMatrix)
                 // Draw first point circle.
                 drawCircle(firstX, firstY, firstPointCircleRadius * scale, firstPointCirclePaint)
-                // Restore the state of canvas.
-                restore()
             }
+
+            if (isBezierDrawn && isQuadBezier) {
+
+                // Handle for quad bezier.
+                drawCircle(handleX, handleY, firstPointCircleRadius * scale, firstPointCirclePaint)
+
+                // End point of bezier.
+                drawCircle(bx, by, firstPointCircleRadius * scale, firstPointCirclePaint)
+            }
+
+            // Restore the state of canvas.
+            restore()
         }
+    }
+
+    private enum class Handle {
+        NONE,
+        END_HANDLE,
+        BEZIER_HANDLE
     }
 }
