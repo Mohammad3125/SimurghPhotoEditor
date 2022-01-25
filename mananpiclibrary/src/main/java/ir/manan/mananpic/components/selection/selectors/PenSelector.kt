@@ -215,6 +215,7 @@ class PenSelector : PathBasedSelector() {
                 // new bezier.
                 if (isBezierDrawn && currentHandleSelected == Handle.NONE) {
                     path.set(bezierPath)
+                    bezierPath.reset()
                     isBezierDrawn = false
                 }
 
@@ -333,8 +334,8 @@ class PenSelector : PathBasedSelector() {
             // Reset path copy to release memory.
             pathCopy.reset()
 
-            // Only draw bezier path if we're in quad bezier mode.
-            if (isQuadBezier) {
+            // Only draw bezier if we have currently drawn it in path.
+            if (isBezierDrawn) {
                 val bezierCopy = Path(bezierPath)
 
                 bezierPath.transform(canvasMatrix)
