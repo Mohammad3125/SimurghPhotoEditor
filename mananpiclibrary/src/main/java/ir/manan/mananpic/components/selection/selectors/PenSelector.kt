@@ -9,12 +9,6 @@ import kotlin.math.abs
 
 class PenSelector : PathBasedSelector() {
 
-    // A path used by other paths in drawings operation to maintain
-    // the previous state of a path.
-    private val pathCopy by lazy {
-        Path()
-    }
-
     // These two variables determine the location of first touch to later
     // use to close a path.
     private var firstX = 0f

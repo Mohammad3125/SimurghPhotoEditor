@@ -26,6 +26,12 @@ abstract class PathBasedSelector : Selector() {
         }
     }
 
+    // A path used by other paths in drawings operation to maintain
+    // the previous state of a path.
+    protected val pathCopy by lazy {
+        Path()
+    }
+
     override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
         leftEdge = bounds.left
         topEdge = bounds.top
