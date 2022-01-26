@@ -16,7 +16,7 @@ abstract class PathBasedSelector : Selector() {
     protected var isPathClose = false
 
     protected var matrixValueHolder = FloatArray(9)
-    protected lateinit var canvasMatrix: Matrix
+    protected var canvasMatrix = Matrix()
 
     // Path that adds circles into it and later will be used to
     // clip the drawable content.
