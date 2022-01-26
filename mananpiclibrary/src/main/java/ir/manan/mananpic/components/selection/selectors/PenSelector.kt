@@ -9,6 +9,12 @@ import kotlin.math.abs
 
 class PenSelector : PathBasedSelector() {
 
+    // A path used by other paths in drawings operation to maintain
+    // the previous state of a path.
+    private val pathCopy by lazy {
+        Path()
+    }
+
     // These two variables determine the location of first touch to later
     // use to close a path.
     private var firstX = 0f
@@ -320,7 +326,7 @@ class PenSelector : PathBasedSelector() {
         canvas?.run {
 
             // Create a copy of path to later transform the transformed path to it.
-            val pathCopy = Path(path)
+            pathCopy.set(path)
 
             // Apply matrix to path.
             path.transform(canvasMatrix)
@@ -332,19 +338,19 @@ class PenSelector : PathBasedSelector() {
             path.set(pathCopy)
 
             // Reset path copy to release memory.
-            pathCopy.reset()
+            pathCopy.rewind()
 
             // Only draw bezier if we have currently drawn it in path.
             if (isBezierDrawn) {
-                val bezierCopy = Path(bezierPath)
+                pathCopy.set(bezierPath)
 
                 bezierPath.transform(canvasMatrix)
 
                 drawPath(bezierPath, pointsPaint)
 
-                bezierPath.set(bezierCopy)
+                bezierPath.set(pathCopy)
 
-                bezierCopy.reset()
+                pathCopy.rewind()
             }
 
             save()
