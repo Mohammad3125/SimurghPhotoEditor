@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.*
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.utils.dp
-import kotlin.math.abs
 
 class PenSelector : PathBasedSelector() {
 
@@ -224,14 +223,14 @@ class PenSelector : PathBasedSelector() {
 
                         // Determine width and height of current line to later
                         // get center of that line to use as handle for bezier.
-                        val halfX = abs(lastX - lbx) * 0.5f
-                        val halfY = abs(lastY - lby) * 0.5f
+                        val halfX = (lastX - lbx) * 0.5f
+                        val halfY = (lastY - lby) * 0.5f
 
                         // Determine if we have to append or subtract from last
                         // points touched to find center of line to use as handle
                         // location.
-                        handleX = if (lastX > lbx) lbx + halfX else lbx - halfX
-                        handleY = if (lastY > lby) lby + halfY else lby - halfY
+                        handleX = lbx + halfX
+                        handleY = lby + halfY
 
                         // Reset bezier path to original path to draw a bezier
                         // from last point in 'path'.
