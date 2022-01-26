@@ -133,7 +133,7 @@ class PenSelector : PathBasedSelector() {
         if (isBezierDrawn) {
             currentHandleSelected =
                 when {
-                    isNearFirstLine(
+                    isNearTargetPoint(
                         initialX,
                         initialY,
                         handleX,
@@ -141,7 +141,7 @@ class PenSelector : PathBasedSelector() {
                         handleTouchRange,
                         true
                     ) -> Handle.BEZIER_HANDLE
-                    isNearFirstLine(
+                    isNearTargetPoint(
                         initialX,
                         initialY,
                         bx,
@@ -212,9 +212,7 @@ class PenSelector : PathBasedSelector() {
                 // replace the current path by bezier path and set 'isBezierDrawn' to false to create a
                 // new bezier.
                 if (isBezierDrawn && currentHandleSelected == Handle.NONE) {
-                    path.set(bezierPath)
-                    bezierPath.reset()
-                    isBezierDrawn = false
+                    setBezierToPath()
                 }
 
                 if (isQuadBezier) {
@@ -248,14 +246,11 @@ class PenSelector : PathBasedSelector() {
 
                 // If line is close to first point that user touched and we have at least 3 lines, then
                 // close the path.
-                if ((isNearFirstLine(lastX, lastY, firstX, firstY, touchRange) || isNearFirstLine(
-                        bx,
-                        by,
-                        firstX,
-                        firstY,
-                        touchRange
-                    )) && pointCounter > 2
-                ) {
+                if (shouldClosePath(lastX, lastY)) {
+                    if (!bezierPath.isEmpty) {
+                        setBezierToPath()
+                    }
+
                     closePath()
                 }
             }
@@ -270,6 +265,12 @@ class PenSelector : PathBasedSelector() {
 
     }
 
+    private fun setBezierToPath() {
+        path.set(bezierPath)
+        bezierPath.reset()
+        isBezierDrawn = false
+    }
+
     private fun closePath() {
         path.close()
         bezierPath.reset()
@@ -278,7 +279,23 @@ class PenSelector : PathBasedSelector() {
         isPathClose = true
     }
 
-    private fun isNearFirstLine(
+    private fun shouldClosePath(lastX: Float, lastY: Float): Boolean {
+        return (isNearTargetPoint(
+            lastX,
+            lastY,
+            firstX,
+            firstY,
+            touchRange
+        ) || isNearTargetPoint(
+            bx,
+            by,
+            firstX,
+            firstY,
+            touchRange
+        )) && pointCounter > 2
+    }
+
+    private fun isNearTargetPoint(
         x: Float,
         y: Float,
         targetX: Float,
