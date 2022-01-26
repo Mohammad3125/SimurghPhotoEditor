@@ -92,21 +92,20 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
-    private val firstPointCirclePaint by lazy {
+    private val circlesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#69a2ff")
             style = Paint.Style.FILL
         }
     }
 
-    private var firstPointCircleRadius = 0f
+    private var circlesRadius = 0f
 
     private var pointsPaintStrokeWidth: Float = 0.0f
         set(value) {
             field = value
             pointsPaint.strokeWidth = field
         }
-
 
     override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
@@ -123,7 +122,7 @@ class PenSelector : PathBasedSelector() {
 
             pointsPaintStrokeWidth = dp(3)
 
-            firstPointCircleRadius = dp(4)
+            circlesRadius = dp(4)
         }
     }
 
@@ -358,16 +357,15 @@ class PenSelector : PathBasedSelector() {
             // has touch the first point.
             if (pointCounter == 1) {
                 // Draw first point circle.
-                drawCircle(firstX, firstY, firstPointCircleRadius * scale, firstPointCirclePaint)
+                drawCircle(firstX, firstY, circlesRadius * scale, circlesPaint)
             }
 
             if (isBezierDrawn && isQuadBezier) {
-
                 // Handle for quad bezier.
-                drawCircle(handleX, handleY, firstPointCircleRadius * scale, firstPointCirclePaint)
+                drawCircle(handleX, handleY, circlesRadius * scale, circlesPaint)
 
                 // End point of bezier.
-                drawCircle(bx, by, firstPointCircleRadius * scale, firstPointCirclePaint)
+                drawCircle(bx, by, circlesRadius * scale, circlesPaint)
             }
 
             // Restore the state of canvas.
