@@ -2,17 +2,18 @@ package ir.manan.mananpic.components.selection
 
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.os.Build
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.components.selection.selectors.Selector
-import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import kotlin.math.abs
 
 class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
@@ -25,13 +26,13 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         const val MINIMUM_SCALE_ZOOM = 1f
     }
 
+    private var initialX = 0f
+    private var initialY = 0f
+
+    private var isMatrixGesture = false
+
     private var onSelectorStateChangeListener: OnSelectorStateChangeListener? = null
     private var onCloseCallBack: ((Boolean) -> Unit)? = null
-
-    /**
-     * Determines if zoom on image is enabled.
-     */
-    var isZoomMode = false
 
     // Holds value of matrix.
     private val matrixValueHolder by lazy {
@@ -94,7 +95,6 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         }
 
     init {
-        moveDetector = MoveDetector(1, this)
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 isQuickScaleEnabled = false
@@ -111,59 +111,99 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         )
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        super.onTouchEvent(event)
+        event?.run {
+            val totalPoints = pointerCount
+                when (actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        // If selector is not null and there is only 1 pointer on
+                        // screen then begin move in selector.
+                        if (selector != null) {
+                            val mappedPoints = mapTouchPoints(x, y)
+                            selector!!.onMoveBegin(mappedPoints[0], mappedPoints[1])
+                        }
+                        // Save the initial points to later determine how much user has moved
+                        // His/her finger across screen.
+                        initialX = x
+                        initialY = y
+                        return true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        // Determine total amount that user moved his/her finger on screen.
+                        val dx = x - initialX
+                        val dy = y - initialY
+
+                        // Reset initials.
+                        initialX = x
+                        initialY = y
+
+                        // If there are currently 2 pointers on screen and user is not scaling then
+                        // translate the canvas matrix.
+                        if (totalPoints == 2 && scaleDetector?.isInProgress == false) {
+                            isMatrixGesture = true
+                            canvasMatrix.postTranslate(dx, dy)
+                            invalidate()
+                            return true
+                        }
+
+                        // Else if selector is not null and there is currently 1 pointer on
+                        // screen and user is not performing any other gesture like moving or
+                        // scaling, then call 'onMove' method of selector.
+                        else if (selector != null && totalPoints == 1 && !isMatrixGesture) {
+                            canvasMatrix.getValues(matrixValueHolder)
+                            // Calculate how much the canvas is scaled then use
+                            // that to slow down the translation by that factor.
+                            // Note that we divide 1 by matrix scale to get reverse of current
+                            // scale, for example if scale is 2 the we get 0.5 by doing that.
+                            val s = 1f / matrixValueHolder[Matrix.MSCALE_X]
+                            val exactMapPoints = mapTouchPoints(x, y)
+                            selector!!.onMove(
+                                dx * s,
+                                dy * s,
+                                exactMapPoints[0],
+                                exactMapPoints[1]
+                            )
+                            return true
+                        }
+                        return false
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        if (selector != null && !isMatrixGesture) {
+                            val mappedPoints = mapTouchPoints(x, y)
+                            selector!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
+                            callOnStateChangeListeners(selector!!.isClosed())
+                        }
+                        animateCanvasBack()
+                        isMatrixGesture = false
+                        return false
+                    }
+                    else -> {
+                        return false
+                    }
+                }
+        }
+        return false
+    }
+
+    override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+        isMatrixGesture = true
+        return true
+    }
+
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
-        if (isZoomMode)
-            detector?.run {
-                val sf = scaleFactor
-                canvasMatrix.postScale(sf, sf, focusX, focusY)
-                invalidate()
-                return true
-            }
+        detector?.run {
+            val sf = scaleFactor
+            canvasMatrix.postScale(sf, sf, focusX, focusY)
+            invalidate()
+            return true
+        }
         return false
     }
 
     override fun onScaleEnd(detector: ScaleGestureDetector?) {
         super.onScaleEnd(detector)
-        animateCanvasBack()
-    }
-
-    override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
-        if (!isZoomMode && selector != null) {
-            val mappedPoints = mapTouchPoints(initialX, initialY)
-            selector!!.onMoveBegin(mappedPoints[0], mappedPoints[1])
-        }
-        return true
-    }
-
-    override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
-        if (isZoomMode) {
-            canvasMatrix.postTranslate(dx, dy)
-            invalidate()
-        } else if (!isZoomMode && selector != null) {
-            canvasMatrix.getValues(matrixValueHolder)
-            // Calculate how much the canvas is scaled then use
-            // that to slow down the translation by that factor.
-            // Note that we divide 1 by matrix scale to get reverse of current
-            // scale, for example if scale is 2 the we get 0.5 by doing that.
-            val s = 1f / matrixValueHolder[Matrix.MSCALE_X]
-            val exactMapPoints = mapTouchPoints(ex, ey)
-            selector!!.onMove(
-                dx * s,
-                dy * s,
-                exactMapPoints[0],
-                exactMapPoints[1]
-            )
-        }
-        return true
-    }
-
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        super.onMoveEnded(lastX, lastY)
-        if (!isZoomMode && selector != null) {
-            val mappedPoints = mapTouchPoints(lastX, lastY)
-            selector!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
-            callOnStateChangeListeners(selector!!.isClosed())
-        }
         animateCanvasBack()
     }
 

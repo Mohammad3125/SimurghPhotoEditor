@@ -56,7 +56,7 @@ class BrushSelector : PathBasedSelector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        drawCircles(initialX, initialY)
+
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
@@ -64,6 +64,8 @@ class BrushSelector : PathBasedSelector() {
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
+        drawCircles(lastX, lastY)
+
         // If buffer is not empty add the current path to stack.
         if (!pathBuffer.isEmpty) {
             paths.add(Path(pathBuffer))
