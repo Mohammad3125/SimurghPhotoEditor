@@ -128,9 +128,9 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
-        if (!isZoomMode) {
+        if (!isZoomMode && selector != null) {
             val mappedPoints = mapTouchPoints(initialX, initialY)
-            selector?.onMoveBegin(mappedPoints[0], mappedPoints[1])
+            selector!!.onMoveBegin(mappedPoints[0], mappedPoints[1])
         }
         return true
     }
@@ -139,7 +139,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         if (isZoomMode) {
             canvasMatrix.postTranslate(dx, dy)
             invalidate()
-        } else {
+        } else if (!isZoomMode && selector != null) {
             canvasMatrix.getValues(matrixValueHolder)
             // Calculate how much the canvas is scaled then use
             // that to slow down the translation by that factor.
@@ -147,7 +147,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             // scale, for example if scale is 2 the we get 0.5 by doing that.
             val s = 1f / matrixValueHolder[Matrix.MSCALE_X]
             val exactMapPoints = mapTouchPoints(ex, ey)
-            selector?.onMove(
+            selector!!.onMove(
                 dx * s,
                 dy * s,
                 exactMapPoints[0],
@@ -159,10 +159,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         super.onMoveEnded(lastX, lastY)
-        if (!isZoomMode) {
+        if (!isZoomMode && selector != null) {
             val mappedPoints = mapTouchPoints(lastX, lastY)
-            selector?.onMoveEnded(mappedPoints[0], mappedPoints[1])
-            if (selector != null) callOnStateChangeListeners(selector!!.isClosed())
+            selector!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
+            callOnStateChangeListeners(selector!!.isClosed())
         }
         animateCanvasBack()
     }
