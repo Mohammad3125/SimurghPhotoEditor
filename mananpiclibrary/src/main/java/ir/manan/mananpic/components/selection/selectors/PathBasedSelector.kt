@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.selection.selectors
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
+import ir.manan.mananpic.utils.MananMatrix
 import java.util.*
 import kotlin.math.abs
 
@@ -17,7 +18,7 @@ abstract class PathBasedSelector : Selector() {
     protected var isPathClose = false
 
     protected var matrixValueHolder = FloatArray(9)
-    protected var canvasMatrix = Matrix()
+    protected var canvasMatrix = MananMatrix()
 
     // Path that adds circles into it and later will be used to
     // clip the drawable content.
@@ -38,7 +39,7 @@ abstract class PathBasedSelector : Selector() {
         Path()
     }
 
-    override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
+    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         leftEdge = bounds.left
         topEdge = bounds.top
         rightEdge = bounds.right

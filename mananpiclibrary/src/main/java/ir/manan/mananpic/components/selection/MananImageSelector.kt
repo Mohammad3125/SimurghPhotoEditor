@@ -14,6 +14,7 @@ import android.view.ScaleGestureDetector
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.components.selection.selectors.Selector
+import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.abs
 
 class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
@@ -40,7 +41,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     private val canvasMatrix by lazy {
-        Matrix()
+        MananMatrix()
     }
 
     private val canvasMatrixAnimator by lazy {
@@ -54,13 +55,12 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                 val ty = getAnimatedValue("translationY")
 
                 canvasMatrix.run {
-                    val matrixValueHolder = FloatArray(9)
                     getValues(matrixValueHolder)
 
                     // If translation isn't null or in other words, we should animate the translation, then animate it.
                     if (tx != null) {
                         postTranslate(
-                            tx as Float - matrixValueHolder[Matrix.MTRANS_X],
+                            tx as Float - getTranslationX(true),
                             0f
                         )
                     }
@@ -69,13 +69,13 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     if (ty != null) {
                         postTranslate(
                             0f,
-                            ty as Float - matrixValueHolder[Matrix.MTRANS_Y]
+                            ty as Float - getTranslationY(true)
                         )
                     }
 
                     // If scale property isn't null then scale it.
                     if (s != null) {
-                        val totalScale = (s as Float) / matrixValueHolder[Matrix.MSCALE_X]
+                        val totalScale = (s as Float) / getScaleX(true)
                         postScale(totalScale, totalScale, pivotX, pivotY)
                     }
 
@@ -116,73 +116,71 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         super.onTouchEvent(event)
         event?.run {
             val totalPoints = pointerCount
-                when (actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        // If selector is not null and there is only 1 pointer on
-                        // screen then begin move in selector.
-                        if (selector != null) {
-                            val mappedPoints = mapTouchPoints(x, y)
-                            selector!!.onMoveBegin(mappedPoints[0], mappedPoints[1])
-                        }
-                        // Save the initial points to later determine how much user has moved
-                        // His/her finger across screen.
-                        initialX = x
-                        initialY = y
+            when (actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    // If selector is not null and there is only 1 pointer on
+                    // screen then begin move in selector.
+                    if (selector != null) {
+                        val mappedPoints = mapTouchPoints(x, y)
+                        selector!!.onMoveBegin(mappedPoints[0], mappedPoints[1])
+                    }
+                    // Save the initial points to later determine how much user has moved
+                    // His/her finger across screen.
+                    initialX = x
+                    initialY = y
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    // Determine total amount that user moved his/her finger on screen.
+                    val dx = x - initialX
+                    val dy = y - initialY
+
+                    // Reset initials.
+                    initialX = x
+                    initialY = y
+
+                    // If there are currently 2 pointers on screen and user is not scaling then
+                    // translate the canvas matrix.
+                    if (totalPoints == 2 && scaleDetector?.isInProgress == false) {
+                        isMatrixGesture = true
+                        canvasMatrix.postTranslate(dx, dy)
+                        invalidate()
                         return true
                     }
-                    MotionEvent.ACTION_MOVE -> {
-                        // Determine total amount that user moved his/her finger on screen.
-                        val dx = x - initialX
-                        val dy = y - initialY
 
-                        // Reset initials.
-                        initialX = x
-                        initialY = y
+                    // Else if selector is not null and there is currently 1 pointer on
+                    // screen and user is not performing any other gesture like moving or
+                    // scaling, then call 'onMove' method of selector.
+                    else if (selector != null && totalPoints == 1 && !isMatrixGesture) {
 
-                        // If there are currently 2 pointers on screen and user is not scaling then
-                        // translate the canvas matrix.
-                        if (totalPoints == 2 && scaleDetector?.isInProgress == false) {
-                            isMatrixGesture = true
-                            canvasMatrix.postTranslate(dx, dy)
-                            invalidate()
-                            return true
-                        }
-
-                        // Else if selector is not null and there is currently 1 pointer on
-                        // screen and user is not performing any other gesture like moving or
-                        // scaling, then call 'onMove' method of selector.
-                        else if (selector != null && totalPoints == 1 && !isMatrixGesture) {
-                            canvasMatrix.getValues(matrixValueHolder)
-                            // Calculate how much the canvas is scaled then use
-                            // that to slow down the translation by that factor.
-                            // Note that we divide 1 by matrix scale to get reverse of current
-                            // scale, for example if scale is 2 the we get 0.5 by doing that.
-                            val s = 1f / matrixValueHolder[Matrix.MSCALE_X]
-                            val exactMapPoints = mapTouchPoints(x, y)
-                            selector!!.onMove(
-                                dx * s,
-                                dy * s,
-                                exactMapPoints[0],
-                                exactMapPoints[1]
-                            )
-                            return true
-                        }
-                        return false
+                        // Calculate how much the canvas is scaled then use
+                        // that to slow down the translation by that factor.
+                        val s = canvasMatrix.getOppositeScale()
+                        val exactMapPoints = mapTouchPoints(x, y)
+                        selector!!.onMove(
+                            dx * s,
+                            dy * s,
+                            exactMapPoints[0],
+                            exactMapPoints[1]
+                        )
+                        return true
                     }
-                    MotionEvent.ACTION_UP -> {
-                        if (selector != null && !isMatrixGesture) {
-                            val mappedPoints = mapTouchPoints(x, y)
-                            selector!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
-                            callOnStateChangeListeners(selector!!.isClosed())
-                        }
-                        animateCanvasBack()
-                        isMatrixGesture = false
-                        return false
-                    }
-                    else -> {
-                        return false
-                    }
+                    return false
                 }
+                MotionEvent.ACTION_UP -> {
+                    if (selector != null && !isMatrixGesture) {
+                        val mappedPoints = mapTouchPoints(x, y)
+                        selector!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
+                        callOnStateChangeListeners(selector!!.isClosed())
+                    }
+                    animateCanvasBack()
+                    isMatrixGesture = false
+                    return false
+                }
+                else -> {
+                    return false
+                }
+            }
         }
         return false
     }
@@ -215,18 +213,15 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         val touchPoints = floatArrayOf(touchX, touchY)
         Matrix().run {
 
-            val matrixValues = FloatArray(9)
-            canvasMatrix.getValues(matrixValues)
-
-            val tx = matrixValues[Matrix.MTRANS_X]
-            val ty = matrixValues[Matrix.MTRANS_Y]
+            val tx = canvasMatrix.getTranslationX(true)
+            val ty = canvasMatrix.getTranslationY()
 
             setTranslate(
                 if (tx < leftEdge) abs(tx) else abs(tx) - (tx * 2),
                 if (ty < topEdge) abs(ty) else abs(ty) - (ty * 2)
             )
 
-            val scale = 1f / matrixValues[Matrix.MSCALE_X]
+            val scale = canvasMatrix.getOppositeScale()
             postScale(scale, scale)
 
             mapPoints(touchPoints)
@@ -271,13 +266,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private fun animateCanvasBack() {
         if (!canvasMatrixAnimator.isRunning) {
 
-            val matrixValueHolder = FloatArray(9)
-            canvasMatrix.getValues(matrixValueHolder)
-
             // Get matrix values.
-            val scale = matrixValueHolder[Matrix.MSCALE_X]
-            val tx = matrixValueHolder[Matrix.MTRANS_X]
-            val ty = matrixValueHolder[Matrix.MTRANS_Y]
+            val scale = canvasMatrix.getScaleX(true)
+            val tx = canvasMatrix.getTranslationX()
+            val ty = canvasMatrix.getTranslationY()
 
             // Here we calculate the edge of right side to later do not go further that point.
             val rEdge =
@@ -328,7 +320,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     *Array(
                         animationPropertyHolderList.size
                     ) {
-                        animationPropertyHolderList.get(it)
+                        animationPropertyHolderList[it]
                     }
                 )
 

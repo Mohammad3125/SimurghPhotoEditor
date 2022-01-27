@@ -2,6 +2,7 @@ package ir.manan.mananpic.components.selection.selectors
 
 import android.content.Context
 import android.graphics.*
+import ir.manan.mananpic.utils.MananMatrix
 
 class BrushSelector : PathBasedSelector() {
 
@@ -50,7 +51,7 @@ class BrushSelector : PathBasedSelector() {
     // Used to buffer last path that has been drawn to then be added to stack of paths.
     private val pathBuffer = Path()
 
-    override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
+    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         brushPaint.alpha = brushAlpha
     }
