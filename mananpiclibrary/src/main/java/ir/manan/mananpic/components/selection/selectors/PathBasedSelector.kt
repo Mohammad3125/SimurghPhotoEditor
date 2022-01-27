@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.selection.selectors
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
+import java.util.*
 import kotlin.math.abs
 
 abstract class PathBasedSelector : Selector() {
@@ -24,6 +25,11 @@ abstract class PathBasedSelector : Selector() {
         Path().apply {
             fillType = Path.FillType.WINDING
         }
+    }
+
+    // A stack used in undo mechanism.
+    protected val paths by lazy {
+        Stack<Path>()
     }
 
     // A path used by other paths in drawings operation to maintain

@@ -318,6 +318,13 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         onCloseListener?.onClose()
     }
 
+    /**
+     * Undoes the state of selector (if selector is not null.)
+     */
+    fun undo() {
+        selector?.undo()
+    }
+
     interface OnCloseListener {
         fun onClose()
     }

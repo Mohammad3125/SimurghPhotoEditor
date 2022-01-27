@@ -72,6 +72,12 @@ abstract class Selector {
      */
     internal abstract fun isClosed(): Boolean
 
+
+    /**
+     * Undoes the state of selector.
+     */
+    internal abstract fun undo()
+
     interface OnDispatchToInvalidate {
         fun invalidateDrawings()
     }

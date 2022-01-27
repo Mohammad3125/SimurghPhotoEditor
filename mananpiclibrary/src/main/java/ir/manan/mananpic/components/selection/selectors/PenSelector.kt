@@ -206,6 +206,8 @@ class PenSelector : PathBasedSelector() {
                 firstX = lastX
                 firstY = lastY
                 path.moveTo(lastX, lastY)
+                pushToStack()
+                pointCounter++
             } else {
 
                 // If bezier is drawn and user touched somewhere else instead of bezier handles, then
@@ -239,9 +241,14 @@ class PenSelector : PathBasedSelector() {
                         // Store last point of current bezier to variables.
                         bx = lastX
                         by = lastY
+
+                        pushToStack()
+                        pointCounter++
                     }
                 } else {
+                    pushToStack()
                     path.lineTo(lastX, lastY)
+                    pointCounter++
                 }
 
                 // If line is close to first point that user touched and we have at least 3 lines, then
@@ -257,12 +264,15 @@ class PenSelector : PathBasedSelector() {
             // Store the last location that user has touched.
             lbx = lastX
             lby = lastY
-            pointCounter++
         }
 
         // Invalidate to hide the circle.
         invalidateListener?.invalidateDrawings()
 
+    }
+
+    private fun pushToStack() {
+        paths.push(Path(path))
     }
 
     private fun setBezierToPath() {
@@ -322,12 +332,18 @@ class PenSelector : PathBasedSelector() {
 
         pointCounter = 0
 
+        cancelAnimation()
+
+        paths.clear()
+
+        invalidateListener?.invalidateDrawings()
+    }
+
+    private fun cancelAnimation() {
         if (pathEffectAnimator.isRunning || pathEffectAnimator.isStarted) {
             pointsPaint.pathEffect = null
             pathEffectAnimator.cancel()
         }
-
-        invalidateListener?.invalidateDrawings()
     }
 
 
@@ -387,6 +403,35 @@ class PenSelector : PathBasedSelector() {
 
             // Restore the state of canvas.
             restore()
+        }
+    }
+
+    override fun undo() {
+        paths.run {
+            if (!isEmpty()) {
+                // Rewind any bezier path to prevent it from re-drawing.
+                bezierPath.rewind()
+                isBezierDrawn = false
+
+                // If path is currently closed then restore
+                // state to open path (cancel animation and etc...)
+                if (isPathClose) {
+                    isPathClose = false
+                    cancelAnimation()
+                }
+
+                // Pop the last path from stack.
+                path.set(pop())
+                // Decrement amount of lines counter.
+                --pointCounter
+            }
+            // Else if stack is empty and counter is greater than 0 then clear the path
+            // And put it in initial state (state that user have to provide the initial point).
+            else if (isEmpty() && pointCounter > 0) {
+                path.rewind()
+                --pointCounter
+            }
+            invalidateListener?.invalidateDrawings()
         }
     }
 

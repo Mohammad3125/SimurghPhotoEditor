@@ -47,6 +47,9 @@ class BrushSelector : PathBasedSelector() {
             invalidateListener?.invalidateDrawings()
         }
 
+    // Used to buffer last path that has been drawn to then be added to stack of paths.
+    private val pathBuffer = Path()
+
     override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         brushPaint.alpha = brushAlpha
@@ -61,6 +64,14 @@ class BrushSelector : PathBasedSelector() {
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
+        // If buffer is not empty add the current path to stack.
+        if (!pathBuffer.isEmpty) {
+            paths.add(Path(pathBuffer))
+        }
+        // Add current path to buffer to store it as last path and then add it to stack if
+        // another path has been added. we do this to not have duplicate path at top of stack
+        // which would mess up the undo operation.
+        pathBuffer.set(Path(path))
     }
 
     private fun drawCircles(touchX: Float, touchY: Float) {
@@ -88,8 +99,23 @@ class BrushSelector : PathBasedSelector() {
         }
     }
 
+    override fun undo() {
+        paths.run {
+            if (!isEmpty()) {
+                path.set(pop())
+                invalidateListener?.invalidateDrawings()
+            } else {
+                path.rewind()
+                pathBuffer.rewind()
+                invalidateListener?.invalidateDrawings()
+            }
+        }
+    }
+
     override fun resetSelection() {
         path.rewind()
+        pathBuffer.rewind()
+        paths.clear()
         isPathClose = false
         invalidateListener?.invalidateDrawings()
     }
