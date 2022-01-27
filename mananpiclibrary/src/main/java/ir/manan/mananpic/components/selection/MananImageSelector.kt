@@ -88,7 +88,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     var selector: Selector? = null
         set(value) {
             field = value
-            value?.invalidateListener = this
+            value?.setOnInvalidateListener(this)
             requestLayout()
         }
 

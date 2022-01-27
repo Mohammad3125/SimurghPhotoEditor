@@ -28,7 +28,7 @@ class PenSelector : PathBasedSelector() {
     // Determines if initial bezier is drawn.
     private var isBezierDrawn = false
 
-    // Variable that holds information about which handle is user currenly touching in bezier mode.
+    // Variable that holds information about which handle is user currently touching in bezier mode.
     private var currentHandleSelected: Handle = Handle.NONE
 
 
@@ -81,7 +81,7 @@ class PenSelector : PathBasedSelector() {
                     cornerPathEffect
                 )
 
-            invalidateListener?.invalidateDrawings()
+            invalidate()
         }
     }
 
@@ -159,7 +159,7 @@ class PenSelector : PathBasedSelector() {
         // If path is closed then offset (move around) path if user moves his/her finger.
         if (isPathClose) {
             path.offset(dx, dy)
-            invalidateListener?.invalidateDrawings()
+            invalidate()
         } else if (isQuadBezier && isBezierDrawn && !path.isEmpty) {
             bezierPath.run {
                 when (currentHandleSelected) {
@@ -174,7 +174,7 @@ class PenSelector : PathBasedSelector() {
                         // Draw quad bezier with new handle points.
                         quadTo(handleX, handleY, bx, by)
 
-                        invalidateListener?.invalidateDrawings()
+                        invalidate()
                     }
                     Handle.END_HANDLE -> {
                         // Reset the bezier to current path to discard last drawn quad bezier.
@@ -187,7 +187,7 @@ class PenSelector : PathBasedSelector() {
                         bx = ex
                         by = ey
 
-                        invalidateListener?.invalidateDrawings()
+                        invalidate()
                     }
                     Handle.NONE -> {
 
@@ -267,7 +267,7 @@ class PenSelector : PathBasedSelector() {
         }
 
         // Invalidate to hide the circle.
-        invalidateListener?.invalidateDrawings()
+        invalidate()
 
     }
 
@@ -336,7 +336,7 @@ class PenSelector : PathBasedSelector() {
 
         paths.clear()
 
-        invalidateListener?.invalidateDrawings()
+        invalidate()
     }
 
     private fun cancelAnimation() {
@@ -431,7 +431,7 @@ class PenSelector : PathBasedSelector() {
                 path.rewind()
                 --pointCounter
             }
-            invalidateListener?.invalidateDrawings()
+            invalidate()
         }
     }
 

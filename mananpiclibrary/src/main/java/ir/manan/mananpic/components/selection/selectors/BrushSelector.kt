@@ -20,7 +20,7 @@ class BrushSelector : PathBasedSelector() {
         set(value) {
             brushPaint.strokeWidth = value
             field = value
-            invalidateListener?.invalidateDrawings()
+            invalidate()
         }
 
     /**
@@ -31,7 +31,7 @@ class BrushSelector : PathBasedSelector() {
             brushPaint.color = value
             brushPaint.alpha = brushAlpha
             field = value
-            invalidateListener?.invalidateDrawings()
+            invalidate()
         }
 
     /**
@@ -44,7 +44,7 @@ class BrushSelector : PathBasedSelector() {
             val finalVal = if (value > 255) 255 else if (value < 0) 0 else value
             brushPaint.alpha = finalVal
             field = finalVal
-            invalidateListener?.invalidateDrawings()
+            invalidate()
         }
 
     // Used to buffer last path that has been drawn to then be added to stack of paths.
@@ -76,7 +76,7 @@ class BrushSelector : PathBasedSelector() {
 
     private fun drawCircles(touchX: Float, touchY: Float) {
         path.addCircle(touchX, touchY, brushSize, Path.Direction.CW)
-        invalidateListener?.invalidateDrawings()
+        invalidate()
         isPathClose = true
     }
 
@@ -103,11 +103,11 @@ class BrushSelector : PathBasedSelector() {
         paths.run {
             if (!isEmpty()) {
                 path.set(pop())
-                invalidateListener?.invalidateDrawings()
+                invalidate()
             } else {
                 path.rewind()
                 pathBuffer.rewind()
-                invalidateListener?.invalidateDrawings()
+                invalidate()
             }
         }
     }
@@ -117,6 +117,6 @@ class BrushSelector : PathBasedSelector() {
         pathBuffer.rewind()
         paths.clear()
         isPathClose = false
-        invalidateListener?.invalidateDrawings()
+        invalidate()
     }
 }
