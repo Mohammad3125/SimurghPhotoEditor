@@ -25,8 +25,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         const val MINIMUM_SCALE_ZOOM = 1f
     }
 
-    private var onCloseListener: OnCloseListener? = null
-    private var onCloseCallBack: (() -> Unit)? = null
+    private var onSelectorStateChangeListener: OnSelectorStateChangeListener? = null
+    private var onCloseCallBack: ((Boolean) -> Unit)? = null
 
     /**
      * Determines if zoom on image is enabled.
@@ -89,6 +89,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         set(value) {
             field = value
             value?.setOnInvalidateListener(this)
+            callOnStateChangeListeners(false)
             requestLayout()
         }
 
@@ -161,7 +162,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         if (!isZoomMode) {
             val mappedPoints = mapTouchPoints(lastX, lastY)
             selector?.onMoveEnded(mappedPoints[0], mappedPoints[1])
-            if (selector != null && selector!!.isClosed()) callCloseListeners()
+            if (selector != null) callOnStateChangeListeners(selector!!.isClosed())
         }
         animateCanvasBack()
     }
@@ -305,27 +306,43 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         -((scaled * initialSize / initScale) - initialSize - initialOffset)
 
 
-    fun setOnCloseListener(listener: OnCloseListener) {
-        onCloseListener = listener
+    /**
+     * Register a callback for selector to be invoked when selector is ready to be selected or not.
+     * @see OnSelectorStateChangeListener
+     */
+    fun setOnSelectorStateChangeListener(stateChangeListener: OnSelectorStateChangeListener) {
+        onSelectorStateChangeListener = stateChangeListener
     }
 
-    fun setOnCloseListener(listener: () -> Unit) {
+    /**
+     * Register a callback for selector to be invoked when selector is ready to be selected or not.
+     * @see OnSelectorStateChangeListener
+     */
+    fun setOnSelectorStateChangeListener(listener: (Boolean) -> Unit) {
         onCloseCallBack = listener
     }
 
-    private fun callCloseListeners() {
-        onCloseCallBack?.invoke()
-        onCloseListener?.onClose()
+    private fun callOnStateChangeListeners(isClose: Boolean) {
+        onCloseCallBack?.invoke(isClose)
+        onSelectorStateChangeListener?.onStateChanged(isClose)
     }
 
     /**
      * Undoes the state of selector (if selector is not null.)
      */
     fun undo() {
-        selector?.undo()
+        if (selector != null) {
+            selector!!.undo()
+            // Call listeners in case state of selector changes after undo operation.
+            callOnStateChangeListeners(selector!!.isClosed())
+        }
     }
 
-    interface OnCloseListener {
-        fun onClose()
+    /**
+     * Interface definition for a callback to be invoked when selector is ready to be selected
+     * or not.
+     */
+    interface OnSelectorStateChangeListener {
+        fun onStateChanged(isClose: Boolean)
     }
 }

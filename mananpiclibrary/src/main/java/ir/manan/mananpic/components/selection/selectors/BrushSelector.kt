@@ -107,6 +107,7 @@ class BrushSelector : PathBasedSelector() {
             } else {
                 path.rewind()
                 pathBuffer.rewind()
+                isPathClose = false
                 invalidate()
             }
         }
