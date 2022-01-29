@@ -5,7 +5,6 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
@@ -660,7 +659,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             if (b > mDrawable.intrinsicHeight) b = mDrawable.intrinsicHeight.toFloat()
 
             return Bitmap.createBitmap(
-                mDrawable.toBitmap(),
+                toBitmap(),
                 l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
             )
         }
