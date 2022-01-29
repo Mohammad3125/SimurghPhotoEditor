@@ -65,6 +65,10 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    private val helperLinesPath by lazy {
+        Path()
+    }
+
     private lateinit var context: Context
 
     // Counts total number of points on screen.
@@ -108,6 +112,13 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    private val helperLinesPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            style = Paint.Style.STROKE
+        }
+    }
+
     private var circlesRadius = 0f
 
     private var pointsPaintStrokeWidth: Float = 0.0f
@@ -130,6 +141,12 @@ class PenSelector : PathBasedSelector() {
                 handleTouchRange = dp(24)
 
             pointsPaintStrokeWidth = dp(3)
+
+            val intervals = dp(2)
+
+            helperLinesPaint.strokeWidth = dp(2)
+
+            helperLinesPaint.pathEffect = DashPathEffect(floatArrayOf(intervals, intervals), 0f)
 
             circlesRadius = dp(4)
         }
@@ -434,23 +451,49 @@ class PenSelector : PathBasedSelector() {
                 pathCopy.rewind()
             }
 
-            save()
-            // Concat the canvas matrix to 'canvasMatrix' to transform the circle.
-            concat(canvasMatrix)
-
-            // Get scale and divide 1 by it to get factor to resize the circle radius.
-
-            val scale = canvasMatrix.getOppositeScale()
-            val downSizedRadius = circlesRadius * scale
-
-            // Draw circle if it's first point that user touches so it will be visible that user
-            // has touch the first point.
-            if (pointCounter == 1) {
-                // Draw first point circle.
-                drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
-            }
-
             if (isBezierDrawn && lineType != NORMAL) {
+
+                helperLinesPath.run {
+                    // Set the helper points to current path to start drawings from last point of it.
+                    set(path)
+
+                    // Always draw first handle because both beziers have at least one handle.
+                    lineTo(handleX, handleY)
+
+                    if (lineType == QUAD_BEZIER) {
+                        // If it's QUAD_BEZIER then draw a line to last point of bezier.
+                        // This way we draw a line from start point to handle and finally to last
+                        // point of bezier.
+                        lineTo(bx, by)
+                    } else {
+                        // Else if we're in CUBIC_BEZIER mode the draw a line
+                        // from first handle to second handle and then a line
+                        // from second handle to end point of bezier.
+                        lineTo(secondHandleX, secondHandleY)
+                        lineTo(bx, by)
+                    }
+
+                    transform(canvasMatrix)
+                }
+
+                // Finally draw helper lines path.
+                drawPath(helperLinesPath, helperLinesPaint)
+
+                save()
+
+                concat(canvasMatrix)
+
+                // Get scale and divide 1 by it to get factor to resize the circle radius.
+                val scale = canvasMatrix.getOppositeScale()
+                val downSizedRadius = circlesRadius * scale
+
+                // Draw circle if it's first point that user touches so it will be visible that user
+                // has touch the first point.
+                if (pointCounter == 1) {
+                    // Draw first point circle.
+                    drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
+                }
+
                 // Handle for QUAD_BEZIER (also acts as first handle for CUBIC_BEZIER).
                 drawCircle(handleX, handleY, downSizedRadius, circlesPaint)
 
@@ -462,9 +505,6 @@ class PenSelector : PathBasedSelector() {
                     drawCircle(secondHandleX, secondHandleY, downSizedRadius, circlesPaint)
                 }
             }
-
-            // Restore the state of canvas.
-            restore()
         }
     }
 
