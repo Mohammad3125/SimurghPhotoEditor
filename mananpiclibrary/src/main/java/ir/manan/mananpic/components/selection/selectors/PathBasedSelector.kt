@@ -17,7 +17,6 @@ abstract class PathBasedSelector : Selector() {
 
     protected var isPathClose = false
 
-    protected var matrixValueHolder = FloatArray(9)
     protected var canvasMatrix = MananMatrix()
 
     // Path that adds circles into it and later will be used to
