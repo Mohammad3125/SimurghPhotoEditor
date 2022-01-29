@@ -15,6 +15,7 @@ import android.view.ScaleGestureDetector
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
 import ir.manan.mananpic.properties.Bitmapable
+import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
@@ -36,12 +37,7 @@ open class MananGestureImageView(
     /**
      * Matrix that we later modify and assign to image matrix.
      */
-    private val imageviewMatrix by lazy { Matrix() }
-
-    /**
-     * Holds values of matrix inside it.
-     */
-    private val matrixValueHolder by lazy { FloatArray(9) }
+    protected val imageviewMatrix by lazy { MananMatrix() }
 
     /**
      * Scale detector that is used to detect if user scaled matrix.
@@ -266,7 +262,7 @@ open class MananGestureImageView(
 
             resizeDrawable()
 
-            initialScale = getMatrixValue(Matrix.MSCALE_X, true)
+            initialScale = imageviewMatrix.getScaleX(true)
 
             calculateBounds()
 
@@ -342,29 +338,6 @@ open class MananGestureImageView(
     }
 
     /**
-     * This method returns the value from matrix in given constant like [Matrix.MTRANS_X], [Matrix.MSCALE_X] and etc.
-     * @param constant Constant that defines which item in matrix we're interested in.
-     * @param refreshValues Determines if we want to fetch new values from matrix or use the latest fetch values.
-     * @return A float number in matrix.
-     */
-    protected fun getMatrixValue(constant: Int, refreshValues: Boolean = false): Float {
-        if (refreshValues)
-            imageviewMatrix.getValues(matrixValueHolder)
-
-        return matrixValueHolder[constant]
-    }
-
-    /**
-     * Sets a value in both value holder and matrix itself.
-     * @param constant Constant in matrix to replace the value with.
-     * @param value Value of that constant in matrix to replace.
-     */
-    protected fun setMatrixValue(constant: Int, value: Float) {
-        matrixValueHolder[constant] = value
-        imageviewMatrix.setValues(matrixValueHolder)
-    }
-
-    /**
      * Updates imageview matrix with current matrix.
      */
     private fun updateImageMatrix() {
@@ -376,43 +349,46 @@ open class MananGestureImageView(
      * Calculates bounds of image with matrix values.
      */
     private fun calculateBounds() {
-        leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X, true)
-        topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
+        imageviewMatrix.run {
 
-        val sx = getMatrixValue(Matrix.MSCALE_X)
-        val skewY = getMatrixValue(Matrix.MSKEW_Y)
+            leftEdge = paddingLeft + getTranslationX(true)
+            topEdge = paddingTop + getTranslationY()
 
-        // Calculate real scale since rotation does affect it.
-        val scale = sqrt(sx * sx + skewY * skewY)
+            val sx = getScaleX()
+            val skewY = getSkewY()
 
-        bitmapWidth = (drawableWidth * scale)
-        bitmapHeight = (drawableHeight * scale)
+            // Calculate real scale since rotation does affect it.
+            val scale = sqrt(sx * sx + skewY * skewY)
 
-        rightEdge = bitmapWidth + leftEdge
-        bottomEdge = bitmapHeight + topEdge
+            bitmapWidth = (drawableWidth * scale)
+            bitmapHeight = (drawableHeight * scale)
 
-        val r = -atan2(
-            getMatrixValue(Matrix.MSKEW_X),
-            (getMatrixValue(Matrix.MSCALE_X))
-        ) * (180f / PI)
+            rightEdge = bitmapWidth + leftEdge
+            bottomEdge = bitmapHeight + topEdge
 
-        imageRotation = r.toFloat()
+            val r = -atan2(
+                getSkewX(),
+                (getScaleX())
+            ) * (180f / PI)
 
-        // Calculate pivot points.
-        // Rotation does affect pivot points and it should be calculated.
-        val cx = bitmapWidth * 0.5f
-        val cy = bitmapHeight * 0.5f
+            imageRotation = r.toFloat()
 
-        val radian = Math.toRadians(r)
+            // Calculate pivot points.
+            // Rotation does affect pivot points and it should be calculated.
+            val cx = bitmapWidth * 0.5f
+            val cy = bitmapHeight * 0.5f
 
-        val cosTheta = cos(radian)
-        val sinTheta = sin(radian)
+            val radian = Math.toRadians(r)
 
-        // Calculates the rotated bounds' center.
-        imagePivotX = (leftEdge + cx * cosTheta - cy * sinTheta).toFloat()
-        imagePivotY = (topEdge + cx * sinTheta + cy * cosTheta).toFloat()
+            val cosTheta = cos(radian)
+            val sinTheta = sin(radian)
 
-        boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
+            // Calculates the rotated bounds' center.
+            imagePivotX = (leftEdge + cx * cosTheta - cy * sinTheta).toFloat()
+            imagePivotY = (topEdge + cx * sinTheta + cy * cosTheta).toFloat()
+
+            boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
+        }
     }
 
     /**

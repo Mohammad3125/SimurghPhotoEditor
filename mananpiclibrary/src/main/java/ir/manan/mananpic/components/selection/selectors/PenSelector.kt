@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.view.animation.LinearInterpolator
+import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 
 class PenSelector : PathBasedSelector() {
@@ -107,7 +108,7 @@ class PenSelector : PathBasedSelector() {
             pointsPaint.strokeWidth = field
         }
 
-    override fun initialize(context: Context, matrix: Matrix, bounds: RectF) {
+    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         this.context = context
 
@@ -316,8 +317,7 @@ class PenSelector : PathBasedSelector() {
         var finalTouchRange = touchRange
         if (scaleDown) {
             // Calculate the touch range if user is zoomed in image.
-            canvasMatrix.getValues(matrixValueHolder)
-            finalTouchRange = range * (1f / matrixValueHolder[Matrix.MSCALE_X])
+            finalTouchRange = range * canvasMatrix.getOppositeScale()
         }
 
         return (x in (targetX - finalTouchRange)..(targetX + finalTouchRange) && y in (targetY - finalTouchRange)..(targetY + finalTouchRange))
@@ -383,22 +383,23 @@ class PenSelector : PathBasedSelector() {
             concat(canvasMatrix)
 
             // Get scale and divide 1 by it to get factor to resize the circle radius.
-            canvasMatrix.getValues(matrixValueHolder)
-            val scale = 1f / matrixValueHolder[Matrix.MSCALE_X]
+
+            val scale = canvasMatrix.getOppositeScale()
+            val downSizedRadius = circlesRadius * scale
 
             // Draw circle if it's first point that user touches so it will be visible that user
             // has touch the first point.
             if (pointCounter == 1) {
                 // Draw first point circle.
-                drawCircle(firstX, firstY, circlesRadius * scale, circlesPaint)
+                drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
             }
 
             if (isBezierDrawn && isQuadBezier) {
                 // Handle for quad bezier.
-                drawCircle(handleX, handleY, circlesRadius * scale, circlesPaint)
+                drawCircle(handleX, handleY, downSizedRadius, circlesPaint)
 
                 // End point of bezier.
-                drawCircle(bx, by, circlesRadius * scale, circlesPaint)
+                drawCircle(bx, by, downSizedRadius, circlesPaint)
             }
 
             // Restore the state of canvas.

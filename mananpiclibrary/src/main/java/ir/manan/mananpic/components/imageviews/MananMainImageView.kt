@@ -170,7 +170,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
                 val animatedValue = it.animatedValue as Float
 
-                val lastScale = getMatrixValue(Matrix.MSCALE_X, true)
+                val lastScale = imageviewMatrix.getScaleX(true)
 
                 postScale(
                     animatedValue / lastScale,
@@ -189,7 +189,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             addUpdateListener {
                 val animatedValue = it.animatedValue as Float
 
-                val lastAnimatedValue = getMatrixValue(Matrix.MTRANS_X, true)
+                val lastAnimatedValue = imageviewMatrix.getTranslationX(true)
 
                 postTranslate(animatedValue - lastAnimatedValue, 0f)
             }
@@ -204,7 +204,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             addUpdateListener {
                 val animatedValue = it.animatedValue as Float
 
-                val lastAnimatedValue = getMatrixValue(Matrix.MTRANS_Y, true)
+                val lastAnimatedValue = imageviewMatrix.getTranslationY(true)
 
                 postTranslate(0f, animatedValue - lastAnimatedValue)
             }
@@ -320,7 +320,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
 
         if (e == null) return false
 
-        val scaled = getMatrixValue(Matrix.MSCALE_X, true)
+        val scaled = imageviewMatrix.getScaleX(true)
 
         // If event coordinate (user touch) isn't in image bounds then do not
         // count that event as a double tap.
@@ -362,8 +362,8 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
             // Checking to see if user is zoomed without double tapping.
             // If did so then animate translations to their initial state.
             if (!isZooming) {
-                animateXAxis(getMatrixValue(Matrix.MTRANS_X, true), initialTransX)
-                animateYAxis(getMatrixValue(Matrix.MTRANS_Y), initialTransY)
+                animateXAxis(imageviewMatrix.getTranslationX(true), initialTransX)
+                animateYAxis(imageviewMatrix.getTranslationY(), initialTransY)
             }
         }
         return true
@@ -422,11 +422,11 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
      */
     private fun animateToNormalBounds() {
         // Get current scale.
-        val scaled = getMatrixValue(Matrix.MSCALE_X, true)
+        val scaled = imageviewMatrix.getScaleX(true)
         // Get current translation.
-        val matrixTransX = getMatrixValue(Matrix.MTRANS_X)
+        val matrixTransX = imageviewMatrix.getTranslationX()
         // Get current translation y.
-        val matrixTransY = getMatrixValue(Matrix.MTRANS_Y)
+        val matrixTransY = imageviewMatrix.getTranslationY()
 
         // Here we calculate the edge of right side to later do not go further that point.
         val rEdge =

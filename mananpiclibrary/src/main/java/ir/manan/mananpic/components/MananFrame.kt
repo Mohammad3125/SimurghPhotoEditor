@@ -15,6 +15,7 @@ import androidx.core.view.updateLayoutParams
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.properties.MananComponent
+import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
@@ -109,7 +110,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private var isCanvasMatrixEnabled = true
 
     // Matrix that we later use to manipulate canvas scale and translation.
-    private val canvasMatrix = Matrix()
+    private val canvasMatrix = MananMatrix()
 
     // This animator is used to animate the matrix changes.
     private val canvasMatrixAnimator by lazy {
@@ -124,13 +125,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 val ty = getAnimatedValue("translationY")
 
                 canvasMatrix.run {
-                    val matrixValueHolder = FloatArray(9)
-                    getValues(matrixValueHolder)
-
                     // If translation isn't null or in other words, we should animate the translation, then animate it.
                     if (tx != null) {
                         postTranslate(
-                            tx as Float - matrixValueHolder[Matrix.MTRANS_X],
+                            tx as Float - getTranslationX(true),
                             0f
                         )
                     }
@@ -139,13 +137,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     if (ty != null) {
                         postTranslate(
                             0f,
-                            ty as Float - matrixValueHolder[Matrix.MTRANS_Y]
+                            ty as Float - getTranslationY(true)
                         )
                     }
 
                     // If scale property isn't null then scale it.
                     if (s != null) {
-                        val totalScale = (s as Float) / matrixValueHolder[Matrix.MSCALE_X]
+                        val totalScale = (s as Float) / getScaleX(true)
                         postScale(totalScale, totalScale, pivotX, pivotY)
                     }
 
@@ -188,13 +186,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private fun animateCanvasBack() {
         if (!canvasMatrixAnimator.isRunning) {
 
-            val matrixValueHolder = FloatArray(9)
-            canvasMatrix.getValues(matrixValueHolder)
 
             // Get matrix values.
-            val scale = matrixValueHolder[Matrix.MSCALE_X]
-            val tx = matrixValueHolder[Matrix.MTRANS_X]
-            val ty = matrixValueHolder[Matrix.MTRANS_Y]
+            val scale = canvasMatrix.getScaleX(true)
+            val tx = canvasMatrix.getTranslationX()
+            val ty = canvasMatrix.getTranslationY()
 
             // Here we calculate the edge of right side to later do not go further that point.
             val rEdge =
@@ -312,9 +308,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             override fun onMove(dx: Float, dy: Float): Boolean {
                 if (currentEditingView != null) {
                     // Slow down the translation if canvas matrix is zoomed.
-                    val matrixValue = FloatArray(9)
-                    canvasMatrix.getValues(matrixValue)
-                    val s = 1f / matrixValue[Matrix.MSCALE_X]
+                    val s = canvasMatrix.getOppositeScale()
                     currentEditingView!!.applyMovement(dx * s, dy * s)
                 } else {
                     // If there isn't any component selected, translate the canvas.
@@ -593,11 +587,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             // Draw the box around view.
             if (currentEditingView != null && isDrawingBoxEnabled) {
                 if (isCanvasMatrixEnabled) {
-                    val matrixValues = FloatArray(9)
-                    canvasMatrix.getValues(matrixValues)
-
                     boxPaint.strokeWidth =
-                        frameBoxStrokeWidth * (1f / matrixValues[Matrix.MSCALE_X])
+                        frameBoxStrokeWidth * canvasMatrix.getOppositeScale()
                 }
                 val view = currentEditingView!!
 
@@ -655,18 +646,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 val bounds = v.reportBound()
 
                 touchMatrix.run {
-                    val matrixValues = FloatArray(9)
-                    canvasMatrix.getValues(matrixValues)
-
                     setTranslate(
-                        abs(matrixValues[Matrix.MTRANS_X]),
-                        abs(matrixValues[Matrix.MTRANS_Y])
+                        abs(canvasMatrix.getTranslationX(true)),
+                        abs(canvasMatrix.getTranslationY())
                     )
 
                     // Scale down the current matrix as much as canvas matrix scale up.
                     // We do this because if we zoom in image, the rectangle our area that we see
                     // is also smaller so we do this to successfully map our touch points to that area (zoomed area).
-                    val scale = 1f / matrixValues[Matrix.MSCALE_X]
+                    val scale = canvasMatrix.getOppositeScale()
                     postScale(scale, scale)
 
                     // Finally handle the rotation of component.
