@@ -451,6 +451,10 @@ class PenSelector : PathBasedSelector() {
                 pathCopy.rewind()
             }
 
+            // Get scale and divide 1 by it to get factor to resize the circle radius.
+            val scale = canvasMatrix.getOppositeScale()
+            val downSizedRadius = circlesRadius * scale
+
             if (isBezierDrawn && lineType != NORMAL) {
 
                 helperLinesPath.run {
@@ -483,17 +487,6 @@ class PenSelector : PathBasedSelector() {
 
                 concat(canvasMatrix)
 
-                // Get scale and divide 1 by it to get factor to resize the circle radius.
-                val scale = canvasMatrix.getOppositeScale()
-                val downSizedRadius = circlesRadius * scale
-
-                // Draw circle if it's first point that user touches so it will be visible that user
-                // has touch the first point.
-                if (pointCounter == 1) {
-                    // Draw first point circle.
-                    drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
-                }
-
                 // Handle for QUAD_BEZIER (also acts as first handle for CUBIC_BEZIER).
                 drawCircle(handleX, handleY, downSizedRadius, circlesPaint)
 
@@ -504,6 +497,19 @@ class PenSelector : PathBasedSelector() {
                     // Draw second handle only if we're in CUBIC_BEZIER type.
                     drawCircle(secondHandleX, secondHandleY, downSizedRadius, circlesPaint)
                 }
+
+                restore()
+            }
+
+            save()
+
+            concat(canvasMatrix)
+
+            // Draw circle if it's first point that user touches so it will be visible that user
+            // has touch the first point.
+            if (pointCounter == 1) {
+                // Draw first point circle.
+                drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
             }
         }
     }
