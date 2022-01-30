@@ -57,7 +57,7 @@ class PenSelector : PathBasedSelector() {
      * Type of line that is going to be drawn in the next touch down.
      * @see LineType
      */
-    var lineType = CUBIC_BEZIER
+    var lineType = NORMAL
 
     private val bezierPath by lazy {
         Path().apply {
