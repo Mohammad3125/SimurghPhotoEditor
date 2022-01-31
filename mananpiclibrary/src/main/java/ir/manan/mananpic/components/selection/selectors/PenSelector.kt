@@ -334,9 +334,6 @@ class PenSelector : PathBasedSelector() {
 
                     isTempLineDrawn = true
 
-                    // Push original path to stack to take a snapshot of current state.
-                    pushToStack()
-
                     // Store last point of current bezier to variables.
                     bx = lastX
                     by = lastY
@@ -370,6 +367,10 @@ class PenSelector : PathBasedSelector() {
 
     private fun setBezierToPath() {
         path.set(tempPath)
+
+        // Push original path to stack to take a snapshot of current state.
+        pushToStack()
+
         tempPath.reset()
         isTempLineDrawn = false
     }
@@ -442,23 +443,24 @@ class PenSelector : PathBasedSelector() {
     override fun draw(canvas: Canvas?) {
         canvas?.run {
 
-            // Create a copy of path to later transform the transformed path to it.
-            pathCopy.set(path)
+            if (!isTempLineDrawn) {
+                // Create a copy of path to later transform the transformed path to it.
+                pathCopy.set(path)
 
-            // Apply matrix to path.
-            path.transform(canvasMatrix)
+                // Apply matrix to path.
+                path.transform(canvasMatrix)
 
-            // Draw the transformed path.
-            drawPath(path, pointsPaint)
+                // Draw the transformed path.
+                drawPath(path, pointsPaint)
 
-            // Revert it back.
-            path.set(pathCopy)
+                // Revert it back.
+                path.set(pathCopy)
 
-            // Reset path copy to release memory.
-            pathCopy.rewind()
-
+                // Reset path copy to release memory.
+                pathCopy.rewind()
+            }
             // Only draw temp path if we have drawn a temporary line.
-            if (isTempLineDrawn) {
+            else {
                 pathCopy.set(tempPath)
 
                 tempPath.transform(canvasMatrix)
