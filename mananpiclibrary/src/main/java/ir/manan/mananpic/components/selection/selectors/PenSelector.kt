@@ -28,7 +28,6 @@ class PenSelector : PathBasedSelector() {
     private var secondHandleX = 0f
     private var secondHandleY = 0f
 
-
     // These variables are used to store last location that user touched.
     private var lbx = 0f
     private var lby = 0f
@@ -58,6 +57,16 @@ class PenSelector : PathBasedSelector() {
      * @see LineType
      */
     var lineType = NORMAL
+        set(value) {
+            field = value
+            // Set original path to temp path if user changes
+            // the type of line while a temporary line has been
+            // drawn.
+            if (isTempLineDrawn) {
+                setBezierToPath()
+                invalidate()
+            }
+        }
 
     private val tempPath by lazy {
         Path().apply {
