@@ -687,8 +687,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     // Finally handle the rotation of component.
                     postRotate(
                         -v.reportRotation(),
-                        v.reportBoundPivotX(),
-                        v.reportBoundPivotY()
+                        v.reportBoundPivotX() + getOffsetX(v),
+                        v.reportBoundPivotY() + getOffsetY(v)
                     )
 
                 }
