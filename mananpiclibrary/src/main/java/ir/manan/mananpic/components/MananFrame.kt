@@ -595,6 +595,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // Get bounds of component to create a rectangle with it.
                 val bound = view.reportBound()
 
+
+                // If  width and or height is MATCH_PARENT then add offset.
+                // This is because MATH_PARENT components shift while parent
+                // has padding.
+                val v = (view as View)
+                val offsetX = getOffsetX(v)
+                val offsetY = getOffsetY(v)
+
                 // Take a snapshot of current state of canvas.
                 save()
 
@@ -602,16 +610,17 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // draw rotated rectangle.
                 rotate(
                     view.reportRotation(),
-                    view.reportBoundPivotX(),
-                    view.reportBoundPivotY()
+                    view.reportBoundPivotX() + offsetX,
+                    view.reportBoundPivotY() + offsetY
                 )
+
 
                 // Draw a box around component.
                 drawRect(
-                    bound.left,
-                    bound.top,
-                    bound.right,
-                    bound.bottom,
+                    bound.left + offsetX,
+                    bound.top + offsetY,
+                    bound.right + offsetX,
+                    bound.bottom + offsetY,
                     boxPaint
                 )
 
@@ -621,6 +630,24 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
 
         }
+    }
+
+    /**
+     * Determines if child's x coordinate should offset.
+     */
+    private fun getOffsetX(v: View): Int {
+        return if (v.layoutParams.width == LayoutParams.MATCH_PARENT)
+            paddingLeft
+        else 0
+    }
+
+    /**
+     * Determines if child's y coordinate should offset.
+     */
+    private fun getOffsetY(v: View): Int {
+        return if (v.layoutParams.width == LayoutParams.MATCH_PARENT)
+            paddingTop
+        else 0
     }
 
     /**
