@@ -543,14 +543,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private fun fitChildInsidePage(child: MananComponent) {
         child.run {
             val bound = reportBound()
-            // Take maximum dimension of component and compare it to minimum dimension of page.
-            if (max(bound.width(), bound.height()) > min(
-                    pageRect.width(),
-                    pageRect.height()
-                )
-            ) {
-                // Then determine how much we should scale to fit image within bounds.
-                this.applyScale(
+            val boundAspectRatio = bound.width() / bound.height()
+
+            // Center and scale the component based on it's aspect ratio.
+            if (boundAspectRatio > 1f) {
+                applyScale(pageRect.height() / bound.height())
+            } else {
+                applyScale(
                     min(pageRect.width(), pageRect.height()) / max(
                         bound.width(),
                         bound.height()
@@ -559,8 +558,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
 
             // Determine how much we should shift the view to center it.
-            val totalXToShift = pageRect.left - bound.left
-            val totalYToShift = pageRect.top - bound.top
+            val totalXToShift = pageRect.left - (bound.left + paddingLeft)
+            val totalYToShift = pageRect.top - (bound.top + paddingTop)
 
             if (totalXToShift > 0)
                 applyMovement(totalXToShift, 0f)
