@@ -22,8 +22,6 @@ import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * A class that extends [FrameLayout] class and overrides certain functions such as
@@ -544,17 +542,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         child.run {
             val bound = reportBound()
             val boundAspectRatio = bound.width() / bound.height()
+            val pageAspectRatio = pageRect.width() / pageRect.height()
 
             // Center and scale the component based on it's aspect ratio.
-            if (boundAspectRatio > 1f) {
+            if ((boundAspectRatio > 1f && pageAspectRatio > 1f) || (boundAspectRatio <= 1f && pageAspectRatio >= 1f)) {
                 applyScale(pageRect.height() / bound.height())
             } else {
-                applyScale(
-                    min(pageRect.width(), pageRect.height()) / max(
-                        bound.width(),
-                        bound.height()
-                    )
-                )
+                applyScale(pageRect.width() / bound.width())
             }
 
             // Determine how much we should shift the view to center it.
