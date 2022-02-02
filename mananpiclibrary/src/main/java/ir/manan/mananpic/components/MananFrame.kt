@@ -336,9 +336,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                     val childAtPosition = getChildAtPoint(lastX, lastY) as? MananComponent
 
+                    // Deselect the child if returned component is null.
+                    if (childAtPosition == null) {
+                        deselectSelectedView()
+                    }
                     // If returned child is not null and it is not referencing the same object that
                     // current editable view is referencing then change editing view.
-                    if (currentEditingView !== childAtPosition && childAtPosition != null) {
+                    else if (currentEditingView !== childAtPosition) {
                         rotateDetector.resetRotation(childAtPosition.reportRotation())
                         callOnChildClickListeners(childAtPosition as View, true)
                         currentEditingView = childAtPosition
@@ -357,69 +361,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private val moveDetector by lazy {
         MoveDetector(1, moveGestureListener)
-    }
-
-    private val commonGestureDetector by lazy {
-        GestureDetector(context, commonGestureListener).apply {
-            setOnDoubleTapListener(doubleTapListener)
-        }
-    }
-
-    private val doubleTapListener by lazy {
-        object : GestureDetector.OnDoubleTapListener {
-            override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-                return true
-            }
-
-            override fun onDoubleTap(e: MotionEvent?): Boolean {
-                if (e != null) {
-                    deselectSelectedView()
-                    return true
-                }
-                return false
-            }
-
-            override fun onDoubleTapEvent(e: MotionEvent?): Boolean {
-                return false
-            }
-        }
-    }
-
-    private val commonGestureListener by lazy {
-        object : GestureDetector.OnGestureListener {
-            override fun onDown(e: MotionEvent?): Boolean {
-                return true
-            }
-
-            override fun onShowPress(e: MotionEvent?) {
-            }
-
-            override fun onSingleTapUp(e: MotionEvent?): Boolean {
-                return true
-            }
-
-            override fun onScroll(
-                e1: MotionEvent?,
-                e2: MotionEvent?,
-                distanceX: Float,
-                distanceY: Float
-            ): Boolean {
-                return false
-            }
-
-            override fun onLongPress(e: MotionEvent?) {
-
-            }
-
-            override fun onFling(
-                e1: MotionEvent?,
-                e2: MotionEvent?,
-                velocityX: Float,
-                velocityY: Float
-            ): Boolean {
-                return false
-            }
-        }
     }
 
     init {
@@ -481,7 +422,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         scaleDetector.onTouchEvent(event)
         rotateDetector.onTouchEvent(event)
         moveDetector.onTouchEvent(event)
-        commonGestureDetector.onTouchEvent(event)
         when (event?.actionMasked) {
             MotionEvent.ACTION_MOVE -> {
                 invalidate()
