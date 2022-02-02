@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.selection.selectors
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
+import ir.manan.mananpic.utils.BitmapUtility
 import ir.manan.mananpic.utils.MananMatrix
 import java.util.*
 import kotlin.math.abs
@@ -128,7 +129,11 @@ abstract class PathBasedSelector : Selector() {
 
             resetSelection()
 
-            return createdBitmap
+
+            return BitmapUtility.downSizeBitmap(
+                createdBitmap,
+                BitmapUtility.getVisiblePixelsRectangleConcurrent(createdBitmap)
+            )
         }
         return null
     }
