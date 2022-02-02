@@ -40,6 +40,23 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     var pageHeight = 0
     private var pageSizeRatio: Float = 0f
 
+    /**
+     * A flag that later will be set if user moves his/her finger enough to be
+     * registered as move gesture, otherwise it will be registered as single tap.
+     */
+    private var isMoved = false
+
+    // Used to store total difference of touch in move gesture to then
+    // compare it against a touch slope to determine if user has performed touch or move gesture.
+    private var totalDx = 0f
+    private var totalDy = 0f
+
+
+    // Used to retrieve touch slopes.
+    private val viewConfiguration by lazy {
+        ViewConfiguration.get(context)
+    }
+
     // Paint used to draw page.
     private val pagePaint by lazy {
         Paint().apply {
@@ -176,6 +193,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             override fun onScaleEnd(detector: ScaleGestureDetector?) {
                 super.onScaleEnd(detector)
+                // Set 'isMoved' to true to prevent selecting the target view if it's been in user touch locations.
+                isMoved = true
                 animateCanvasBack()
             }
         }
@@ -285,24 +304,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private val moveGestureListener by lazy {
         object : SimpleOnMoveListener() {
-
-            override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
-                performClick()
-
-                val childAtPosition = getChildAtPoint(initialX, initialY) as? MananComponent
-
-                // If returned child is not null and it is not referencing the same object that
-                // current editable view is referencing then change editing view.
-                if (currentEditingView !== childAtPosition && childAtPosition != null) {
-                    rotateDetector.resetRotation(childAtPosition.reportRotation())
-                    callOnChildClickListeners(childAtPosition as View, true)
-                    currentEditingView = childAtPosition
-                    invalidate()
-                }
-
-                return currentEditingView != null
-            }
-
             override fun onMove(dx: Float, dy: Float): Boolean {
                 if (currentEditingView != null) {
                     // Slow down the translation if canvas matrix is zoomed.
@@ -312,11 +313,43 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     // If there isn't any component selected, translate the canvas.
                     canvasMatrix.postTranslate(dx, dy)
                 }
+
+                // Store total dx and dy to then determine if user has moved his/her finger
+                // enough to be registered as moving gesture.
+                totalDx += abs(dx)
+                totalDy += abs(dy)
+
+                // Compare the total difference against the touch slop.
+                isMoved =
+                    totalDx > viewConfiguration.scaledTouchSlop || totalDy > viewConfiguration.scaledTouchSlop
+
                 return true
             }
 
             override fun onMoveEnded(lastX: Float, lastY: Float) {
                 super.onMoveEnded(lastX, lastY)
+
+                // If user hasn't moved his/her finger enough to be registered as moving gesture,
+                // then select the components if they're on current location of touch.
+                if (!isMoved) {
+                    performClick()
+
+                    val childAtPosition = getChildAtPoint(lastX, lastY) as? MananComponent
+
+                    // If returned child is not null and it is not referencing the same object that
+                    // current editable view is referencing then change editing view.
+                    if (currentEditingView !== childAtPosition && childAtPosition != null) {
+                        rotateDetector.resetRotation(childAtPosition.reportRotation())
+                        callOnChildClickListeners(childAtPosition as View, true)
+                        currentEditingView = childAtPosition
+                        invalidate()
+                    }
+                }
+
+                // Reset totals for next gesture.
+                totalDx = 0f
+                totalDy = 0f
+
                 animateCanvasBack()
             }
         }
