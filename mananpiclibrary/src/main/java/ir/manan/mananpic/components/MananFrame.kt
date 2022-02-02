@@ -7,6 +7,7 @@ import android.content.Context
 import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
+import android.util.Log
 import android.view.*
 import android.widget.FrameLayout
 import androidx.core.view.children
@@ -323,6 +324,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 isMoved =
                     totalDx > viewConfiguration.scaledTouchSlop || totalDy > viewConfiguration.scaledTouchSlop
 
+                Log.i("1", "is moved = $isMoved")
+
                 return true
             }
 
@@ -350,9 +353,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     }
                 }
 
-                // Reset totals for next gesture.
+                // Reset for next gesture.
                 totalDx = 0f
                 totalDy = 0f
+                isMoved = false
+
 
                 animateCanvasBack()
             }
