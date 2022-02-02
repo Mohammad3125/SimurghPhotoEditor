@@ -34,7 +34,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     constructor(context: Context) : this(context, null)
 
     companion object {
-        const val MAXIMUM_SCALE_FACTOR = 10f
+        private const val MAXIMUM_SCALE_FACTOR = 10f
     }
 
     // Page settings.

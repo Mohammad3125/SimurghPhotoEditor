@@ -23,8 +23,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     constructor(context: Context) : this(context, null)
 
     companion object {
-        const val MAXIMUM_SCALE_FACTOR = 25f
-        const val MINIMUM_SCALE_ZOOM = 1f
+        private const val MAXIMUM_SCALE_FACTOR = 25f
+        private const val MINIMUM_SCALE_ZOOM = 1f
     }
 
     private var initialX = 0f

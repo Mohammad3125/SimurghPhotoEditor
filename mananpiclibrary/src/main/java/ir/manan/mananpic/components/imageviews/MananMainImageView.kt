@@ -27,7 +27,7 @@ class MananMainImageView(context: Context, attr: AttributeSet?) :
         /**
          * Maximum amount the image could be scaled.
          */
-        const val MAXIMUM_SCALE_FACTOR = 10f
+        private const val MAXIMUM_SCALE_FACTOR = 10f
     }
 
     private var initialRightEdge = 0f
