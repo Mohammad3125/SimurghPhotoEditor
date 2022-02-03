@@ -141,7 +141,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
-                    if (totalPoints == 2 && scaleDetector?.isInProgress == false) {
+                    if (totalPoints == 2) {
                         isMatrixGesture = true
                         canvasMatrix.postTranslate(dx, dy)
                         invalidate()
