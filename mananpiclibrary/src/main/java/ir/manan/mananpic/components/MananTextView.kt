@@ -27,6 +27,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         setRotate(0f)
     }
 
+    init {
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
+    }
+
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
         paint.apply {
             style = Paint.Style.STROKE
@@ -87,7 +91,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     override fun removeBlur() {
         paint.maskFilter = null
-        setLayerType(LAYER_TYPE_NONE, null)
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
         invalidate()
     }
 
@@ -180,8 +184,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
     override fun reportBound(): RectF {
-        bounds.set(x, y, x + width, y + height)
-        return bounds
+        return bounds.apply {
+            set(x, y, x + width, y + height)
+        }
     }
 
     override fun reportRotation(): Float {
