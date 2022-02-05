@@ -680,8 +680,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     fun convertPageToBitmap(transparentBackground: Boolean = false): Bitmap {
         if (pageWidth == 0 || pageHeight == 0) throw IllegalStateException("Page size should not be 0")
 
+
+        val listLayerTypes = mutableListOf<Int>()
         // Set children layer type to none to get better quality for rendering.
         children.forEach {
+            listLayerTypes.add(it.layerType)
             it.setLayerType(LAYER_TYPE_NONE, null)
         }
 
@@ -729,6 +732,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
         // Return the state of canvas matrix.
         isCanvasMatrixEnabled = true
+
+        // Restore layer type of each child.
+        listLayerTypes.forEachIndexed { index, i ->
+            getChildAt(index).setLayerType(i, null)
+        }
+
+        invalidate()
 
         // Finally return bitmap.
         return bitmapWithPageSize
