@@ -5,6 +5,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.util.TypedValue
 import androidx.appcompat.widget.AppCompatTextView
+import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
 import kotlin.math.max
 import kotlin.math.min
@@ -22,6 +23,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     constructor(context: Context) : this(context, null)
 
     private val bounds = RectF()
+
+    private var isDrawnOnce = false
 
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
@@ -88,7 +91,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         invalidate()
     }
 
-
     override fun removeBlur() {
         paint.maskFilter = null
         setLayerType(LAYER_TYPE_SOFTWARE, null)
@@ -106,7 +108,13 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
     override fun applyScale(scaleFactor: Float) {
-        setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
+        if (!isDrawnOnce) {
+            doOnPreDraw {
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
+            }
+        } else {
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
+        }
     }
 
     override fun applyMovement(dx: Float, dy: Float) {
@@ -246,5 +254,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         }
 
         return outputBitmap
+    }
+
+    override fun onDraw(canvas: Canvas?) {
+        super.onDraw(canvas)
+        isDrawnOnce = true
     }
 }
