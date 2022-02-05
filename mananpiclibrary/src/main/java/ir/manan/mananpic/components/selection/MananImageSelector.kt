@@ -30,6 +30,9 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private var initialX = 0f
     private var initialY = 0f
 
+    private var secondPointerInitialX = 0f
+    private var secondPointerInitialY = 0f
+
     private var isMatrixGesture = false
 
     private var onSelectorStateChangeListener: OnSelectorStateChangeListener? = null
@@ -130,28 +133,46 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     initialY = y
                     return true
                 }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    if (totalPoints == 2) {
+                        secondPointerInitialX = getX(1)
+                        secondPointerInitialY = getY(1)
+                    }
+                }
                 MotionEvent.ACTION_MOVE -> {
                     // Determine total amount that user moved his/her finger on screen.
-                    val dx = x - initialX
-                    val dy = y - initialY
-
-                    // Reset initials.
-                    initialX = x
-                    initialY = y
+                    var dx = x - initialX
+                    var dy = y - initialY
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
                     if (totalPoints == 2) {
+                        val secondPointerX = getX(1)
+                        val secondPointerY = getY(1)
+
+                        // Calculate total difference by taking difference of first and second pointer
+                        // and their initial point then append them and finally divide by two because
+                        // we have two pointers that add up and it makes the gesture double as fast.
+                        dx = ((secondPointerX - secondPointerInitialX) + (x - initialX)) / 2
+                        dy = ((secondPointerY - secondPointerInitialY) + (y - initialY)) / 2
+
+                        // Reset initial positions.
+                        initialX = x
+                        initialY = y
+
+                        secondPointerInitialX = secondPointerX
+                        secondPointerInitialY = secondPointerY
+
                         isMatrixGesture = true
                         canvasMatrix.postTranslate(dx, dy)
                         invalidate()
+
                         return true
                     }
-
                     // Else if selector is not null and there is currently 1 pointer on
                     // screen and user is not performing any other gesture like moving or
                     // scaling, then call 'onMove' method of selector.
-                    else if (selector != null && totalPoints == 1 && !isMatrixGesture) {
+                    if (selector != null && totalPoints == 1 && !isMatrixGesture) {
 
                         // Calculate how much the canvas is scaled then use
                         // that to slow down the translation by that factor.
@@ -163,6 +184,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                             exactMapPoints[0],
                             exactMapPoints[1]
                         )
+
+                        // Reset initial positions.
+                        initialX = x
+                        initialY = y
+
                         return true
                     }
                     return false
