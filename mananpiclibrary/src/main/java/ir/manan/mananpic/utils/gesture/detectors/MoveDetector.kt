@@ -21,6 +21,8 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
     // It will notify the motion event that user is gesturing a new gesture on the screen.
     private var newGesture = true
 
+    private var shouldContinue = false
+
 
     init {
         if (pointerCount <= 0) throw IllegalStateException("pointer count should be more than 0")
@@ -32,11 +34,12 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
                 initialX = event.x
                 initialY = event.y
 
-                listener.onMoveBegin(initialX, initialY)
+                shouldContinue = listener.onMoveBegin(initialX, initialY)
+                return shouldContinue
             }
 
             MotionEvent.ACTION_POINTER_DOWN -> {
-                if (pointerCount >= 2) {
+                if (pointerCount >= 2 && shouldContinue) {
                     secondPointerInitialX = event.getX(1)
                     secondPointerInitialY = event.getY(1)
                 }
@@ -44,7 +47,7 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (event.pointerCount == pointerCount && newGesture) {
+                if (event.pointerCount == pointerCount && newGesture && shouldContinue) {
 
                     var currentX = event.x - initialX
                     var currentY = event.y - initialY
@@ -64,7 +67,7 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
                     }
 
                     val bool = listener.onMove(currentX, currentY)
-                    listener.onMove(currentX, currentY, event.x, event.y)
+                    bool.and(listener.onMove(currentX, currentY, event.x, event.y))
 
                     initialX = event.x
                     initialY = event.y
@@ -83,7 +86,9 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
             MotionEvent.ACTION_UP -> {
                 // After all of the fingers were lifted from screen, then we can make a move gesture.
                 newGesture = true
-                listener.onMoveEnded(event.x, event.y)
+                if (shouldContinue) {
+                    listener.onMoveEnded(event.x, event.y)
+                }
                 false
             }
             else -> {

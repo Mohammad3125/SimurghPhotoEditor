@@ -6,7 +6,7 @@ package ir.manan.mananpic.utils.gesture.gestures
 open class SimpleOnMoveListener : OnMoveListener {
 
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
-        return false
+        return true
     }
 
     override fun onMove(dx: Float, dy: Float): Boolean {
