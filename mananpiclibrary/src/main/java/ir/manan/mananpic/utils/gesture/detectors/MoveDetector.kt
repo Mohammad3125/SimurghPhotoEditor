@@ -15,6 +15,9 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
     private var initialX = 0f
     private var initialY = 0f
 
+    private var secondPointerInitialX = 0f
+    private var secondPointerInitialY = 0f
+
     // It will notify the motion event that user is gesturing a new gesture on the screen.
     private var newGesture = true
 
@@ -32,16 +35,39 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
                 listener.onMoveBegin(initialX, initialY)
             }
 
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                if (pointerCount >= 2) {
+                    secondPointerInitialX = event.getX(1)
+                    secondPointerInitialY = event.getY(1)
+                }
+                true
+            }
+
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount == pointerCount && newGesture) {
-                    val currentX = event.x
-                    val currentY = event.y
 
-                    val bool = listener.onMove(currentX - initialX, currentY - initialY)
-                    listener.onMove(currentX - initialX, currentY - initialY, currentX, currentY)
+                    var currentX = event.x - initialX
+                    var currentY = event.y - initialY
 
-                    initialX = currentX
-                    initialY = currentY
+                    if (pointerCount >= 2) {
+
+                        val secondPointerX = event.getX(1)
+                        val secondPointerY = event.getY(1)
+
+                        currentX =
+                            ((secondPointerX - secondPointerInitialX) + (event.x - initialX)) / 2
+                        currentY =
+                            ((secondPointerY - secondPointerInitialY) + (event.y - initialY)) / 2
+
+                        secondPointerInitialX = secondPointerX
+                        secondPointerInitialY = secondPointerY
+                    }
+
+                    val bool = listener.onMove(currentX, currentY)
+                    listener.onMove(currentX, currentY, event.x, event.y)
+
+                    initialX = event.x
+                    initialY = event.y
 
                     bool
                 } else
