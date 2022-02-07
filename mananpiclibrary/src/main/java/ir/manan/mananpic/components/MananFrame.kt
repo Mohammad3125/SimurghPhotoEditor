@@ -519,31 +519,35 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     private fun fitChildInsidePage(child: MananComponent) {
         child.run {
-            // Get a reference to bounds of component.
-            val bound = reportBound()
+            var bound = reportBound()
 
             val pageWidth = pageRect.width()
             val pageHeight = pageRect.height()
 
-            // If height is bigger than page's height then scale it down.
-            if (bound.height() > pageHeight) {
-                applyScale(pageHeight / bound.height())
-            }
-            // Check if after scaling the other axis exceeds page bounds.
+            // First scale down the component to match the page height.
+            applyScale(pageHeight / bound.height())
+
+            // Refresh the bounds to then determine if we should scale down again or not.
+            bound = reportBound()
             val boundWidth = bound.width()
 
+            // Check if after scaling the other axis exceeds page bounds.
             if (boundWidth > pageWidth) {
                 applyScale(pageWidth / boundWidth)
+                bound = reportBound()
             }
 
+            // Convert to view to get offset on each axis based on width and height param
+            // of view. If a parent has a padding and child has MATCH_PARENT on either width or
+            // height then it's x and y would shift but it is not the case with WRAP_CONTENT.
+            val v = this as View
             // Determine how much we should shift the view to center it.
-            val totalXToShift = pageRect.left - (bound.left + paddingLeft)
-            val totalYToShift = pageRect.top - (bound.top + paddingTop)
+            val totalXToShift = (pageRect.centerX() - bound.centerX()) - getOffsetX(v)
+            val totalYToShift = (pageRect.centerY() - bound.centerY()) - getOffsetY(v)
 
-            if (totalXToShift > 0)
-                applyMovement(totalXToShift, 0f)
-            if (totalYToShift > 0)
-                applyMovement(0f, totalYToShift)
+            // Finally shift to center the component.
+            applyMovement(totalXToShift, totalYToShift)
+
         }
     }
 
