@@ -515,36 +515,20 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private fun fitChildInsidePage(child: MananComponent) {
         child.run {
-            var bound = reportBound()
-
-            val boundWidth = bound.width()
-            val boundHeight = bound.height()
-
-            val boundAspectRatio = boundWidth / boundHeight
+            val bound = reportBound()
 
             val pageWidth = pageRect.width()
             val pageHeight = pageRect.height()
 
-            val pageAspectRatio = pageWidth / pageHeight
+            // If height is bigger than page's height then scale it down.
+            if (bound.height() > pageHeight) {
+                applyScale(pageHeight / bound.height())
+            }
+            // Check if after scaling the other axis exceeds page bounds.
+            val boundWidth = bound.width()
 
-            // Scale the component based on it's aspect ratio.
-            if ((boundAspectRatio > 1f && pageAspectRatio > 1f) || (boundAspectRatio <= 1f && pageAspectRatio >= 1f)) {
-                applyScale(pageHeight / boundHeight)
-
-                // Check if after scaling the other axis exceeds page bounds.
-                bound = reportBound()
-                if (bound.width() > pageWidth) {
-                    applyScale(pageWidth / bound.width())
-                }
-
-            } else {
+            if (boundWidth > pageWidth) {
                 applyScale(pageWidth / boundWidth)
-
-                // Check if after scaling the other axis exceeds page bounds.
-                bound = reportBound()
-                if (bound.height() > pageHeight) {
-                    applyScale(pageHeight / bound.height())
-                }
             }
 
             // Determine how much we should shift the view to center it.
