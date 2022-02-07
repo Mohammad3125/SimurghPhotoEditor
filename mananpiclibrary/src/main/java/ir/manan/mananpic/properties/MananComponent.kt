@@ -6,6 +6,8 @@ interface MananComponent {
 
     /**
      * Reports boundaries of a component regardless of implementation to rotate a component.
+     * Note that a component might return a direct reference to bounds object to avoid allocations. Avoid
+     * changing it if possible.
      */
     fun reportBound(): RectF
 
