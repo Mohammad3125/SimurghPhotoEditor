@@ -513,8 +513,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
+    /**
+     * Fits child inside the page(not view bounds).
+     * @param child Child that is going to be fitted inside page.
+     */
     private fun fitChildInsidePage(child: MananComponent) {
         child.run {
+            // Get a reference to bounds of component.
             val bound = reportBound()
 
             val pageWidth = pageRect.width()
@@ -834,12 +839,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             val component = (child as MananComponent)
 
+            // Reset rotation of rotation detector to current component rotation.
             rotateDetector.resetRotation(component.reportRotation())
 
             callOnChildClickListeners(child, true)
 
             currentEditingView = component
 
+            // Set this flag to later fit the component inside the page after child has been laid out.
             isChildScaleNormalized = false
         }
     }
