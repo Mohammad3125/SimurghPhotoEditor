@@ -28,8 +28,9 @@ class MananFactory {
 
         /**
          * Creates a [MananTextView] with required layout params.
+         * @param maxLine Maximum line that current text has.
          */
-        fun createTextView(context: Context, text: String): MananTextView {
+        fun createTextView(context: Context, text: String, maxLine: Int = 1): MananTextView {
             return MananTextView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -38,6 +39,7 @@ class MananFactory {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     clipToOutline = false
                 }
+                maxLines = maxLine
                 this.text = text
                 setTextColor(Color.BLACK)
             }
