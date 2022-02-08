@@ -3,7 +3,7 @@ package ir.manan.mananpic.components
 import android.graphics.*
 
 /**
- * Class for applying porter duff methods on two images.
+ * Class for applying porter duff methods on two bitmaps.
  */
 class MananPorterDuff {
     companion object {

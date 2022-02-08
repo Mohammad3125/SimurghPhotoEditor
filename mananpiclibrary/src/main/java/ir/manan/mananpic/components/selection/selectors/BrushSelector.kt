@@ -4,6 +4,9 @@ import android.content.Context
 import android.graphics.*
 import ir.manan.mananpic.utils.MananMatrix
 
+/**
+ * Selector that let's user brush an area to later select it.
+ */
 class BrushSelector : PathBasedSelector() {
 
     // Paint for circles in path.

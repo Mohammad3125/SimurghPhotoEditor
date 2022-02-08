@@ -17,6 +17,9 @@ import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.abs
 
+/**
+ * View for selecting an area from image like selecting it with pen or selecting an area with brush etc...
+ */
 class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     MananGestureImageView(context, attributeSet), Selector.OnDispatchToInvalidate {
 
