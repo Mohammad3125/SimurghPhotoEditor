@@ -2,6 +2,9 @@ package ir.manan.mananpic.utils
 
 import android.graphics.Matrix
 
+/**
+ * A class that extends [Matrix] and provides custom function and cleaner interface for retrieving matrix values.
+ */
 class MananMatrix : Matrix() {
     private val matrixValueHolder by lazy {
         FloatArray(9)
