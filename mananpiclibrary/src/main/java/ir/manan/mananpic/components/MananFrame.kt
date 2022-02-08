@@ -524,16 +524,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             val pageWidth = pageRect.width()
             val pageHeight = pageRect.height()
 
-            // First scale down the component to match the page height.
-            applyScale(pageHeight / bound.height())
+            // First scale down the component to match the page width.
+            applyScale(pageWidth / bound.width())
 
             // Refresh the bounds to then determine if we should scale down again or not.
             bound = reportBound()
-            val boundWidth = bound.width()
+            val boundHeight = bound.height()
 
             // Check if after scaling the other axis exceeds page bounds.
-            if (boundWidth > pageWidth) {
-                applyScale(pageWidth / boundWidth)
+            if (boundHeight > pageHeight) {
+                applyScale(pageHeight / boundHeight)
                 bound = reportBound()
             }
 
