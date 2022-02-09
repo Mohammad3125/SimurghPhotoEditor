@@ -666,20 +666,24 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     val scale = canvasMatrix.getOppositeScale()
                     postScale(scale, scale)
 
+                    val offsetX = getOffsetX(v)
+                    val offsetY = getOffsetY(v)
+
                     // Finally handle the rotation of component.
                     postRotate(
                         -v.reportRotation(),
-                        v.reportBoundPivotX() + getOffsetX(v),
-                        v.reportBoundPivotY() + getOffsetY(v)
+                        v.reportBoundPivotX() + offsetX,
+                        v.reportBoundPivotY() + offsetY
                     )
+
+                    // Finally map the touch points.
+                    mapPoints(touchPoints)
+
+                    if (touchPoints[0] in (bounds.left + offsetX)..(bounds.right + offsetX) && touchPoints[1] in (bounds.top + offsetY..(bounds.bottom + offsetY)))
+                        return v
 
                 }
 
-                // Finally map the touch points.
-                touchMatrix.mapPoints(touchPoints)
-
-                if (touchPoints[0] in bounds.left..bounds.right && touchPoints[1] in bounds.top..bounds.bottom)
-                    return v
             }
         }
         return null
