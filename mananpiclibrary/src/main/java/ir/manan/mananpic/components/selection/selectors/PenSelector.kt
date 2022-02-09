@@ -355,9 +355,11 @@ class PenSelector : PathBasedSelector() {
                     closePath()
                 }
             }
-            // Store the last location that user has touched.
-            lbx = lastX
-            lby = lastY
+            // Store the last location that user has touched (if it's not a handle.)
+            if (currentHandleSelected == NONE) {
+                lbx = lastX
+                lby = lastY
+            }
         }
 
         invalidate()
