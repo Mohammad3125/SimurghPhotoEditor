@@ -9,6 +9,9 @@ import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.*
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 
+/**
+ * Pen tool for selecting an area of interest with straight, quad bezier and cubic bezier.
+ */
 class PenSelector : PathBasedSelector() {
 
     // These two variables determine the location of first touch to later
@@ -352,9 +355,11 @@ class PenSelector : PathBasedSelector() {
                     closePath()
                 }
             }
-            // Store the last location that user has touched.
-            lbx = lastX
-            lby = lastY
+            // Store the last location that user has touched (if it's not a handle.)
+            if (currentHandleSelected == NONE) {
+                lbx = lastX
+                lby = lastY
+            }
         }
 
         invalidate()

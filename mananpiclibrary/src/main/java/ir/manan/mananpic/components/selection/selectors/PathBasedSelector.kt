@@ -8,6 +8,9 @@ import ir.manan.mananpic.utils.MananMatrix
 import java.util.*
 import kotlin.math.abs
 
+/**
+ * Base class for selectors that manipulate a path to achieve the result.
+ */
 abstract class PathBasedSelector : Selector() {
 
     // Visible part of image bounds.

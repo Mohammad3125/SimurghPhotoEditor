@@ -513,27 +513,41 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
+    /**
+     * Fits child inside the page(not view bounds).
+     * @param child Child that is going to be fitted inside page.
+     */
     private fun fitChildInsidePage(child: MananComponent) {
         child.run {
-            val bound = reportBound()
-            val boundAspectRatio = bound.width() / bound.height()
-            val pageAspectRatio = pageRect.width() / pageRect.height()
+            var bound = reportBound()
 
-            // Center and scale the component based on it's aspect ratio.
-            if ((boundAspectRatio > 1f && pageAspectRatio > 1f) || (boundAspectRatio <= 1f && pageAspectRatio >= 1f)) {
-                applyScale(pageRect.height() / bound.height())
-            } else {
-                applyScale(pageRect.width() / bound.width())
+            val pageWidth = pageRect.width()
+            val pageHeight = pageRect.height()
+
+            // First scale down the component to match the page width.
+            applyScale(pageWidth / bound.width())
+
+            // Refresh the bounds to then determine if we should scale down again or not.
+            bound = reportBound()
+            val boundHeight = bound.height()
+
+            // Check if after scaling the other axis exceeds page bounds.
+            if (boundHeight > pageHeight) {
+                applyScale(pageHeight / boundHeight)
+                bound = reportBound()
             }
 
+            // Convert to view to get offset on each axis based on width and height param
+            // of view. If a parent has a padding and child has MATCH_PARENT on either width or
+            // height then it's x and y would shift but it is not the case with WRAP_CONTENT.
+            val v = this as View
             // Determine how much we should shift the view to center it.
-            val totalXToShift = pageRect.left - (bound.left + paddingLeft)
-            val totalYToShift = pageRect.top - (bound.top + paddingTop)
+            val totalXToShift = (pageRect.centerX() - bound.centerX()) - getOffsetX(v)
+            val totalYToShift = (pageRect.centerY() - bound.centerY()) - getOffsetY(v)
 
-            if (totalXToShift > 0)
-                applyMovement(totalXToShift, 0f)
-            if (totalYToShift > 0)
-                applyMovement(0f, totalYToShift)
+            // Finally shift to center the component.
+            applyMovement(totalXToShift, totalYToShift)
+
         }
     }
 
@@ -652,20 +666,24 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     val scale = canvasMatrix.getOppositeScale()
                     postScale(scale, scale)
 
+                    val offsetX = getOffsetX(v)
+                    val offsetY = getOffsetY(v)
+
                     // Finally handle the rotation of component.
                     postRotate(
                         -v.reportRotation(),
-                        v.reportBoundPivotX() + getOffsetX(v),
-                        v.reportBoundPivotY() + getOffsetY(v)
+                        v.reportBoundPivotX() + offsetX,
+                        v.reportBoundPivotY() + offsetY
                     )
+
+                    // Finally map the touch points.
+                    mapPoints(touchPoints)
+
+                    if (touchPoints[0] in (bounds.left + offsetX)..(bounds.right + offsetX) && touchPoints[1] in (bounds.top + offsetY..(bounds.bottom + offsetY)))
+                        return v
 
                 }
 
-                // Finally map the touch points.
-                touchMatrix.mapPoints(touchPoints)
-
-                if (touchPoints[0] in bounds.left..bounds.right && touchPoints[1] in bounds.top..bounds.bottom)
-                    return v
             }
         }
         return null
@@ -829,12 +847,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             val component = (child as MananComponent)
 
+            // Reset rotation of rotation detector to current component rotation.
             rotateDetector.resetRotation(component.reportRotation())
 
             callOnChildClickListeners(child, true)
 
             currentEditingView = component
 
+            // Set this flag to later fit the component inside the page after child has been laid out.
             isChildScaleNormalized = false
         }
     }
