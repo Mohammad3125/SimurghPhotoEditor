@@ -911,7 +911,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     interface OnChildClickedListener {
         /**
-         * This method get invoked when child selection state chagnes.
+         * This method get invoked when child selection state changes.
          * @param view Clicked view.
          * @param isSelected Determines if view is in selected state or deselected state.
          */
