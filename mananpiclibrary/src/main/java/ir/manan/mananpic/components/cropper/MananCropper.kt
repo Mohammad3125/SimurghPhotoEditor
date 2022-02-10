@@ -1,10 +1,12 @@
 package ir.manan.mananpic.components.cropper
 
+import android.animation.PropertyValuesHolder
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.isDigitsOnly
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.cropper.HandleBar.*
 import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioFree
@@ -138,6 +140,24 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     // Variable to save aspect ratio of cropper.
     private var aspectRatio: AspectRatio = AspectRatioFree()
 
+    // Later will be used to animate the change of aspect ration (if user changes it).
+    private val rectAnimator by lazy {
+        ValueAnimator().apply {
+            interpolator = FastOutSlowInInterpolator()
+            duration = 300
+
+            addUpdateListener {
+                val widthValue = getAnimatedValue("width") as Float
+                val heightValue = getAnimatedValue("height") as Float
+                val leftValue = getAnimatedValue("left") as Float
+                val topValue = getAnimatedValue("top") as Float
+
+                initializeDrawingObjects(leftValue, topValue, widthValue, heightValue)
+                invalidate()
+            }
+        }
+    }
+
     init {
 
         moveDetector = MoveDetector(1, this)
@@ -211,7 +231,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             bitmapWidth,
             bitmapHeight
         )
-        initializeDrawingObjects(pair.first + leftEdge, pair.second + topEdge)
+        initializeDrawingObjects(leftEdge, topEdge, pair.first + leftEdge, pair.second + topEdge)
     }
 
     /**
@@ -219,8 +239,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
      * @param width Width of objects.
      * @param height Height of objects.
      */
-    private fun initializeDrawingObjects(width: Float, height: Float) {
-        frameRect = createFrameRect(width, height)
+    private fun initializeDrawingObjects(left: Float, top: Float, width: Float, height: Float) {
+        frameRect = createFrameRect(left, top, width, height)
         setDrawingDimensions()
     }
 
@@ -414,8 +434,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
      * This method creates the overlay window based on width and height of view.
      * @return Returns a [RectF] representing the overlay window.
      */
-    private fun createFrameRect(width: Float, height: Float): RectF {
-        return RectF(leftEdge, topEdge, width, height)
+    private fun createFrameRect(left: Float, top: Float, width: Float, height: Float): RectF {
+        return RectF(left, top, width, height)
     }
 
     /**
@@ -603,8 +623,18 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         aspectRatio = newAspectRatio
 
         val pair = aspectRatio.normalizeAspectRatio(bitmapWidth, bitmapHeight)
-        initializeDrawingObjects(leftEdge + pair.first, topEdge + pair.second)
-        invalidate()
+
+        // Animate the change of drawing objects.
+        rectAnimator.run {
+            setValues(
+                PropertyValuesHolder.ofFloat("width", frameRect.right, pair.first + leftEdge),
+                PropertyValuesHolder.ofFloat("height", frameRect.bottom, pair.second + topEdge),
+                PropertyValuesHolder.ofFloat("left", frameRect.left, leftEdge),
+                PropertyValuesHolder.ofFloat("top", frameRect.top, topEdge)
+            )
+            start()
+        }
+
     }
 
     /**
@@ -629,7 +659,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             if (b > mDrawable.intrinsicHeight) b = mDrawable.intrinsicHeight.toFloat()
 
             return Bitmap.createBitmap(
-                mDrawable.toBitmap(),
+                toBitmap(),
                 l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
             )
         }

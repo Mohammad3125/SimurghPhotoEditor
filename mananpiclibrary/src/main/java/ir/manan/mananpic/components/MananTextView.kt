@@ -3,32 +3,35 @@ package ir.manan.mananpic.components
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.TypedValue
 import androidx.appcompat.widget.AppCompatTextView
+import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
-import ir.manan.mananpic.utils.sp
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Component that extends the current [AppCompatTextView] class and adds few functionalities like
- * implementing [Pathable] and [Blurable] and [Scalable] etc...
+ * implementing [Pathable] and [Blurable] etc...
  */
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
     Texturable,
-    Scalable, Gradientable {
+    Gradientable, MananComponent, Bitmapable {
 
 
     constructor(context: Context) : this(context, null)
 
-    private var fontSize = textSize
+    private val bounds = RectF()
 
-    /**
-     * Minimum size of text allowed.
-     * Dimension is in SP format: [android.util.TypedValue.COMPLEX_UNIT_SP]
-     */
-    var minimumTextSize = sp(4)
+    private var isDrawnOnce = false
 
     private val rotationMatrix = Matrix().apply {
         setRotate(0f)
+    }
+
+    init {
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
@@ -49,21 +52,21 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
 
-    override fun applyBlur(shadowRadius: Float) {
-        applyBlur(shadowRadius, BlurMaskFilter.Blur.NORMAL)
+    override fun applyBlur(blurRadius: Float) {
+        applyBlur(blurRadius, BlurMaskFilter.Blur.NORMAL)
     }
 
 
     /**
-     * This method applies shadow on the text with provided radius and filter.
+     * This method applies blur on the text with provided radius and filter.
      * This method might force the view to run in software rendering.
      *
-     * @param shadowRadius Shadow radius that is going to be applied.
-     * @param filter Represents style of the shadow with enums.
+     * @param blurRadius Blur radius that is going to be applied.
+     * @param filter Represents style of the blur with enums.
      */
-    override fun applyBlur(shadowRadius: Float, filter: BlurMaskFilter.Blur) {
+    override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
         setLayerType(LAYER_TYPE_SOFTWARE, null)
-        paint.maskFilter = BlurMaskFilter(shadowRadius, filter)
+        paint.maskFilter = BlurMaskFilter(blurRadius, filter)
         invalidate()
     }
 
@@ -88,10 +91,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         invalidate()
     }
 
-
     override fun removeBlur() {
         paint.maskFilter = null
-        setLayerType(LAYER_TYPE_HARDWARE, null)
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
         invalidate()
     }
 
@@ -101,6 +103,24 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         invalidate()
     }
 
+    override fun applyRotation(degree: Float) {
+        rotation = degree
+    }
+
+    override fun applyScale(scaleFactor: Float) {
+        if (!isDrawnOnce) {
+            doOnPreDraw {
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
+            }
+        } else {
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
+        }
+    }
+
+    override fun applyMovement(dx: Float, dy: Float) {
+        x += dx
+        y += dy
+    }
 
     override fun removeTexture() {
         paint.shader = null
@@ -110,14 +130,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun removeGradient() {
         paint.shader = null
         invalidate()
-    }
-
-    override fun applyScale(scaleFactor: Float, widthLimit: Int, heightLimit: Int) {
-        if (width < widthLimit && height < heightLimit || scaleFactor < 1f) {
-            fontSize *= scaleFactor
-            if (fontSize < minimumTextSize) fontSize = minimumTextSize
-            textSize = fontSize
-        }
     }
 
     override fun applyLinearGradient(
@@ -179,4 +191,73 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         }
     }
 
+    override fun reportBound(): RectF {
+        return bounds.apply {
+            set(x, y, x + width, y + height)
+        }
+    }
+
+    override fun reportRotation(): Float {
+        return rotation
+    }
+
+    override fun reportBoundPivotX(): Float {
+        return bounds.centerX()
+    }
+
+    override fun reportBoundPivotY(): Float {
+        return bounds.centerY()
+    }
+
+    override fun reportPivotX(): Float {
+        return pivotX
+    }
+
+    override fun reportPivotY(): Float {
+        return pivotY
+    }
+
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
+        val textBounds = reportBound()
+        val outputBitmap =
+            Bitmap.createBitmap(
+                textBounds.width().toInt(),
+                textBounds.height().toInt(),
+                config
+            )
+
+        val canvas = Canvas(outputBitmap)
+        draw(canvas)
+
+        return outputBitmap
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+        val textBounds = reportBound()
+
+        // Determine how much the desired width and height is scaled base on
+        // smallest desired dimension divided by maximum text dimension.
+        val totalScaled = min(width, height) / max(textBounds.width(), textBounds.height())
+
+        // Create output bitmap matching desired width,height and config.
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        // Calculate extra width and height remaining to later use to center the image inside bitmap.
+        val extraWidth = (width / totalScaled) - textBounds.width()
+        val extraHeight = (height / totalScaled) - textBounds.height()
+
+        Canvas(outputBitmap).run {
+            scale(totalScaled, totalScaled)
+            // Finally translate to center the content.
+            translate(extraWidth * 0.5f, extraHeight * 0.5f)
+            draw(this)
+        }
+
+        return outputBitmap
+    }
+
+    override fun onDraw(canvas: Canvas?) {
+        super.onDraw(canvas)
+        isDrawnOnce = true
+    }
 }

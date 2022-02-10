@@ -15,8 +15,13 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
     private var initialX = 0f
     private var initialY = 0f
 
+    private var secondPointerInitialX = 0f
+    private var secondPointerInitialY = 0f
+
     // It will notify the motion event that user is gesturing a new gesture on the screen.
     private var newGesture = true
+
+    private var shouldContinue = false
 
 
     init {
@@ -29,19 +34,43 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
                 initialX = event.x
                 initialY = event.y
 
-                listener.onMoveBegin(initialX, initialY)
+                shouldContinue = listener.onMoveBegin(initialX, initialY)
+                return shouldContinue
+            }
+
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                if (pointerCount >= 2 && shouldContinue) {
+                    secondPointerInitialX = event.getX(1)
+                    secondPointerInitialY = event.getY(1)
+                }
+                true
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (event.pointerCount == pointerCount && newGesture) {
-                    val currentX = event.x
-                    val currentY = event.y
+                if (event.pointerCount == pointerCount && newGesture && shouldContinue) {
 
-                    val bool = listener.onMove(currentX - initialX, currentY - initialY)
-                    listener.onMove(currentX - initialX, currentY - initialY, currentX, currentY)
+                    var currentX = event.x - initialX
+                    var currentY = event.y - initialY
 
-                    initialX = currentX
-                    initialY = currentY
+                    if (pointerCount >= 2) {
+
+                        val secondPointerX = event.getX(1)
+                        val secondPointerY = event.getY(1)
+
+                        currentX =
+                            ((secondPointerX - secondPointerInitialX) + (event.x - initialX)) / 2
+                        currentY =
+                            ((secondPointerY - secondPointerInitialY) + (event.y - initialY)) / 2
+
+                        secondPointerInitialX = secondPointerX
+                        secondPointerInitialY = secondPointerY
+                    }
+
+                    val bool = listener.onMove(currentX, currentY)
+                    bool.and(listener.onMove(currentX, currentY, event.x, event.y))
+
+                    initialX = event.x
+                    initialY = event.y
 
                     bool
                 } else
@@ -57,7 +86,9 @@ class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gestur
             MotionEvent.ACTION_UP -> {
                 // After all of the fingers were lifted from screen, then we can make a move gesture.
                 newGesture = true
-                listener.onMoveEnded(event.x, event.y)
+                if (shouldContinue) {
+                    listener.onMoveEnded(event.x, event.y)
+                }
                 false
             }
             else -> {

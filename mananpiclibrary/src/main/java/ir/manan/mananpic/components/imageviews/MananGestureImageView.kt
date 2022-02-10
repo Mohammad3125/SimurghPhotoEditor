@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.imageviews
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
@@ -13,9 +14,12 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
+import ir.manan.mananpic.properties.Bitmapable
+import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
+import kotlin.math.*
 
 /**
  * A base class for all features that work on a view especially ones that modify [ImageView]'s matrix.
@@ -28,17 +32,12 @@ open class MananGestureImageView(
 ) :
     AppCompatImageView(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnMoveListener, GestureDetector.OnDoubleTapListener,
-    GestureDetector.OnGestureListener {
+    GestureDetector.OnGestureListener, Bitmapable {
 
     /**
      * Matrix that we later modify and assign to image matrix.
      */
-    protected val imageviewMatrix by lazy { Matrix() }
-
-    /**
-     * Holds values of matrix inside it.
-     */
-    protected val matrixValueHolder by lazy { FloatArray(9) }
+    protected val imageviewMatrix by lazy { MananMatrix() }
 
     /**
      * Scale detector that is used to detect if user scaled matrix.
@@ -89,6 +88,11 @@ open class MananGestureImageView(
     protected var bottomEdge = 0f
 
 
+    protected val boundsRectangle by lazy {
+        RectF()
+    }
+
+
     /**
      * Real width of current image's bitmap.
      * This value is available after [onImageLaidOut] has ben called.
@@ -112,6 +116,20 @@ open class MananGestureImageView(
      * Later will be used to notify if imageview's bitmap has been changed.
      */
     private var isNewBitmap = false
+
+
+    // Image's drawable size.
+    protected var drawableWidth: Int = 0
+    protected var drawableHeight: Int = 0
+
+
+    // Image pivot points which is centered by default.
+    protected var imagePivotX = 0f
+    protected var imagePivotY = 0f
+
+    // Image rotation.
+    protected var imageRotation = 0f
+
 
     init {
         scaleType = ScaleType.MATRIX
@@ -212,15 +230,14 @@ open class MananGestureImageView(
      * @return Modified matrix.
      */
     protected open fun resizeDrawable() {
-        val mDrawable = drawable
         val imgMatrix = Matrix(matrix)
 
         imgMatrix.setRectToRect(
             RectF(
                 0f,
                 0f,
-                mDrawable.intrinsicWidth.toFloat(),
-                mDrawable.intrinsicHeight.toFloat()
+                drawableWidth.toFloat(),
+                drawableHeight.toFloat()
             ),
             RectF(
                 0f,
@@ -230,9 +247,7 @@ open class MananGestureImageView(
             ),
             Matrix.ScaleToFit.CENTER
         )
-
-        imageMatrix = imgMatrix
-        imageviewMatrix.set(imgMatrix)
+        setToMatrix(imgMatrix)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
@@ -240,23 +255,20 @@ open class MananGestureImageView(
 
         val mDrawable = drawable ?: return
 
+        drawableWidth = mDrawable.intrinsicWidth
+        drawableHeight = mDrawable.intrinsicHeight
+
         if (changed || isNewBitmap) {
+
             resizeDrawable()
 
-            initialScale = getMatrixValue(Matrix.MSCALE_X, true)
+            initialScale = imageviewMatrix.getScaleX(true)
 
-            leftEdge = paddingLeft + getMatrixValue(Matrix.MTRANS_X)
-            topEdge = paddingTop + getMatrixValue(Matrix.MTRANS_Y)
-
-            bitmapWidth = (mDrawable.intrinsicWidth * initialScale)
-            bitmapHeight = (mDrawable.intrinsicHeight * initialScale)
-
-            rightEdge = bitmapWidth + leftEdge
-            bottomEdge = bitmapHeight + topEdge
-
-            isNewBitmap = false
+            calculateBounds()
 
             onImageLaidOut()
+
+            isNewBitmap = false
         }
 
     }
@@ -278,14 +290,37 @@ open class MananGestureImageView(
         isNewBitmap = true
     }
 
-    /**
-     * Creates a bitmap from current drawable.
-     */
-    open fun toBitmap(): Bitmap {
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
         val mDrawable =
             drawable ?: throw IllegalStateException("drawable is null")
 
         return (mDrawable as BitmapDrawable).bitmap
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+
+        if (drawable == null) throw IllegalStateException("drawable is null")
+
+        // Determine how much the desired width and height is scaled base on
+        // smallest desired dimension divided by maximum image dimension.
+        val totalScaled =
+            min(width, height) / max(boundsRectangle.width(), boundsRectangle.height())
+
+        // Create output bitmap matching desired width,height and config.
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        // Calculate extra width and height remaining to later use to center the image inside bitmap.
+        val extraWidth = (width / totalScaled) - boundsRectangle.width()
+        val extraHeight = (height / totalScaled) - boundsRectangle.height()
+
+        Canvas(outputBitmap).run {
+            scale(totalScaled, totalScaled)
+            // Finally translate to center the content.
+            translate(-leftEdge + extraWidth * 0.5f, -topEdge + extraHeight * 0.5f)
+            draw(this)
+        }
+
+        return outputBitmap
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -303,40 +338,164 @@ open class MananGestureImageView(
     }
 
     /**
-     * This method returns the value from matrix in given constant like [Matrix.MTRANS_X], [Matrix.MSCALE_X] and etc.
-     * @param constant Constant that defines which item in matrix we're interested in.
-     * @param refreshValues Determines if we want to fetch new values from matrix or use the latest fetch values.
-     * @return A float number in matrix.
-     */
-    protected open fun getMatrixValue(constant: Int, refreshValues: Boolean = false): Float {
-        if (refreshValues)
-            imageviewMatrix.getValues(matrixValueHolder)
-
-        return matrixValueHolder[constant]
-    }
-
-    /**
-     * Sets a value in both value holder and matrix itself.
-     * @param constant Constant in matrix to replace the value with.
-     * @param value Value of that constant in matrix to replace.
-     */
-    protected open fun setMatrixValue(constant: Int, value: Float) {
-        matrixValueHolder[constant] = value
-        imageviewMatrix.setValues(matrixValueHolder)
-    }
-
-    /**
-     * This method loads the matrix value holder with new data.
-     */
-    protected open fun refreshMatrixValueHolder() {
-        imageviewMatrix.getValues(matrixValueHolder)
-    }
-
-    /**
      * Updates imageview matrix with current matrix.
      */
-    protected open fun updateImageMatrix() {
+    private fun updateImageMatrix() {
         imageMatrix = imageviewMatrix
+        calculateBounds()
+    }
+
+    /**
+     * Calculates bounds of image with matrix values.
+     */
+    private fun calculateBounds() {
+        imageviewMatrix.run {
+
+            leftEdge = paddingLeft + getTranslationX(true)
+            topEdge = paddingTop + getTranslationY()
+
+            val sx = getScaleX()
+            val skewY = getSkewY()
+
+            // Calculate real scale since rotation does affect it.
+            val scale = sqrt(sx * sx + skewY * skewY)
+
+            bitmapWidth = (drawableWidth * scale)
+            bitmapHeight = (drawableHeight * scale)
+
+            rightEdge = bitmapWidth + leftEdge
+            bottomEdge = bitmapHeight + topEdge
+
+            val r = -atan2(
+                getSkewX(),
+                (getScaleX())
+            ) * (180f / PI)
+
+            imageRotation = r.toFloat()
+
+            // Calculate pivot points.
+            // Rotation does affect pivot points and it should be calculated.
+            val cx = bitmapWidth * 0.5f
+            val cy = bitmapHeight * 0.5f
+
+            val radian = Math.toRadians(r)
+
+            val cosTheta = cos(radian)
+            val sinTheta = sin(radian)
+
+            // Calculates the rotated bounds' center.
+            imagePivotX = (leftEdge + cx * cosTheta - cy * sinTheta).toFloat()
+            imagePivotY = (topEdge + cx * sinTheta + cy * cosTheta).toFloat()
+
+            boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
+        }
+    }
+
+    /**
+     * Post scales the matrix and updates it.
+     * @param scaleFactor Total amount to scale the matrix.
+     * @param scalePivotX Pivot point which matrix scales around.
+     * @param scalePivotY Pivot point which matrix scales around.
+     */
+    protected fun postScale(scaleFactor: Float, scalePivotX: Float, scalePivotY: Float) {
+        imageviewMatrix.postScale(scaleFactor, scaleFactor, scalePivotX, scalePivotY)
+        updateImageMatrix()
+    }
+
+    /**
+     * Scales the matrix and updates it.
+     * @param scaleFactor Total amount to scale the matrix.
+     * @param scalePivotX Pivot point which matrix scales around.
+     * @param scalePivotY Pivot point which matrix scales around.
+     */
+    protected fun setScale(scaleFactor: Float, scalePivotX: Float, scalePivotY: Float) {
+        imageviewMatrix.setScale(scaleFactor, scaleFactor, scalePivotX, scalePivotY)
+        updateImageMatrix()
+    }
+
+    /**
+     * Pre scales the matrix and updates it.
+     * @param scaleFactor Total amount to scale the matrix.
+     * @param scalePivotX Pivot point which matrix scales around.
+     * @param scalePivotY Pivot point which matrix scales around.
+     */
+    protected fun preScale(scaleFactor: Float, scalePivotX: Float, scalePivotY: Float) {
+        imageviewMatrix.preScale(scaleFactor, scaleFactor, scalePivotX, scalePivotY)
+        updateImageMatrix()
+    }
+
+
+    /**
+     * Post translates the matrix and updates it.
+     * @param dx Total pixels to translate in x direction.
+     * @param dy Total pixels to translate in y direction.
+     */
+    protected fun postTranslate(dx: Float, dy: Float) {
+        imageviewMatrix.postTranslate(dx, dy)
+        updateImageMatrix()
+    }
+
+
+    /**
+     * Translates the matrix and updates it.
+     * @param x Total pixels to set translate in x direction.
+     * @param y Total pixels to set translate in y direction.
+     */
+    protected fun setTranslate(x: Float, y: Float) {
+        imageviewMatrix.setTranslate(x, y)
+        updateImageMatrix()
+    }
+
+    /**
+     * Pre translates the matrix and updates it.
+     * @param dx Total pixels to translate in x direction.
+     * @param dy Total pixels to translate in y direction.
+     */
+    protected fun preTranslate(dx: Float, dy: Float) {
+        imageviewMatrix.preTranslate(dx, dy)
+        updateImageMatrix()
+    }
+
+    /**
+     * Post rotates the matrix and updates it.
+     * @param degree Total degree to rotate matrix around pivot point.
+     * @param rotationPivotX Pivot point of x which matrix rotates around.
+     * @param rotationPivotY Pivot point of y which matrix rotates around.
+     */
+    protected fun postRotate(degree: Float, rotationPivotX: Float, rotationPivotY: Float) {
+        imageviewMatrix.postRotate(degree, rotationPivotX, rotationPivotY)
+        updateImageMatrix()
+    }
+
+    /**
+     * Rotates the matrix and updates it.
+     * @param degree Total degree to rotate matrix around pivot point.
+     * @param rotationPivotX Pivot point of x which matrix rotates around.
+     * @param rotationPivotY Pivot point of y which matrix rotates around.
+     */
+    protected fun setRotate(degree: Float, rotationPivotX: Float, rotationPivotY: Float) {
+        imageviewMatrix.setRotate(degree, rotationPivotX, rotationPivotY)
+        updateImageMatrix()
+    }
+
+
+    /**
+     * Pre rotates the matrix and updates it.
+     * @param degree Total degree to rotate matrix around pivot point.
+     * @param rotationPivotX Pivot point of x which matrix rotates around.
+     * @param rotationPivotY Pivot point of y which matrix rotates around.
+     */
+    protected fun preRotate(degree: Float, rotationPivotX: Float, rotationPivotY: Float) {
+        imageviewMatrix.preRotate(degree, rotationPivotX, rotationPivotY)
+        updateImageMatrix()
+    }
+
+    /**
+     * Sets matrix to a new matrix.
+     */
+    protected fun setToMatrix(toMatrix: Matrix) {
+        imageviewMatrix.set(toMatrix)
+        updateImageMatrix()
     }
 
 }

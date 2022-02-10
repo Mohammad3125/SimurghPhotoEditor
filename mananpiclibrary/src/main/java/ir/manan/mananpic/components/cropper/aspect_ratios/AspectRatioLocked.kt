@@ -4,6 +4,7 @@ import android.graphics.RectF
 import ir.manan.mananpic.components.cropper.AspectRatio
 import ir.manan.mananpic.components.cropper.HandleBar
 import ir.manan.mananpic.components.cropper.HandleBar.*
+import kotlin.math.min
 
 /**
  * This class represents an aspect-ratio with locked ratio.
@@ -71,6 +72,9 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
                 RIGHT -> {
 
                 }
+                else -> {
+
+                }
             }
             return rect
         }
@@ -80,9 +84,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
         dirtyRect.run {
             val ratio = getRatio()
 
-            val minSize = (if (ratio > 1f) limitRect.height() else limitRect.width()) / 4.5f
-
-            if (height() < minSize || width() < minSize) {
+            // Limit the dirty rect to do not resize less than minimum dimension of limit rect divided by 4.
+            if (min(width(), height()) < min(limitRect.width(), limitRect.height()) / 4f) {
                 set(rect)
                 return dirtyRect
             }
@@ -166,8 +169,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
             // If it exceeds the maximum width.
             if (normalizedWidth > maxWidth) {
                 // Then normalize height to fit inside bounds.
+                normalizedWidth = maxWidth
                 finalHeight = (maxWidth / ratio)
-                normalizedWidth = (finalHeight * ratio)
             }
 
             Pair(normalizedWidth, finalHeight)
@@ -177,8 +180,8 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
 
             // If it exceeds the maximum width.
             if (normalizedHeight > maxHeight) {
+                normalizedHeight = maxHeight
                 finalWidth = (maxHeight * ratio)
-                normalizedHeight = (finalWidth / ratio)
             }
 
             Pair(finalWidth, normalizedHeight)

@@ -26,6 +26,26 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     // Matrix to later enlarge the bitmap with.
     private val enlargedBitmapMatrix by lazy { Matrix() }
 
+    // Colors for shadow behind enlarged bitmap circle.
+    private val circleShadowColors by lazy {
+        intArrayOf(Color.BLACK, Color.TRANSPARENT)
+    }
+
+    // Paint used for drawing shadow behind enlarged bitmap circle.
+    // This paint will later use RadialGradient to create shadow.
+    private val circleShadowPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG)
+    }
+
+    // Circle that would be drawn on shadow circle to prevent shadow
+    // to be visible on transparent pixels.
+    private val circleShadowOverlayPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        }
+    }
+
     // Ring around circle showing color of current pixel that user is pointing at.
     private val colorRingPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -121,6 +141,14 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
     init {
         moveDetector = MoveDetector(1, this)
 
+        // Get display matrix to use width and height of device to pick a size for circle.
+        val displayMetrics = context.resources.displayMetrics
+
+        // Calculate circles radius by taking smallest size between width and height of device and device
+        // it by 5.
+        circlesRadius =
+            min(displayMetrics.widthPixels, displayMetrics.heightPixels).toFloat() / 5f
+
         context.theme.obtainStyledAttributes(attributeSet, R.styleable.FrameDropper, 0, 0).run {
             try {
                 colorRingStrokeWidth =
@@ -150,22 +178,6 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 recycle()
             }
         }
-    }
-
-    override fun onImageLaidOut() {
-        super.onImageLaidOut()
-
-        bitmapToViewInCircle = getImageViewBitmap()
-        if (bitmapToViewInCircle == null) return
-
-        // If circles radius weren't set in xml file, then calculate it based on minimum dimension of
-        // current view / 10.
-        if (circlesRadius == 0f)
-            circlesRadius =
-                min(
-                    (bitmapToViewInCircle!!.width),
-                    (bitmapToViewInCircle!!.height)
-                ) * 0.25f
 
         // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
         // of circle.
@@ -187,6 +199,12 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         // area of picture they're using otherwise their finger
         // will block it.
         circleOffsetFromCenter = (circlesRadius * 1.5f)
+
+    }
+
+    override fun onImageLaidOut() {
+        super.onImageLaidOut()
+        bitmapToViewInCircle = getImageViewBitmap()
     }
 
     override fun performClick(): Boolean {
@@ -280,6 +298,16 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 setLocalMatrix(enlargedBitmapMatrix)
             }
 
+        // Create a RadialGradient for shadow behind the enlarged bitmap circle.
+        circleShadowPaint.shader = RadialGradient(
+            dropperXPosition,
+            dropperYPosition - circleOffsetFromCenter + offsetY,
+            circlesRadius + (circlesRadius * 0.2f),
+            circleShadowColors,
+            null,
+            Shader.TileMode.CLAMP
+        )
+
 
         // Invalidate to draw content on the screen.
         invalidate()
@@ -310,6 +338,22 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
                 // Variables to store positions of drawing to reuse them.
                 val xPositionForDrawings = dropperXPosition
                 val yPositionForDrawings = dropperYPosition - circleOffsetFromCenter + offsetY
+
+                // Draw shadow behind the enlarged bitmap circle.
+                drawCircle(
+                    xPositionForDrawings,
+                    yPositionForDrawings,
+                    circlesRadius + (circlesRadius * 0.2f),
+                    circleShadowPaint
+                )
+
+                // Draw circle on top of shadow to prevent shadow to be visible
+                // on transparent pixels.
+                drawCircle(
+                    xPositionForDrawings,
+                    yPositionForDrawings,
+                    circlesRadius - colorRingPaint.strokeWidth * 0.46f, circleShadowOverlayPaint
+                )
 
                 // Draw ring that indicates color of current pixel.
                 drawCircle(
