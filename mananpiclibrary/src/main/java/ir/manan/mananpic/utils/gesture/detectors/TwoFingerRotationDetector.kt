@@ -9,7 +9,7 @@ import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
  * A gesture class for rotation gesture with two fingers.
  * @param listener A [OnRotateListener] that gets called in appropriate situations.
  */
-class TwoFingerRotationDetector(var listener: OnRotateListener) : Gesture {
+class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gesture {
 
     // Later will be used for calculations.
     private var initialRotation = 0f
@@ -26,7 +26,17 @@ class TwoFingerRotationDetector(var listener: OnRotateListener) : Gesture {
 
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount == 2) {
-                    val calculatedRotation = calculateAngle(event) + initialRotation
+                    var calculatedRotation = calculateAngle(event) + initialRotation
+
+                    calculatedRotation = when {
+                        calculatedRotation > 360 -> {
+                            calculatedRotation - 360
+                        }
+                        calculatedRotation < 0f -> {
+                            calculatedRotation + 360
+                        }
+                        else -> calculatedRotation
+                    }
                     listener.onRotate(calculatedRotation)
                     true
                 } else false
