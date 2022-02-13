@@ -17,7 +17,8 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
 
     /**
      * If greater than 0 then rotation snaps to steps of current number for example
-     * if step was 8.5f then we would have 8.5f then 17f then 25.5f and so on.
+     * if step was 8.5f then we would have 8.5f then 17f then 25.5f as rotation and so on.
+     * Default value is 0f meaning no stepping is applied on rotation.
      */
     var step = 0f
 
