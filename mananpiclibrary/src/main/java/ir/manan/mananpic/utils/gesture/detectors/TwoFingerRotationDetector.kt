@@ -4,6 +4,7 @@ import android.view.MotionEvent
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
+import kotlin.math.round
 
 /**
  * A gesture class for rotation gesture with two fingers.
@@ -13,6 +14,12 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
 
     // Later will be used for calculations.
     private var initialRotation = 0f
+
+    /**
+     * If greater than 0 then rotation snaps to steps of current number for example
+     * if step was 8.5f then we would have 8.5f then 17f then 25.5f and so on.
+     */
+    var step = 0f
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return when (event?.actionMasked) {
@@ -26,18 +33,21 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
 
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount == 2) {
-                    var calculatedRotation = calculateAngle(event) + initialRotation
+                    val rawRotation = calculateAngle(event) + initialRotation
 
-                    calculatedRotation = when {
-                        calculatedRotation > 360 -> {
-                            calculatedRotation - 360
-                        }
-                        calculatedRotation < 0f -> {
-                            calculatedRotation + 360
-                        }
-                        else -> calculatedRotation
+                    val validatedRotation = mapTo360(rawRotation)
+
+                    if (step > 0f) {
+                        // Calculate the nearest step point by rounding the result of dividing current rotation by step.
+                        // For example if we had a step of 8.5 and we have been rotated 3 degrees so far then result would be:
+                        // round(3 / 8.5f ~= 0.3529) -> 0f = 8.5 * 0 = 0.
+                        // Now imagine we had rotation of 8 and step of 8.5f, the result would be:
+                        // round(8 / 8.5f ~= 0.9411) -> 1f = 8.5 * 1f = 8.5.
+                        listener.onRotate(step * (round(validatedRotation / step)))
+                    } else {
+                        listener.onRotate(validatedRotation)
                     }
-                    listener.onRotate(calculatedRotation)
+
                     true
                 } else false
             }
@@ -56,6 +66,21 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
                 false
             }
 
+        }
+    }
+
+    /**
+     * Converts the current degree to be between 0-360 degrees.
+     */
+    private fun mapTo360(degree: Float): Float {
+        return when {
+            degree > 360 -> {
+                degree - 360
+            }
+            degree < 0f -> {
+                degree + 360
+            }
+            else -> degree
         }
     }
 
