@@ -19,8 +19,13 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
      * If greater than 0 then rotation snaps to steps of current number for example
      * if step was 8.5f then we would have 8.5f then 17f then 25.5f as rotation and so on.
      * Default value is 0f meaning no stepping is applied on rotation.
+     * @throws IllegalStateException if step is less than 0.
      */
     var step = 0f
+        set(value) {
+            if (value < 0) throw IllegalStateException("step value should be equal or greater than 0")
+            field = value
+        }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return when (event?.actionMasked) {
