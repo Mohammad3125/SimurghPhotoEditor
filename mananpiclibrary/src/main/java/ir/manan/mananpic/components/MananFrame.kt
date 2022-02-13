@@ -873,6 +873,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     /**
+     * Sets step for rotation detector.
+     * If greater than 0 then rotation snaps to steps of current number for example
+     * if step was 8.5f then we would have 8.5f then 17f then 25.5f as rotation and so on.
+     */
+    fun setRotationStep(step: Float) {
+        rotateDetector.step = step
+    }
+
+    /**
      * Sets listener for when child get clicked.
      * This listener will not get re-invoked if user click the selected component again.
      */
