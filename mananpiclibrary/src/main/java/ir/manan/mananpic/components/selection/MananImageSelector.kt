@@ -1,7 +1,5 @@
 package ir.manan.mananpic.components.selection
 
-import android.animation.PropertyValuesHolder
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
@@ -16,6 +14,7 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import kotlin.math.abs
 
@@ -26,11 +25,6 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     MananGestureImageView(context, attributeSet), Selector.OnDispatchToInvalidate {
 
     constructor(context: Context) : this(context, null)
-
-    companion object {
-        private const val MAXIMUM_SCALE_FACTOR = 25f
-        private const val MINIMUM_SCALE_ZOOM = 1f
-    }
 
     private var initialX = 0f
     private var initialY = 0f
@@ -47,44 +41,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         MananMatrix()
     }
 
-    private val canvasMatrixAnimator by lazy {
-        ValueAnimator().apply {
-            duration = 300L
-            interpolator = FastOutSlowInInterpolator()
-            addUpdateListener {
-                // Get animating properties.
-                val s = getAnimatedValue("scale")
-                val tx = getAnimatedValue("translationX")
-                val ty = getAnimatedValue("translationY")
-
-                canvasMatrix.run {
-                    // If translation isn't null or in other words, we should animate the translation, then animate it.
-                    if (tx != null) {
-                        postTranslate(
-                            tx as Float - getTranslationX(true),
-                            0f
-                        )
-                    }
-
-                    // If translation isn't null or in other words, we should animate the translation, then animate it.
-                    if (ty != null) {
-                        postTranslate(
-                            0f,
-                            ty as Float - getTranslationY(true)
-                        )
-                    }
-
-                    // If scale property isn't null then scale it.
-                    if (s != null) {
-                        val totalScale = (s as Float) / getScaleX(true)
-                        postScale(totalScale, totalScale, pivotX, pivotY)
-                    }
-
-                    invalidate()
-                }
-
-            }
-        }
+    private val matrixAnimator by lazy {
+        MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
 
     var selector: Selector? = null
@@ -288,76 +246,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     private fun animateCanvasBack() {
-        if (!canvasMatrixAnimator.isRunning) {
-
-            // Get matrix values.
-            val scale = canvasMatrix.getScaleX(true)
-            val tx = canvasMatrix.getTranslationX()
-            val ty = canvasMatrix.getTranslationY()
-
-            val zoomWindow = RectF(boundsRectangle)
-
-            Matrix().run {
-                setScale(scale, scale)
-                mapRect(zoomWindow)
-            }
-
-            // Calculate the valid scale (scale greater than maximum allowable scale and less than initial scale)
-            val validatedScale =
-                if (scale > MAXIMUM_SCALE_FACTOR) MAXIMUM_SCALE_FACTOR else if (scale < MINIMUM_SCALE_ZOOM) MINIMUM_SCALE_ZOOM else scale
-
-            // Here we calculate the edge of right side to later do not go further that point.
-            val rEdge =
-                -(zoomWindow.right - rightEdge)
-
-            // Here we calculate the edge of bottom side to later do not go further that point.
-            val bEdge =
-                -(zoomWindow.bottom - bottomEdge)
-
-            // Extra space allowable to translate before triggering the animator to move canvas back.
-            val extraSpaceAroundAxes = dp(48)
-
-            canvasMatrixAnimator.run {
-                val animationPropertyHolderList = ArrayList<PropertyValuesHolder>()
-                // Add PropertyValuesHolder for each animation property if they should be animated.
-                if (scale < MINIMUM_SCALE_ZOOM || scale > MAXIMUM_SCALE_FACTOR)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "scale",
-                            scale,
-                            validatedScale
-                        )
-                    )
-
-                if (tx > extraSpaceAroundAxes || tx < rEdge - extraSpaceAroundAxes)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "translationX",
-                            tx,
-                            if (scale < MINIMUM_SCALE_ZOOM || tx > 0f) 0f else rEdge
-                        )
-                    )
-
-                if (ty > extraSpaceAroundAxes || ty < bEdge - extraSpaceAroundAxes)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "translationY",
-                            ty,
-                            if (scale < MINIMUM_SCALE_ZOOM || ty > 0f) 0f else bEdge
-                        )
-                    )
-
-
-                // Finally convert the array list to array and set values of animator.
-                setValues(
-                    *Array(
-                        animationPropertyHolderList.size
-                    ) {
-                        animationPropertyHolderList[it]
-                    }
-                )
-
-                start()
+        matrixAnimator.run {
+            startAnimation(10f, dp(48))
+            setOnMatrixUpdateListener {
+                invalidate()
             }
         }
     }
