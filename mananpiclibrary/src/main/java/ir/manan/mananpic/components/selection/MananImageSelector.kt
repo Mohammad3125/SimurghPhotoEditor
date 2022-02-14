@@ -16,6 +16,7 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.dp
 import kotlin.math.abs
 
 /**
@@ -313,6 +314,9 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             val bEdge =
                 -(zoomWindow.bottom - bottomEdge)
 
+            // Extra space allowable to translate before triggering the animator to move canvas back.
+            val extraSpaceAroundAxes = dp(48)
+
             canvasMatrixAnimator.run {
                 val animationPropertyHolderList = ArrayList<PropertyValuesHolder>()
                 // Add PropertyValuesHolder for each animation property if they should be animated.
@@ -325,7 +329,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                         )
                     )
 
-                if (tx > 0f || tx < rEdge)
+                if (tx > extraSpaceAroundAxes || tx < rEdge - extraSpaceAroundAxes)
                     animationPropertyHolderList.add(
                         PropertyValuesHolder.ofFloat(
                             "translationX",
@@ -334,7 +338,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                         )
                     )
 
-                if (ty > 0f || ty < bEdge)
+                if (ty > extraSpaceAroundAxes || ty < bEdge - extraSpaceAroundAxes)
                     animationPropertyHolderList.add(
                         PropertyValuesHolder.ofFloat(
                             "translationY",
