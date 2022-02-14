@@ -164,16 +164,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    private fun animateCanvasBack() {
-        matrixAnimator.run {
-            startAnimation(MAXIMUM_SCALE_FACTOR, dp(48))
-            setOnMatrixUpdateListener {
-                invalidate()
-            }
-        }
-    }
-
-
     private val scaleDetector by lazy {
         ScaleGestureDetector(context, scaleGestureListener).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -579,6 +569,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
         }
         return null
+    }
+
+    private fun animateCanvasBack() {
+        matrixAnimator.run {
+            startAnimation(MAXIMUM_SCALE_FACTOR, dp(48))
+            setOnMatrixUpdateListener {
+                invalidate()
+            }
+        }
     }
 
     /**
