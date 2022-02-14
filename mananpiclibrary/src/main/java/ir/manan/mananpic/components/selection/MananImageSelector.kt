@@ -7,6 +7,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -300,18 +301,24 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             val tx = canvasMatrix.getTranslationX()
             val ty = canvasMatrix.getTranslationY()
 
-            // Here we calculate the edge of right side to later do not go further that point.
-            val rEdge =
-                calculateEdge(scale, 1f, rightEdge, 0f)
+            val zoomWindow = RectF(boundsRectangle)
 
-            // Here we calculate the edge of bottom side to later do not go further that point.
-            val bEdge =
-                calculateEdge(scale, 1f, bottomEdge, 0f)
+            Matrix().run {
+                setScale(scale, scale)
+                mapRect(zoomWindow)
+            }
 
             // Calculate the valid scale (scale greater than maximum allowable scale and less than initial scale)
             val validatedScale =
                 if (scale > MAXIMUM_SCALE_FACTOR) MAXIMUM_SCALE_FACTOR else if (scale < MINIMUM_SCALE_ZOOM) MINIMUM_SCALE_ZOOM else scale
 
+            // Here we calculate the edge of right side to later do not go further that point.
+            val rEdge =
+                -(zoomWindow.right - rightEdge)
+
+            // Here we calculate the edge of bottom side to later do not go further that point.
+            val bEdge =
+                -(zoomWindow.bottom - bottomEdge)
 
             canvasMatrixAnimator.run {
                 val animationPropertyHolderList = ArrayList<PropertyValuesHolder>()
@@ -325,21 +332,21 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                         )
                     )
 
-                if (tx < rEdge || tx > 0f)
+                if (tx > 0f || tx < rEdge)
                     animationPropertyHolderList.add(
                         PropertyValuesHolder.ofFloat(
                             "translationX",
                             tx,
-                            if (tx > 0f || scale < MINIMUM_SCALE_ZOOM) 0f else rEdge
+                            if (scale < MINIMUM_SCALE_ZOOM || tx > 0f) 0f else rEdge
                         )
                     )
 
-                if (ty < bEdge || ty > 0f)
+                if (ty > 0f || ty < bEdge)
                     animationPropertyHolderList.add(
                         PropertyValuesHolder.ofFloat(
                             "translationY",
                             ty,
-                            if (ty > 0f || scale < MINIMUM_SCALE_ZOOM) 0f else bEdge
+                            if (scale < MINIMUM_SCALE_ZOOM || ty > 0f) 0f else bEdge
                         )
                     )
 
@@ -357,15 +364,6 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             }
         }
     }
-
-    private fun calculateEdge(
-        scaled: Float,
-        initScale: Float,
-        initialSize: Float,
-        initialOffset: Float
-    ): Float =
-        -((scaled * initialSize / initScale) - initialSize - initialOffset)
-
 
     /**
      * Register a callback for selector to be invoked when selector is ready to be selected or not.
