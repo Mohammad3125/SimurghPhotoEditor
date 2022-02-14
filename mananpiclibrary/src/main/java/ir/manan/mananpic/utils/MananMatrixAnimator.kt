@@ -71,6 +71,13 @@ class MananMatrixAnimator(
         onMatrixUpdateListener?.onMatrixUpdated(targetMatrix)
     }
 
+    /**
+     * Returns true if matrix is currently being animated, false otherwise.
+     */
+    fun isAnimationRunning(): Boolean {
+        return canvasMatrixAnimator.isRunning
+    }
+
 
     /**
      * Starts animating target canvas towards it's initial bounds.
