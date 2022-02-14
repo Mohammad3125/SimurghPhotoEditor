@@ -1,12 +1,11 @@
 package ir.manan.mananpic.components.selection
 
-import android.animation.PropertyValuesHolder
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -15,6 +14,8 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.MananMatrixAnimator
+import ir.manan.mananpic.utils.dp
 import kotlin.math.abs
 
 /**
@@ -24,11 +25,6 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     MananGestureImageView(context, attributeSet), Selector.OnDispatchToInvalidate {
 
     constructor(context: Context) : this(context, null)
-
-    companion object {
-        private const val MAXIMUM_SCALE_FACTOR = 25f
-        private const val MINIMUM_SCALE_ZOOM = 1f
-    }
 
     private var initialX = 0f
     private var initialY = 0f
@@ -41,55 +37,12 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private var onSelectorStateChangeListener: OnSelectorStateChangeListener? = null
     private var onCloseCallBack: ((Boolean) -> Unit)? = null
 
-    // Holds value of matrix.
-    private val matrixValueHolder by lazy {
-        FloatArray(9)
-    }
-
     private val canvasMatrix by lazy {
         MananMatrix()
     }
 
-    private val canvasMatrixAnimator by lazy {
-        ValueAnimator().apply {
-            duration = 300L
-            interpolator = FastOutSlowInInterpolator()
-            addUpdateListener {
-                // Get animating properties.
-                val s = getAnimatedValue("scale")
-                val tx = getAnimatedValue("translationX")
-                val ty = getAnimatedValue("translationY")
-
-                canvasMatrix.run {
-                    getValues(matrixValueHolder)
-
-                    // If translation isn't null or in other words, we should animate the translation, then animate it.
-                    if (tx != null) {
-                        postTranslate(
-                            tx as Float - getTranslationX(true),
-                            0f
-                        )
-                    }
-
-                    // If translation isn't null or in other words, we should animate the translation, then animate it.
-                    if (ty != null) {
-                        postTranslate(
-                            0f,
-                            ty as Float - getTranslationY(true)
-                        )
-                    }
-
-                    // If scale property isn't null then scale it.
-                    if (s != null) {
-                        val totalScale = (s as Float) / getScaleX(true)
-                        postScale(totalScale, totalScale, pivotX, pivotY)
-                    }
-
-                    invalidate()
-                }
-
-            }
-        }
+    private val matrixAnimator by lazy {
+        MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
 
     var selector: Selector? = null
@@ -216,7 +169,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
         isMatrixGesture = true
-        return true
+        return !matrixAnimator.isAnimationRunning()
     }
 
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
@@ -293,79 +246,13 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     private fun animateCanvasBack() {
-        if (!canvasMatrixAnimator.isRunning) {
-
-            // Get matrix values.
-            val scale = canvasMatrix.getScaleX(true)
-            val tx = canvasMatrix.getTranslationX()
-            val ty = canvasMatrix.getTranslationY()
-
-            // Here we calculate the edge of right side to later do not go further that point.
-            val rEdge =
-                calculateEdge(scale, 1f, rightEdge, 0f)
-
-            // Here we calculate the edge of bottom side to later do not go further that point.
-            val bEdge =
-                calculateEdge(scale, 1f, bottomEdge, 0f)
-
-            // Calculate the valid scale (scale greater than maximum allowable scale and less than initial scale)
-            val validatedScale =
-                if (scale > MAXIMUM_SCALE_FACTOR) MAXIMUM_SCALE_FACTOR else if (scale < MINIMUM_SCALE_ZOOM) MINIMUM_SCALE_ZOOM else scale
-
-
-            canvasMatrixAnimator.run {
-                val animationPropertyHolderList = ArrayList<PropertyValuesHolder>()
-                // Add PropertyValuesHolder for each animation property if they should be animated.
-                if (scale < MINIMUM_SCALE_ZOOM || scale > MAXIMUM_SCALE_FACTOR)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "scale",
-                            scale,
-                            validatedScale
-                        )
-                    )
-
-                if (tx < rEdge || tx > 0f)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "translationX",
-                            tx,
-                            if (tx > 0f || scale < MINIMUM_SCALE_ZOOM) 0f else rEdge
-                        )
-                    )
-
-                if (ty < bEdge || ty > 0f)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "translationY",
-                            ty,
-                            if (ty > 0f || scale < MINIMUM_SCALE_ZOOM) 0f else bEdge
-                        )
-                    )
-
-
-                // Finally convert the array list to array and set values of animator.
-                setValues(
-                    *Array(
-                        animationPropertyHolderList.size
-                    ) {
-                        animationPropertyHolderList[it]
-                    }
-                )
-
-                start()
+        matrixAnimator.run {
+            startAnimation(10f, dp(48))
+            setOnMatrixUpdateListener {
+                invalidate()
             }
         }
     }
-
-    private fun calculateEdge(
-        scaled: Float,
-        initScale: Float,
-        initialSize: Float,
-        initialOffset: Float
-    ): Float =
-        -((scaled * initialSize / initScale) - initialSize - initialOffset)
-
 
     /**
      * Register a callback for selector to be invoked when selector is ready to be selected or not.
