@@ -42,11 +42,6 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private var onSelectorStateChangeListener: OnSelectorStateChangeListener? = null
     private var onCloseCallBack: ((Boolean) -> Unit)? = null
 
-    // Holds value of matrix.
-    private val matrixValueHolder by lazy {
-        FloatArray(9)
-    }
-
     private val canvasMatrix by lazy {
         MananMatrix()
     }
@@ -62,8 +57,6 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                 val ty = getAnimatedValue("translationY")
 
                 canvasMatrix.run {
-                    getValues(matrixValueHolder)
-
                     // If translation isn't null or in other words, we should animate the translation, then animate it.
                     if (tx != null) {
                         postTranslate(
