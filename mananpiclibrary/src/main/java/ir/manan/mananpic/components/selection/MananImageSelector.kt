@@ -169,7 +169,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
         isMatrixGesture = true
-        return true
+        return !matrixAnimator.isAnimationRunning()
     }
 
     override fun onScale(detector: ScaleGestureDetector?): Boolean {

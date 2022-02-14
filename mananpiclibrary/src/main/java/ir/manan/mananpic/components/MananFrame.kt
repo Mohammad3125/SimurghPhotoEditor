@@ -132,6 +132,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private val scaleGestureListener by lazy {
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+                return !matrixAnimator.isAnimationRunning()
+            }
+
             override fun onScale(detector: ScaleGestureDetector?): Boolean {
                 if (detector != null) {
                     val sf = detector.scaleFactor
