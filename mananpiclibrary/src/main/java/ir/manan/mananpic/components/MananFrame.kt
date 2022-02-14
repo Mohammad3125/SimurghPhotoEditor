@@ -1,7 +1,5 @@
 package ir.manan.mananpic.components
 
-import android.animation.PropertyValuesHolder
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
@@ -16,6 +14,7 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
@@ -127,48 +126,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     // Matrix that we later use to manipulate canvas scale and translation.
     private val canvasMatrix = MananMatrix()
 
-    // This animator is used to animate the matrix changes.
-    private val canvasMatrixAnimator by lazy {
-        ValueAnimator().apply {
-            interpolator = FastOutSlowInInterpolator()
-            duration = 300
-
-            addUpdateListener {
-                // Get animating properties.
-                val s = getAnimatedValue("scale")
-                val tx = getAnimatedValue("translationX")
-                val ty = getAnimatedValue("translationY")
-
-                canvasMatrix.run {
-                    // If translation isn't null or in other words, we should animate the translation, then animate it.
-                    if (tx != null) {
-                        postTranslate(
-                            tx as Float - getTranslationX(true),
-                            0f
-                        )
-                    }
-
-                    // If translation isn't null or in other words, we should animate the translation, then animate it.
-                    if (ty != null) {
-                        postTranslate(
-                            0f,
-                            ty as Float - getTranslationY(true)
-                        )
-                    }
-
-                    // If scale property isn't null then scale it.
-                    if (s != null) {
-                        val totalScale = (s as Float) / getScaleX(true)
-                        postScale(totalScale, totalScale, pivotX, pivotY)
-                    }
-
-                    invalidate()
-                }
-
-            }
-        }
+    private val matrixAnimator by lazy {
+        MananMatrixAnimator(canvasMatrix, RectF(pageRect), 300L, FastOutSlowInInterpolator())
     }
-
 
     private val scaleGestureListener by lazy {
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -201,86 +161,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     private fun animateCanvasBack() {
-        if (!canvasMatrixAnimator.isRunning) {
-
-
-            // Get matrix values.
-            val scale = canvasMatrix.getScaleX(true)
-            val tx = canvasMatrix.getTranslationX()
-            val ty = canvasMatrix.getTranslationY()
-
-            // Here we calculate the edge of right side to later do not go further that point.
-            val rEdge =
-                calculateEdge(scale, 1f, width.toFloat(), 0f)
-
-            // Here we calculate the edge of bottom side to later do not go further that point.
-            val bEdge =
-                calculateEdge(scale, 1f, height.toFloat(), 0f)
-
-            // Calculate the valid scale (scale greater than maximum allowable scale and less than initial scale)
-            val validatedScale =
-                if (scale > MAXIMUM_SCALE_FACTOR) MAXIMUM_SCALE_FACTOR else if (scale < 1f) 1f else scale
-
-
-            canvasMatrixAnimator.run {
-                val animationPropertyHolderList = ArrayList<PropertyValuesHolder>()
-                // Add PropertyValuesHolder for each animation property if they should be animated.
-                if (scale < 1f || scale > MAXIMUM_SCALE_FACTOR)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "scale",
-                            scale,
-                            validatedScale
-                        )
-                    )
-
-                if (tx < rEdge || tx > 0f)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "translationX",
-                            tx,
-                            if (tx > 0f || scale < 1f) 0f else rEdge
-                        )
-                    )
-
-                if (ty < bEdge || ty > 0f)
-                    animationPropertyHolderList.add(
-                        PropertyValuesHolder.ofFloat(
-                            "translationY",
-                            ty,
-                            if (ty > 0f || scale < 1f) 0f else bEdge
-                        )
-                    )
-
-
-                // Finally convert the array list to array and set values of animator.
-                setValues(
-                    *Array(
-                        animationPropertyHolderList.size
-                    ) {
-                        animationPropertyHolderList.get(it)
-                    }
-                )
-
-                start()
+        matrixAnimator.run {
+            startAnimation(MAXIMUM_SCALE_FACTOR, dp(48))
+            setOnMatrixUpdateListener {
+                invalidate()
             }
         }
     }
 
-    /**
-     * Calculates the edge of view with current applied scale.
-     * @param scaled Total scale factor that user scaled the image.
-     * @param initScale Initial scale of the image.
-     * @param initialSize Initial size of current axis we're trying to calculate (x or y).
-     * @param initialOffset Initial offset of that axis (initial translation)
-     */
-    private fun calculateEdge(
-        scaled: Float,
-        initScale: Float,
-        initialSize: Float,
-        initialOffset: Float
-    ): Float =
-        -((scaled * initialSize / initScale) - initialSize - initialOffset)
 
     private val scaleDetector by lazy {
         ScaleGestureDetector(context, scaleGestureListener).apply {
