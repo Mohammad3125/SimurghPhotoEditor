@@ -130,6 +130,12 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         MananMatrixAnimator(canvasMatrix, RectF(pageRect), 300L, FastOutSlowInInterpolator())
     }
 
+    /**
+     * Extra space that user can translate the canvas before canvas animation triggers.
+     * Default is 0.
+     */
+    var extraSpaceToTriggerAnimation = 0f
+
     private val scaleGestureListener by lazy {
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
@@ -573,7 +579,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     private fun animateCanvasBack() {
         matrixAnimator.run {
-            startAnimation(MAXIMUM_SCALE_FACTOR, dp(48))
+            startAnimation(MAXIMUM_SCALE_FACTOR, extraSpaceToTriggerAnimation)
             setOnMatrixUpdateListener {
                 invalidate()
             }
