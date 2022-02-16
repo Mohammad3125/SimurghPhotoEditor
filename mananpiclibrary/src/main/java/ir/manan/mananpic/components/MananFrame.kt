@@ -538,8 +538,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                 touchMatrix.run {
                     setTranslate(
-                        abs(canvasMatrix.getTranslationX(true)),
-                        abs(canvasMatrix.getTranslationY())
+                        -canvasMatrix.getTranslationX(true),
+                        -canvasMatrix.getTranslationY()
                     )
 
                     // Scale down the current matrix as much as canvas matrix scale up.
