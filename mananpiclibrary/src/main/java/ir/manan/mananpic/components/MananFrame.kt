@@ -129,7 +129,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             strokeWidth = dp(2)
         }
     }
-
+    /**
+     * Holds lines for smart guidelines.
+     */
     private val smartGuideLineHolder = arrayListOf<Float>()
 
     // Flag that determines if canvas should use matrix to manipulate scale and translation.
@@ -270,6 +272,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val moveDetector by lazy {
         MoveDetector(1, moveGestureListener)
     }
+
+
+    /**
+     * Total distance for smart guideline to trigger itself.
+     * Default values is 2 dp.
+     * Value will be interpreted as pixels (use [Context.dp] extension function to convert a dp value to pixel.)
+     */
+    var acceptableDistanceForSmartGuideline = dp(2)
 
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
@@ -518,7 +528,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 drawLines(smartGuideLineHolder.toFloatArray(), smartGuidePaint.apply {
                     strokeWidth = dp(2) * canvasMatrix.getOppositeScale()
                 })
-
             }
 
         }
@@ -528,7 +537,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * Finds possible guide lines on selected component and other components and populates the line holder if there is
      * any line that could help user.
      * This method detects guide lines on sides of selected component.
-     * Sides that is calculated for guide lines include:
+     * Sides that are calculated for guide lines include:
      * - Left-Left
      * - Left,Right
      * - Right,Left
@@ -542,8 +551,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     private fun findSmartGuideLines() {
         smartGuideLineHolder.clear()
-
-        val acceptableDistance = dp(2)
 
         var editComponentBounds = currentEditingView!!.reportBound()
 
@@ -569,10 +576,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             // If absolute value of difference two center x was in range of acceptable distance,
             // then store total difference to later shift the component.
-            if (centerXDiffAbs <= acceptableDistance) {
+            if (centerXDiffAbs <= acceptableDistanceForSmartGuideline) {
                 totalToShiftX = centerXDiff
             }
-            if (centerYDiffAbs <= acceptableDistance) {
+            if (centerYDiffAbs <= acceptableDistanceForSmartGuideline) {
                 totalToShiftY = centerYDiff
             }
 
@@ -596,11 +603,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             // if the lesser value was in acceptable range then set total shift amount
             // in x axis to that value.
             if (leftToLeftAbs < leftToRightAbs) {
-                if (leftToLeftAbs <= acceptableDistance) {
+                if (leftToLeftAbs <= acceptableDistanceForSmartGuideline) {
                     totalToShiftX = leftToLeft
                 }
             } else if (leftToRightAbs < leftToLeftAbs) {
-                if (leftToRightAbs <= acceptableDistance) {
+                if (leftToRightAbs <= acceptableDistanceForSmartGuideline) {
                     totalToShiftX = leftToRight
                 }
             }
@@ -610,7 +617,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             // set any value to shift so far or current difference is less than current
             // total shift amount, then set total shift amount to the right to right difference.
             if (rightToRightAbs < rightToLeftAbs) {
-                if (rightToRightAbs <= acceptableDistance) {
+                if (rightToRightAbs <= acceptableDistanceForSmartGuideline) {
                     if (totalToShiftX == 0f) {
                         totalToShiftX = rightToRight
                     } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
@@ -618,7 +625,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     }
                 }
             } else if (rightToLeftAbs < rightToRightAbs) {
-                if (rightToLeftAbs <= acceptableDistance) {
+                if (rightToLeftAbs <= acceptableDistanceForSmartGuideline) {
                     if (totalToShiftX == 0f) {
                         totalToShiftX = rightToLeft
                     } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
@@ -638,17 +645,17 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             val bottomToTopAbs = abs(bottomToTop)
 
             if (topToTopAbs < topToBottomAbs) {
-                if (topToTopAbs <= acceptableDistance) {
+                if (topToTopAbs <= acceptableDistanceForSmartGuideline) {
                     totalToShiftY = topToTop
                 }
             } else if (topToBottomAbs < topToTopAbs) {
-                if (topToBottomAbs <= acceptableDistance) {
+                if (topToBottomAbs <= acceptableDistanceForSmartGuideline) {
                     totalToShiftY = topToBottom
                 }
             }
 
             if (bottomToBottomAbs < bottomToTopAbs) {
-                if (bottomToBottomAbs <= acceptableDistance) {
+                if (bottomToBottomAbs <= acceptableDistanceForSmartGuideline) {
                     if (totalToShiftY == 0f) {
                         totalToShiftY = bottomToBottom
                     } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
@@ -656,7 +663,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     }
                 }
             } else if (bottomToTopAbs < bottomToBottomAbs) {
-                if (bottomToTopAbs <= acceptableDistance) {
+                if (bottomToTopAbs <= acceptableDistanceForSmartGuideline) {
                     if (totalToShiftY == 0f) {
                         totalToShiftY = bottomToTop
                     } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
