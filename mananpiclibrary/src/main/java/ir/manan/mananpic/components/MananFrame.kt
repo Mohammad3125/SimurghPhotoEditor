@@ -203,9 +203,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     }
 
     private val rotateDetector by lazy {
-        TwoFingerRotationDetector(rotateGestureListener).apply {
-            step = 5f
-        }
+        TwoFingerRotationDetector(rotateGestureListener)
     }
 
     private val moveGestureListener by lazy {
