@@ -21,6 +21,8 @@ import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A class that extends [FrameLayout] class and overrides certain functions such as
@@ -120,6 +122,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             invalidate()
         }
 
+    private val smartGuidePaint by lazy {
+        Paint().apply {
+            color = Color.parseColor("#f403fc")
+            style = Paint.Style.STROKE
+            strokeWidth = dp(2)
+        }
+    }
+
+    private val smartGuideLineHolder = arrayListOf<Float>()
+
     // Flag that determines if canvas should use matrix to manipulate scale and translation.
     private var isCanvasMatrixEnabled = true
 
@@ -188,7 +200,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    private val rotateDetector by lazy { TwoFingerRotationDetector(rotateGestureListener) }
+    private val rotateDetector by lazy {
+        TwoFingerRotationDetector(rotateGestureListener).apply {
+            step = 5f
+        }
+    }
 
     private val moveGestureListener by lazy {
         object : SimpleOnMoveListener() {
@@ -197,6 +213,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     // Slow down the translation if canvas matrix is zoomed.
                     val s = canvasMatrix.getOppositeScale()
                     currentEditingView!!.applyMovement(dx * s, dy * s)
+                    findSmartGuideLines()
                 } else {
                     // If there isn't any component selected, translate the canvas.
                     canvasMatrix.postTranslate(dx, dy)
@@ -234,6 +251,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         rotateDetector.resetRotation(childAtPosition.reportRotation())
                         callOnChildClickListeners(childAtPosition as View, true)
                         currentEditingView = childAtPosition
+                        findSmartGuideLines()
                         invalidate()
                     }
                 }
@@ -497,8 +515,219 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // Restore the previous state of canvas which is not rotated.
                 restore()
 
+                drawLines(smartGuideLineHolder.toFloatArray(), smartGuidePaint.apply {
+                    strokeWidth = dp(2) * canvasMatrix.getOppositeScale()
+                })
+
             }
 
+        }
+    }
+
+    /**
+     * Finds possible guide lines on selected component and other components and populates the line holder if there is
+     * any line that could help user.
+     * This method detects guide lines on sides of selected component.
+     * Sides that is calculated for guide lines include:
+     * - Left-Left
+     * - Left,Right
+     * - Right,Left
+     * - Right,Right
+     * - Top,Top
+     * - Top,Bottom
+     * - Bottom,Top
+     * - Bottom,Bottom
+     * - CenterX
+     * - CenterY
+     */
+    private fun findSmartGuideLines() {
+        smartGuideLineHolder.clear()
+
+        val acceptableDistance = dp(2)
+
+        var editComponentBounds = currentEditingView!!.reportBound()
+
+        for (b in 0 until childCount) {
+
+            val currentChild = (getChildAt(b) as MananComponent)
+
+            if (currentChild === currentEditingView) continue
+
+            val currentChildBounds = currentChild.reportBound()
+
+            // Stores total value that selected component should shift in each axis
+            var totalToShiftX = 0f
+            var totalToShiftY = 0f
+
+            // Calculate distance between two centers in x axis.
+            val centerXDiff = currentChildBounds.centerX() - editComponentBounds.centerX()
+            val centerXDiffAbs = abs(centerXDiff)
+
+            // Calculate distance between two centers in y axis.
+            val centerYDiff = currentChildBounds.centerY() - editComponentBounds.centerY()
+            val centerYDiffAbs = abs(centerYDiff)
+
+            // If absolute value of difference two center x was in range of acceptable distance,
+            // then store total difference to later shift the component.
+            if (centerXDiffAbs <= acceptableDistance) {
+                totalToShiftX = centerXDiff
+            }
+            if (centerYDiffAbs <= acceptableDistance) {
+                totalToShiftY = centerYDiff
+            }
+
+            // Calculate distance between two lefts.
+            val leftToLeft = currentChildBounds.left - editComponentBounds.left
+            val leftToLeftAbs = abs(leftToLeft)
+
+            // Calculate distance between two other component left and selected component right.
+            val leftToRight = currentChildBounds.left - editComponentBounds.right
+            val leftToRightAbs = abs(leftToRight)
+
+            // Calculate distance between two rights.
+            val rightToRight = currentChildBounds.right - editComponentBounds.right
+            val rightToRightAbs = abs(rightToRight)
+
+            // Calculate distance between other component right and selected component left.
+            val rightToLeft = currentChildBounds.right - editComponentBounds.left
+            val rightToLeftAbs = abs(rightToLeft)
+
+            // If left to left of two components was less than left two right and
+            // if the lesser value was in acceptable range then set total shift amount
+            // in x axis to that value.
+            if (leftToLeftAbs < leftToRightAbs) {
+                if (leftToLeftAbs <= acceptableDistance) {
+                    totalToShiftX = leftToLeft
+                }
+            } else if (leftToRightAbs < leftToLeftAbs) {
+                if (leftToRightAbs <= acceptableDistance) {
+                    totalToShiftX = leftToRight
+                }
+            }
+
+            // If right to right of two components was less than right to left of them,
+            // Then check if we haven't set the total shift amount so far, if either we didn't
+            // set any value to shift so far or current difference is less than current
+            // total shift amount, then set total shift amount to the right to right difference.
+            if (rightToRightAbs < rightToLeftAbs) {
+                if (rightToRightAbs <= acceptableDistance) {
+                    if (totalToShiftX == 0f) {
+                        totalToShiftX = rightToRight
+                    } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
+                        totalToShiftX = rightToRight
+                    }
+                }
+            } else if (rightToLeftAbs < rightToRightAbs) {
+                if (rightToLeftAbs <= acceptableDistance) {
+                    if (totalToShiftX == 0f) {
+                        totalToShiftX = rightToLeft
+                    } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
+                        totalToShiftX = rightToLeft
+                    }
+                }
+            }
+
+            val topToTop = currentChildBounds.top - editComponentBounds.top
+            val topToTopAbs = abs(topToTop)
+            val topToBottom = currentChildBounds.top - editComponentBounds.bottom
+            val topToBottomAbs = abs(topToBottom)
+
+            val bottomToBottom = currentChildBounds.bottom - editComponentBounds.bottom
+            val bottomToBottomAbs = abs(bottomToBottom)
+            val bottomToTop = currentChildBounds.bottom - editComponentBounds.top
+            val bottomToTopAbs = abs(bottomToTop)
+
+            if (topToTopAbs < topToBottomAbs) {
+                if (topToTopAbs <= acceptableDistance) {
+                    totalToShiftY = topToTop
+                }
+            } else if (topToBottomAbs < topToTopAbs) {
+                if (topToBottomAbs <= acceptableDistance) {
+                    totalToShiftY = topToBottom
+                }
+            }
+
+            if (bottomToBottomAbs < bottomToTopAbs) {
+                if (bottomToBottomAbs <= acceptableDistance) {
+                    if (totalToShiftY == 0f) {
+                        totalToShiftY = bottomToBottom
+                    } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
+                        totalToShiftY = bottomToBottom
+                    }
+                }
+            } else if (bottomToTopAbs < bottomToBottomAbs) {
+                if (bottomToTopAbs <= acceptableDistance) {
+                    if (totalToShiftY == 0f) {
+                        totalToShiftY = bottomToTop
+                    } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
+                        totalToShiftY = bottomToTop
+                    }
+                }
+            }
+
+            currentEditingView!!.run {
+                // Finally shift the component.
+                applyMovement(totalToShiftX, totalToShiftY)
+
+                // Refresh the bounds of component after shifting it.
+                editComponentBounds = reportBound()
+
+                // Calculate the minimum and maximum amount of two axes
+                // because we want to draw a line from leftmost to rightmost
+                // and topmost to bottommost component.
+                val minTop = min(editComponentBounds.top, currentChildBounds.top)
+                val maxBottom = max(editComponentBounds.bottom, currentChildBounds.bottom)
+
+                val minLeft = min(editComponentBounds.left, currentChildBounds.left)
+                val maxRight = max(editComponentBounds.right, currentChildBounds.right)
+
+                smartGuideLineHolder.run {
+
+                    // Draw a line on left side of selected component if two lefts are the same
+                    // or right of other component is same to left of selected component
+                    if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
+                        add(editComponentBounds.left)
+                        add(minTop)
+                        add(editComponentBounds.left)
+                        add(maxBottom)
+                    }
+                    // Draw a line on right side of selected component if left side of other
+                    // component is right side of selected component or two rights are the same.
+                    if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
+                        add(editComponentBounds.right)
+                        add(minTop)
+                        add(editComponentBounds.right)
+                        add(maxBottom)
+                    }
+
+                    // Draw a line on other component top if it's top is same as
+                    // selected component top or bottom of selected component is same as
+                    // top of other component.
+                    if (totalToShiftY == topToTop || totalToShiftY == topToBottom) {
+                        add(minLeft)
+                        add(currentChildBounds.top)
+                        add(maxRight)
+                        add(currentChildBounds.top)
+                    }
+                    // Draw a line on other component bottom if bottom of it is same as
+                    // selected component's top or two bottoms are the same.
+                    if (totalToShiftY == bottomToTop || totalToShiftY == bottomToBottom) {
+                        add(minLeft)
+                        add(currentChildBounds.bottom)
+                        add(maxRight)
+                        add(currentChildBounds.bottom)
+                    }
+
+                    // Finally draw a line from center of each component to another.
+                    if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
+                        add(editComponentBounds.centerX())
+                        add(editComponentBounds.centerY())
+                        add(currentChildBounds.centerX())
+                        add(currentChildBounds.centerY())
+                    }
+
+                }
+            }
         }
     }
 
