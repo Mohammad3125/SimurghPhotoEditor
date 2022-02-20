@@ -162,6 +162,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     val sf = detector.scaleFactor
                     if (currentEditingView != null) {
                         currentEditingView!!.applyScale(sf)
+                        smartGuideLineHolder.clear()
                     } else {
                         // If there isn't any component selected, scale the canvas.
                         canvasMatrix.postScale(
@@ -181,6 +182,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // Set 'isMoved' to true to prevent selecting the target view if it's been in user touch locations.
                 isMoved = true
                 animateCanvasBack()
+                findSmartGuideLines()
             }
         }
     }
