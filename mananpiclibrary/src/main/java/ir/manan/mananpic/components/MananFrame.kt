@@ -532,56 +532,55 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             super.draw(this)
 
-            val oppositeScale = canvasMatrix.getOppositeScale()
+            currentEditingView?.run {
 
-            // Draw the box around view.
-            if (currentEditingView != null && isDrawingBoxEnabled) {
-                if (isCanvasMatrixEnabled) {
-                    boxPaint.strokeWidth =
-                        frameBoxStrokeWidth * oppositeScale
+                val oppositeScale = canvasMatrix.getOppositeScale()
+
+                // Draw the box around view.
+                if (isDrawingBoxEnabled) {
+                    if (isCanvasMatrixEnabled) {
+                        boxPaint.strokeWidth =
+                            frameBoxStrokeWidth * oppositeScale
+                    }
+                    // Get bounds of component to create a rectangle with it.
+                    val bound = reportBound()
+
+
+                    // If  width and or height is MATCH_PARENT then add offset.
+                    // This is because MATH_PARENT components shift while parent
+                    // has padding.
+                    val v = this as View
+                    val offsetX = getOffsetX(v)
+                    val offsetY = getOffsetY(v)
+
+                    // Take a snapshot of current state of canvas.
+                    save()
+
+                    // Match the rotation of canvas to view to be able to
+                    // draw rotated rectangle.
+                    rotate(
+                        reportRotation(),
+                        reportBoundPivotX() + offsetX,
+                        reportBoundPivotY() + offsetY
+                    )
+
+                    // Draw a box around component.
+                    drawRect(
+                        bound.left + offsetX,
+                        bound.top + offsetY,
+                        bound.right + offsetX,
+                        bound.bottom + offsetY,
+                        boxPaint
+                    )
+
+                    // Restore the previous state of canvas which is not rotated.
+                    restore()
                 }
-                val view = currentEditingView!!
-
-                // Get bounds of component to create a rectangle with it.
-                val bound = view.reportBound()
-
-
-                // If  width and or height is MATCH_PARENT then add offset.
-                // This is because MATH_PARENT components shift while parent
-                // has padding.
-                val v = (view as View)
-                val offsetX = getOffsetX(v)
-                val offsetY = getOffsetY(v)
-
-                // Take a snapshot of current state of canvas.
-                save()
-
-                // Match the rotation of canvas to view to be able to
-                // draw rotated rectangle.
-                rotate(
-                    view.reportRotation(),
-                    view.reportBoundPivotX() + offsetX,
-                    view.reportBoundPivotY() + offsetY
-                )
-
-
-                // Draw a box around component.
-                drawRect(
-                    bound.left + offsetX,
-                    bound.top + offsetY,
-                    bound.right + offsetX,
-                    bound.bottom + offsetY,
-                    boxPaint
-                )
-
-                // Restore the previous state of canvas which is not rotated.
-                restore()
 
                 drawLines(smartGuideLineHolder.toFloatArray(), smartGuidePaint.apply {
                     strokeWidth = smartGuideLineStrokeWidth * oppositeScale
                 })
             }
-
         }
     }
 
