@@ -847,9 +847,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private fun getChildAtPoint(x: Float, y: Float): View? {
         if (childCount == 0) return null
 
-        // Matrix that later will be used to map the touch point
-        // from screen coordinates to current view window inside canvas.
-        val touchMatrix = Matrix()
         children.forEach { v ->
             v as MananComponent
             if (v !== currentEditingView) {
@@ -860,7 +857,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // that component or not.
                 val bounds = v.reportBound()
 
-                touchMatrix.run {
+                mappingMatrix.run {
                     setTranslate(
                         -canvasMatrix.getTranslationX(true),
                         -canvasMatrix.getTranslationY()
