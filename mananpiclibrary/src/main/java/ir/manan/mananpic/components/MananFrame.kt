@@ -161,6 +161,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     // Matrix that we later use to manipulate canvas scale and translation.
     private val canvasMatrix = MananMatrix()
 
+    private val mappingMatrix by lazy {
+        Matrix()
+    }
+
     private val matrixAnimator by lazy {
         MananMatrixAnimator(canvasMatrix, RectF(pageRect), 300L, FastOutSlowInInterpolator())
     }
@@ -593,184 +597,215 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             val finalDistanceValue =
                 acceptableDistanceForSmartGuideline * canvasMatrix.getOppositeScale()
 
-            var editComponentBounds = currentEditingView!!.reportBound()
+            val rotatedRect = RectF(currentEditingView!!.reportBound())
 
-            children.minus(currentEditingView).map { v -> (v as MananComponent).reportBound() }
-                .plus(pageRect).forEach { currentChildBounds ->
-                    // Stores total value that selected component should shift in each axis
-                    var totalToShiftX = 0f
-                    var totalToShiftY = 0f
+            mappingMatrix.run {
+                setRotate(
+                    currentEditingView!!.reportRotation(),
+                    currentEditingView!!.reportBoundPivotX(),
+                    currentEditingView!!.reportBoundPivotY()
+                )
+                mapRect(rotatedRect)
+            }
 
-                    // Calculate distance between two centers in x axis.
-                    val centerXDiff = currentChildBounds.centerX() - editComponentBounds.centerX()
-                    val centerXDiffAbs = abs(centerXDiff)
+            children.minus(currentEditingView as View).map { v ->
+                (v as MananComponent)
+                val rotatedBound = RectF(v.reportBound())
+                mappingMatrix.run {
+                    setRotate(
+                        v.reportRotation(),
+                        v.reportBoundPivotX(),
+                        v.reportBoundPivotY()
+                    )
+                    mapRect(rotatedBound)
+                }
+                rotatedBound
+            }.plus(pageRect).forEach { childBounds ->
 
-                    // Calculate distance between two centers in y axis.
-                    val centerYDiff = currentChildBounds.centerY() - editComponentBounds.centerY()
-                    val centerYDiffAbs = abs(centerYDiff)
+                // Stores total value that selected component should shift in each axis
+                var totalToShiftX = 0f
+                var totalToShiftY = 0f
 
-                    // If absolute value of difference two center x was in range of acceptable distance,
-                    // then store total difference to later shift the component.
-                    if (centerXDiffAbs <= finalDistanceValue) {
-                        totalToShiftX = centerXDiff
+                // Calculate distance between two centers in x axis.
+                val centerXDiff = childBounds.centerX() - rotatedRect.centerX()
+                val centerXDiffAbs = abs(centerXDiff)
+
+                // Calculate distance between two centers in y axis.
+                val centerYDiff = childBounds.centerY() - rotatedRect.centerY()
+                val centerYDiffAbs = abs(centerYDiff)
+
+                // If absolute value of difference two center x was in range of acceptable distance,
+                // then store total difference to later shift the component.
+                if (centerXDiffAbs <= finalDistanceValue) {
+                    totalToShiftX = centerXDiff
+                }
+                if (centerYDiffAbs <= finalDistanceValue) {
+                    totalToShiftY = centerYDiff
+                }
+
+                // Calculate distance between two lefts.
+                val leftToLeft = childBounds.left - rotatedRect.left
+                val leftToLeftAbs = abs(leftToLeft)
+
+                // Calculate distance between two other component left and selected component right.
+                val leftToRight = childBounds.left - rotatedRect.right
+                val leftToRightAbs = abs(leftToRight)
+
+                // Calculate distance between two rights.
+                val rightToRight = childBounds.right - rotatedRect.right
+                val rightToRightAbs = abs(rightToRight)
+
+                // Calculate distance between other component right and selected component left.
+                val rightToLeft = childBounds.right - rotatedRect.left
+                val rightToLeftAbs = abs(rightToLeft)
+
+                // If left to left of two components was less than left two right and
+                // if the lesser value was in acceptable range then set total shift amount
+                // in x axis to that value.
+                if (leftToLeftAbs < leftToRightAbs) {
+                    if (leftToLeftAbs <= finalDistanceValue) {
+                        totalToShiftX = leftToLeft
                     }
-                    if (centerYDiffAbs <= finalDistanceValue) {
-                        totalToShiftY = centerYDiff
+                } else if (leftToRightAbs < leftToLeftAbs) {
+                    if (leftToRightAbs <= finalDistanceValue) {
+                        totalToShiftX = leftToRight
                     }
+                }
 
-                    // Calculate distance between two lefts.
-                    val leftToLeft = currentChildBounds.left - editComponentBounds.left
-                    val leftToLeftAbs = abs(leftToLeft)
-
-                    // Calculate distance between two other component left and selected component right.
-                    val leftToRight = currentChildBounds.left - editComponentBounds.right
-                    val leftToRightAbs = abs(leftToRight)
-
-                    // Calculate distance between two rights.
-                    val rightToRight = currentChildBounds.right - editComponentBounds.right
-                    val rightToRightAbs = abs(rightToRight)
-
-                    // Calculate distance between other component right and selected component left.
-                    val rightToLeft = currentChildBounds.right - editComponentBounds.left
-                    val rightToLeftAbs = abs(rightToLeft)
-
-                    // If left to left of two components was less than left two right and
-                    // if the lesser value was in acceptable range then set total shift amount
-                    // in x axis to that value.
-                    if (leftToLeftAbs < leftToRightAbs) {
-                        if (leftToLeftAbs <= finalDistanceValue) {
-                            totalToShiftX = leftToLeft
-                        }
-                    } else if (leftToRightAbs < leftToLeftAbs) {
-                        if (leftToRightAbs <= finalDistanceValue) {
-                            totalToShiftX = leftToRight
-                        }
-                    }
-
-                    // If right to right of two components was less than right to left of them,
-                    // Then check if we haven't set the total shift amount so far, if either we didn't
-                    // set any value to shift so far or current difference is less than current
-                    // total shift amount, then set total shift amount to the right to right difference.
-                    if (rightToRightAbs < rightToLeftAbs) {
-                        if (rightToRightAbs <= finalDistanceValue) {
-                            if (totalToShiftX == 0f) {
-                                totalToShiftX = rightToRight
-                            } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
-                                totalToShiftX = rightToRight
-                            }
-                        }
-                    } else if (rightToLeftAbs < rightToRightAbs) {
-                        if (rightToLeftAbs <= finalDistanceValue) {
-                            if (totalToShiftX == 0f) {
-                                totalToShiftX = rightToLeft
-                            } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
-                                totalToShiftX = rightToLeft
-                            }
-                        }
-                    }
-
-                    val topToTop = currentChildBounds.top - editComponentBounds.top
-                    val topToTopAbs = abs(topToTop)
-                    val topToBottom = currentChildBounds.top - editComponentBounds.bottom
-                    val topToBottomAbs = abs(topToBottom)
-
-                    val bottomToBottom = currentChildBounds.bottom - editComponentBounds.bottom
-                    val bottomToBottomAbs = abs(bottomToBottom)
-                    val bottomToTop = currentChildBounds.bottom - editComponentBounds.top
-                    val bottomToTopAbs = abs(bottomToTop)
-
-                    if (topToTopAbs < topToBottomAbs) {
-                        if (topToTopAbs <= finalDistanceValue) {
-                            totalToShiftY = topToTop
-                        }
-                    } else if (topToBottomAbs < topToTopAbs) {
-                        if (topToBottomAbs <= finalDistanceValue) {
-                            totalToShiftY = topToBottom
+                // If right to right of two components was less than right to left of them,
+                // Then check if we haven't set the total shift amount so far, if either we didn't
+                // set any value to shift so far or current difference is less than current
+                // total shift amount, then set total shift amount to the right to right difference.
+                if (rightToRightAbs < rightToLeftAbs) {
+                    if (rightToRightAbs <= finalDistanceValue) {
+                        if (totalToShiftX == 0f) {
+                            totalToShiftX = rightToRight
+                        } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
+                            totalToShiftX = rightToRight
                         }
                     }
-
-                    if (bottomToBottomAbs < bottomToTopAbs) {
-                        if (bottomToBottomAbs <= finalDistanceValue) {
-                            if (totalToShiftY == 0f) {
-                                totalToShiftY = bottomToBottom
-                            } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
-                                totalToShiftY = bottomToBottom
-                            }
-                        }
-                    } else if (bottomToTopAbs < bottomToBottomAbs) {
-                        if (bottomToTopAbs <= finalDistanceValue) {
-                            if (totalToShiftY == 0f) {
-                                totalToShiftY = bottomToTop
-                            } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
-                                totalToShiftY = bottomToTop
-                            }
-                        }
-                    }
-
-                    currentEditingView!!.run {
-                        // Finally shift the component.
-                        applyMovement(totalToShiftX, totalToShiftY)
-
-                        // Refresh the bounds of component after shifting it.
-                        editComponentBounds = reportBound()
-
-                        // Calculate the minimum and maximum amount of two axes
-                        // because we want to draw a line from leftmost to rightmost
-                        // and topmost to bottommost component.
-                        val minTop = min(editComponentBounds.top, currentChildBounds.top)
-                        val maxBottom = max(editComponentBounds.bottom, currentChildBounds.bottom)
-
-                        val minLeft = min(editComponentBounds.left, currentChildBounds.left)
-                        val maxRight = max(editComponentBounds.right, currentChildBounds.right)
-
-                        smartGuideLineHolder.run {
-
-                            // Draw a line on left side of selected component if two lefts are the same
-                            // or right of other component is same to left of selected component
-                            if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
-                                add(editComponentBounds.left)
-                                add(minTop)
-                                add(editComponentBounds.left)
-                                add(maxBottom)
-                            }
-                            // Draw a line on right side of selected component if left side of other
-                            // component is right side of selected component or two rights are the same.
-                            if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
-                                add(editComponentBounds.right)
-                                add(minTop)
-                                add(editComponentBounds.right)
-                                add(maxBottom)
-                            }
-
-                            // Draw a line on other component top if it's top is same as
-                            // selected component top or bottom of selected component is same as
-                            // top of other component.
-                            if (totalToShiftY == topToTop || totalToShiftY == topToBottom) {
-                                add(minLeft)
-                                add(currentChildBounds.top)
-                                add(maxRight)
-                                add(currentChildBounds.top)
-                            }
-                            // Draw a line on other component bottom if bottom of it is same as
-                            // selected component's top or two bottoms are the same.
-                            if (totalToShiftY == bottomToTop || totalToShiftY == bottomToBottom) {
-                                add(minLeft)
-                                add(currentChildBounds.bottom)
-                                add(maxRight)
-                                add(currentChildBounds.bottom)
-                            }
-
-                            // Finally draw a line from center of each component to another.
-                            if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
-                                add(editComponentBounds.centerX())
-                                add(editComponentBounds.centerY())
-                                add(currentChildBounds.centerX())
-                                add(currentChildBounds.centerY())
-                            }
-
+                } else if (rightToLeftAbs < rightToRightAbs) {
+                    if (rightToLeftAbs <= finalDistanceValue) {
+                        if (totalToShiftX == 0f) {
+                            totalToShiftX = rightToLeft
+                        } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
+                            totalToShiftX = rightToLeft
                         }
                     }
                 }
+
+                val topToTop = childBounds.top - rotatedRect.top
+                val topToTopAbs = abs(topToTop)
+                val topToBottom = childBounds.top - rotatedRect.bottom
+                val topToBottomAbs = abs(topToBottom)
+
+                val bottomToBottom = childBounds.bottom - rotatedRect.bottom
+                val bottomToBottomAbs = abs(bottomToBottom)
+                val bottomToTop = childBounds.bottom - rotatedRect.top
+                val bottomToTopAbs = abs(bottomToTop)
+
+                if (topToTopAbs < topToBottomAbs) {
+                    if (topToTopAbs <= finalDistanceValue) {
+                        totalToShiftY = topToTop
+                    }
+                } else if (topToBottomAbs < topToTopAbs) {
+                    if (topToBottomAbs <= finalDistanceValue) {
+                        totalToShiftY = topToBottom
+                    }
+                }
+
+                if (bottomToBottomAbs < bottomToTopAbs) {
+                    if (bottomToBottomAbs <= finalDistanceValue) {
+                        if (totalToShiftY == 0f) {
+                            totalToShiftY = bottomToBottom
+                        } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
+                            totalToShiftY = bottomToBottom
+                        }
+                    }
+                } else if (bottomToTopAbs < bottomToBottomAbs) {
+                    if (bottomToTopAbs <= finalDistanceValue) {
+                        if (totalToShiftY == 0f) {
+                            totalToShiftY = bottomToTop
+                        } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
+                            totalToShiftY = bottomToTop
+                        }
+                    }
+                }
+
+                currentEditingView!!.run {
+                    // Finally shift the component.
+                    applyMovement(totalToShiftX, totalToShiftY)
+
+                    // Refresh the bounds of component after shifting it.
+                    rotatedRect.set(reportBound())
+
+                    mappingMatrix.run {
+                        setRotate(
+                            currentEditingView!!.reportRotation(),
+                            currentEditingView!!.reportBoundPivotX(),
+                            currentEditingView!!.reportBoundPivotY()
+                        )
+
+                        mapRect(rotatedRect)
+                    }
+
+                    // Calculate the minimum and maximum amount of two axes
+                    // because we want to draw a line from leftmost to rightmost
+                    // and topmost to bottommost component.
+                    val minTop = min(rotatedRect.top, childBounds.top)
+                    val maxBottom = max(rotatedRect.bottom, childBounds.bottom)
+
+                    val minLeft = min(rotatedRect.left, childBounds.left)
+                    val maxRight = max(rotatedRect.right, childBounds.right)
+
+                    smartGuideLineHolder.run {
+
+                        // Draw a line on left side of selected component if two lefts are the same
+                        // or right of other component is same to left of selected component
+                        if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
+                            add(rotatedRect.left)
+                            add(minTop)
+                            add(rotatedRect.left)
+                            add(maxBottom)
+                        }
+                        // Draw a line on right side of selected component if left side of other
+                        // component is right side of selected component or two rights are the same.
+                        if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
+                            add(rotatedRect.right)
+                            add(minTop)
+                            add(rotatedRect.right)
+                            add(maxBottom)
+                        }
+
+                        // Draw a line on other component top if it's top is same as
+                        // selected component top or bottom of selected component is same as
+                        // top of other component.
+                        if (totalToShiftY == topToTop || totalToShiftY == topToBottom) {
+                            add(minLeft)
+                            add(childBounds.top)
+                            add(maxRight)
+                            add(childBounds.top)
+                        }
+                        // Draw a line on other component bottom if bottom of it is same as
+                        // selected component's top or two bottoms are the same.
+                        if (totalToShiftY == bottomToTop || totalToShiftY == bottomToBottom) {
+                            add(minLeft)
+                            add(childBounds.bottom)
+                            add(maxRight)
+                            add(childBounds.bottom)
+                        }
+
+                        // Finally draw a line from center of each component to another.
+                        if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
+                            add(rotatedRect.centerX())
+                            add(rotatedRect.centerY())
+                            add(childBounds.centerX())
+                            add(childBounds.centerY())
+                        }
+
+                    }
+                }
+            }
         }
     }
 
