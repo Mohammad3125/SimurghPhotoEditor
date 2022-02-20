@@ -577,6 +577,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     restore()
                 }
 
+                // Draw smart guidelines.
                 drawLines(smartGuideLineHolder.toFloatArray(), smartGuidePaint.apply {
                     strokeWidth = smartGuideLineStrokeWidth * oppositeScale
                 })
@@ -607,29 +608,20 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             val finalDistanceValue =
                 acceptableDistanceForSmartGuideline * canvasMatrix.getOppositeScale()
 
+            // Set global rectangle used for mapping to selected component's bounds.
             mappingRectangle.set(currentEditingView!!.reportBound())
+            // Map it with it's rotation to get exact location of rectangle points.
+            mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
 
-            mappingMatrix.run {
-                setRotate(
-                    currentEditingView!!.reportRotation(),
-                    currentEditingView!!.reportBoundPivotX(),
-                    currentEditingView!!.reportBoundPivotY()
-                )
-                mapRect(mappingRectangle)
-            }
-
+            // Remove selected component from list of children (because we don't need to find smart guideline for
+            // selected component which is a undefined behaviour) and then map each bounds of children to get exact
+            // location of points and then add page's bounds to get smart guidelines for page too.
             children.minus(currentEditingView as View).map { v ->
-                (v as MananComponent)
-                val rotatedBound = RectF(v.reportBound())
-                mappingMatrix.run {
-                    setRotate(
-                        v.reportRotation(),
-                        v.reportBoundPivotX(),
-                        v.reportBoundPivotY()
-                    )
-                    mapRect(rotatedBound)
+                (v as MananComponent).run {
+                    val rotatedBound = RectF(reportBound())
+                    mapRectToComponentRotation(this, rotatedBound)
+                    rotatedBound
                 }
-                rotatedBound
             }.plus(pageRect).forEach { childBounds ->
 
                 // Stores total value that selected component should shift in each axis
@@ -748,16 +740,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                     // Refresh the bounds of component after shifting it.
                     mappingRectangle.set(reportBound())
-
-                    mappingMatrix.run {
-                        setRotate(
-                            currentEditingView!!.reportRotation(),
-                            currentEditingView!!.reportBoundPivotX(),
-                            currentEditingView!!.reportBoundPivotY()
-                        )
-
-                        mapRect(mappingRectangle)
-                    }
+                    mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
 
                     // Calculate the minimum and maximum amount of two axes
                     // because we want to draw a line from leftmost to rightmost
@@ -816,6 +799,24 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Maps the provided destination rectangle to rotation component, This way [dstRectangle] would have
+     * exact points of rectangle if it's rotated.
+     * @param component Component that we get rotation and base bounds from.
+     * @param dstRectangle Destination rotation that would have exact location of rotated rectangle from [component]
+     */
+    private fun mapRectToComponentRotation(component: MananComponent, dstRectangle: RectF) {
+        mappingMatrix.run {
+            setRotate(
+                component.reportRotation(),
+                component.reportBoundPivotX(),
+                component.reportBoundPivotY()
+            )
+
+            mapRect(dstRectangle)
         }
     }
 
