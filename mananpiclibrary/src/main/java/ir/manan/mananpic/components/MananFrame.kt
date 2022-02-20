@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
+import androidx.annotation.ColorInt
 import androidx.core.view.children
 import androidx.core.view.doOnLayout
 import androidx.core.view.updateLayoutParams
@@ -123,17 +124,36 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
 
     private val smartGuidePaint by lazy {
-        Paint().apply {
-            color = Color.parseColor("#f403fc")
-            style = Paint.Style.STROKE
-            strokeWidth = dp(2)
-        }
+        Paint()
     }
 
     /**
      * Holds lines for smart guidelines.
      */
     private val smartGuideLineHolder = arrayListOf<Float>()
+
+    /**
+     * Smart guideline stroke width, default value is 2 dp.
+     * value will be interpreted as pixels, use [Context.dp] or [View.dp] to convert a dp value to pixels.
+     */
+    var smartGuideLineStrokeWidth = dp(2)
+        set(value) {
+            smartGuidePaint.strokeWidth = value
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Smart guideline stroke color, default is #f403fc.
+     * value should be a color int.
+     */
+    @ColorInt
+    var smartGuideLineStrokeColor = Color.parseColor("#f403fc")
+        set(value) {
+            smartGuidePaint.color = value
+            field = value
+            invalidate()
+        }
 
     // Flag that determines if canvas should use matrix to manipulate scale and translation.
     private var isCanvasMatrixEnabled = true
@@ -306,6 +326,18 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 pageHeight = getInteger(R.styleable.MananFrame_pageHeight, 0)
 
                 pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
+
+                smartGuideLineStrokeColor =
+                    getColor(
+                        R.styleable.MananFrame_smartGuidelineStrokeColor,
+                        smartGuideLineStrokeColor
+                    )
+
+                smartGuideLineStrokeWidth =
+                    getDimension(
+                        R.styleable.MananFrame_smartGuidelineStrokeWidth,
+                        smartGuideLineStrokeWidth
+                    )
 
             } finally {
                 recycle()
@@ -485,11 +517,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             super.draw(this)
 
+            val oppositeScale = canvasMatrix.getOppositeScale()
+
             // Draw the box around view.
             if (currentEditingView != null && isDrawingBoxEnabled) {
                 if (isCanvasMatrixEnabled) {
                     boxPaint.strokeWidth =
-                        frameBoxStrokeWidth * canvasMatrix.getOppositeScale()
+                        frameBoxStrokeWidth * oppositeScale
                 }
                 val view = currentEditingView!!
 
@@ -529,7 +563,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 restore()
 
                 drawLines(smartGuideLineHolder.toFloatArray(), smartGuidePaint.apply {
-                    strokeWidth = dp(2) * canvasMatrix.getOppositeScale()
+                    strokeWidth = smartGuideLineStrokeWidth * oppositeScale
                 })
             }
 
