@@ -161,8 +161,19 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     // Matrix that we later use to manipulate canvas scale and translation.
     private val canvasMatrix = MananMatrix()
 
+    /**
+     * Used for mapping operations like transforming a rectangle etc...
+     */
     private val mappingMatrix by lazy {
         Matrix()
+    }
+
+    /**
+     * A rectangle to hold the mapped rectangles inside it. It is
+     * defined here to avoid allocations.
+     */
+    private val mappingRectangle by lazy {
+        RectF()
     }
 
     private val matrixAnimator by lazy {
@@ -597,7 +608,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             val finalDistanceValue =
                 acceptableDistanceForSmartGuideline * canvasMatrix.getOppositeScale()
 
-            val rotatedRect = RectF(currentEditingView!!.reportBound())
+            mappingRectangle.set(currentEditingView!!.reportBound())
 
             mappingMatrix.run {
                 setRotate(
@@ -605,7 +616,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     currentEditingView!!.reportBoundPivotX(),
                     currentEditingView!!.reportBoundPivotY()
                 )
-                mapRect(rotatedRect)
+                mapRect(mappingRectangle)
             }
 
             children.minus(currentEditingView as View).map { v ->
@@ -627,11 +638,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 var totalToShiftY = 0f
 
                 // Calculate distance between two centers in x axis.
-                val centerXDiff = childBounds.centerX() - rotatedRect.centerX()
+                val centerXDiff = childBounds.centerX() - mappingRectangle.centerX()
                 val centerXDiffAbs = abs(centerXDiff)
 
                 // Calculate distance between two centers in y axis.
-                val centerYDiff = childBounds.centerY() - rotatedRect.centerY()
+                val centerYDiff = childBounds.centerY() - mappingRectangle.centerY()
                 val centerYDiffAbs = abs(centerYDiff)
 
                 // If absolute value of difference two center x was in range of acceptable distance,
@@ -644,19 +655,19 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 }
 
                 // Calculate distance between two lefts.
-                val leftToLeft = childBounds.left - rotatedRect.left
+                val leftToLeft = childBounds.left - mappingRectangle.left
                 val leftToLeftAbs = abs(leftToLeft)
 
                 // Calculate distance between two other component left and selected component right.
-                val leftToRight = childBounds.left - rotatedRect.right
+                val leftToRight = childBounds.left - mappingRectangle.right
                 val leftToRightAbs = abs(leftToRight)
 
                 // Calculate distance between two rights.
-                val rightToRight = childBounds.right - rotatedRect.right
+                val rightToRight = childBounds.right - mappingRectangle.right
                 val rightToRightAbs = abs(rightToRight)
 
                 // Calculate distance between other component right and selected component left.
-                val rightToLeft = childBounds.right - rotatedRect.left
+                val rightToLeft = childBounds.right - mappingRectangle.left
                 val rightToLeftAbs = abs(rightToLeft)
 
                 // If left to left of two components was less than left two right and
@@ -694,14 +705,14 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     }
                 }
 
-                val topToTop = childBounds.top - rotatedRect.top
+                val topToTop = childBounds.top - mappingRectangle.top
                 val topToTopAbs = abs(topToTop)
-                val topToBottom = childBounds.top - rotatedRect.bottom
+                val topToBottom = childBounds.top - mappingRectangle.bottom
                 val topToBottomAbs = abs(topToBottom)
 
-                val bottomToBottom = childBounds.bottom - rotatedRect.bottom
+                val bottomToBottom = childBounds.bottom - mappingRectangle.bottom
                 val bottomToBottomAbs = abs(bottomToBottom)
-                val bottomToTop = childBounds.bottom - rotatedRect.top
+                val bottomToTop = childBounds.bottom - mappingRectangle.top
                 val bottomToTopAbs = abs(bottomToTop)
 
                 if (topToTopAbs < topToBottomAbs) {
@@ -737,7 +748,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     applyMovement(totalToShiftX, totalToShiftY)
 
                     // Refresh the bounds of component after shifting it.
-                    rotatedRect.set(reportBound())
+                    mappingRectangle.set(reportBound())
 
                     mappingMatrix.run {
                         setRotate(
@@ -746,34 +757,34 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                             currentEditingView!!.reportBoundPivotY()
                         )
 
-                        mapRect(rotatedRect)
+                        mapRect(mappingRectangle)
                     }
 
                     // Calculate the minimum and maximum amount of two axes
                     // because we want to draw a line from leftmost to rightmost
                     // and topmost to bottommost component.
-                    val minTop = min(rotatedRect.top, childBounds.top)
-                    val maxBottom = max(rotatedRect.bottom, childBounds.bottom)
+                    val minTop = min(mappingRectangle.top, childBounds.top)
+                    val maxBottom = max(mappingRectangle.bottom, childBounds.bottom)
 
-                    val minLeft = min(rotatedRect.left, childBounds.left)
-                    val maxRight = max(rotatedRect.right, childBounds.right)
+                    val minLeft = min(mappingRectangle.left, childBounds.left)
+                    val maxRight = max(mappingRectangle.right, childBounds.right)
 
                     smartGuideLineHolder.run {
 
                         // Draw a line on left side of selected component if two lefts are the same
                         // or right of other component is same to left of selected component
                         if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
-                            add(rotatedRect.left)
+                            add(mappingRectangle.left)
                             add(minTop)
-                            add(rotatedRect.left)
+                            add(mappingRectangle.left)
                             add(maxBottom)
                         }
                         // Draw a line on right side of selected component if left side of other
                         // component is right side of selected component or two rights are the same.
                         if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
-                            add(rotatedRect.right)
+                            add(mappingRectangle.right)
                             add(minTop)
-                            add(rotatedRect.right)
+                            add(mappingRectangle.right)
                             add(maxBottom)
                         }
 
@@ -797,8 +808,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                         // Finally draw a line from center of each component to another.
                         if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
-                            add(rotatedRect.centerX())
-                            add(rotatedRect.centerY())
+                            add(mappingRectangle.centerX())
+                            add(mappingRectangle.centerY())
                             add(childBounds.centerX())
                             add(childBounds.centerY())
                         }
