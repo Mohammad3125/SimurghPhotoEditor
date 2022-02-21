@@ -132,6 +132,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     private val smartGuideLineHolder = arrayListOf<Float>()
 
+    private var smartGuidelineFlags: Int = 0
+
     /**
      * Smart guideline stroke width, default value is 2 dp.
      * value will be interpreted as pixels, use [Context.dp] or [View.dp] to convert a dp value to pixels.
@@ -602,11 +604,23 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * - CenterY
      */
     private fun findSmartGuideLines() {
-        if (currentEditingView != null) {
+        if (currentEditingView != null && smartGuidelineFlags != 0) {
             smartGuideLineHolder.clear()
 
             val finalDistanceValue =
                 acceptableDistanceForSmartGuideline * canvasMatrix.getOppositeScale()
+
+            // Get flags to determine if we should use corresponding guideline or not.
+            val isLeftLeftEnabled = smartGuidelineFlags.and(Guidelines.LEFT_LEFT) != 0
+            val isLeftRightEnabled = smartGuidelineFlags.and(Guidelines.LEFT_RIGHT) != 0
+            val isRightLeftEnabled = smartGuidelineFlags.and(Guidelines.RIGHT_LEFT) != 0
+            val isRightRightEnabled = smartGuidelineFlags.and(Guidelines.RIGHT_RIGHT) != 0
+            val isTopTopEnabled = smartGuidelineFlags.and(Guidelines.TOP_TOP) != 0
+            val isTopBottomEnabled = smartGuidelineFlags.and(Guidelines.TOP_BOTTOM) != 0
+            val isBottomTopEnabled = smartGuidelineFlags.and(Guidelines.BOTTOM_TOP) != 0
+            val isBottomBottomEnabled = smartGuidelineFlags.and(Guidelines.BOTTOM_BOTTOM) != 0
+            val isCenterXEnabled = smartGuidelineFlags.and(Guidelines.CENTER_X) != 0
+            val isCenterYEnabled = smartGuidelineFlags.and(Guidelines.CENTER_Y) != 0
 
             // Set global rectangle used for mapping to selected component's bounds.
             mappingRectangle.set(currentEditingView!!.reportBound())
@@ -638,10 +652,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                 // If absolute value of difference two center x was in range of acceptable distance,
                 // then store total difference to later shift the component.
-                if (centerXDiffAbs <= finalDistanceValue) {
+                if (centerXDiffAbs <= finalDistanceValue && isCenterXEnabled) {
                     totalToShiftX = centerXDiff
                 }
-                if (centerYDiffAbs <= finalDistanceValue) {
+                if (centerYDiffAbs <= finalDistanceValue && isCenterYEnabled) {
                     totalToShiftY = centerYDiff
                 }
 
@@ -665,11 +679,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // if the lesser value was in acceptable range then set total shift amount
                 // in x axis to that value.
                 if (leftToLeftAbs < leftToRightAbs) {
-                    if (leftToLeftAbs <= finalDistanceValue) {
+                    if (leftToLeftAbs <= finalDistanceValue && isLeftLeftEnabled) {
                         totalToShiftX = leftToLeft
                     }
                 } else if (leftToRightAbs < leftToLeftAbs) {
-                    if (leftToRightAbs <= finalDistanceValue) {
+                    if (leftToRightAbs <= finalDistanceValue && isLeftRightEnabled) {
                         totalToShiftX = leftToRight
                     }
                 }
@@ -679,7 +693,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // set any value to shift so far or current difference is less than current
                 // total shift amount, then set total shift amount to the right to right difference.
                 if (rightToRightAbs < rightToLeftAbs) {
-                    if (rightToRightAbs <= finalDistanceValue) {
+                    if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
                         if (totalToShiftX == 0f) {
                             totalToShiftX = rightToRight
                         } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
@@ -687,7 +701,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         }
                     }
                 } else if (rightToLeftAbs < rightToRightAbs) {
-                    if (rightToLeftAbs <= finalDistanceValue) {
+                    if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
                         if (totalToShiftX == 0f) {
                             totalToShiftX = rightToLeft
                         } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
@@ -707,17 +721,17 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 val bottomToTopAbs = abs(bottomToTop)
 
                 if (topToTopAbs < topToBottomAbs) {
-                    if (topToTopAbs <= finalDistanceValue) {
+                    if (topToTopAbs <= finalDistanceValue && isTopTopEnabled) {
                         totalToShiftY = topToTop
                     }
-                } else if (topToBottomAbs < topToTopAbs) {
+                } else if (topToBottomAbs < topToTopAbs && isTopBottomEnabled) {
                     if (topToBottomAbs <= finalDistanceValue) {
                         totalToShiftY = topToBottom
                     }
                 }
 
                 if (bottomToBottomAbs < bottomToTopAbs) {
-                    if (bottomToBottomAbs <= finalDistanceValue) {
+                    if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
                         if (totalToShiftY == 0f) {
                             totalToShiftY = bottomToBottom
                         } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
@@ -725,7 +739,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         }
                     }
                 } else if (bottomToTopAbs < bottomToBottomAbs) {
-                    if (bottomToTopAbs <= finalDistanceValue) {
+                    if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
                         if (totalToShiftY == 0f) {
                             totalToShiftY = bottomToTop
                         } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
@@ -801,6 +815,37 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
         }
     }
+
+    /**
+     * Sets flags of smart guideline to customize needed smart guidelines,
+     * for example if user sets [Guidelines.CENTER_X] and [Guidelines.BOTTOM_BOTTOM], only these
+     * guidelines would be detected.
+     * If [Guidelines.ALL] is set then all flags would bet set to 1 indicating they are all enabled.
+     * ### NOTE: Flags should OR each other to create desired output:
+     *      setFlags(LEFT_LEFT.or(RIGHT_LEFT).or(CENTER_X)))
+     *      setFlags(LEFT_LEFT | RIGHT_LEFT | CENTER_X)
+     * @see Guidelines
+     */
+    fun setSmartGuidelineFlags(flags: Int) {
+        // If flag has the ALL in it then store the maximum int value in flag holder to indicate
+        // that all of flags has been set, otherwise set it to provided flags.
+        smartGuidelineFlags =
+            if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
+    }
+
+    /**
+     * Clears smart guidelines flags. clearing flags means no smart guideline will be detected.
+     */
+    fun clearSmartGuidelineFlags() {
+        smartGuidelineFlags = 0
+    }
+
+    /**
+     * Returns smart guidelines flags.
+     * @see setSmartGuidelineFlags
+     * @see clearSmartGuidelineFlags
+     */
+    fun getSmartGuidelineFlags(): Int = smartGuidelineFlags
 
     /**
      * Maps the provided destination rectangle to rotation component, This way [dstRectangle] would have
@@ -1151,6 +1196,26 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
          * @param isDeleted If true then child is removed else added.
          */
         fun onChanged(view: View, isDeleted: Boolean)
+    }
+
+    /**
+     * A class holding static flags for smart guideline. User should
+     * set the desired flags in [setSmartGuidelineFlags] method.
+     */
+    class Guidelines {
+        companion object {
+            const val ALL = 1
+            const val LEFT_LEFT = 2
+            const val LEFT_RIGHT = 4
+            const val RIGHT_LEFT = 8
+            const val RIGHT_RIGHT = 16
+            const val TOP_TOP = 32
+            const val TOP_BOTTOM = 64
+            const val BOTTOM_TOP = 128
+            const val BOTTOM_BOTTOM = 256
+            const val CENTER_X = 512
+            const val CENTER_Y = 1024
+        }
     }
 
 }
