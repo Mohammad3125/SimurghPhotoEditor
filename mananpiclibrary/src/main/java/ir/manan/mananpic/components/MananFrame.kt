@@ -259,7 +259,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             smartRotationDegreeHolder?.run {
                 smartRotationLineHolder.clear()
                 forEach { snapDegree ->
-                    if (reportRotation() in (snapDegree - 5f)..(snapDegree + 5f)) {
+                    if (reportRotation() in (snapDegree - rangeForSmartRotationGuideline)..(snapDegree + rangeForSmartRotationGuideline)) {
                         applyRotation(snapDegree)
 
                         val bound = reportBound()
@@ -359,6 +359,29 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * current value will become half; This is done to provide better accuracy.
      */
     var acceptableDistanceForSmartGuideline = dp(2)
+
+    /**
+     * Range that smart rotation guideline will use to determine if it should draw guideline and snap
+     * the selected component to the provided degrees by user set in [setRotationSmartGuideline].
+     *
+     * For example if rotation of component is 10 degrees and degree holder contains a degree like 12 then
+     * it would trigger and snap the component to 12 degree because the range is set to 5f by default, meaning
+     * algorithm would accept any degrees from 12 - range and 12 + range which means 8 to 17 degrees.
+     *
+     * Set this variable to set the range mentioned before.
+     *
+     * It's best to not change this value or let it be an small number between 1-10
+     *
+     * ### Default value is 5f
+     *
+     * @throws IllegalStateException if value is less than 0 or greater than 360
+     */
+    var rangeForSmartRotationGuideline = 5f
+        set(value) {
+            if (value < 0f || value > 360) throw IllegalStateException("this value should not be less than 0 or greater than 360")
+            field = value
+        }
+
 
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
