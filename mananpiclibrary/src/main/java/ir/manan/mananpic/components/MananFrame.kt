@@ -124,7 +124,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
 
     private val smartGuidePaint by lazy {
-        Paint()
+        Paint(Paint.ANTI_ALIAS_FLAG)
     }
 
     /**
