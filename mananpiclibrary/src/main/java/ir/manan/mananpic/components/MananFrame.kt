@@ -678,34 +678,37 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // If left to left of two components was less than left two right and
                 // if the lesser value was in acceptable range then set total shift amount
                 // in x axis to that value.
-                if (leftToLeftAbs < leftToRightAbs) {
-                    if (leftToLeftAbs <= finalDistanceValue && isLeftLeftEnabled) {
-                        totalToShiftX = leftToLeft
-                    }
-                } else if (leftToRightAbs < leftToLeftAbs) {
-                    if (leftToRightAbs <= finalDistanceValue && isLeftRightEnabled) {
-                        totalToShiftX = leftToRight
-                    }
-                }
-
-                // If right to right of two components was less than right to left of them,
-                // Then check if we haven't set the total shift amount so far, if either we didn't
-                // set any value to shift so far or current difference is less than current
-                // total shift amount, then set total shift amount to the right to right difference.
-                if (rightToRightAbs < rightToLeftAbs) {
-                    if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
-                        if (totalToShiftX == 0f) {
-                            totalToShiftX = rightToRight
-                        } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
-                            totalToShiftX = rightToRight
+                // If we are currently centering in x direction then any of these
+                // side should not be calculated or be smart guided.
+                if (totalToShiftX != centerXDiff) {
+                    if (leftToLeftAbs < leftToRightAbs) {
+                        if (leftToLeftAbs <= finalDistanceValue && isLeftLeftEnabled) {
+                            totalToShiftX = leftToLeft
+                        }
+                    } else if (leftToRightAbs < leftToLeftAbs) {
+                        if (leftToRightAbs <= finalDistanceValue && isLeftRightEnabled) {
+                            totalToShiftX = leftToRight
                         }
                     }
-                } else if (rightToLeftAbs < rightToRightAbs) {
-                    if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
-                        if (totalToShiftX == 0f) {
-                            totalToShiftX = rightToLeft
-                        } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
-                            totalToShiftX = rightToLeft
+                    // If right to right of two components was less than right to left of them,
+                    // Then check if we haven't set the total shift amount so far, if either we didn't
+                    // set any value to shift so far or current difference is less than current
+                    // total shift amount, then set total shift amount to the right to right difference.
+                    if (rightToRightAbs < rightToLeftAbs) {
+                        if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
+                            if (totalToShiftX == 0f) {
+                                totalToShiftX = rightToRight
+                            } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
+                                totalToShiftX = rightToRight
+                            }
+                        }
+                    } else if (rightToLeftAbs < rightToRightAbs) {
+                        if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
+                            if (totalToShiftX == 0f) {
+                                totalToShiftX = rightToLeft
+                            } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
+                                totalToShiftX = rightToLeft
+                            }
                         }
                     }
                 }
@@ -720,30 +723,32 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 val bottomToTop = childBounds.bottom - mappingRectangle.top
                 val bottomToTopAbs = abs(bottomToTop)
 
-                if (topToTopAbs < topToBottomAbs) {
-                    if (topToTopAbs <= finalDistanceValue && isTopTopEnabled) {
-                        totalToShiftY = topToTop
-                    }
-                } else if (topToBottomAbs < topToTopAbs && isTopBottomEnabled) {
-                    if (topToBottomAbs <= finalDistanceValue) {
-                        totalToShiftY = topToBottom
-                    }
-                }
-
-                if (bottomToBottomAbs < bottomToTopAbs) {
-                    if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
-                        if (totalToShiftY == 0f) {
-                            totalToShiftY = bottomToBottom
-                        } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
-                            totalToShiftY = bottomToBottom
+                if (totalToShiftY != centerYDiff) {
+                    if (topToTopAbs < topToBottomAbs) {
+                        if (topToTopAbs <= finalDistanceValue && isTopTopEnabled) {
+                            totalToShiftY = topToTop
+                        }
+                    } else if (topToBottomAbs < topToTopAbs && isTopBottomEnabled) {
+                        if (topToBottomAbs <= finalDistanceValue) {
+                            totalToShiftY = topToBottom
                         }
                     }
-                } else if (bottomToTopAbs < bottomToBottomAbs) {
-                    if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
-                        if (totalToShiftY == 0f) {
-                            totalToShiftY = bottomToTop
-                        } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
-                            totalToShiftY = bottomToTop
+
+                    if (bottomToBottomAbs < bottomToTopAbs) {
+                        if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
+                            if (totalToShiftY == 0f) {
+                                totalToShiftY = bottomToBottom
+                            } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
+                                totalToShiftY = bottomToBottom
+                            }
+                        }
+                    } else if (bottomToTopAbs < bottomToBottomAbs) {
+                        if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
+                            if (totalToShiftY == 0f) {
+                                totalToShiftY = bottomToTop
+                            } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
+                                totalToShiftY = bottomToTop
+                            }
                         }
                     }
                 }
