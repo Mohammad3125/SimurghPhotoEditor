@@ -22,5 +22,20 @@ class GestureUtils {
             ).toFloat()
         }
 
+        /**
+         * Converts the current degree to be between 0-360 degrees.
+         */
+        fun mapTo360(degree: Float): Float {
+            return when {
+                degree > 360 -> {
+                    degree - 360
+                }
+                degree < 0f -> {
+                    degree + 360
+                }
+                else -> degree
+            }
+        }
+
     }
 }
