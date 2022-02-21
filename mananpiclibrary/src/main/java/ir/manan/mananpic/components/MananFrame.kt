@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
+import androidx.annotation.ColorInt
 import androidx.core.view.children
 import androidx.core.view.doOnLayout
 import androidx.core.view.updateLayoutParams
@@ -21,6 +22,8 @@ import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A class that extends [FrameLayout] class and overrides certain functions such as
@@ -120,11 +123,64 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             invalidate()
         }
 
+    private val smartGuidePaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG)
+    }
+
+    /**
+     * Holds lines for smart guidelines.
+     */
+    private val smartGuidelineHolder = arrayListOf<Float>()
+
+    private var smartGuidelineFlags: Int = 0
+
+    private var smartRotationDegreeHolder: FloatArray? = null
+
+    private var smartRotationLineHolder = arrayListOf<Float>()
+
+    /**
+     * Smart guideline stroke width, default value is 2 dp.
+     * value will be interpreted as pixels, use [Context.dp] or [View.dp] to convert a dp value to pixels.
+     */
+    var smartGuideLineStrokeWidth = dp(2)
+        set(value) {
+            smartGuidePaint.strokeWidth = value
+            field = value
+            invalidate()
+        }
+
+    /**
+     * Smart guideline stroke color, default is #f403fc.
+     * value should be a color int.
+     */
+    @ColorInt
+    var smartGuideLineStrokeColor = Color.parseColor("#f403fc")
+        set(value) {
+            smartGuidePaint.color = value
+            field = value
+            invalidate()
+        }
+
     // Flag that determines if canvas should use matrix to manipulate scale and translation.
     private var isCanvasMatrixEnabled = true
 
     // Matrix that we later use to manipulate canvas scale and translation.
     private val canvasMatrix = MananMatrix()
+
+    /**
+     * Used for mapping operations like transforming a rectangle etc...
+     */
+    private val mappingMatrix by lazy {
+        Matrix()
+    }
+
+    /**
+     * A rectangle to hold the mapped rectangles inside it. It is
+     * defined here to avoid allocations.
+     */
+    private val mappingRectangle by lazy {
+        RectF()
+    }
 
     private val matrixAnimator by lazy {
         MananMatrixAnimator(canvasMatrix, RectF(pageRect), 300L, FastOutSlowInInterpolator())
@@ -147,6 +203,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     val sf = detector.scaleFactor
                     if (currentEditingView != null) {
                         currentEditingView!!.applyScale(sf)
+                        smartGuidelineHolder.clear()
                     } else {
                         // If there isn't any component selected, scale the canvas.
                         canvasMatrix.postScale(
@@ -166,6 +223,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // Set 'isMoved' to true to prevent selecting the target view if it's been in user touch locations.
                 isMoved = true
                 animateCanvasBack()
+                findSmartGuideLines()
             }
         }
     }
@@ -182,13 +240,48 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val rotateGestureListener by lazy {
         object : SimpleOnRotateListener() {
             override fun onRotate(degree: Float): Boolean {
-                currentEditingView?.applyRotation(degree)
+                currentEditingView?.run {
+                    // Find smart guideline, if didn't find any smart guideline, continue the normal rotation.
+                    applyRotation(degree)
+                    findRotationSmartGuidelines()
+                }
                 return true
             }
         }
     }
 
-    private val rotateDetector by lazy { TwoFingerRotationDetector(rotateGestureListener) }
+    /**
+     * Finds smart guidelines for rotation if [smartRotationDegreeHolder] does have target rotations.
+     * @return True if it found smart guideline, false otherwise.
+     */
+    fun findRotationSmartGuidelines(): Boolean {
+        currentEditingView?.run {
+            smartRotationDegreeHolder?.run {
+                smartRotationLineHolder.clear()
+                forEach { snapDegree ->
+                    if (reportRotation() in (snapDegree - 5f)..(snapDegree + 5f)) {
+                        applyRotation(snapDegree)
+
+                        val bound = reportBound()
+                        val centerXBound = bound.centerX()
+                        val extraSpaceForLineY = bound.height() * 0.33f
+
+                        smartRotationLineHolder.add(centerXBound)
+                        smartRotationLineHolder.add(bound.top - extraSpaceForLineY)
+                        smartRotationLineHolder.add(centerXBound)
+                        smartRotationLineHolder.add(bound.bottom + extraSpaceForLineY)
+
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+    private val rotateDetector by lazy {
+        TwoFingerRotationDetector(rotateGestureListener)
+    }
 
     private val moveGestureListener by lazy {
         object : SimpleOnMoveListener() {
@@ -197,6 +290,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     // Slow down the translation if canvas matrix is zoomed.
                     val s = canvasMatrix.getOppositeScale()
                     currentEditingView!!.applyMovement(dx * s, dy * s)
+                    findSmartGuideLines()
+                    smartRotationLineHolder.clear()
                 } else {
                     // If there isn't any component selected, translate the canvas.
                     canvasMatrix.postTranslate(dx, dy)
@@ -234,6 +329,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         rotateDetector.resetRotation(childAtPosition.reportRotation())
                         callOnChildClickListeners(childAtPosition as View, true)
                         currentEditingView = childAtPosition
+                        findSmartGuideLines()
                         invalidate()
                     }
                 }
@@ -244,6 +340,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 isMoved = false
 
 
+                findRotationSmartGuidelines()
                 animateCanvasBack()
             }
         }
@@ -252,6 +349,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val moveDetector by lazy {
         MoveDetector(1, moveGestureListener)
     }
+
+
+    /**
+     * Total distance for smart guideline to trigger itself.
+     * Default values is 2 dp.
+     * Value will be interpreted as pixels (use [Context.dp] extension function to convert a dp value to pixel.)
+     * This value will become less as user zooms in; for example if user zoom two times the current factor, then
+     * current value will become half; This is done to provide better accuracy.
+     */
+    var acceptableDistanceForSmartGuideline = dp(2)
 
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
@@ -275,6 +382,18 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 pageHeight = getInteger(R.styleable.MananFrame_pageHeight, 0)
 
                 pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
+
+                smartGuideLineStrokeColor =
+                    getColor(
+                        R.styleable.MananFrame_smartGuidelineStrokeColor,
+                        smartGuideLineStrokeColor
+                    )
+
+                smartGuideLineStrokeWidth =
+                    getDimension(
+                        R.styleable.MananFrame_smartGuidelineStrokeWidth,
+                        smartGuideLineStrokeWidth
+                    )
 
             } finally {
                 recycle()
@@ -454,51 +573,373 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             super.draw(this)
 
-            // Draw the box around view.
-            if (currentEditingView != null && isDrawingBoxEnabled) {
-                if (isCanvasMatrixEnabled) {
-                    boxPaint.strokeWidth =
-                        frameBoxStrokeWidth * canvasMatrix.getOppositeScale()
-                }
-                val view = currentEditingView!!
-
-                // Get bounds of component to create a rectangle with it.
-                val bound = view.reportBound()
-
-
-                // If  width and or height is MATCH_PARENT then add offset.
-                // This is because MATH_PARENT components shift while parent
-                // has padding.
-                val v = (view as View)
-                val offsetX = getOffsetX(v)
-                val offsetY = getOffsetY(v)
+            currentEditingView?.run {
 
                 // Take a snapshot of current state of canvas.
                 save()
 
+                // Get bounds of component to create a rectangle with it.
+                val bound = reportBound()
+
+                // If  width and or height is MATCH_PARENT then add offset.
+                // This is because MATH_PARENT components shift while parent
+                // has padding.
+                val v = this as View
+                val offsetX = getOffsetX(v)
+                val offsetY = getOffsetY(v)
+
                 // Match the rotation of canvas to view to be able to
                 // draw rotated rectangle.
                 rotate(
-                    view.reportRotation(),
-                    view.reportBoundPivotX() + offsetX,
-                    view.reportBoundPivotY() + offsetY
+                    reportRotation(),
+                    reportBoundPivotX() + offsetX,
+                    reportBoundPivotY() + offsetY
                 )
 
+                val oppositeScale = canvasMatrix.getOppositeScale()
 
-                // Draw a box around component.
-                drawRect(
-                    bound.left + offsetX,
-                    bound.top + offsetY,
-                    bound.right + offsetX,
-                    bound.bottom + offsetY,
-                    boxPaint
-                )
+                // Draw the box around view.
+                if (isDrawingBoxEnabled) {
+                    if (isCanvasMatrixEnabled) {
+                        boxPaint.strokeWidth =
+                            frameBoxStrokeWidth * oppositeScale
+                    }
+
+                    // Draw a box around component.
+                    drawRect(
+                        bound.left + offsetX,
+                        bound.top + offsetY,
+                        bound.right + offsetX,
+                        bound.bottom + offsetY,
+                        boxPaint
+                    )
+                }
+
+                val smartGuidelineStrokeWidth = smartGuideLineStrokeWidth * oppositeScale
+
+                // Draw rotation smart guidelines.
+                drawLines(smartRotationLineHolder.toFloatArray(), smartGuidePaint.apply {
+                    strokeWidth = smartGuidelineStrokeWidth
+                })
 
                 // Restore the previous state of canvas which is not rotated.
                 restore()
 
+                // Draw smart guidelines.
+                drawLines(smartGuidelineHolder.toFloatArray(), smartGuidePaint.apply {
+                    strokeWidth = smartGuidelineStrokeWidth
+                })
             }
+        }
+    }
 
+    /**
+     * Finds possible guide lines on selected component and other components and populates the line holder if there is
+     * any line that could help user.
+     * This method detects guide lines on sides of selected component.
+     * Sides that are calculated for guide lines include:
+     * - Left-Left
+     * - Left,Right
+     * - Right,Left
+     * - Right,Right
+     * - Top,Top
+     * - Top,Bottom
+     * - Bottom,Top
+     * - Bottom,Bottom
+     * - CenterX
+     * - CenterY
+     */
+    private fun findSmartGuideLines() {
+        if (currentEditingView != null && smartGuidelineFlags != 0) {
+            smartGuidelineHolder.clear()
+
+            val finalDistanceValue =
+                acceptableDistanceForSmartGuideline * canvasMatrix.getOppositeScale()
+
+            // Get flags to determine if we should use corresponding guideline or not.
+            val isLeftLeftEnabled = smartGuidelineFlags.and(Guidelines.LEFT_LEFT) != 0
+            val isLeftRightEnabled = smartGuidelineFlags.and(Guidelines.LEFT_RIGHT) != 0
+            val isRightLeftEnabled = smartGuidelineFlags.and(Guidelines.RIGHT_LEFT) != 0
+            val isRightRightEnabled = smartGuidelineFlags.and(Guidelines.RIGHT_RIGHT) != 0
+            val isTopTopEnabled = smartGuidelineFlags.and(Guidelines.TOP_TOP) != 0
+            val isTopBottomEnabled = smartGuidelineFlags.and(Guidelines.TOP_BOTTOM) != 0
+            val isBottomTopEnabled = smartGuidelineFlags.and(Guidelines.BOTTOM_TOP) != 0
+            val isBottomBottomEnabled = smartGuidelineFlags.and(Guidelines.BOTTOM_BOTTOM) != 0
+            val isCenterXEnabled = smartGuidelineFlags.and(Guidelines.CENTER_X) != 0
+            val isCenterYEnabled = smartGuidelineFlags.and(Guidelines.CENTER_Y) != 0
+
+            // Set global rectangle used for mapping to selected component's bounds.
+            mappingRectangle.set(currentEditingView!!.reportBound())
+            // Map it with it's rotation to get exact location of rectangle points.
+            mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
+
+            // Remove selected component from list of children (because we don't need to find smart guideline for
+            // selected component which is a undefined behaviour) and then map each bounds of children to get exact
+            // location of points and then add page's bounds to get smart guidelines for page too.
+            children.minus(currentEditingView as View).map { v ->
+                (v as MananComponent).run {
+                    val rotatedBound = RectF(reportBound())
+                    mapRectToComponentRotation(this, rotatedBound)
+                    rotatedBound
+                }
+            }.plus(pageRect).forEach { childBounds ->
+
+                // Stores total value that selected component should shift in each axis
+                var totalToShiftX = 0f
+                var totalToShiftY = 0f
+
+                // Calculate distance between two centers in x axis.
+                val centerXDiff = childBounds.centerX() - mappingRectangle.centerX()
+                val centerXDiffAbs = abs(centerXDiff)
+
+                // Calculate distance between two centers in y axis.
+                val centerYDiff = childBounds.centerY() - mappingRectangle.centerY()
+                val centerYDiffAbs = abs(centerYDiff)
+
+                // If absolute value of difference two center x was in range of acceptable distance,
+                // then store total difference to later shift the component.
+                if (centerXDiffAbs <= finalDistanceValue && isCenterXEnabled) {
+                    totalToShiftX = centerXDiff
+                }
+                if (centerYDiffAbs <= finalDistanceValue && isCenterYEnabled) {
+                    totalToShiftY = centerYDiff
+                }
+
+                // Calculate distance between two lefts.
+                val leftToLeft = childBounds.left - mappingRectangle.left
+                val leftToLeftAbs = abs(leftToLeft)
+
+                // Calculate distance between two other component left and selected component right.
+                val leftToRight = childBounds.left - mappingRectangle.right
+                val leftToRightAbs = abs(leftToRight)
+
+                // Calculate distance between two rights.
+                val rightToRight = childBounds.right - mappingRectangle.right
+                val rightToRightAbs = abs(rightToRight)
+
+                // Calculate distance between other component right and selected component left.
+                val rightToLeft = childBounds.right - mappingRectangle.left
+                val rightToLeftAbs = abs(rightToLeft)
+
+                // If left to left of two components was less than left two right and
+                // if the lesser value was in acceptable range then set total shift amount
+                // in x axis to that value.
+                // If we are currently centering in x direction then any of these
+                // side should not be calculated or be smart guided.
+                if (totalToShiftX != centerXDiff) {
+                    if (leftToLeftAbs < leftToRightAbs) {
+                        if (leftToLeftAbs <= finalDistanceValue && isLeftLeftEnabled) {
+                            totalToShiftX = leftToLeft
+                        }
+                    } else if (leftToRightAbs < leftToLeftAbs) {
+                        if (leftToRightAbs <= finalDistanceValue && isLeftRightEnabled) {
+                            totalToShiftX = leftToRight
+                        }
+                    }
+                    // If right to right of two components was less than right to left of them,
+                    // Then check if we haven't set the total shift amount so far, if either we didn't
+                    // set any value to shift so far or current difference is less than current
+                    // total shift amount, then set total shift amount to the right to right difference.
+                    if (rightToRightAbs < rightToLeftAbs) {
+                        if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
+                            if (totalToShiftX == 0f) {
+                                totalToShiftX = rightToRight
+                            } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
+                                totalToShiftX = rightToRight
+                            }
+                        }
+                    } else if (rightToLeftAbs < rightToRightAbs) {
+                        if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
+                            if (totalToShiftX == 0f) {
+                                totalToShiftX = rightToLeft
+                            } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
+                                totalToShiftX = rightToLeft
+                            }
+                        }
+                    }
+                }
+
+                val topToTop = childBounds.top - mappingRectangle.top
+                val topToTopAbs = abs(topToTop)
+                val topToBottom = childBounds.top - mappingRectangle.bottom
+                val topToBottomAbs = abs(topToBottom)
+
+                val bottomToBottom = childBounds.bottom - mappingRectangle.bottom
+                val bottomToBottomAbs = abs(bottomToBottom)
+                val bottomToTop = childBounds.bottom - mappingRectangle.top
+                val bottomToTopAbs = abs(bottomToTop)
+
+                if (totalToShiftY != centerYDiff) {
+                    if (topToTopAbs < topToBottomAbs) {
+                        if (topToTopAbs <= finalDistanceValue && isTopTopEnabled) {
+                            totalToShiftY = topToTop
+                        }
+                    } else if (topToBottomAbs < topToTopAbs && isTopBottomEnabled) {
+                        if (topToBottomAbs <= finalDistanceValue) {
+                            totalToShiftY = topToBottom
+                        }
+                    }
+
+                    if (bottomToBottomAbs < bottomToTopAbs) {
+                        if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
+                            if (totalToShiftY == 0f) {
+                                totalToShiftY = bottomToBottom
+                            } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
+                                totalToShiftY = bottomToBottom
+                            }
+                        }
+                    } else if (bottomToTopAbs < bottomToBottomAbs) {
+                        if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
+                            if (totalToShiftY == 0f) {
+                                totalToShiftY = bottomToTop
+                            } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
+                                totalToShiftY = bottomToTop
+                            }
+                        }
+                    }
+                }
+
+                currentEditingView!!.run {
+                    // Finally shift the component.
+                    applyMovement(totalToShiftX, totalToShiftY)
+
+                    // Refresh the bounds of component after shifting it.
+                    mappingRectangle.set(reportBound())
+                    mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
+
+                    // Calculate the minimum and maximum amount of two axes
+                    // because we want to draw a line from leftmost to rightmost
+                    // and topmost to bottommost component.
+                    val minTop = min(mappingRectangle.top, childBounds.top)
+                    val maxBottom = max(mappingRectangle.bottom, childBounds.bottom)
+
+                    val minLeft = min(mappingRectangle.left, childBounds.left)
+                    val maxRight = max(mappingRectangle.right, childBounds.right)
+
+                    smartGuidelineHolder.run {
+
+                        // Draw a line on left side of selected component if two lefts are the same
+                        // or right of other component is same to left of selected component
+                        if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
+                            add(mappingRectangle.left)
+                            add(minTop)
+                            add(mappingRectangle.left)
+                            add(maxBottom)
+                        }
+                        // Draw a line on right side of selected component if left side of other
+                        // component is right side of selected component or two rights are the same.
+                        if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
+                            add(mappingRectangle.right)
+                            add(minTop)
+                            add(mappingRectangle.right)
+                            add(maxBottom)
+                        }
+
+                        // Draw a line on other component top if it's top is same as
+                        // selected component top or bottom of selected component is same as
+                        // top of other component.
+                        if (totalToShiftY == topToTop || totalToShiftY == topToBottom) {
+                            add(minLeft)
+                            add(childBounds.top)
+                            add(maxRight)
+                            add(childBounds.top)
+                        }
+                        // Draw a line on other component bottom if bottom of it is same as
+                        // selected component's top or two bottoms are the same.
+                        if (totalToShiftY == bottomToTop || totalToShiftY == bottomToBottom) {
+                            add(minLeft)
+                            add(childBounds.bottom)
+                            add(maxRight)
+                            add(childBounds.bottom)
+                        }
+
+                        // Finally draw a line from center of each component to another.
+                        if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
+                            add(mappingRectangle.centerX())
+                            add(mappingRectangle.centerY())
+                            add(childBounds.centerX())
+                            add(childBounds.centerY())
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets flags of smart guideline to customize needed smart guidelines,
+     * for example if user sets [Guidelines.CENTER_X] and [Guidelines.BOTTOM_BOTTOM], only these
+     * guidelines would be detected.
+     * If [Guidelines.ALL] is set then all flags would bet set to 1 indicating they are all enabled.
+     * ### NOTE: Flags should OR each other to create desired output:
+     *      setFlags(LEFT_LEFT.or(RIGHT_LEFT).or(CENTER_X)))
+     *      setFlags(LEFT_LEFT | RIGHT_LEFT | CENTER_X)
+     * @see Guidelines
+     */
+    fun setSmartGuidelineFlags(flags: Int) {
+        // If flag has the ALL in it then store the maximum int value in flag holder to indicate
+        // that all of flags has been set, otherwise set it to provided flags.
+        smartGuidelineFlags =
+            if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
+    }
+
+    /**
+     * Clears smart guidelines flags. clearing flags means no smart guideline will be detected.
+     */
+    fun clearSmartGuidelineFlags() {
+        smartGuidelineFlags = 0
+    }
+
+    /**
+     * Returns smart guidelines flags.
+     * @see setSmartGuidelineFlags
+     * @see clearSmartGuidelineFlags
+     */
+    fun getSmartGuidelineFlags(): Int = smartGuidelineFlags
+
+
+    /**
+     * Add degrees that user wants to snap to it if rotation reaches it.
+     * These values should be between 0 and 359 (360 is same as 0 degree so use 0 instead of 360).
+     * @param degrees Array of specific degrees that rotation snaps to.
+     * @throws IllegalStateException if provided array is empty or any element in array is not between 0-360 degrees.
+     */
+    fun setRotationSmartGuideline(degrees: FloatArray) {
+        if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException("array elements should be between 0-359 degrees")
+        if (degrees.isEmpty()) throw IllegalStateException("array should contain at least 1 element")
+        smartRotationDegreeHolder = degrees
+    }
+
+    /**
+     * Clears any degrees that smart guideline detector detects.
+     * This way smart guideline wouldn't snap to any specific degree.
+     */
+    fun clearRotationSmartGuideline() {
+        smartRotationDegreeHolder = null
+    }
+
+    /**
+     * Returns the rotation degree holder. Smart guideline detector snaps to these
+     * degrees if there is any.
+     */
+    fun getRotationSmartGuidelineDegreeHolder() = smartRotationDegreeHolder
+
+    /**
+     * Maps the provided destination rectangle to rotation component, This way [dstRectangle] would have
+     * exact points of rectangle if it's rotated.
+     * @param component Component that we get rotation and base bounds from.
+     * @param dstRectangle Destination rotation that would have exact location of rotated rectangle from [component]
+     */
+    private fun mapRectToComponentRotation(component: MananComponent, dstRectangle: RectF) {
+        mappingMatrix.run {
+            setRotate(
+                component.reportRotation(),
+                component.reportBoundPivotX(),
+                component.reportBoundPivotY()
+            )
+
+            mapRect(dstRectangle)
         }
     }
 
@@ -529,9 +970,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private fun getChildAtPoint(x: Float, y: Float): View? {
         if (childCount == 0) return null
 
-        // Matrix that later will be used to map the touch point
-        // from screen coordinates to current view window inside canvas.
-        val touchMatrix = Matrix()
         children.forEach { v ->
             v as MananComponent
             if (v !== currentEditingView) {
@@ -542,7 +980,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 // that component or not.
                 val bounds = v.reportBound()
 
-                touchMatrix.run {
+                mappingMatrix.run {
                     setTranslate(
                         -canvasMatrix.getTranslationX(true),
                         -canvasMatrix.getTranslationY()
@@ -836,6 +1274,26 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
          * @param isDeleted If true then child is removed else added.
          */
         fun onChanged(view: View, isDeleted: Boolean)
+    }
+
+    /**
+     * A class holding static flags for smart guideline. User should
+     * set the desired flags in [setSmartGuidelineFlags] method.
+     */
+    class Guidelines {
+        companion object {
+            const val ALL = 1
+            const val LEFT_LEFT = 2
+            const val LEFT_RIGHT = 4
+            const val RIGHT_LEFT = 8
+            const val RIGHT_RIGHT = 16
+            const val TOP_TOP = 32
+            const val TOP_BOTTOM = 64
+            const val BOTTOM_TOP = 128
+            const val BOTTOM_BOTTOM = 256
+            const val CENTER_X = 512
+            const val CENTER_Y = 1024
+        }
     }
 
 }

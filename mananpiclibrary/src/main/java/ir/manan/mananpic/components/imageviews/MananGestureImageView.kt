@@ -16,6 +16,7 @@ import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.gesture.GestureUtils
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
@@ -371,7 +372,7 @@ open class MananGestureImageView(
                 (getScaleX())
             ) * (180f / PI)
 
-            imageRotation = r.toFloat()
+            imageRotation = GestureUtils.mapTo360(r.toFloat())
 
             // Calculate pivot points.
             // Rotation does affect pivot points and it should be calculated.

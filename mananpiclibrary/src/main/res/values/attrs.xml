@@ -26,6 +26,8 @@
         <attr name="pageBackgroundColor" format="color" />
         <attr name="pageWidth" format="integer" />
         <attr name="pageHeight" format="integer" />
+        <attr name="smartGuidelineStrokeColor" format="color" />
+        <attr name="smartGuidelineStrokeWidth" format="dimension" />
     </declare-styleable>
 
     <declare-styleable name="FrameDropper">

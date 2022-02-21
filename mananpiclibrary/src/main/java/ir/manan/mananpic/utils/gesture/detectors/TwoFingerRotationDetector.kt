@@ -2,6 +2,7 @@ package ir.manan.mananpic.utils.gesture.detectors
 
 import android.view.MotionEvent
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import ir.manan.mananpic.utils.gesture.GestureUtils.Companion.mapTo360
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
 import kotlin.math.round
@@ -72,21 +73,6 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
                 false
             }
 
-        }
-    }
-
-    /**
-     * Converts the current degree to be between 0-360 degrees.
-     */
-    private fun mapTo360(degree: Float): Float {
-        return when {
-            degree > 360 -> {
-                degree - 360
-            }
-            degree < 0f -> {
-                degree + 360
-            }
-            else -> degree
         }
     }
 
