@@ -130,9 +130,13 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     /**
      * Holds lines for smart guidelines.
      */
-    private val smartGuideLineHolder = arrayListOf<Float>()
+    private val smartGuidelineHolder = arrayListOf<Float>()
 
     private var smartGuidelineFlags: Int = 0
+
+    private var smartRotationDegreeHolder: FloatArray? = null
+
+    private var smartRotationLineHolder = arrayListOf<Float>()
 
     /**
      * Smart guideline stroke width, default value is 2 dp.
@@ -199,7 +203,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     val sf = detector.scaleFactor
                     if (currentEditingView != null) {
                         currentEditingView!!.applyScale(sf)
-                        smartGuideLineHolder.clear()
+                        smartGuidelineHolder.clear()
                     } else {
                         // If there isn't any component selected, scale the canvas.
                         canvasMatrix.postScale(
@@ -236,10 +240,43 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val rotateGestureListener by lazy {
         object : SimpleOnRotateListener() {
             override fun onRotate(degree: Float): Boolean {
-                currentEditingView?.applyRotation(degree)
+                currentEditingView?.run {
+                    // Find smart guideline, if didn't find any smart guideline, continue the normal rotation.
+                    applyRotation(degree)
+                    findRotationSmartGuidelines()
+                }
                 return true
             }
         }
+    }
+
+    /**
+     * Finds smart guidelines for rotation if [smartRotationDegreeHolder] does have target rotations.
+     * @return True if it found smart guideline, false otherwise.
+     */
+    fun findRotationSmartGuidelines(): Boolean {
+        currentEditingView?.run {
+            smartRotationDegreeHolder?.run {
+                smartRotationLineHolder.clear()
+                forEach { snapDegree ->
+                    if (reportRotation() in (snapDegree - 5f)..(snapDegree + 5f)) {
+                        applyRotation(snapDegree)
+
+                        val bound = reportBound()
+                        val centerXBound = bound.centerX()
+                        val extraSpaceForLineY = bound.height() * 0.33f
+
+                        smartRotationLineHolder.add(centerXBound)
+                        smartRotationLineHolder.add(bound.top - extraSpaceForLineY)
+                        smartRotationLineHolder.add(centerXBound)
+                        smartRotationLineHolder.add(bound.bottom + extraSpaceForLineY)
+
+                        return true
+                    }
+                }
+            }
+        }
+        return false
     }
 
     private val rotateDetector by lazy {
@@ -254,6 +291,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     val s = canvasMatrix.getOppositeScale()
                     currentEditingView!!.applyMovement(dx * s, dy * s)
                     findSmartGuideLines()
+                    smartRotationLineHolder.clear()
                 } else {
                     // If there isn't any component selected, translate the canvas.
                     canvasMatrix.postTranslate(dx, dy)
@@ -302,6 +340,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 isMoved = false
 
 
+                findRotationSmartGuidelines()
                 animateCanvasBack()
             }
         }
@@ -566,6 +605,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                         reportBoundPivotY() + offsetY
                     )
 
+                    // Draw rotation smart guidelines.
+                    drawLines(smartRotationLineHolder.toFloatArray(), smartGuidePaint.apply {
+                        strokeWidth = smartGuideLineStrokeWidth * oppositeScale
+                    })
+
                     // Draw a box around component.
                     drawRect(
                         bound.left + offsetX,
@@ -580,7 +624,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 }
 
                 // Draw smart guidelines.
-                drawLines(smartGuideLineHolder.toFloatArray(), smartGuidePaint.apply {
+                drawLines(smartGuidelineHolder.toFloatArray(), smartGuidePaint.apply {
                     strokeWidth = smartGuideLineStrokeWidth * oppositeScale
                 })
             }
@@ -605,7 +649,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     private fun findSmartGuideLines() {
         if (currentEditingView != null && smartGuidelineFlags != 0) {
-            smartGuideLineHolder.clear()
+            smartGuidelineHolder.clear()
 
             val finalDistanceValue =
                 acceptableDistanceForSmartGuideline * canvasMatrix.getOppositeScale()
@@ -770,7 +814,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     val minLeft = min(mappingRectangle.left, childBounds.left)
                     val maxRight = max(mappingRectangle.right, childBounds.right)
 
-                    smartGuideLineHolder.run {
+                    smartGuidelineHolder.run {
 
                         // Draw a line on left side of selected component if two lefts are the same
                         // or right of other component is same to left of selected component
@@ -851,6 +895,33 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * @see clearSmartGuidelineFlags
      */
     fun getSmartGuidelineFlags(): Int = smartGuidelineFlags
+
+
+    /**
+     * Add degrees that user wants to snap to it if rotation reaches it.
+     * These values should be between 0 and 359 (360 is same as 0 degree so use 0 instead of 360).
+     * @param degrees Array of specific degrees that rotation snaps to.
+     * @throws IllegalStateException if provided array is empty or any element in array is not between 0-360 degrees.
+     */
+    fun setRotationSmartGuideline(degrees: FloatArray) {
+        if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException("array elements should be between 0-359 degrees")
+        if (degrees.isEmpty()) throw IllegalStateException("array should contain at least 1 element")
+        smartRotationDegreeHolder = degrees
+    }
+
+    /**
+     * Clears any degrees that smart guideline detector detects.
+     * This way smart guideline wouldn't snap to any specific degree.
+     */
+    fun clearRotationSmartGuideline() {
+        smartRotationDegreeHolder = null
+    }
+
+    /**
+     * Returns the rotation degree holder. Smart guideline detector snaps to these
+     * degrees if there is any.
+     */
+    fun getRotationSmartGuidelineDegreeHolder() = smartRotationDegreeHolder
 
     /**
      * Maps the provided destination rectangle to rotation component, This way [dstRectangle] would have
