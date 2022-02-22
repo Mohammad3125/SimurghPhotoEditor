@@ -38,14 +38,4 @@
         <attr name="centerCrossLineSize" format="dimension" />
     </declare-styleable>
 
-    <declare-styleable name="MananMainImageView">
-        <attr name="initialPaddingLeft" format="dimension" />
-        <attr name="initialPaddingTop" format="dimension" />
-        <attr name="initialPaddingRight" format="dimension" />
-        <attr name="initialPaddingBottom" format="dimension" />
-        <attr name="initialPaddingHorizontal" format="dimension" />
-        <attr name="initialPaddingVertical" format="dimension" />
-        <attr name="initialPadding" format="dimension" />
-    </declare-styleable>
-
 </resources>
