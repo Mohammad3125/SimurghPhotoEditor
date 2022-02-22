@@ -244,6 +244,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     // Find smart guideline, if didn't find any smart guideline, continue the normal rotation.
                     applyRotation(degree)
                     findRotationSmartGuidelines()
+                    smartGuidelineHolder.clear()
                 }
                 return true
             }
