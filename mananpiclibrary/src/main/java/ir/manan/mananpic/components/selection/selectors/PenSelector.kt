@@ -8,6 +8,7 @@ import ir.manan.mananpic.components.selection.selectors.PenSelector.Handle.*
 import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.*
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.gesture.GestureUtils
 
 /**
  * Pen tool for selecting an area of interest with straight, quad bezier and cubic bezier.
@@ -167,35 +168,33 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
+        val finalRange = handleTouchRange * canvasMatrix.getOppositeScale()
         // Figure out which handle in a line user has selected.
         // Some handles are specific to one or two type of line and
         // others might be for each type of them.
         currentHandleSelected =
-            if (isNearTargetPoint(
+            if (GestureUtils.isNearTargetPoint(
                     initialX,
                     initialY,
                     bx,
                     by,
-                    handleTouchRange,
-                    true
+                    finalRange
                 )
             ) END_HANDLE
-            else if (isNearTargetPoint(
+            else if (GestureUtils.isNearTargetPoint(
                     initialX,
                     initialY,
                     handleX,
                     handleY,
-                    handleTouchRange,
-                    true
+                    finalRange
                 )
             ) FIRST_BEZIER_HANDLE
-            else if (lineType == CUBIC_BEZIER && (isNearTargetPoint(
+            else if (lineType == CUBIC_BEZIER && (GestureUtils.isNearTargetPoint(
                     initialX,
                     initialY,
                     secondHandleX,
                     secondHandleY,
-                    handleTouchRange,
-                    true
+                    finalRange
                 ))
             ) SECOND_BEZIER_HANDLE
             else NONE
@@ -389,36 +388,20 @@ class PenSelector : PathBasedSelector() {
     }
 
     private fun shouldClosePath(lastX: Float, lastY: Float): Boolean {
-        return (isNearTargetPoint(
+        val finalRange = touchRange * canvasMatrix.getOppositeScale()
+        return (GestureUtils.isNearTargetPoint(
             lastX,
             lastY,
             firstX,
             firstY,
-            touchRange
-        ) || isNearTargetPoint(
+            finalRange
+        ) || GestureUtils.isNearTargetPoint(
             bx,
             by,
             firstX,
             firstY,
-            touchRange
+            finalRange
         )) && pointCounter > 2
-    }
-
-    private fun isNearTargetPoint(
-        x: Float,
-        y: Float,
-        targetX: Float,
-        targetY: Float,
-        range: Float,
-        scaleDown: Boolean = true
-    ): Boolean {
-        var finalTouchRange = touchRange
-        if (scaleDown) {
-            // Calculate the touch range if user is zoomed in image.
-            finalTouchRange = range * canvasMatrix.getOppositeScale()
-        }
-
-        return (x in (targetX - finalTouchRange)..(targetX + finalTouchRange) && y in (targetY - finalTouchRange)..(targetY + finalTouchRange))
     }
 
     override fun resetSelection() {
