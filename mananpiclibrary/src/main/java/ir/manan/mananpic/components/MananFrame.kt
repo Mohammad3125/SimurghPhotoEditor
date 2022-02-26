@@ -37,29 +37,12 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         private const val MAXIMUM_SCALE_FACTOR = 10f
     }
 
-    // Page settings.
+    /* Page related variables ------------------------------------------------------------------------------------------*/
     var pageWidth = 0
     var pageHeight = 0
     private var pageSizeRatio: Float = 0f
 
-    /**
-     * A flag that later will be set if user moves his/her finger enough to be
-     * registered as move gesture, otherwise it will be registered as single tap.
-     */
-    private var isMoved = false
-
-    // Used to store total difference of touch in move gesture to then
-    // compare it against a touch slope to determine if user has performed touch or move gesture.
-    private var totalDx = 0f
-    private var totalDy = 0f
-
-
-    // Used to retrieve touch slopes.
-    private val viewConfiguration by lazy {
-        ViewConfiguration.get(context)
-    }
-
-    // Paint used to draw page.
+    /** Paint used to draw page. */
     private val pagePaint by lazy {
         Paint().apply {
             style = Paint.Style.FILL
@@ -76,25 +59,48 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             invalidate()
         }
 
-    // Rectangle that later we create to draw an area that we consider as page.
+
+    /** Rectangle that later we create to draw an area that we consider as page. */
     private var pageRect = RectF()
+
+    /** Determines if child has been scaled down to fit page bounds. */
+    private var isChildScaleNormalized: Boolean = false
+
+    /* Gesture related variables ------------------------------------------------------------------------------------------*/
+    /**
+     * A flag that later will be set if user moves his/her finger enough to be
+     * registered as move gesture, otherwise it will be registered as single tap.
+     */
+    private var isMoved = false
+
+    // Used to store total difference of touch in move gesture to then
+    // compare it against a touch slope to determine if user has performed touch or move gesture.
+    private var totalDx = 0f
+    private var totalDy = 0f
+
+    // Used to retrieve touch slopes.
+    private val viewConfiguration by lazy {
+        ViewConfiguration.get(context)
+    }
 
     private var currentEditingView: MananComponent? = null
 
-    // Determines if child has been scaled down to fit page bounds.
-    private var isChildScaleNormalized: Boolean = false
-
-    private val boxPaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-        }
-    }
-
+    /* Listeners */
     private var onChildClicked: ((View, Boolean) -> Unit)? = null
     private var onChildClickedListener: OnChildClickedListener? = null
 
     private var onChildrenChanged: ((View, Boolean) -> Unit)? = null
     private var onChildrenChangedListener: OnChildrenListChanged? = null
+
+
+    /* Box around selected view related variables ------------------------------------------------------------------------------------------*/
+
+    /** Paint used to draw box around selected view */
+    private val boxPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+        }
+    }
 
     /**
      * stroke width of box around current editing view (if [isDrawingBoxEnabled] is true.)
@@ -122,6 +128,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             field = value
             invalidate()
         }
+
+    /* Smart guideline ------------------------------------------------------------------------------------------*/
 
     private val smartGuidePaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG)
@@ -161,11 +169,56 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             invalidate()
         }
 
-    // Flag that determines if canvas should use matrix to manipulate scale and translation.
+    /**
+     * Total distance for smart guideline to trigger itself.
+     * Default values is 2 dp.
+     * Value will be interpreted as pixels (use [Context.dp] extension function to convert a dp value to pixel.)
+     * This value will become less as user zooms in; for example if user zoom two times the current factor, then
+     * current value will become half; This is done to provide better accuracy.
+     */
+    var acceptableDistanceForSmartGuideline = dp(2)
+
+    /**
+     * Range that smart rotation guideline will use to determine if it should draw guideline and snap
+     * the selected component to the provided degrees by user set in [setRotationSmartGuideline].
+     *
+     * For example if rotation of component is 10 degrees and degree holder contains a degree like 12 then
+     * it would trigger and snap the component to 12 degree because the range is set to 5f by default, meaning
+     * algorithm would accept any degrees from 12 - range and 12 + range which means 8 to 17 degrees.
+     *
+     * Set this variable to set the range mentioned before.
+     *
+     * It's best to not change this value or let it be an small number between 1-10
+     *
+     * ### Default value is 5f
+     *
+     * @throws IllegalStateException if value is less than 0 or greater than 360
+     */
+    var rangeForSmartRotationGuideline = 5f
+        set(value) {
+            if (value < 0f || value > 360) throw IllegalStateException("this value should not be less than 0 or greater than 360")
+            field = value
+        }
+
+    /* Matrix related variables ------------------------------------------------------------------------------------------*/
+
+    /** Flag that determines if canvas should use matrix to manipulate scale and translation. */
     private var isCanvasMatrixEnabled = true
 
-    // Matrix that we later use to manipulate canvas scale and translation.
+    /** Matrix that we later use to manipulate canvas scale and translation. */
     private val canvasMatrix = MananMatrix()
+
+    private val matrixAnimator by lazy {
+        MananMatrixAnimator(canvasMatrix, RectF(pageRect), 300L, FastOutSlowInInterpolator())
+    }
+
+    /**
+     * Extra space that user can translate the canvas before canvas animation triggers.
+     * Default is 0.
+     */
+    var extraSpaceToTriggerAnimation = 0f
+
+    /* Allocations ------------------------------------------------------------------------------------------ */
 
     /**
      * Used for mapping operations like transforming a rectangle etc...
@@ -181,16 +234,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val mappingRectangle by lazy {
         RectF()
     }
-
-    private val matrixAnimator by lazy {
-        MananMatrixAnimator(canvasMatrix, RectF(pageRect), 300L, FastOutSlowInInterpolator())
-    }
-
-    /**
-     * Extra space that user can translate the canvas before canvas animation triggers.
-     * Default is 0.
-     */
-    var extraSpaceToTriggerAnimation = 0f
 
     private val scaleGestureListener by lazy {
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -350,39 +393,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val moveDetector by lazy {
         MoveDetector(1, moveGestureListener)
     }
-
-
-    /**
-     * Total distance for smart guideline to trigger itself.
-     * Default values is 2 dp.
-     * Value will be interpreted as pixels (use [Context.dp] extension function to convert a dp value to pixel.)
-     * This value will become less as user zooms in; for example if user zoom two times the current factor, then
-     * current value will become half; This is done to provide better accuracy.
-     */
-    var acceptableDistanceForSmartGuideline = dp(2)
-
-    /**
-     * Range that smart rotation guideline will use to determine if it should draw guideline and snap
-     * the selected component to the provided degrees by user set in [setRotationSmartGuideline].
-     *
-     * For example if rotation of component is 10 degrees and degree holder contains a degree like 12 then
-     * it would trigger and snap the component to 12 degree because the range is set to 5f by default, meaning
-     * algorithm would accept any degrees from 12 - range and 12 + range which means 8 to 17 degrees.
-     *
-     * Set this variable to set the range mentioned before.
-     *
-     * It's best to not change this value or let it be an small number between 1-10
-     *
-     * ### Default value is 5f
-     *
-     * @throws IllegalStateException if value is less than 0 or greater than 360
-     */
-    var rangeForSmartRotationGuideline = 5f
-        set(value) {
-            if (value < 0f || value > 360) throw IllegalStateException("this value should not be less than 0 or greater than 360")
-            field = value
-        }
-
 
     init {
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
