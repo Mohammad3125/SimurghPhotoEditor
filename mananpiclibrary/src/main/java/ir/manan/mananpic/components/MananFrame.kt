@@ -294,35 +294,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    /**
-     * Finds smart guidelines for rotation if [smartRotationDegreeHolder] does have target rotations.
-     * @return True if it found smart guideline, false otherwise.
-     */
-    fun findRotationSmartGuidelines(): Boolean {
-        currentEditingView?.run {
-            smartRotationDegreeHolder?.run {
-                smartRotationLineHolder.clear()
-                forEach { snapDegree ->
-                    if (reportRotation() in (snapDegree - rangeForSmartRotationGuideline)..(snapDegree + rangeForSmartRotationGuideline)) {
-                        applyRotation(snapDegree)
-
-                        val bound = reportBound()
-                        val centerXBound = bound.centerX()
-                        val extraSpaceForLineY = bound.height() * 0.33f
-
-                        smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(bound.top - extraSpaceForLineY)
-                        smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(bound.bottom + extraSpaceForLineY)
-
-                        return true
-                    }
-                }
-            }
-        }
-        return false
-    }
-
     private val rotateDetector by lazy {
         TwoFingerRotationDetector(rotateGestureListener)
     }
@@ -932,6 +903,35 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     fun getSmartGuidelineFlags(): Int = smartGuidelineFlags
 
+
+    /**
+     * Finds smart guidelines for rotation if [smartRotationDegreeHolder] does have target rotations.
+     * @return True if it found smart guideline, false otherwise.
+     */
+    fun findRotationSmartGuidelines(): Boolean {
+        currentEditingView?.run {
+            smartRotationDegreeHolder?.run {
+                smartRotationLineHolder.clear()
+                forEach { snapDegree ->
+                    if (reportRotation() in (snapDegree - rangeForSmartRotationGuideline)..(snapDegree + rangeForSmartRotationGuideline)) {
+                        applyRotation(snapDegree)
+
+                        val bound = reportBound()
+                        val centerXBound = bound.centerX()
+                        val extraSpaceForLineY = bound.height() * 0.33f
+
+                        smartRotationLineHolder.add(centerXBound)
+                        smartRotationLineHolder.add(bound.top - extraSpaceForLineY)
+                        smartRotationLineHolder.add(centerXBound)
+                        smartRotationLineHolder.add(bound.bottom + extraSpaceForLineY)
+
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
 
     /**
      * Add degrees that user wants to snap to it if rotation reaches it.
