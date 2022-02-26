@@ -908,7 +908,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * Finds smart guidelines for rotation if [smartRotationDegreeHolder] does have target rotations.
      * @return True if it found smart guideline, false otherwise.
      */
-    fun findRotationSmartGuidelines(): Boolean {
+    private fun findRotationSmartGuidelines(): Boolean {
         currentEditingView?.run {
             smartRotationDegreeHolder?.run {
                 smartRotationLineHolder.clear()
