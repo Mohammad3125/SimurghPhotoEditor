@@ -235,8 +235,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         RectF()
     }
 
-    private val scaleGestureListener by lazy {
-        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+    /* Detectors --------------------------------------------------------------------------------------------- */
+    private val scaleDetector by lazy {
+        ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
                 return !matrixAnimator.isAnimationRunning()
             }
@@ -268,11 +269,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 animateCanvasBack()
                 findSmartGuideLines()
             }
-        }
-    }
-
-    private val scaleDetector by lazy {
-        ScaleGestureDetector(context, scaleGestureListener).apply {
+        }).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 // This needs to be false because it will interfere with other gestures.
                 isQuickScaleEnabled = false
@@ -280,8 +277,8 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    private val rotateGestureListener by lazy {
-        object : SimpleOnRotateListener() {
+    private val rotateDetector by lazy {
+        TwoFingerRotationDetector(object : SimpleOnRotateListener() {
             override fun onRotate(degree: Float): Boolean {
                 currentEditingView?.run {
                     // Find smart guideline, if didn't find any smart guideline, continue the normal rotation.
@@ -291,15 +288,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 }
                 return true
             }
-        }
+        })
     }
 
-    private val rotateDetector by lazy {
-        TwoFingerRotationDetector(rotateGestureListener)
-    }
-
-    private val moveGestureListener by lazy {
-        object : SimpleOnMoveListener() {
+    private val moveDetector by lazy {
+        MoveDetector(1, object : SimpleOnMoveListener() {
             override fun onMove(dx: Float, dy: Float): Boolean {
                 if (currentEditingView != null) {
                     // Slow down the translation if canvas matrix is zoomed.
@@ -358,11 +351,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 findRotationSmartGuidelines()
                 animateCanvasBack()
             }
-        }
-    }
-
-    private val moveDetector by lazy {
-        MoveDetector(1, moveGestureListener)
+        })
     }
 
     init {
