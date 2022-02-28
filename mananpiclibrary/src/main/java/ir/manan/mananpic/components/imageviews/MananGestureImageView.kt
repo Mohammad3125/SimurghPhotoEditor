@@ -295,7 +295,9 @@ open class MananGestureImageView(
         val mDrawable =
             drawable ?: throw IllegalStateException("drawable is null")
 
-        return (mDrawable as BitmapDrawable).bitmap
+        val b = (mDrawable as BitmapDrawable).bitmap
+        // Return the mutable copy.
+        return b.copy(b.config,true)
     }
 
     override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
