@@ -236,7 +236,7 @@ class BitmapUtility {
 
                 // Calculate chunks start and end pixel to give to the algorithm to iterate over them.
                 val n = threadIndex * chunk
-                val startX = if (n == 0) 0 else n - 1
+                val startX = if (n == 0) 0 else n
 
                 var endX = (threadIndex + 1) * chunk
 
@@ -364,7 +364,7 @@ class BitmapUtility {
                   listOfTasks.add(Callable {
 
                       val n = threadIndex * chunk
-                      val startX = if (n == 0) 0 else n - 1
+                      val startX = if (n == 0) 0 else n
 
                       var endX = (threadIndex + 1) * chunk
 
@@ -374,7 +374,7 @@ class BitmapUtility {
 
                       performAreaProcessing(
                           bitmap,
-                          targetBitmap,
+                          bitmap,
                           area,
                           startX,
                           endX,
@@ -390,7 +390,7 @@ class BitmapUtility {
 
               executor.shutdown()
 
-              return targetBitmap
+              return bitmap
           }*/
 
         /* private fun performAreaProcessing(
@@ -415,7 +415,7 @@ class BitmapUtility {
                      if (offsetX + area >= endX) (offsetX - (endX - area)) else 0
 
                  val finalXArea =
-                     if ((offsetX + area) >= bitmap.width) (bitmap.width - offsetX) - 1 else area
+                     if ((offsetX + area) >= bitmap.width) (bitmap.width - offsetX) else area
 
                  for (offsetY in startY until endY step offsetYAfterIteration) {
 
@@ -423,7 +423,7 @@ class BitmapUtility {
 
                      // Determine the area, We check if we exceed the bitmap bounds then we limit the area to bitmap bounds.
                      val finalYArea =
-                         if ((offsetY + area) >= bitmap.height) (bitmap.height - offsetY) - 1 else area
+                         if ((offsetY + area) >= bitmap.height) (bitmap.height - offsetY) else area
 
                      // Get an area of bitmap as pixels.
                      bitmap.getPixels(
