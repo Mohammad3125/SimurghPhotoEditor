@@ -4,8 +4,10 @@ import android.content.Context
 import android.graphics.ColorFilter
 import android.graphics.RectF
 import android.util.AttributeSet
+import android.view.View
 import ir.manan.mananpic.properties.Filterable
 import ir.manan.mananpic.properties.MananComponent
+import ir.manan.mananpic.utils.MananFactory
 
 class MananImageView(context: Context, attributeSet: AttributeSet?) :
     MananGestureImageView(context, attributeSet), MananComponent, Filterable {
@@ -54,6 +56,12 @@ class MananImageView(context: Context, attributeSet: AttributeSet?) :
 
     override fun reportPivotY(): Float {
         return imagePivotY
+    }
+
+    override fun clone(): View {
+        return MananFactory.createImageView(context, toBitmap()).apply {
+            colorFilter = this@MananImageView.colorFilter
+        }
     }
 
 }

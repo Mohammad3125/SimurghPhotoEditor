@@ -1,6 +1,7 @@
 package ir.manan.mananpic.properties
 
 import android.graphics.RectF
+import android.view.View
 
 interface MananComponent {
 
@@ -55,4 +56,9 @@ interface MananComponent {
      * @param dy Total pixel the component should be moved in y direction.
      */
     fun applyMovement(dx: Float, dy: Float)
+
+    /**
+     * Returns deep copy of component.
+     */
+    fun clone(): View
 }

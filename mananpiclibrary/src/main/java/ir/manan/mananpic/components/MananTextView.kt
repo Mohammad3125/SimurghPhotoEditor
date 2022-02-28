@@ -4,9 +4,11 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.util.TypedValue
+import android.view.View
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.utils.MananFactory
 import kotlin.math.max
 import kotlin.math.min
 
@@ -259,5 +261,25 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         isDrawnOnce = true
+    }
+
+    override fun clone(): View {
+        return MananFactory.createTextView(context, text.toString(), maxLines).also { textView ->
+            textView.textSize = textSize
+            textView.setTextColor(currentTextColor)
+            textView.typeface = typeface
+            textView.paint.pathEffect = paint.pathEffect
+            textView.paint.shader = paint.shader
+            textView.paint.maskFilter = paint.maskFilter
+            textView.paint.style = paint.style
+            textView.paint.strokeWidth = paint.strokeWidth
+            textView.setShadowLayer(
+                shadowRadius,
+                shadowDx,
+                shadowDy,
+                shadowColor
+            )
+            textView.setLayerType(layerType, null)
+        }
     }
 }

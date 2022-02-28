@@ -1180,6 +1180,15 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         return currentEditingView as? View
     }
 
+    /**
+     * Clones the selected component. This method doesn't do anything (doesn't throw exception) if there isn't any component selected.
+     */
+    fun cloneSelectedView() {
+        currentEditingView?.run {
+            addView(clone())
+        }
+    }
+
     override fun onViewAdded(child: View?) {
         if (child !is MananComponent) throw IllegalStateException("only components that implement MananComponent can be added")
 
@@ -1196,6 +1205,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         callOnChildrenChangedListener(child!!, true)
     }
 
+    /**
+     * Initializes children and sets necessary parameters on it.
+     * @param child Children that is going to be initialized.
+     */
     private fun initializeChild(child: View) {
         child.run {
 
