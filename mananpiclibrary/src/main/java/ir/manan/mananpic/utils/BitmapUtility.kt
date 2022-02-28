@@ -214,6 +214,60 @@ class BitmapUtility {
         }
 
         /**
+         * Returns each pixel in bitmap one by one in [onEachPixel] callback (It runs concurrently and uses all available threads).
+         * @param bitmap Bitmap to perform operations on it.
+         * @param onEachPixel Callback that returns the x and y and value of pixel to perform operations on it.
+         * This callback should return a pixel as Color, so any changes on a pixel should be returned from the callback.
+         */
+        fun transformBitmapPixelConcurrent(
+            bitmap: Bitmap,
+            onEachPixel: (x: Int, y: Int, pixel: Int) -> Int
+        ): Bitmap {
+            val numberOfThreads = Runtime.getRuntime().availableProcessors()
+            val executor = Executors.newFixedThreadPool(numberOfThreads)
+
+            // Determine how many chunk we would have in bitmap with given number of threads.
+            val chunk = bitmap.width / numberOfThreads
+
+            // Create list of task that later will be invoked by executor.
+            val listOfTasks = mutableListOf<Callable<Any>>()
+
+            repeat(numberOfThreads) { threadIndex ->
+
+                // Calculate chunks start and end pixel to give to the algorithm to iterate over them.
+                val n = threadIndex * chunk
+                val startX = if (n == 0) 0 else n - 1
+
+                var endX = (threadIndex + 1) * chunk
+
+                if (threadIndex == numberOfThreads - 1) {
+                    endX = bitmap.width
+                }
+
+                // Finally create a callable that will be invoked concurrently in executor.
+                listOfTasks.add(Callable {
+                    for (x in startX until endX) {
+                        for (y in 0 until bitmap.height) {
+                            bitmap.setPixel(
+                                x,
+                                y,
+                                onEachPixel(x, y, bitmap.getPixel(x, y))
+                            )
+                        }
+                    }
+
+                })
+            }
+
+            executor.invokeAll(listOfTasks)
+
+            executor.shutdown()
+
+            return bitmap
+        }
+
+
+        /**
          * Performs image processing operations on bitmap in an selected area, performing operations on an area of pixel
          * can let you process filters like Blur and etc....
          * @param bitmap Bitmap to perform processing on.
@@ -291,5 +345,136 @@ class BitmapUtility {
             return bitmap
         }
 
+        /*  fun transformBitmapAreaPixelsConcurrent(
+              bitmap: Bitmap, area: Int, offsetXAfterIteration: Int = 1,
+              offsetYAfterIteration: Int = 1,
+              onEachArea: (area: IntArray) -> IntArray
+          ): Bitmap {
+              val numberOfThreads = Runtime.getRuntime().availableProcessors()
+              val executor = Executors.newFixedThreadPool(numberOfThreads)
+
+              val chunk = bitmap.width / numberOfThreads
+
+              val listOfTasks = mutableListOf<Callable<Any>>()
+
+              val targetBitmap =
+                  Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+
+              repeat(numberOfThreads) { threadIndex ->
+                  listOfTasks.add(Callable {
+
+                      val n = threadIndex * chunk
+                      val startX = if (n == 0) 0 else n - 1
+
+                      var endX = (threadIndex + 1) * chunk
+
+                      if (threadIndex == numberOfThreads - 1) {
+                          endX = bitmap.width
+                      }
+
+                      performAreaProcessing(
+                          bitmap,
+                          targetBitmap,
+                          area,
+                          startX,
+                          endX,
+                          0,
+                          bitmap.height,
+                          offsetXAfterIteration,
+                          offsetYAfterIteration,
+                          onEachArea
+                      )
+                  })
+              }
+              executor.invokeAll(listOfTasks)
+
+              executor.shutdown()
+
+              return targetBitmap
+          }*/
+
+        /* private fun performAreaProcessing(
+             bitmap: Bitmap,
+             target: Bitmap,
+             area: Int,
+             startX: Int,
+             endX: Int,
+             startY: Int,
+             endY: Int,
+             offsetXAfterIteration: Int,
+             offsetYAfterIteration: Int,
+             onEachArea: (area: IntArray) -> IntArray
+         ) {
+             // Allocate a int array for area of pixel to get from bitmap.
+             val areaAllocation = IntArray(area * bitmap.width)
+
+             // Iterate over bitmap pixels in each axis with given steps.
+             for (offsetX in startX until endX step offsetXAfterIteration) {
+                 // Determine the area, We check if we exceed the bitmap bounds then we limit the area to bitmap bounds.
+                 val extraPixel =
+                     if (offsetX + area >= endX) (offsetX - (endX - area)) else 0
+
+                 val finalXArea =
+                     if ((offsetX + area) >= bitmap.width) (bitmap.width - offsetX) - 1 else area
+
+                 for (offsetY in startY until endY step offsetYAfterIteration) {
+
+                     val extraPixelY = if (offsetY + area >= endY) (offsetY - (endY - area)) else 0
+
+                     // Determine the area, We check if we exceed the bitmap bounds then we limit the area to bitmap bounds.
+                     val finalYArea =
+                         if ((offsetY + area) >= bitmap.height) (bitmap.height - offsetY) - 1 else area
+
+                     // Get an area of bitmap as pixels.
+                     bitmap.getPixels(
+                         areaAllocation,
+                         0,
+                         bitmap.width,
+                         offsetX,
+                         offsetY,
+                         finalXArea,
+                         finalYArea
+                     )
+
+                     // Since 'getPixels' method returns other pixels that we aren't interested in as zeros, then
+                     // filter these zeros and return a pure pixel area to pass to callback.
+                     val reducedArea =
+                         areaAllocation.filter { number -> number != 0 }.toIntArray()
+
+                     // Difference of width and area to later calculate the index of these pixel holders correctly.
+                     val diffBitmapWidthAndArea = bitmap.width - area
+
+                     synchronized(this) {
+                         // Finally pass the pixels into callback and return the processed area.
+                         val processedArea = onEachArea(reducedArea)
+
+                         // Fill the allocation with processed pixels returned from callback.
+                         for (i in 0 until area) {
+                             for (x in 0 until area) {
+                                 val index = x + ((diffBitmapWidthAndArea + area) * i)
+
+                                 if (areaAllocation[index] == 0) continue
+
+                                 val processedAreaIndex =
+                                     (index - (diffBitmapWidthAndArea * i))
+
+
+                                 areaAllocation[index] = processedArea[processedAreaIndex]
+                             }
+                         }
+                     }
+                     // Finally change the pixels of bitmap.
+                     target.setPixels(
+                         areaAllocation,
+                         0,
+                         bitmap.width,
+                         offsetX,
+                         offsetY,
+                         area - extraPixel,
+                         area - extraPixelY
+                     )
+                 }
+             }
+         }*/
     }
 }
