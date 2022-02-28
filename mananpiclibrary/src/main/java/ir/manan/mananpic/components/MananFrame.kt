@@ -19,6 +19,7 @@ import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
+import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 import kotlin.math.abs
@@ -277,7 +278,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         }
     }
 
-    private val rotateDetector by lazy {
+    private val rotateDetector: RotationDetectorGesture by lazy {
         TwoFingerRotationDetector(object : SimpleOnRotateListener() {
             override fun onRotate(degree: Float): Boolean {
                 currentEditingView?.run {
@@ -1249,7 +1250,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * if step was 8.5f then we would have 8.5f then 17f then 25.5f as rotation and so on.
      */
     fun setRotationStep(step: Float) {
-        rotateDetector.step = step
+        rotateDetector.setRotationStep(step)
     }
 
     /**

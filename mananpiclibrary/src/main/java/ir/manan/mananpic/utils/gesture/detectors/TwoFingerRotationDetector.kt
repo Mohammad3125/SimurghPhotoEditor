@@ -3,15 +3,15 @@ package ir.manan.mananpic.utils.gesture.detectors
 import android.view.MotionEvent
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import ir.manan.mananpic.utils.gesture.GestureUtils.Companion.mapTo360
-import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
+import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import kotlin.math.round
 
 /**
  * A gesture class for rotation gesture with two fingers.
  * @param listener A [OnRotateListener] that gets called in appropriate situations.
  */
-class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gesture {
+class TwoFingerRotationDetector(private var listener: OnRotateListener) : RotationDetectorGesture {
 
     // Later will be used for calculations.
     private var initialRotation = 0f
@@ -22,11 +22,12 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
      * Default value is 0f meaning no stepping is applied on rotation.
      * @throws IllegalStateException if step is less than 0.
      */
-    var step = 0f
-        set(value) {
-            if (value < 0) throw IllegalStateException("step value should be equal or greater than 0")
-            field = value
-        }
+    private var step = 0f
+
+    override fun setRotationStep(rotationStep: Float) {
+        if (rotationStep < 0) throw IllegalStateException("step value should be equal or greater than 0")
+        step = rotationStep
+    }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return when (event?.actionMasked) {
@@ -76,12 +77,10 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Gestur
         }
     }
 
-    /**
-     * Resets rotation of detector to a degree (default is 0).
-     */
-    fun resetRotation(toDegree: Float = 0f) {
-        initialRotation = toDegree
+    override fun resetRotation(resetTo: Float) {
+        initialRotation = resetTo
     }
+
 
     private fun calculateAngle(event: MotionEvent): Float {
         event.run {
