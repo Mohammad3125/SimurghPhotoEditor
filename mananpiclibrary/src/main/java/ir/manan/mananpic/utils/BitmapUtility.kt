@@ -197,7 +197,7 @@ class BitmapUtility {
          * @param onEachPixel Callback that returns the x and y and value of pixel to perform operations on it.
          * This callback should return a pixel as Color, so any changes on a pixel should be returned from the callback.
          */
-        fun transformBitmapPixel(
+        inline fun transformBitmapPixel(
             bitmap: Bitmap,
             onEachPixel: (x: Int, y: Int, pixel: Int) -> Int
         ): Bitmap {
@@ -219,9 +219,9 @@ class BitmapUtility {
          * @param onEachPixel Callback that returns the x and y and value of pixel to perform operations on it.
          * This callback should return a pixel as Color, so any changes on a pixel should be returned from the callback.
          */
-        fun transformBitmapPixelConcurrent(
+        inline fun transformBitmapPixelConcurrent(
             bitmap: Bitmap,
-            onEachPixel: (x: Int, y: Int, pixel: Int) -> Int
+            crossinline onEachPixel: (x: Int, y: Int, pixel: Int) -> Int
         ): Bitmap {
             val numberOfThreads = Runtime.getRuntime().availableProcessors()
             val executor = Executors.newFixedThreadPool(numberOfThreads)
@@ -276,7 +276,7 @@ class BitmapUtility {
          * @param offsetXAfterIteration Total to shift on x axis of pixels after an area of pixel has been returned, if this value is less than the [area] then two groups of pixels might overlap on each iteration.
          * @param onEachArea The callback that returns a [IntArray] representing that area of pixel. User should return an [IntArray] to be replaced in original bitmap.
          */
-        fun transformBitmapAreaPixels(
+        inline fun transformBitmapAreaPixels(
             bitmap: Bitmap, area: Int, offsetXAfterIteration: Int = 1,
             offsetYAfterIteration: Int = 1,
             onEachArea: (area: IntArray) -> IntArray
