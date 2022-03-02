@@ -20,6 +20,7 @@ import ir.manan.mananpic.utils.gesture.GestureUtils
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
+import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import kotlin.math.*
 
 /**
@@ -50,7 +51,7 @@ open class MananGestureImageView(
      * Rotation detector that is used to detect if user performed rotation gesture.
      * It is nullable; meaning a derived class could use rotating gesture or not.
      */
-    protected var rotationDetector: Gesture? = null
+    protected var rotationDetector: RotationDetectorGesture? = null
 
     /**
      * Move detector that is used to detect if user performed move gesture (moved fingers across screen).
