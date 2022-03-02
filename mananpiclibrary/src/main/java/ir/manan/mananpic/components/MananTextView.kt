@@ -265,7 +265,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     override fun clone(): View {
         return MananFactory.createTextView(context, text.toString(), maxLines).also { textView ->
-            textView.textSize = textSize
             textView.setTextColor(currentTextColor)
             textView.typeface = typeface
             textView.paint.pathEffect = paint.pathEffect

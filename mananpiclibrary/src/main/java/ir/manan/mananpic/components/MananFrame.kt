@@ -64,9 +64,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     /** Rectangle that later we create to draw an area that we consider as page. */
     private var pageRect = RectF()
 
-    /** Determines if child has been scaled down to fit page bounds. */
-    private var isChildScaleNormalized: Boolean = false
-
     /* Gesture related variables ------------------------------------------------------------------------------------------*/
     /**
      * A flag that later will be set if user moves his/her finger enough to be
@@ -84,9 +81,20 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         ViewConfiguration.get(context)
     }
 
-    private var currentEditingView: MananComponent? = null
 
-    /* Listeners */
+    /* Selected component related variables ------------------------------------------------------------------------------------------ */
+
+    private var currentEditingView: MananComponent? = null
+    private var previousSelectedComponent: MananComponent? = null
+
+    /** Determines if child has been scaled down to fit page bounds. */
+    private var isChildScaleNormalized: Boolean = false
+
+
+    /** Later determines if a component should skip fitting inside page phase (used when adding a clone) */
+    private var isClone = false
+
+    /* Listeners ------------------------------------------------------------------------------------------  */
     private var onChildClicked: ((View, Boolean) -> Unit)? = null
     private var onChildClickedListener: OnChildClickedListener? = null
 
@@ -507,10 +515,18 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             }
         }
 
-        if (!isChildScaleNormalized || changed) {
-            if (currentEditingView != null) {
-                fitChildInsidePage(currentEditingView!!)
-                isChildScaleNormalized = true
+        // If we're cloning, then match the current selected component (which is new cloned component) to last component that was selected.
+        if (isClone) {
+            matchFirstComponentToSecond(currentEditingView!!, previousSelectedComponent!!)
+            isClone = false
+            // Set this flag to not fit component in page again.
+            isChildScaleNormalized = true
+        } else {
+            if (!isChildScaleNormalized || changed) {
+                if (currentEditingView != null) {
+                    fitChildInsidePage(currentEditingView!!)
+                    isChildScaleNormalized = true
+                }
             }
         }
     }
@@ -551,6 +567,33 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             applyMovement(totalXToShift, totalYToShift)
 
         }
+    }
+
+    /**
+     * Matches properties of first component to second component for cloned object.
+     * Properties that are matched:
+     * - Scale
+     * - Rotation
+     * Note that translation shifts to not overlap first component with second component.
+     * @param first First [MananComponent] that is going to be the same as second component.
+     * @param second Second component that first component is going to be like.
+     */
+    private fun matchFirstComponentToSecond(first: MananComponent, second: MananComponent) {
+        var firstBound = first.reportBound()
+        val secondBound = second.reportBound()
+
+        first.run {
+            applyScale(secondBound.width() / firstBound.width())
+
+            firstBound = reportBound()
+
+            val finalRotation = second.reportRotation() - reportRotation()
+            applyRotation(finalRotation)
+            rotateDetector.resetRotation(finalRotation)
+
+            applyMovement(secondBound.left - firstBound.right, secondBound.top - firstBound.top)
+        }
+
     }
 
     override fun dispatchDraw(canvas: Canvas?) {
@@ -1187,11 +1230,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     fun cloneSelectedView() {
         currentEditingView?.run {
             addView(clone())
+            // Set the flag to later not fit the component inside page.
+            isClone = true
         }
     }
 
     override fun onViewAdded(child: View?) {
         if (child !is MananComponent) throw IllegalStateException("only components that implement MananComponent can be added")
+
+        // Store the last component that was selected in case user wants to clone it.
+        previousSelectedComponent = currentEditingView
 
         initializeChild(child)
         super.onViewAdded(child)
