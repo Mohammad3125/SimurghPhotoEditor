@@ -9,6 +9,7 @@ import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
+import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.max
 import kotlin.math.min
 
@@ -32,8 +33,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         setRotate(0f)
     }
 
+    private val shaderMatrix by lazy {
+        MananMatrix()
+    }
+
+    private var shaderRotationHolder = 0f
+
     init {
-        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        setLayerType(LAYER_TYPE_NONE, null)
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
@@ -89,9 +96,45 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
         paint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
             alpha = opacity
+            setLocalMatrix(shaderMatrix)
         }
         invalidate()
     }
+
+    override fun shiftTexture(dx: Float, dy: Float) {
+        paint.shader?.run {
+            shaderMatrix.postTranslate(dx, dy)
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun scaleTexture(scaleFactor: Float) {
+        paint.shader?.run {
+            shaderMatrix.postScale(scaleFactor, scaleFactor)
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun rotateTexture(rotateTo: Float) {
+        paint.shader?.run {
+            shaderMatrix.postRotate(
+                rotateTo - shaderRotationHolder,
+                pivotX,
+                pivotY
+            )
+            shaderRotationHolder = rotateTo
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        bounds.set(x, y, x + width, y + height)
+    }
+
 
     override fun removeBlur() {
         paint.maskFilter = null
@@ -117,6 +160,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         } else {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
         }
+        scaleTexture(scaleFactor)
     }
 
     override fun applyMovement(dx: Float, dy: Float) {

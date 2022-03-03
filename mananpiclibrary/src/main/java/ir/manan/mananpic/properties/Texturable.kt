@@ -23,6 +23,24 @@ interface Texturable {
      */
     fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float = 1f)
 
+    /** Shifts texture in each axis by given amount.
+     * @param dx Total to shift texture in x direction.
+     * @param dy Total to shift texture in y direction.
+     */
+    fun shiftTexture(dx: Float, dy: Float)
+
+    /**
+     * Scales the texture with given factor. Scale factor of 1f means no scaling and 0.5f means half the current size.
+     * @param scaleFactor Total to scale the texture.
+     */
+    fun scaleTexture(scaleFactor: Float)
+
+    /**
+     * Rotates texture to given degree.
+     * @param rotateTo Degree that texture will be rotated to.
+     */
+    fun rotateTexture(rotateTo: Float)
+
     fun removeTexture()
 
 }
