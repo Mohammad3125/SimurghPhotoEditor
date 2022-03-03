@@ -14,6 +14,7 @@ import androidx.core.view.updateLayoutParams
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.properties.MananComponent
+import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
@@ -89,6 +90,11 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     /** Determines if child has been scaled down to fit page bounds. */
     private var isChildScaleNormalized: Boolean = false
+
+    /**
+     * Determines if user is currently applying texture on selected component
+     */
+    private var isApplyingTexture = false
 
 
     /** Later determines if a component should skip fitting inside page phase (used when adding a clone) */
@@ -254,17 +260,23 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             override fun onScale(detector: ScaleGestureDetector?): Boolean {
                 if (detector != null) {
                     val sf = detector.scaleFactor
-                    if (currentEditingView != null) {
-                        currentEditingView!!.applyScale(sf)
-                        smartGuidelineHolder.clear()
-                    } else {
-                        // If there isn't any component selected, scale the canvas.
-                        canvasMatrix.postScale(
-                            sf,
-                            sf,
-                            detector.focusX,
-                            detector.focusY
-                        )
+                    when {
+                        currentEditingView != null && !isApplyingTexture -> {
+                            currentEditingView!!.applyScale(sf)
+                            smartGuidelineHolder.clear()
+                        }
+                        currentEditingView == null && !isApplyingTexture -> {
+                            // If there isn't any component selected, scale the canvas.
+                            canvasMatrix.postScale(
+                                sf,
+                                sf,
+                                detector.focusX,
+                                detector.focusY
+                            )
+                        }
+                        isApplyingTexture -> {
+                            (currentEditingView as? Texturable)?.scaleTexture(sf)
+                        }
                     }
                     return true
                 }
@@ -289,11 +301,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val rotateDetector: RotationDetectorGesture by lazy {
         TwoFingerRotationDetector(object : SimpleOnRotateListener() {
             override fun onRotate(degree: Float): Boolean {
-                currentEditingView?.run {
-                    // Find smart guideline, if didn't find any smart guideline, continue the normal rotation.
-                    applyRotation(degree)
-                    findRotationSmartGuidelines()
-                    smartGuidelineHolder.clear()
+                when {
+                    (currentEditingView != null && !isApplyingTexture) -> {
+                        currentEditingView!!.applyRotation(degree)
+                        findRotationSmartGuidelines()
+                        smartGuidelineHolder.clear()
+                    }
+
+                    isApplyingTexture -> {
+                        (currentEditingView as? Texturable)?.rotateTexture(degree)
+                    }
                 }
                 return true
             }
@@ -303,15 +320,21 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     private val moveDetector by lazy {
         MoveDetector(1, object : SimpleOnMoveListener() {
             override fun onMove(dx: Float, dy: Float): Boolean {
-                if (currentEditingView != null) {
-                    // Slow down the translation if canvas matrix is zoomed.
-                    val s = canvasMatrix.getOppositeScale()
-                    currentEditingView!!.applyMovement(dx * s, dy * s)
-                    findSmartGuideLines()
-                    smartRotationLineHolder.clear()
-                } else {
-                    // If there isn't any component selected, translate the canvas.
-                    canvasMatrix.postTranslate(dx, dy)
+                when {
+                    isApplyingTexture -> {
+                        (currentEditingView as Texturable).shiftTexture(dx, dy)
+                    }
+                    (currentEditingView != null && !isApplyingTexture) -> {
+                        // Slow down the translation if canvas matrix is zoomed.
+                        val s = canvasMatrix.getOppositeScale()
+                        currentEditingView!!.applyMovement(dx * s, dy * s)
+                        findSmartGuideLines()
+                        smartRotationLineHolder.clear()
+                    }
+                    (currentEditingView == null && !isApplyingTexture) -> {
+                        // If there isn't any component selected, translate the canvas.
+                        canvasMatrix.postTranslate(dx, dy)
+                    }
                 }
 
                 // Store total dx and dy to then determine if user has moved his/her finger
@@ -329,9 +352,9 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             override fun onMoveEnded(lastX: Float, lastY: Float) {
                 super.onMoveEnded(lastX, lastY)
 
-                // If user hasn't moved his/her finger enough to be registered as moving gesture,
-                // then select the components if they're on current location of touch.
-                if (!isMoved) {
+                // If user hasn't moved his/her finger enough to be registered as moving gesture and
+                // user is not applying any shader on child, then select the components if they're on current location of touch.
+                if (!isMoved && !isApplyingTexture) {
                     performClick()
 
                     val childAtPosition = getChildAtPoint(lastX, lastY) as? MananComponent
@@ -1290,6 +1313,31 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
         pageRect.setEmpty()
         requestLayout()
+    }
+
+    /**
+     * Sets texture on selected component (if it implements [Texturable].) and any gestures
+     * from no on will be applied to texture instead of child unless you finalize the
+     * texture replacement by [applyTexture] method.
+     * This method doesn't throw any exception if selected component is not [Texturable].
+     * ### YOU HAVE TO CALL [applyTexture] TO FINALIZE TEXTURE PLACEMENT.
+     * @param texture Bitmap that is going to be textured on selected component.
+     * @param textureOpacity Opacity of texture that is going to be applied.
+     */
+    fun setTextureToSelectedChild(texture: Bitmap, textureOpacity: Float = 1f) {
+        (currentEditingView as? Texturable)?.run {
+            applyTexture(texture, textureOpacity)
+            isApplyingTexture = true
+        }
+    }
+
+
+    /**
+     * Finalizes texture placement on selected component.
+     * [setTextureToSelectedChild] method should be called before this method otherwise this method is useless.
+     */
+    fun applyTexture() {
+        isApplyingTexture = false
     }
 
     /**
