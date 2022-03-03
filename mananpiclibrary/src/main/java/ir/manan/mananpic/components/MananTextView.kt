@@ -40,7 +40,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     private var shaderRotationHolder = 0f
 
     init {
-        setLayerType(LAYER_TYPE_NONE, null)
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {

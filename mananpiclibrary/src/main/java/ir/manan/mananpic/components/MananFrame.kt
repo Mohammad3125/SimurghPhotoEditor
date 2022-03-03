@@ -1322,11 +1322,16 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      * This method doesn't throw any exception if selected component is not [Texturable].
      * ### YOU HAVE TO CALL [applyTexture] TO FINALIZE TEXTURE PLACEMENT.
      * @param texture Bitmap that is going to be textured on selected component.
+     * @param tileMode Tile mode of shader if texture exceeds the component's bounds.
      * @param textureOpacity Opacity of texture that is going to be applied.
      */
-    fun setTextureToSelectedChild(texture: Bitmap, textureOpacity: Float = 1f) {
+    fun setTextureToSelectedChild(
+        texture: Bitmap,
+        tileMode: Shader.TileMode,
+        textureOpacity: Float = 1f
+    ) {
         (currentEditingView as? Texturable)?.run {
-            applyTexture(texture, textureOpacity)
+            applyTexture(texture, tileMode, textureOpacity)
             isApplyingTexture = true
         }
     }
