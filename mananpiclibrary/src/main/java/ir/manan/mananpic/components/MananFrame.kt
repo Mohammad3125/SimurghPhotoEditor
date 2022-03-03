@@ -1343,6 +1343,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
      */
     fun applyTexture() {
         isApplyingTexture = false
+        rotateDetector.resetRotation(currentEditingView!!.reportRotation())
     }
 
     /**
