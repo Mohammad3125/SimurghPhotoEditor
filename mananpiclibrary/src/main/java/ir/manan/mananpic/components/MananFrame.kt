@@ -569,8 +569,16 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             val isCenterXEnabled = smartGuidelineFlags.and(Guidelines.CENTER_X) != 0
             val isCenterYEnabled = smartGuidelineFlags.and(Guidelines.CENTER_Y) != 0
 
+            val offsetView = currentEditingView!! as View
+            val ox = getOffsetX(offsetView).toFloat()
+            val oy = getOffsetY(offsetView).toFloat()
+
             // Set global rectangle used for mapping to selected component's bounds.
-            mappingRectangle.set(currentEditingView!!.reportBound())
+            mappingRectangle.run {
+                set(currentEditingView!!.reportBound())
+                offset(ox, oy)
+            }
+
             // Map it with it's rotation to get exact location of rectangle points.
             mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
 
@@ -579,9 +587,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             // location of points and then add page's bounds to get smart guidelines for page too.
             children.minus(currentEditingView as View).map { v ->
                 (v as MananComponent).run {
-                    val rotatedBound = RectF(reportBound())
-                    mapRectToComponentRotation(this, rotatedBound)
-                    rotatedBound
+                    RectF(reportBound()).also { rotatedBound ->
+                        rotatedBound.offset(getOffsetX(v).toFloat(), getOffsetY(v).toFloat())
+                        mapRectToComponentRotation(this, rotatedBound)
+                    }
                 }
             }.plus(pageRect).forEach { childBounds ->
 
@@ -705,7 +714,11 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     applyMovement(totalToShiftX, totalToShiftY)
 
                     // Refresh the bounds of component after shifting it.
-                    mappingRectangle.set(reportBound())
+                    mappingRectangle.run {
+                        set(reportBound())
+                        offset(ox, oy)
+                    }
+
                     mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
 
                     // Calculate the minimum and maximum amount of two axes
