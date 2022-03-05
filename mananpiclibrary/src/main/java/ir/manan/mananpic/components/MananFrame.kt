@@ -576,11 +576,12 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             // Set global rectangle used for mapping to selected component's bounds.
             mappingRectangle.run {
                 set(currentEditingView!!.reportBound())
+                // Map it with it's rotation to get exact location of rectangle points.
+                mapRectToComponentRotation(currentEditingView!!, this)
+
                 offset(ox, oy)
             }
 
-            // Map it with it's rotation to get exact location of rectangle points.
-            mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
 
             // Remove selected component from list of children (because we don't need to find smart guideline for
             // selected component which is a undefined behaviour) and then map each bounds of children to get exact
@@ -588,8 +589,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             children.minus(currentEditingView as View).map { v ->
                 (v as MananComponent).run {
                     RectF(reportBound()).also { rotatedBound ->
-                        rotatedBound.offset(getOffsetX(v).toFloat(), getOffsetY(v).toFloat())
                         mapRectToComponentRotation(this, rotatedBound)
+                        rotatedBound.offset(getOffsetX(v).toFloat(), getOffsetY(v).toFloat())
                     }
                 }
             }.plus(pageRect).forEach { childBounds ->
@@ -714,12 +715,11 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     applyMovement(totalToShiftX, totalToShiftY)
 
                     // Refresh the bounds of component after shifting it.
-                    mappingRectangle.run {
-                        set(reportBound())
-                        offset(ox, oy)
-                    }
+                    mappingRectangle.set(reportBound())
 
                     mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
+
+                    mappingRectangle.offset(ox, oy)
 
                     // Calculate the minimum and maximum amount of two axes
                     // because we want to draw a line from leftmost to rightmost
@@ -825,14 +825,22 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     if (reportRotation() in (snapDegree - rangeForSmartRotationGuideline)..(snapDegree + rangeForSmartRotationGuideline)) {
                         applyRotation(snapDegree)
 
-                        val bound = reportBound()
-                        val centerXBound = bound.centerX()
-                        val extraSpaceForLineY = bound.height() * 0.33f
+                        val offsetView = currentEditingView as View
+
+                        mappingRectangle.run {
+                            set(reportBound())
+                            offset(
+                                getOffsetX(offsetView).toFloat(),
+                                getOffsetY(offsetView).toFloat()
+                            )
+                        }
+                        val centerXBound = mappingRectangle.centerX()
+                        val extraSpaceForLineY = mappingRectangle.height() * 0.33f
 
                         smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(bound.top - extraSpaceForLineY)
+                        smartRotationLineHolder.add(mappingRectangle.top - extraSpaceForLineY)
                         smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(bound.bottom + extraSpaceForLineY)
+                        smartRotationLineHolder.add(mappingRectangle.bottom + extraSpaceForLineY)
 
                         return true
                     }
