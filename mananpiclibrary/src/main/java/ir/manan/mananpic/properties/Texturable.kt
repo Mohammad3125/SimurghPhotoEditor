@@ -32,14 +32,18 @@ interface Texturable {
     /**
      * Scales the texture with given factor. Scale factor of 1f means no scaling and 0.5f means half the current size.
      * @param scaleFactor Total to scale the texture.
+     * @param pivotX Texture will be scale around that point in x direction.
+     * @param pivotX Texture will be scale around that point in y direction.
      */
-    fun scaleTexture(scaleFactor: Float)
+    fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float)
 
     /**
      * Rotates texture to given degree.
      * @param rotateTo Degree that texture will be rotated to.
+     * @param pivotX Texture will rotate around that point in x direction.
+     * @param pivotX Texture will rotate around that point in y direction.
      */
-    fun rotateTexture(rotateTo: Float)
+    fun rotateTexture(rotateTo: Float, pivotX: Float, pivotY: Float)
 
     fun removeTexture()
 
