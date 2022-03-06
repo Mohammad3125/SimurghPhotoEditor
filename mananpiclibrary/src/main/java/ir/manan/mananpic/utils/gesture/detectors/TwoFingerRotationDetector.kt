@@ -24,6 +24,8 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
      */
     private var step = 0f
 
+    private var wasTouchedWithTwoPointers = false
+
     override fun setRotationStep(rotationStep: Float) {
         if (rotationStep < 0) throw IllegalStateException("step value should be equal or greater than 0")
         step = rotationStep
@@ -56,6 +58,8 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
                         listener.onRotate(validatedRotation)
                     }
 
+                    wasTouchedWithTwoPointers = true
+
                     true
                 } else false
             }
@@ -66,7 +70,12 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
             }
 
             MotionEvent.ACTION_UP -> {
-                listener.onRotateEnded()
+                // Only call 'onRotateEnded' method when we was rotating with two pointers.
+                if (wasTouchedWithTwoPointers) {
+                    listener.onRotateEnded()
+                }
+
+                wasTouchedWithTwoPointers = false
                 false
             }
 

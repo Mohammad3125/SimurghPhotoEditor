@@ -170,6 +170,7 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onRotateEnded() {
+        isMoved = true
     }
 
     /* Selected component --------------------------------------------------------------------- */
