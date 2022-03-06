@@ -35,11 +35,18 @@ class MananFactory {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
-                )
+                ).apply {
+                    val margin = -1000000
+                    leftMargin = margin
+                    rightMargin = margin
+                    topMargin = margin
+                    bottomMargin = margin
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     clipToOutline = false
                 }
                 maxLines = maxLine
+
                 this.text = text
                 setTextColor(Color.BLACK)
             }
