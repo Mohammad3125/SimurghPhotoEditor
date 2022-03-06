@@ -309,13 +309,22 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     override fun clone(): View {
         return MananFactory.createTextView(context, text.toString(), maxLines).also { textView ->
+            textView.setLayerType(layerType, null)
             textView.setTextColor(currentTextColor)
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_PX,textSize)
             textView.typeface = typeface
-            textView.paint.pathEffect = paint.pathEffect
-            textView.paint.shader = paint.shader
-            textView.paint.maskFilter = paint.maskFilter
             textView.paint.style = paint.style
             textView.paint.strokeWidth = paint.strokeWidth
+            textView.paint.pathEffect = paint.pathEffect
+            textView.shaderRotationHolder = shaderRotationHolder
+            doOnPreDraw {
+                textView.shaderMatrix.set(shaderMatrix)
+                textView.paint.shader = paint.shader
+                if (textView.paint.shader != null) {
+                    textView.paint.shader.setLocalMatrix(shaderMatrix)
+                }
+            }
+            textView.paint.maskFilter = paint.maskFilter
             textView.setShadowLayer(
                 shadowRadius,
                 shadowDx,
