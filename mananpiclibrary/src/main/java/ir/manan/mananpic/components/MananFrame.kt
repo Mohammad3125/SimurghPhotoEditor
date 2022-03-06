@@ -1,42 +1,40 @@
 package ir.manan.mananpic.components
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
-import android.view.*
-import android.widget.FrameLayout
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.view.View
 import androidx.annotation.ColorInt
 import androidx.core.view.children
-import androidx.core.view.doOnLayout
-import androidx.core.view.updateLayoutParams
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
+import ir.manan.mananpic.components.parents.MananParent
 import ir.manan.mananpic.properties.MananComponent
-import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
-import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
-import ir.manan.mananpic.utils.gesture.gestures.SimpleOnMoveListener
-import ir.manan.mananpic.utils.gesture.gestures.SimpleOnRotateListener
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * A class that extends [FrameLayout] class and overrides certain functions such as
- * [onInterceptTouchEvent] and [performClick] and [onTouchEvent] to get cleaner code
- * and custom behaviour. This class also takes responsibility for editing views(scaling, rotating and moving).
+ * A class that overrides [MananParent] and provides custom functionalities.
+ *
+ * Functionalities:
+ * - draws a box around selected component with customizable attributes.
+ * - draws a page with customizable size set via [setPageSize] or XML inside it to act as a page that can later be rendered to bitmap with [convertPageToBitmap].
+ * - finds smart guidelines for it's children with customizable attributes set via [setSmartGuidelineFlags].
+ * - finds smarty rotation guidelines with customizable degrees that snaps into them via [setRotationSmartGuideline].
+ * - can perform gestures on selected component like Translation, Scaling and Rotation.
+ *
  */
-class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, attr) {
+open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(context, attr) {
     constructor(context: Context) : this(context, null)
-
-    companion object {
-        private const val MAXIMUM_SCALE_FACTOR = 10f
-    }
 
     /* Page related variables ------------------------------------------------------------------------------------------*/
     var pageWidth = 0
@@ -64,43 +62,18 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
     /** Rectangle that later we create to draw an area that we consider as page. */
     private var pageRect = RectF()
 
-    /* Gesture related variables ------------------------------------------------------------------------------------------*/
-    /**
-     * A flag that later will be set if user moves his/her finger enough to be
-     * registered as move gesture, otherwise it will be registered as single tap.
-     */
-    private var isMoved = false
-
-    // Used to store total difference of touch in move gesture to then
-    // compare it against a touch slope to determine if user has performed touch or move gesture.
-    private var totalDx = 0f
-    private var totalDy = 0f
-
-    // Used to retrieve touch slopes.
-    private val viewConfiguration by lazy {
-        ViewConfiguration.get(context)
-    }
-
-
     /* Selected component related variables ------------------------------------------------------------------------------------------ */
 
-    private var currentEditingView: MananComponent? = null
     private var previousSelectedComponent: MananComponent? = null
 
     /** Determines if child has been scaled down to fit page bounds. */
     private var isChildScaleNormalized: Boolean = false
 
-
     /** Later determines if a component should skip fitting inside page phase (used when adding a clone) */
     private var isClone = false
 
-    /* Listeners ------------------------------------------------------------------------------------------  */
-    private var onChildClicked: ((View, Boolean) -> Unit)? = null
-    private var onChildClickedListener: OnChildClickedListener? = null
-
-    private var onChildrenChanged: ((View, Boolean) -> Unit)? = null
-    private var onChildrenChangedListener: OnChildrenListChanged? = null
-
+    /** If true this class enters texture applying mode */
+    private var isApplyingTexture = false
 
     /* Box around selected view related variables ------------------------------------------------------------------------------------------*/
 
@@ -209,161 +182,101 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             field = value
         }
 
-    /* Matrix related variables ------------------------------------------------------------------------------------------*/
-
-    /** Flag that determines if canvas should use matrix to manipulate scale and translation. */
-    private var isCanvasMatrixEnabled = true
-
-    /** Matrix that we later use to manipulate canvas scale and translation. */
-    private val canvasMatrix = MananMatrix()
-
-    private val matrixAnimator by lazy {
-        MananMatrixAnimator(canvasMatrix, RectF(pageRect), 300L, FastOutSlowInInterpolator())
-    }
-
-    /**
-     * Extra space that user can translate the canvas before canvas animation triggers.
-     * Default is 0.
-     */
-    var extraSpaceToTriggerAnimation = 0f
-
-    /* Allocations ------------------------------------------------------------------------------------------ */
-
-    /**
-     * Used for mapping operations like transforming a rectangle etc...
-     */
-    private val mappingMatrix by lazy {
-        Matrix()
-    }
-
-    /**
-     * A rectangle to hold the mapped rectangles inside it. It is
-     * defined here to avoid allocations.
-     */
-    private val mappingRectangle by lazy {
-        RectF()
-    }
-
     /* Detectors --------------------------------------------------------------------------------------------- */
-    private val scaleDetector by lazy {
-        ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-            override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
-                return !matrixAnimator.isAnimationRunning()
-            }
 
-            override fun onScale(detector: ScaleGestureDetector?): Boolean {
-                if (detector != null) {
-                    val sf = detector.scaleFactor
-                    if (currentEditingView != null) {
+    override fun onScale(detector: ScaleGestureDetector?): Boolean {
+        detector?.run {
+            val sf = detector.scaleFactor
+            when {
+                currentEditingView != null -> {
+                    if (!isApplyingTexture) {
                         currentEditingView!!.applyScale(sf)
                         smartGuidelineHolder.clear()
                     } else {
-                        // If there isn't any component selected, scale the canvas.
-                        canvasMatrix.postScale(
+                        (currentEditingView as? Texturable?)?.scaleTexture(
                             sf,
-                            sf,
-                            detector.focusX,
-                            detector.focusY
+                            currentEditingView!!.reportPivotX(),
+                            currentEditingView!!.reportPivotY()
                         )
                     }
-                    return true
                 }
-                return false
+                currentEditingView == null -> {
+                    scaleCanvas(sf, focusX, focusY)
+                }
             }
-
-            override fun onScaleEnd(detector: ScaleGestureDetector?) {
-                super.onScaleEnd(detector)
-                // Set 'isMoved' to true to prevent selecting the target view if it's been in user touch locations.
-                isMoved = true
-                animateCanvasBack()
-                findSmartGuideLines()
-            }
-        }).apply {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                // This needs to be false because it will interfere with other gestures.
-                isQuickScaleEnabled = false
-            }
+            invalidate()
         }
+        return true
     }
 
-    private val rotateDetector: RotationDetectorGesture by lazy {
-        TwoFingerRotationDetector(object : SimpleOnRotateListener() {
-            override fun onRotate(degree: Float): Boolean {
-                currentEditingView?.run {
-                    // Find smart guideline, if didn't find any smart guideline, continue the normal rotation.
-                    applyRotation(degree)
-                    findRotationSmartGuidelines()
-                    smartGuidelineHolder.clear()
-                }
-                return true
+    override fun onScaleEnd(detector: ScaleGestureDetector?) {
+        super.onScaleEnd(detector)
+        findSmartGuideLines()
+        invalidate()
+    }
+
+    override fun onRotate(degree: Float): Boolean {
+        currentEditingView?.run {
+            if (!isApplyingTexture) {
+                applyRotation(degree)
+                findRotationSmartGuidelines()
+                smartGuidelineHolder.clear()
+            } else {
+                (currentEditingView as? Texturable)?.rotateTexture(
+                    degree,
+                    reportPivotX(),
+                    reportPivotY()
+                )
             }
-        })
+            invalidate()
+        }
+        return true
     }
 
-    private val moveDetector by lazy {
-        MoveDetector(1, object : SimpleOnMoveListener() {
-            override fun onMove(dx: Float, dy: Float): Boolean {
-                if (currentEditingView != null) {
-                    // Slow down the translation if canvas matrix is zoomed.
+    override fun onMove(dx: Float, dy: Float): Boolean {
+        super.onMove(dx, dy)
+        when {
+            currentEditingView != null -> {
+                if (!isApplyingTexture) {
                     val s = canvasMatrix.getOppositeScale()
                     currentEditingView!!.applyMovement(dx * s, dy * s)
                     findSmartGuideLines()
                     smartRotationLineHolder.clear()
                 } else {
-                    // If there isn't any component selected, translate the canvas.
-                    canvasMatrix.postTranslate(dx, dy)
+                    (currentEditingView as Texturable).shiftTexture(dx, dy)
                 }
-
-                // Store total dx and dy to then determine if user has moved his/her finger
-                // enough to be registered as moving gesture.
-                totalDx += abs(dx)
-                totalDy += abs(dy)
-
-                // Compare the total difference against the touch slop.
-                isMoved =
-                    totalDx > viewConfiguration.scaledTouchSlop || totalDy > viewConfiguration.scaledTouchSlop
-
-                return true
             }
-
-            override fun onMoveEnded(lastX: Float, lastY: Float) {
-                super.onMoveEnded(lastX, lastY)
-
-                // If user hasn't moved his/her finger enough to be registered as moving gesture,
-                // then select the components if they're on current location of touch.
-                if (!isMoved) {
-                    performClick()
-
-                    val childAtPosition = getChildAtPoint(lastX, lastY) as? MananComponent
-
-                    // Deselect the child if returned component is null.
-                    if (childAtPosition == null) {
-                        deselectSelectedView()
-                    }
-                    // If returned child is not null and it is not referencing the same object that
-                    // current editable view is referencing then change editing view.
-                    else if (currentEditingView !== childAtPosition) {
-                        rotateDetector.resetRotation(childAtPosition.reportRotation())
-                        callOnChildClickListeners(childAtPosition as View, true)
-                        currentEditingView = childAtPosition
-                        findSmartGuideLines()
-                        invalidate()
-                    }
-                }
-
-                // Reset for next gesture.
-                totalDx = 0f
-                totalDy = 0f
-                isMoved = false
-
-
-                findRotationSmartGuidelines()
-                animateCanvasBack()
+            currentEditingView == null -> {
+                translateCanvas(dx, dy)
             }
-        })
+        }
+        invalidate()
+        return true
+    }
+
+    override fun onSelectedComponentChanged(newChild: MananComponent) {
+        super.onSelectedComponentChanged(newChild)
+        findSmartGuideLines()
     }
 
     init {
+        scaleDetector = ScaleGestureDetector(context, this).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                isQuickScaleEnabled = false
+            }
+        }
+
+        translationDetector = MoveDetector(1, this)
+
+        rotationDetector = TwoFingerRotationDetector(this)
+
+        matrixAnimator = MananMatrixAnimator(
+            canvasMatrix,
+            pageRect,
+            300L,
+            FastOutSlowInInterpolator()
+        )
+
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
             try {
                 isDrawingBoxEnabled =
@@ -408,9 +321,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         // Don't clip children to padding.
         clipToPadding = false
 
-        // Always draws.
         setWillNotDraw(false)
-
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
@@ -426,20 +337,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                 false
             }
         }
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        // Bind appropriate gestures to the ongoing event.
-        scaleDetector.onTouchEvent(event)
-        rotateDetector.onTouchEvent(event)
-        moveDetector.onTouchEvent(event)
-        when (event?.actionMasked) {
-            MotionEvent.ACTION_MOVE -> {
-                invalidate()
-            }
-        }
-        return true
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
@@ -589,7 +486,7 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
             val finalRotation = second.reportRotation() - reportRotation()
             applyRotation(finalRotation)
-            rotateDetector.resetRotation(finalRotation)
+            rotationDetector?.resetRotation(finalRotation)
 
             applyMovement(secondBound.left - firstBound.right, secondBound.top - firstBound.top)
         }
@@ -605,10 +502,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            // concat the canvas matrix to matrix that we manipulate.
-            if (isCanvasMatrixEnabled)
-                concat(canvasMatrix)
-
             super.draw(this)
 
             currentEditingView?.run {
@@ -706,19 +599,29 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             val isCenterXEnabled = smartGuidelineFlags.and(Guidelines.CENTER_X) != 0
             val isCenterYEnabled = smartGuidelineFlags.and(Guidelines.CENTER_Y) != 0
 
+            val offsetView = currentEditingView!! as View
+            val ox = getOffsetX(offsetView).toFloat()
+            val oy = getOffsetY(offsetView).toFloat()
+
             // Set global rectangle used for mapping to selected component's bounds.
-            mappingRectangle.set(currentEditingView!!.reportBound())
-            // Map it with it's rotation to get exact location of rectangle points.
-            mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
+            mappingRectangle.run {
+                set(currentEditingView!!.reportBound())
+                // Map it with it's rotation to get exact location of rectangle points.
+                mapRectToComponentRotation(currentEditingView!!, this)
+
+                offset(ox, oy)
+            }
+
 
             // Remove selected component from list of children (because we don't need to find smart guideline for
             // selected component which is a undefined behaviour) and then map each bounds of children to get exact
             // location of points and then add page's bounds to get smart guidelines for page too.
             children.minus(currentEditingView as View).map { v ->
                 (v as MananComponent).run {
-                    val rotatedBound = RectF(reportBound())
-                    mapRectToComponentRotation(this, rotatedBound)
-                    rotatedBound
+                    RectF(reportBound()).also { rotatedBound ->
+                        mapRectToComponentRotation(this, rotatedBound)
+                        rotatedBound.offset(getOffsetX(v).toFloat(), getOffsetY(v).toFloat())
+                    }
                 }
             }.plus(pageRect).forEach { childBounds ->
 
@@ -843,7 +746,10 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
 
                     // Refresh the bounds of component after shifting it.
                     mappingRectangle.set(reportBound())
+
                     mapRectToComponentRotation(currentEditingView!!, mappingRectangle)
+
+                    mappingRectangle.offset(ox, oy)
 
                     // Calculate the minimum and maximum amount of two axes
                     // because we want to draw a line from leftmost to rightmost
@@ -949,14 +855,22 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
                     if (reportRotation() in (snapDegree - rangeForSmartRotationGuideline)..(snapDegree + rangeForSmartRotationGuideline)) {
                         applyRotation(snapDegree)
 
-                        val bound = reportBound()
-                        val centerXBound = bound.centerX()
-                        val extraSpaceForLineY = bound.height() * 0.33f
+                        val offsetView = currentEditingView as View
+
+                        mappingRectangle.run {
+                            set(reportBound())
+                            offset(
+                                getOffsetX(offsetView).toFloat(),
+                                getOffsetY(offsetView).toFloat()
+                            )
+                        }
+                        val centerXBound = mappingRectangle.centerX()
+                        val extraSpaceForLineY = mappingRectangle.height() * 0.33f
 
                         smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(bound.top - extraSpaceForLineY)
+                        smartRotationLineHolder.add(mappingRectangle.top - extraSpaceForLineY)
                         smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(bound.bottom + extraSpaceForLineY)
+                        smartRotationLineHolder.add(mappingRectangle.bottom + extraSpaceForLineY)
 
                         return true
                     }
@@ -1007,87 +921,6 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
             )
 
             mapRect(dstRectangle)
-        }
-    }
-
-    /**
-     * Determines if child's x coordinate should offset.
-     */
-    private fun getOffsetX(v: View): Int {
-        return if (v.layoutParams.width == LayoutParams.MATCH_PARENT)
-            paddingLeft
-        else 0
-    }
-
-    /**
-     * Determines if child's y coordinate should offset.
-     */
-    private fun getOffsetY(v: View): Int {
-        return if (v.layoutParams.width == LayoutParams.MATCH_PARENT)
-            paddingTop
-        else 0
-    }
-
-    /**
-     * Returns the child at given coordinates.
-     * If two child overlap it swaps between them on each tap.
-     * @param x X coordinate of current touch.
-     * @param y Y coordinate of current touch.
-     */
-    private fun getChildAtPoint(x: Float, y: Float): View? {
-        if (childCount == 0) return null
-
-        children.forEach { v ->
-            v as MananComponent
-            if (v !== currentEditingView) {
-                // Converting points to float array is required to use matrix 'mapPoints' method.
-                val touchPoints = floatArrayOf(x, y)
-
-                // Get bounds of current component to later validate if touch is in area of
-                // that component or not.
-                val bounds = v.reportBound()
-
-                mappingMatrix.run {
-                    setTranslate(
-                        -canvasMatrix.getTranslationX(true),
-                        -canvasMatrix.getTranslationY()
-                    )
-
-                    // Scale down the current matrix as much as canvas matrix scale up.
-                    // We do this because if we zoom in image, the rectangle our area that we see
-                    // is also smaller so we do this to successfully map our touch points to that area (zoomed area).
-                    val scale = canvasMatrix.getOppositeScale()
-                    postScale(scale, scale)
-
-                    val offsetX = getOffsetX(v)
-                    val offsetY = getOffsetY(v)
-
-                    // Finally handle the rotation of component.
-                    postRotate(
-                        -v.reportRotation(),
-                        v.reportBoundPivotX() + offsetX,
-                        v.reportBoundPivotY() + offsetY
-                    )
-
-                    // Finally map the touch points.
-                    mapPoints(touchPoints)
-
-                    if (touchPoints[0] in (bounds.left + offsetX)..(bounds.right + offsetX) && touchPoints[1] in (bounds.top + offsetY..(bounds.bottom + offsetY)))
-                        return v
-
-                }
-
-            }
-        }
-        return null
-    }
-
-    private fun animateCanvasBack() {
-        matrixAnimator.run {
-            startAnimation(MAXIMUM_SCALE_FACTOR, extraSpaceToTriggerAnimation)
-            setOnMatrixUpdateListener {
-                invalidate()
-            }
         }
     }
 
@@ -1164,119 +997,20 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         return bitmapWithPageSize
     }
 
-    /**
-     * Selects a view in view group to enter editing state.
-     * It does not throw exception if child in given index is null.
-     * @param index Index of view that is going to be selected.
-     */
-    fun selectView(index: Int) {
-        val selectedChild = getChildAt(index) as? MananComponent
-        if (selectedChild != null) {
-            callOnChildClickListeners(selectedChild as View, true)
-            currentEditingView = selectedChild
-            rotateDetector.resetRotation(selectedChild.reportRotation())
-            invalidate()
-        }
-    }
-
-    /**
-     * Deselects the current selected view.
-     * This method doesn't throw exception if there isn't any child selected.
-     */
-    fun deselectSelectedView() {
-        if (currentEditingView != null) {
-
-            callOnChildClickListeners(currentEditingView as View, false)
-
-            currentEditingView = null
-            invalidate()
-        }
-    }
-
-    /**
-     * Removes the view that is currently selected.
-     */
-    fun removeSelectedView() {
-        if (currentEditingView != null) {
-
-            callOnChildClickListeners(currentEditingView as View, false)
-
-            removeView(currentEditingView as View)
-            currentEditingView = null
-        }
-    }
-
-    private fun callOnChildClickListeners(view: View, isSelected: Boolean) {
-        onChildClicked?.invoke(view, isSelected)
-        onChildClickedListener?.onClicked(view, isSelected)
-
-    }
-
-    private fun callOnChildrenChangedListener(view: View, deleted: Boolean) {
-        onChildrenChanged?.invoke(view, deleted)
-        onChildrenChangedListener?.onChanged(view, deleted)
-    }
-
-    /**
-     * Returns currently selected child.
-     */
-    fun getSelectedView(): View? {
-        return currentEditingView as? View
-    }
-
-    /**
-     * Clones the selected component. This method doesn't do anything (doesn't throw exception) if there isn't any component selected.
-     */
-    fun cloneSelectedView() {
-        currentEditingView?.run {
-            addView(clone())
-            // Set the flag to later not fit the component inside page.
-            isClone = true
-        }
+    override fun onChildCloned() {
+        isClone = true
+        isApplyingTexture = false
     }
 
     override fun onViewAdded(child: View?) {
-        if (child !is MananComponent) throw IllegalStateException("only components that implement MananComponent can be added")
-
-        // Store the last component that was selected in case user wants to clone it.
         previousSelectedComponent = currentEditingView
-
-        initializeChild(child)
+        isApplyingTexture = false
         super.onViewAdded(child)
-
-        child.doOnLayout {
-            callOnChildrenChangedListener(child, false)
-        }
     }
 
     override fun onViewRemoved(child: View?) {
+        isApplyingTexture = false
         super.onViewRemoved(child)
-        callOnChildrenChangedListener(child!!, true)
-    }
-
-    /**
-     * Initializes children and sets necessary parameters on it.
-     * @param child Children that is going to be initialized.
-     */
-    private fun initializeChild(child: View) {
-        child.run {
-
-            updateLayoutParams<LayoutParams> {
-                gravity = Gravity.CENTER
-            }
-
-            val component = (child as MananComponent)
-
-            // Reset rotation of rotation detector to current component rotation.
-            rotateDetector.resetRotation(component.reportRotation())
-
-            callOnChildClickListeners(child, true)
-
-            currentEditingView = component
-
-            // Set this flag to later fit the component inside the page after child has been laid out.
-            isChildScaleNormalized = false
-        }
     }
 
     /**
@@ -1292,73 +1026,50 @@ class MananFrame(context: Context, attr: AttributeSet?) : FrameLayout(context, a
         requestLayout()
     }
 
-    /**
-     * Sets step for rotation detector.
-     * If greater than 0 then rotation snaps to steps of current number for example
-     * if step was 8.5f then we would have 8.5f then 17f then 25.5f as rotation and so on.
-     */
-    fun setRotationStep(step: Float) {
-        rotateDetector.setRotationStep(step)
-    }
-
-    /**
-     * Sets listener for when child get clicked.
-     * This listener will not get re-invoked if user click the selected component again.
-     */
-    fun setOnChildClicked(listener: (View, Boolean) -> Unit) {
-        onChildClicked = listener
-    }
-
-    /**
-     * Sets listener for when child get clicked.
-     * This listener will not get re-invoked if user click the selected component again.
-     */
-    fun setOnChildClicked(listener: OnChildClickedListener) {
-        onChildClickedListener = listener
+    override fun initializeChild(child: View) {
+        super.initializeChild(child)
+        // Set this flag to later fit the component inside the page after child has been laid out.
+        isChildScaleNormalized = false
     }
 
 
     /**
-     * Sets callback for when children changes inside view group.
+     * Sets texture on selected component (if it implements [Texturable].) and any gestures
+     * from no on will be applied to texture instead of child unless you finalize the
+     * texture replacement by [applyTexture] method.
+     * This method doesn't throw any exception if selected component is not [Texturable].
+     * ### YOU HAVE TO CALL [applyTexture] TO FINALIZE TEXTURE PLACEMENT.
+     * @param texture Bitmap that is going to be textured on selected component.
+     * @param tileMode Tile mode of shader if texture exceeds the component's bounds.
+     * @param textureOpacity Opacity of texture that is going to be applied.
      */
-    fun setOnChildrenChanged(listener: (View, Boolean) -> Unit) {
-        onChildrenChanged = listener
-    }
-
-    /**
-     * Sets listener for when children changes inside view group.
-     * @see OnChildrenListChanged
-     */
-    fun setOnChildrenChanged(listener: OnChildrenListChanged) {
-        onChildrenChangedListener = listener
-    }
-
-
-    /**
-     * Interface definition for callback that get invoked when selection state of
-     * a child in [MananFrame] changes.
-     */
-    interface OnChildClickedListener {
-        /**
-         * This method get invoked when child selection state changes.
-         * @param view Clicked view.
-         * @param isSelected Determines if view is in selected state or deselected state.
-         */
-        fun onClicked(view: View, isSelected: Boolean)
+    fun setTextureToSelectedChild(
+        texture: Bitmap,
+        tileMode: Shader.TileMode,
+        textureOpacity: Float = 1f
+    ) {
+        (currentEditingView as? Texturable)?.run {
+            applyTexture(texture, tileMode, textureOpacity)
+            isApplyingTexture = true
+        }
     }
 
 
     /**
-     * Interface definition for callback that get invoked when children size changes either by
-     * adding a new child or removing it.
+     * Finalizes texture placement on selected component.
+     * [setTextureToSelectedChild] method should be called before this method otherwise this method is useless.
      */
-    interface OnChildrenListChanged {
-        /**
-         * This method get invoked when children count changes either by adding or removing a child.
-         * @param view View(child) that has been added or deleted.
-         * @param isDeleted If true then child is removed else added.
-         */
-        fun onChanged(view: View, isDeleted: Boolean)
+    fun applyTexture() {
+        currentEditingView?.run {
+            isApplyingTexture = false
+            rotationDetector?.resetRotation(currentEditingView!!.reportRotation())
+        }
+    }
+
+    override fun deselectSelectedView() {
+        if (!isApplyingTexture) {
+            super.deselectSelectedView()
+        }
     }
 
     /**

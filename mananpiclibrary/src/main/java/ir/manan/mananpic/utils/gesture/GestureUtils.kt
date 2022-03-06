@@ -38,6 +38,21 @@ class GestureUtils {
         }
 
         /**
+         * Converts the current degree to be between 0-360 degrees.
+         */
+        fun mapTo360(degree: Double): Double {
+            return when {
+                degree > 360 -> {
+                    degree - 360
+                }
+                degree < 0f -> {
+                    degree + 360
+                }
+                else -> degree
+            }
+        }
+
+        /**
          * Calculates if a vector is in range of target point.
          * @param x Touch point x.
          * @param y Touch point y.
