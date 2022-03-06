@@ -109,15 +109,15 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         }
     }
 
-    override fun scaleTexture(scaleFactor: Float) {
+    override fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float) {
         paint.shader?.run {
-            shaderMatrix.postScale(scaleFactor, scaleFactor)
+            shaderMatrix.postScale(scaleFactor, scaleFactor,pivotX,pivotY)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
     }
 
-    override fun rotateTexture(rotateTo: Float) {
+    override fun rotateTexture(rotateTo: Float, pivotX: Float, pivotY: Float) {
         paint.shader?.run {
             shaderMatrix.postRotate(
                 rotateTo - shaderRotationHolder,
@@ -160,7 +160,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         } else {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
         }
-        scaleTexture(scaleFactor)
+        scaleTexture(scaleFactor,0f,0f)
     }
 
     override fun applyMovement(dx: Float, dy: Float) {
