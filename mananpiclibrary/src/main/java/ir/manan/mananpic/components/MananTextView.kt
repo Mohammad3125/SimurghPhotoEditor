@@ -111,7 +111,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
 
     override fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float) {
         paint.shader?.run {
-            shaderMatrix.postScale(scaleFactor, scaleFactor,pivotX,pivotY)
+            shaderMatrix.postScale(scaleFactor, scaleFactor, pivotX, pivotY)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
@@ -160,7 +160,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
         } else {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * scaleFactor)
         }
-        scaleTexture(scaleFactor,0f,0f)
+        scaleTexture(scaleFactor, 0f, 0f)
     }
 
     override fun applyMovement(dx: Float, dy: Float) {

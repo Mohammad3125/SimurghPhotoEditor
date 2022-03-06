@@ -1066,6 +1066,12 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         }
     }
 
+    override fun deselectSelectedView() {
+        if (!isApplyingTexture) {
+            super.deselectSelectedView()
+        }
+    }
+
     /**
      * A class holding static flags for smart guideline. User should
      * set the desired flags in [setSmartGuidelineFlags] method.

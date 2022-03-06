@@ -353,7 +353,7 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
      * It does not throw exception if child in given index is null.
      * @param index Index of view that is going to be selected.
      */
-    fun selectView(index: Int) {
+    open fun selectView(index: Int) {
         val selectedChild = getChildAt(index) as? MananComponent
         if (selectedChild != null) {
             callOnChildClickListeners(selectedChild as View, true)
@@ -367,7 +367,7 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
      * Deselects the current selected view.
      * This method doesn't throw exception if there isn't any child selected.
      */
-    fun deselectSelectedView() {
+    open fun deselectSelectedView() {
         if (currentEditingView != null) {
 
             callOnChildClickListeners(currentEditingView as View, false)
@@ -380,7 +380,7 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     /**
      * Removes the view that is currently selected.
      */
-    fun removeSelectedView() {
+    open fun removeSelectedView() {
         if (currentEditingView != null) {
 
             callOnChildClickListeners(currentEditingView as View, false)
