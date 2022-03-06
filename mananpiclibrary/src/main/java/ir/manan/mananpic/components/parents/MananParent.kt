@@ -21,7 +21,7 @@ import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
 import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import kotlin.math.abs
 
-open class MananParent(context: Context, attributeSet: AttributeSet?) :
+abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     FrameLayout(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnMoveListener {
     constructor(context: Context) : this(context, null)
