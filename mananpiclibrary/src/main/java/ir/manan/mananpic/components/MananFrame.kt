@@ -13,6 +13,7 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.parents.MananParent
 import ir.manan.mananpic.properties.MananComponent
+import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
@@ -70,6 +71,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     /** Later determines if a component should skip fitting inside page phase (used when adding a clone) */
     private var isClone = false
+
+    /** If true this class enters texture applying mode */
+    private var isApplyingTexture = false
 
     /* Box around selected view related variables ------------------------------------------------------------------------------------------*/
 
@@ -183,11 +187,22 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
         detector?.run {
             val sf = detector.scaleFactor
-            if (currentEditingView != null) {
-                currentEditingView!!.applyScale(sf)
-                smartGuidelineHolder.clear()
-            } else {
-                scaleCanvas(sf, focusX, focusY)
+            when {
+                currentEditingView != null -> {
+                    if (!isApplyingTexture) {
+                        currentEditingView!!.applyScale(sf)
+                        smartGuidelineHolder.clear()
+                    } else {
+                        (currentEditingView as? Texturable?)?.scaleTexture(
+                            sf,
+                            currentEditingView!!.reportPivotX(),
+                            currentEditingView!!.reportPivotY()
+                        )
+                    }
+                }
+                currentEditingView == null -> {
+                    scaleCanvas(sf, focusX, focusY)
+                }
             }
             invalidate()
         }
@@ -202,9 +217,17 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onRotate(degree: Float): Boolean {
         currentEditingView?.run {
-            currentEditingView!!.applyRotation(degree)
-            findRotationSmartGuidelines()
-            smartGuidelineHolder.clear()
+            if (!isApplyingTexture) {
+                applyRotation(degree)
+                findRotationSmartGuidelines()
+                smartGuidelineHolder.clear()
+            } else {
+                (currentEditingView as? Texturable)?.rotateTexture(
+                    degree,
+                    reportPivotX(),
+                    reportPivotY()
+                )
+            }
             invalidate()
         }
         return true
@@ -212,13 +235,20 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onMove(dx: Float, dy: Float): Boolean {
         super.onMove(dx, dy)
-        if (currentEditingView != null) {
-            val s = canvasMatrix.getOppositeScale()
-            currentEditingView!!.applyMovement(dx * s, dy * s)
-            findSmartGuideLines()
-            smartRotationLineHolder.clear()
-        } else {
-            translateCanvas(dx, dy)
+        when {
+            currentEditingView != null -> {
+                if (!isApplyingTexture) {
+                    val s = canvasMatrix.getOppositeScale()
+                    currentEditingView!!.applyMovement(dx * s, dy * s)
+                    findSmartGuideLines()
+                    smartRotationLineHolder.clear()
+                } else {
+                    (currentEditingView as Texturable).shiftTexture(dx, dy)
+                }
+            }
+            currentEditingView == null -> {
+                translateCanvas(dx, dy)
+            }
         }
         invalidate()
         return true
@@ -969,11 +999,18 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onChildCloned() {
         isClone = true
+        isApplyingTexture = false
     }
 
     override fun onViewAdded(child: View?) {
         previousSelectedComponent = currentEditingView
+        isApplyingTexture = false
         super.onViewAdded(child)
+    }
+
+    override fun onViewRemoved(child: View?) {
+        isApplyingTexture = false
+        super.onViewRemoved(child)
     }
 
     /**
@@ -993,6 +1030,40 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         super.initializeChild(child)
         // Set this flag to later fit the component inside the page after child has been laid out.
         isChildScaleNormalized = false
+    }
+
+
+    /**
+     * Sets texture on selected component (if it implements [Texturable].) and any gestures
+     * from no on will be applied to texture instead of child unless you finalize the
+     * texture replacement by [applyTexture] method.
+     * This method doesn't throw any exception if selected component is not [Texturable].
+     * ### YOU HAVE TO CALL [applyTexture] TO FINALIZE TEXTURE PLACEMENT.
+     * @param texture Bitmap that is going to be textured on selected component.
+     * @param tileMode Tile mode of shader if texture exceeds the component's bounds.
+     * @param textureOpacity Opacity of texture that is going to be applied.
+     */
+    fun setTextureToSelectedChild(
+        texture: Bitmap,
+        tileMode: Shader.TileMode,
+        textureOpacity: Float = 1f
+    ) {
+        (currentEditingView as? Texturable)?.run {
+            applyTexture(texture, tileMode, textureOpacity)
+            isApplyingTexture = true
+        }
+    }
+
+
+    /**
+     * Finalizes texture placement on selected component.
+     * [setTextureToSelectedChild] method should be called before this method otherwise this method is useless.
+     */
+    fun applyTexture() {
+        currentEditingView?.run {
+            isApplyingTexture = false
+            rotationDetector?.resetRotation(currentEditingView!!.reportRotation())
+        }
     }
 
     /**
