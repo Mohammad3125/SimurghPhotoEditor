@@ -28,7 +28,7 @@ import kotlin.math.*
  * Derived classes could initialize gesture detectors they like and do certain thing like manipulating
  * ImageView's matrix and so on.
  */
-open class MananGestureImageView(
+abstract class MananGestureImageView(
     context: Context,
     attributeSet: AttributeSet?
 ) :
