@@ -7,6 +7,7 @@ import android.util.AttributeSet
 import android.view.View
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.MananComponent
+import ir.manan.mananpic.properties.Pathable
 import ir.manan.mananpic.utils.sp
 import kotlin.math.abs
 import kotlin.math.max
@@ -19,7 +20,7 @@ import kotlin.math.min
  *
  */
 class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable {
+    MananComponent, Bitmapable, Pathable {
     constructor(context: Context) : this(context, null)
 
     private val textPaint by lazy {
@@ -187,4 +188,26 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
         return outputBitmap
     }
 
+    override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
+        textPaint.apply {
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeWidth
+
+            pathEffect = ComposePathEffect(
+                DashPathEffect(floatArrayOf(on, off), 0f),
+                CornerPathEffect(radius)
+            )
+        }
+        invalidate()
+    }
+
+    override fun applyPath(onAndOff: Float, radius: Float, strokeWidth: Float) {
+        applyPath(onAndOff, onAndOff, radius, strokeWidth)
+    }
+
+    override fun removePath() {
+        textPaint.pathEffect = null
+        textPaint.style = Paint.Style.FILL
+        invalidate()
+    }
 }
