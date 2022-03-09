@@ -8,16 +8,18 @@ import android.graphics.Shader
 interface Gradientable {
 
     /**
-     * Applies a linear gradient to the view.
-     * @param x0 Starting point of gradient in x direction.
-     * @param y0 Starting point of gradient in y direction.
-     * @param x1 Ending point of gradient in x direction.
-     * @param y1 Ending point of gradient in y direction.
-     * @param colors This parameter represents the colors of gradient.
-     * @param position This parameter defines the position of each color (can be null to distribute the colors evenly).
-     * @param tileMode This parameter represents the tile mode of shader.
-     *  @param rotation The rotation to be applied to the gradient. default is 0.
-     * @see android.graphics.LinearGradient
+     * Create a shader that draws a linear gradient along a line.
+     *
+     * @param x0           The x-coordinate for the start of the gradient line
+     * @param y0           The y-coordinate for the start of the gradient line
+     * @param x1           The x-coordinate for the end of the gradient line
+     * @param y1           The y-coordinate for the end of the gradient line
+     * @param colors       The sRGB colors to be distributed along the gradient line
+     * @param position    May be null. The relative positions [0..1] of
+     *                     each corresponding color in the colors array. If this is null,
+     *                     the the colors are distributed evenly along the gradient line.
+     * @param tileMode         The Shader tiling mode
+     * @param rotation     Rotation of gradient.
      */
     fun applyLinearGradient(
         x0: Float,
@@ -32,15 +34,18 @@ interface Gradientable {
 
 
     /**
-     * Applies a radial gradient to the view.
-     * @param centerX  Defines the center of gradient on x direction.
-     * @param centerY  Defines the center of gradient on y direction.
-     * @param radius  Defines the radius of gradient.
-     * @param colors  Represents the colors of gradient.
-     * @param stops The relative position of each corresponding color in the colors array. If null, colors are distributed evenly between the center and edge of the circle. This value may be null.
-     * @param tileMode Represents the tile mode of shader.
-     * @param rotation The rotation to be applied to the gradient. default is 0.
-     * @see android.graphics.RadialGradient
+     * Create a shader that draws a radial gradient given the center and radius.
+     *
+     * @param centerX  The x-coordinate of the center of the radius
+     * @param centerY  The y-coordinate of the center of the radius
+     * @param radius   Must be positive. The radius of the circle for this gradient.
+     * @param colors   The sRGB colors to be distributed between the center and edge of the circle
+     * @param stops    May be <code>null</code>. Valid values are between <code>0.0f</code> and
+     *                 <code>1.0f</code>. The relative position of each corresponding color in
+     *                 the colors array. If <code>null</code>, colors are distributed evenly
+     *                 between the center and edge of the circle.
+     * @param tileMode The Shader tiling mode
+     * @param rotation Rotation of gradient.
      */
     fun applyRadialGradient(
         centerX: Float,
@@ -54,13 +59,20 @@ interface Gradientable {
 
 
     /**
-     * Applies a sweep gradient to the view.
-     * @param cx The x-coordinate of the center.
-     * @param cy The y-coordinate of the center.
-     * @param colors Represents the colors of gradient.
-     * @param positions May be NULL. The relative position of each corresponding color in the colors array, beginning with 0 and ending with 1.0. If the values are not monotonic, the drawing may produce unexpected results. If positions is NULL, then the colors are automatically spaced evenly. This value may be null.
-     * @param rotation The rotation to be applied to the gradient. default is 0.
-     * @see android.graphics.SweepGradient
+     * A Shader that draws a sweep gradient around a center point.
+     *
+     * @param cx       The x-coordinate of the center
+     * @param cy       The y-coordinate of the center
+     * @param colors   The sRGB colors to be distributed between around the center.
+     *                 There must be at least 2 colors in the array.
+     * @param positions May be NULL. The relative position of
+     *                 each corresponding color in the colors array, beginning
+     *                 with 0 and ending with 1.0. If the values are not
+     *                 monotonic, the drawing may produce unexpected results.
+     *                 If positions is NULL, then the colors are automatically
+     *                 spaced evenly.
+     *
+     * @param rotation Rotation of gradient.
      */
     fun applySweepGradient(
         cx: Float,
