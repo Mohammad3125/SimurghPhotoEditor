@@ -5,10 +5,8 @@ import android.graphics.*
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
-import ir.manan.mananpic.properties.Bitmapable
-import ir.manan.mananpic.properties.Blurable
-import ir.manan.mananpic.properties.MananComponent
-import ir.manan.mananpic.properties.Pathable
+import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.sp
 import kotlin.math.abs
 import kotlin.math.max
@@ -21,7 +19,7 @@ import kotlin.math.min
  *
  */
 class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable, Blurable {
+    MananComponent, Bitmapable, Pathable, Blurable, Texturable {
     constructor(context: Context) : this(context, null)
 
     private val textPaint by lazy {
@@ -74,6 +72,12 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
      */
     private var extraSpace = 0f
 
+    private val shaderMatrix by lazy {
+        MananMatrix()
+    }
+
+    private var shaderRotationHolder = 0f
+
     override fun reportBound(): RectF {
         return finalBounds.apply {
             set(x, y, width + x, height + y)
@@ -106,6 +110,7 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
 
     override fun applyScale(scaleFactor: Float) {
         textSize *= scaleFactor
+        scaleTexture(scaleFactor, 0f, 0f)
     }
 
     override fun applyMovement(dx: Float, dy: Float) {
@@ -247,4 +252,57 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
         setLayerType(LAYER_TYPE_NONE, null)
         requestLayout()
     }
+
+    override fun applyTexture(bitmap: Bitmap, opacity: Float) {
+        applyTexture(bitmap, Shader.TileMode.REPEAT, opacity)
+    }
+
+    /**
+     * Applies a texture to the text with default tileMode of [Shader.TileMode.REPEAT]
+     * @param bitmap The bitmap texture that is going to be applied to the view.
+     * @param tileMode The bitmap mode [Shader.TileMode]
+     */
+    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
+        textPaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
+            alpha = opacity
+            setLocalMatrix(shaderMatrix)
+        }
+        invalidate()
+    }
+
+    override fun shiftTexture(dx: Float, dy: Float) {
+        textPaint.shader?.run {
+            shaderMatrix.postTranslate(dx, dy)
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float) {
+        textPaint.shader?.run {
+            shaderMatrix.postScale(scaleFactor, scaleFactor, pivotX, pivotY)
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun rotateTexture(rotateTo: Float, pivotX: Float, pivotY: Float) {
+        textPaint.shader?.run {
+            shaderMatrix.postRotate(
+                rotateTo - shaderRotationHolder,
+                pivotX,
+                pivotY
+            )
+            shaderRotationHolder = rotateTo
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun removeTexture() {
+        textPaint.shader = null
+        invalidate()
+    }
+
+
 }
