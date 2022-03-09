@@ -71,6 +71,7 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
      * Extra space used to expand the width and height of view to prevent clipping in special cases like Blur mask and so on.
      */
     private var extraSpace = 0f
+    private var lastExtraSpace = 0f
 
     private val shaderMatrix by lazy {
         MananMatrix()
@@ -80,6 +81,8 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
 
     private var textStrokeWidth = 0f
     private var strokeColor: Int = Color.BLACK
+
+    private var bitmapShader: BitmapShader? = null
 
     override fun reportBound(): RectF {
         return finalBounds.apply {
@@ -113,7 +116,7 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
 
     override fun applyScale(scaleFactor: Float) {
         textSize *= scaleFactor
-        scaleTexture(scaleFactor, 0f, 0f)
+        scaleTexture(scaleFactor, 0f, (extraSpace * 2))
     }
 
     override fun applyMovement(dx: Float, dy: Float) {
@@ -130,17 +133,15 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val fontMetrics = textPaint.fontMetrics
 
-        val finalBlurRadius = extraSpace * 2
+        val finalExtraSpace = extraSpace * 2
 
-        val textWidth = textPaint.measureText(text) + finalBlurRadius
+        val textWidth = textPaint.measureText(text) + finalExtraSpace
 
         val textHeight =
-            abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + finalBlurRadius
+            abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + finalExtraSpace
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
-
-        shiftTexture(0f, finalBlurRadius - shaderMatrix.getTranslationY(true))
 
         setMeasuredDimension(
             if (suggestedMinimumWidth > textWidth) suggestedMinimumWidth else textWidth.toInt(),
@@ -281,21 +282,26 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
         setLayerType(LAYER_TYPE_SOFTWARE, null)
         textPaint.maskFilter = BlurMaskFilter(blurRadius, filter)
-// Add extra offset to prevent clipping because of software layer.
-        extraSpace = if (blurRadius > textStrokeWidth) {
+        // Add extra offset to prevent clipping because of software layer.
+        val newExtraSpace = if (blurRadius > textStrokeWidth) {
             blurRadius
         } else {
             textStrokeWidth
         }
+
+        shiftTexture(0f, (newExtraSpace - extraSpace) * 2)
+
+        extraSpace = newExtraSpace
+
         requestLayout()
     }
 
     override fun removeBlur() {
         textPaint.maskFilter = null
 
-// Clear extra space by setting it to size of stroke width.
-// If stroke width exists then we don't go lower than that,
-// if it doesn't then extra space would be set to 0.
+        // Clear extra space by setting it to size of stroke width.
+        // If stroke width exists then we don't go lower than that,
+        // if it doesn't then extra space would be set to 0.
         extraSpace = textStrokeWidth
 
         setLayerType(LAYER_TYPE_NONE, null)
@@ -312,6 +318,11 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
+        bitmapShader = BitmapShader(bitmap, tileMode, tileMode).apply {
+            alpha = opacity
+            setLocalMatrix(shaderMatrix)
+        }
+
         textPaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
             alpha = opacity
             setLocalMatrix(shaderMatrix)
@@ -349,6 +360,7 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     }
 
     override fun removeTexture() {
+        bitmapShader = null
         textPaint.shader = null
         invalidate()
     }
@@ -423,6 +435,7 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
         if (strokeRadiusPx < 0f) throw IllegalStateException("Stroke width should be a positive number")
         textStrokeWidth = strokeRadiusPx
         this.strokeColor = strokeColor
+        shiftTexture(0f, (strokeRadiusPx - extraSpace) * 2)
         extraSpace = strokeRadiusPx
         requestLayout()
     }
