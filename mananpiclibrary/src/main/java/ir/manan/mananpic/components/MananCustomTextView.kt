@@ -5,7 +5,9 @@ import android.graphics.*
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.sp
 import kotlin.math.abs
@@ -125,8 +127,31 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     }
 
     override fun clone(): View {
-        // Not yet implemented.
-        return this
+        return MananFactory.createTextView(context, text).also { textView ->
+            textView.setLayerType(layerType, null)
+            textView.textSize = textSize
+            textView.textColor = textColor
+            textView.textPaint.typeface = textPaint.typeface
+            textView.textPaint.style = textPaint.style
+            textView.textPaint.strokeWidth = textPaint.strokeWidth
+            textView.textPaint.pathEffect = textPaint.pathEffect
+            textView.textSize += 0.001f
+            textView.extraSpace = extraSpace
+            textView.textBaseLine = textView.textBaseLine
+            textView.strokeColor = strokeColor
+            textView.textStrokeWidth = textStrokeWidth
+            textView.shaderRotationHolder = shaderRotationHolder
+            textView.bitmapShader = bitmapShader
+            doOnPreDraw {
+                textView.shaderMatrix.set(shaderMatrix)
+                textView.textPaint.shader = bitmapShader
+                if (textView.textPaint.shader != null) {
+                    textView.textPaint.shader.setLocalMatrix(shaderMatrix)
+                }
+            }
+            textView.textPaint.maskFilter = textPaint.maskFilter
+            textView.setLayerType(layerType, null)
+        }
     }
 
 
@@ -245,8 +270,6 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
 
             style = Paint.Style.STROKE
 
-            val wasPathEffectNull = pathEffect == null
-
             pathEffect = ComposePathEffect(
                 DashPathEffect(floatArrayOf(on, off), 0f),
                 CornerPathEffect(radius)
@@ -254,9 +277,8 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
 
             // Hack to apply path effect on stroke.
             // Will not apply path effect on stroke if this hack is not used.
-            if (wasPathEffectNull) {
-                textSize += 0.001f
-            }
+            textSize += 0.001f
+
             invalidate()
         }
     }
