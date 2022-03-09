@@ -19,7 +19,7 @@ import kotlin.math.min
  *
  */
 class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable, Blurable, Texturable, Gradientable {
+    MananComponent, Bitmapable, Pathable, Blurable, Texturable, Gradientable, StrokeCapable {
     constructor(context: Context) : this(context, null)
 
     private val textPaint by lazy {
@@ -77,6 +77,9 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     }
 
     private var shaderRotationHolder = 0f
+
+    private var textStrokeWidth = 0f
+    private var strokeColor: Int = Color.BLACK
 
     override fun reportBound(): RectF {
         return finalBounds.apply {
@@ -137,6 +140,8 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
 
+        shiftTexture(0f, finalBlurRadius - shaderMatrix.getTranslationY(true))
+
         setMeasuredDimension(
             if (suggestedMinimumWidth > textWidth) suggestedMinimumWidth else textWidth.toInt(),
             if (suggestedMinimumHeight > textHeight) suggestedMinimumWidth else textHeight.toInt()
@@ -154,9 +159,28 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     override fun onDraw(canvas: Canvas?) {
         canvas?.run {
             super.onDraw(this)
+
             save()
 
-            translate(extraSpace, -(extraSpace))
+            translate(extraSpace, -extraSpace)
+
+            if (textStrokeWidth > 0f) {
+                val currentColor = textColor
+                val currentStyle = textPaint.style
+                textPaint.style = Paint.Style.STROKE
+                textPaint.strokeWidth = textStrokeWidth
+                val currentShader = textPaint.shader
+                textPaint.shader = null
+                textColor = strokeColor
+
+                drawText(text, 0f, textBaseLine, textPaint)
+
+                textPaint.shader = currentShader
+                textPaint.style = currentStyle
+                textPaint.strokeWidth = 0f
+                textColor = currentColor
+
+            }
 
             drawText(text, 0f, textBaseLine, textPaint)
 
@@ -213,15 +237,27 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
         textPaint.apply {
+
+            if (textStrokeWidth == 0f) {
+                this.strokeWidth = strokeWidth
+            }
+
             style = Paint.Style.STROKE
-            this.strokeWidth = strokeWidth
+
+            val wasPathEffectNull = pathEffect == null
 
             pathEffect = ComposePathEffect(
                 DashPathEffect(floatArrayOf(on, off), 0f),
                 CornerPathEffect(radius)
             )
+
+            // Hack to apply path effect on stroke.
+            // Will not apply path effect on stroke if this hack is not used.
+            if (wasPathEffectNull) {
+                textSize += 0.001f
+            }
+            invalidate()
         }
-        invalidate()
     }
 
     override fun applyPath(onAndOff: Float, radius: Float, strokeWidth: Float) {
@@ -229,9 +265,13 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     }
 
     override fun removePath() {
-        textPaint.pathEffect = null
-        textPaint.style = Paint.Style.FILL
-        invalidate()
+        if (textPaint.pathEffect != null) {
+            textPaint.pathEffect = null
+            textPaint.style = Paint.Style.FILL
+            // Hack to remove path if stroke has been applied.
+            textSize -= 0.001f
+            invalidate()
+        }
     }
 
     override fun applyBlur(blurRadius: Float) {
@@ -241,14 +281,23 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
         setLayerType(LAYER_TYPE_SOFTWARE, null)
         textPaint.maskFilter = BlurMaskFilter(blurRadius, filter)
-        // Add extra offset to prevent clipping because of software layer.
-        extraSpace = blurRadius
+// Add extra offset to prevent clipping because of software layer.
+        extraSpace = if (blurRadius > textStrokeWidth) {
+            blurRadius
+        } else {
+            textStrokeWidth
+        }
         requestLayout()
     }
 
     override fun removeBlur() {
         textPaint.maskFilter = null
-        extraSpace = 0f
+
+// Clear extra space by setting it to size of stroke width.
+// If stroke width exists then we don't go lower than that,
+// if it doesn't then extra space would be set to 0.
+        extraSpace = textStrokeWidth
+
         setLayerType(LAYER_TYPE_NONE, null)
         requestLayout()
     }
@@ -368,5 +417,13 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
                 })
             }
         invalidate()
+    }
+
+    override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
+        if (strokeRadiusPx < 0f) throw IllegalStateException("Stroke width should be a positive number")
+        textStrokeWidth = strokeRadiusPx
+        this.strokeColor = strokeColor
+        extraSpace = strokeRadiusPx
+        requestLayout()
     }
 }
