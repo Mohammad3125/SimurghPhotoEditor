@@ -6,6 +6,7 @@ import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
 import ir.manan.mananpic.properties.Bitmapable
+import ir.manan.mananpic.properties.Blurable
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.properties.Pathable
 import ir.manan.mananpic.utils.sp
@@ -20,7 +21,7 @@ import kotlin.math.min
  *
  */
 class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable {
+    MananComponent, Bitmapable, Pathable, Blurable {
     constructor(context: Context) : this(context, null)
 
     private val textPaint by lazy {
@@ -66,6 +67,12 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
      * Baseline of text to be drawn.
      */
     private var textBaseLine = 0f
+
+
+    /**
+     * Extra space used to expand the width and height of view to prevent clipping in special cases like Blur mask and so on.
+     */
+    private var extraSpace = 0f
 
     override fun reportBound(): RectF {
         return finalBounds.apply {
@@ -114,8 +121,13 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val fontMetrics = textPaint.fontMetrics
-        val textWidth = textPaint.measureText(text)
-        val textHeight = abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading
+
+        val finalBlurRadius = extraSpace * 2
+
+        val textWidth = textPaint.measureText(text) + finalBlurRadius
+
+        val textHeight =
+            abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + finalBlurRadius
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
@@ -137,7 +149,13 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     override fun onDraw(canvas: Canvas?) {
         canvas?.run {
             super.onDraw(this)
+            save()
+
+            translate(extraSpace, -(extraSpace))
+
             drawText(text, 0f, textBaseLine, textPaint)
+
+            restore()
         }
     }
 
@@ -209,5 +227,24 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
         textPaint.pathEffect = null
         textPaint.style = Paint.Style.FILL
         invalidate()
+    }
+
+    override fun applyBlur(blurRadius: Float) {
+        applyBlur(blurRadius, BlurMaskFilter.Blur.NORMAL)
+    }
+
+    override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        textPaint.maskFilter = BlurMaskFilter(blurRadius, filter)
+        // Add extra offset to prevent clipping because of software layer.
+        extraSpace = blurRadius
+        requestLayout()
+    }
+
+    override fun removeBlur() {
+        textPaint.maskFilter = null
+        extraSpace = 0f
+        setLayerType(LAYER_TYPE_NONE, null)
+        requestLayout()
     }
 }
