@@ -24,6 +24,11 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     MananComponent, Bitmapable, Pathable, Blurable, Texturable, Gradientable, StrokeCapable {
     constructor(context: Context) : this(context, null)
 
+    private var shadowRadius = 0f
+    private var shadowDx = 0f
+    private var shadowDy = 0f
+    private var shadowLColor = 0
+
     private val textPaint by lazy {
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
@@ -150,7 +155,12 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
                 }
             }
             textView.textPaint.maskFilter = textPaint.maskFilter
-            textView.setLayerType(layerType, null)
+            textView.setShadowLayer(
+                shadowRadius,
+                shadowDx,
+                shadowDy,
+                shadowLColor
+            )
         }
     }
 
@@ -460,5 +470,23 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
         shiftTexture(0f, (strokeRadiusPx - extraSpace) * 2)
         extraSpace = strokeRadiusPx
         requestLayout()
+    }
+
+    fun setShadowLayer(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
+        shadowRadius = radius
+        shadowDx = dx
+        shadowDy = dy
+        shadowLColor = shadowColor
+        textPaint.setShadowLayer(radius, dx, dy, shadowColor)
+        invalidate()
+    }
+
+    fun clearShadowLayer() {
+        textPaint.clearShadowLayer()
+        shadowRadius = 0f
+        shadowDx = 0f
+        shadowDy = 0f
+        shadowLColor = 0
+        invalidate()
     }
 }
