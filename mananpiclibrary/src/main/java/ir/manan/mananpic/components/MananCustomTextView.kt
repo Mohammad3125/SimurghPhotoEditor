@@ -19,7 +19,7 @@ import kotlin.math.min
  *
  */
 class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable, Blurable, Texturable {
+    MananComponent, Bitmapable, Pathable, Blurable, Texturable, Gradientable {
     constructor(context: Context) : this(context, null)
 
     private val textPaint by lazy {
@@ -304,5 +304,69 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
         invalidate()
     }
 
+    override fun removeGradient() {
+        textPaint.shader = null
+        invalidate()
+    }
 
+    override fun applyLinearGradient(
+        x0: Float,
+        y0: Float,
+        x1: Float,
+        y1: Float,
+        colors: IntArray,
+        position: FloatArray?,
+        tileMode: Shader.TileMode,
+        rotation: Float
+    ) {
+        textPaint.shader =
+            LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+                setLocalMatrix(shaderMatrix.apply {
+                    setRotate(rotation)
+                })
+            }
+
+        invalidate()
+    }
+
+    override fun applyRadialGradient(
+        centerX: Float,
+        centerY: Float,
+        radius: Float,
+        colors: IntArray,
+        stops: FloatArray?,
+        tileMode: Shader.TileMode,
+        rotation: Float
+    ) {
+        textPaint.shader =
+            RadialGradient(
+                centerX,
+                centerY,
+                radius,
+                colors,
+                stops,
+                tileMode
+            ).apply {
+                setLocalMatrix(shaderMatrix.apply {
+                    setRotate(rotation)
+                })
+            }
+        invalidate()
+    }
+
+    override fun applySweepGradient(
+        cx: Float,
+        cy: Float,
+        colors: IntArray,
+        positions: FloatArray?,
+        rotation: Float
+    ) {
+        textPaint.shader =
+            SweepGradient(cx, cy, colors, positions).apply {
+                setLocalMatrix(shaderMatrix.apply {
+                    setRotate(rotation)
+                })
+            }
+        invalidate()
+    }
 }
