@@ -5,9 +5,12 @@ import android.graphics.*
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.sp
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A custom textview created because of clipping issues with current [android.widget.TextView] in android framework.
@@ -16,7 +19,7 @@ import kotlin.math.abs
  *
  */
 class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent {
+    MananComponent, Bitmapable {
     constructor(context: Context) : this(context, null)
 
     private val textPaint by lazy {
@@ -143,6 +146,45 @@ class MananCustomTextView(context: Context, attr: AttributeSet?) : View(context,
     fun setTypeFace(typeFace: Typeface) {
         textPaint.typeface = typeFace
         requestLayout()
+    }
+
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
+        val textBounds = reportBound()
+        val outputBitmap =
+            Bitmap.createBitmap(
+                textBounds.width().toInt(),
+                textBounds.height().toInt(),
+                config
+            )
+
+        val canvas = Canvas(outputBitmap)
+        draw(canvas)
+
+        return outputBitmap
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+        val textBounds = reportBound()
+
+        // Determine how much the desired width and height is scaled base on
+        // smallest desired dimension divided by maximum text dimension.
+        val totalScaled = min(width, height) / max(textBounds.width(), textBounds.height())
+
+        // Create output bitmap matching desired width,height and config.
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        // Calculate extra width and height remaining to later use to center the image inside bitmap.
+        val extraWidth = (width / totalScaled) - textBounds.width()
+        val extraHeight = (height / totalScaled) - textBounds.height()
+
+        Canvas(outputBitmap).run {
+            scale(totalScaled, totalScaled)
+            // Finally translate to center the content.
+            translate(extraWidth * 0.5f, extraHeight * 0.5f)
+            draw(this)
+        }
+
+        return outputBitmap
     }
 
 }
