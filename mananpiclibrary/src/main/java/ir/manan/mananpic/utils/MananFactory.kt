@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import android.widget.FrameLayout
-import ir.manan.mananpic.components.MananCustomTextView
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.components.imageviews.MananImageView
 
@@ -27,10 +26,10 @@ class MananFactory {
         }
 
         /**
-         * Creates a [MananCustomTextView] with required layout params.
+         * Creates a [MananTextView] with required layout params.
          */
-        fun createTextView(context: Context, text: String): MananCustomTextView {
-            return MananCustomTextView(context).apply {
+        fun createTextView(context: Context, text: String): MananTextView {
+            return MananTextView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
