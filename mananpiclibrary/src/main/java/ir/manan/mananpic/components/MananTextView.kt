@@ -122,7 +122,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     override fun applyScale(scaleFactor: Float) {
         textSize *= scaleFactor
-        scaleTexture(scaleFactor, 0f, (extraSpace * 2))
+        scaleTexture(scaleFactor, 0f, (extraSpace * 2) + (paddingTop + paddingBottom))
     }
 
     override fun applyMovement(dx: Float, dy: Float) {
@@ -169,10 +169,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         val finalExtraSpace = extraSpace * 2
 
-        val textWidth = textPaint.measureText(text) + finalExtraSpace
+        val textWidth = textPaint.measureText(text) + finalExtraSpace + paddingLeft + paddingRight
 
         val textHeight =
-            abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + finalExtraSpace
+            abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + finalExtraSpace + paddingTop + paddingBottom
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
@@ -197,7 +197,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             save()
 
-            translate(extraSpace, -extraSpace)
+            translate(extraSpace + paddingLeft, -(extraSpace + paddingBottom))
 
             if (textStrokeWidth > 0f) {
                 val currentColor = textColor
