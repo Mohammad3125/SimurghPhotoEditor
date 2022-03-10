@@ -195,8 +195,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         canvas?.run {
             super.onDraw(this)
 
-            save()
-
             translate(extraSpace + paddingLeft, -(extraSpace + paddingBottom))
 
             if (textStrokeWidth > 0f) {
@@ -218,8 +216,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             }
 
             drawText(text, 0f, textBaseLine, textPaint)
-
-            restore()
         }
     }
 
