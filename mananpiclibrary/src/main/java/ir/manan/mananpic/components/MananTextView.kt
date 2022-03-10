@@ -204,14 +204,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 textPaint.strokeWidth = textStrokeWidth
                 val currentShader = textPaint.shader
                 textPaint.shader = null
-                textColor = strokeColor
+                textPaint.color = strokeColor
 
                 drawText(text, 0f, textBaseLine, textPaint)
 
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
                 textPaint.strokeWidth = 0f
-                textColor = currentColor
+                textPaint.color = currentColor
 
             }
 
