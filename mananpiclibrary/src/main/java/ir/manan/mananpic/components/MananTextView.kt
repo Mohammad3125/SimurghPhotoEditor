@@ -8,7 +8,6 @@ import android.view.View
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
-import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.max
 import kotlin.math.min
@@ -17,6 +16,7 @@ import kotlin.math.min
  * Component that extends the current [AppCompatTextView] class and adds few functionalities like
  * implementing [Pathable] and [Blurable] etc...
  */
+@Deprecated("No longer used because of clipping issues",ReplaceWith("MananCustomTextView",""))
 class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(context, attr),
     Pathable, Blurable,
     Texturable,
@@ -308,30 +308,31 @@ class MananTextView(context: Context, attr: AttributeSet?) : AppCompatTextView(c
     }
 
     override fun clone(): View {
-        return MananFactory.createTextView(context, text.toString(), maxLines).also { textView ->
-            textView.setLayerType(layerType, null)
-            textView.setTextColor(currentTextColor)
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_PX,textSize)
-            textView.typeface = typeface
-            textView.paint.style = paint.style
-            textView.paint.strokeWidth = paint.strokeWidth
-            textView.paint.pathEffect = paint.pathEffect
-            textView.shaderRotationHolder = shaderRotationHolder
-            doOnPreDraw {
-                textView.shaderMatrix.set(shaderMatrix)
-                textView.paint.shader = paint.shader
-                if (textView.paint.shader != null) {
-                    textView.paint.shader.setLocalMatrix(shaderMatrix)
-                }
-            }
-            textView.paint.maskFilter = paint.maskFilter
-            textView.setShadowLayer(
-                shadowRadius,
-                shadowDx,
-                shadowDy,
-                shadowColor
-            )
-            textView.setLayerType(layerType, null)
-        }
+//        return MananFactory.createTextView(context, text.toString(), maxLines).also { textView ->
+//            textView.setLayerType(layerType, null)
+//            textView.setTextColor(currentTextColor)
+//            textView.setTextSize(TypedValue.COMPLEX_UNIT_PX,textSize)
+//            textView.typeface = typeface
+//            textView.paint.style = paint.style
+//            textView.paint.strokeWidth = paint.strokeWidth
+//            textView.paint.pathEffect = paint.pathEffect
+//            textView.shaderRotationHolder = shaderRotationHolder
+//            doOnPreDraw {
+//                textView.shaderMatrix.set(shaderMatrix)
+//                textView.paint.shader = paint.shader
+//                if (textView.paint.shader != null) {
+//                    textView.paint.shader.setLocalMatrix(shaderMatrix)
+//                }
+//            }
+//            textView.paint.maskFilter = paint.maskFilter
+//            textView.setShadowLayer(
+//                shadowRadius,
+//                shadowDx,
+//                shadowDy,
+//                shadowColor
+//            )
+//            textView.setLayerType(layerType, null)
+//        }
+        return MananTextView(context)
     }
 }

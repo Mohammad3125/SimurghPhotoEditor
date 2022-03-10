@@ -2,9 +2,9 @@ package ir.manan.mananpic.utils
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.os.Build
 import android.widget.FrameLayout
+import ir.manan.mananpic.components.MananCustomTextView
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.components.imageviews.MananImageView
 
@@ -27,28 +27,18 @@ class MananFactory {
         }
 
         /**
-         * Creates a [MananTextView] with required layout params.
-         * @param maxLine Maximum line that current text has.
+         * Creates a [MananCustomTextView] with required layout params.
          */
-        fun createTextView(context: Context, text: String, maxLine: Int = 1): MananTextView {
-            return MananTextView(context).apply {
+        fun createTextView(context: Context, text: String): MananCustomTextView {
+            return MananCustomTextView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    val margin = -1000000
-                    leftMargin = margin
-                    rightMargin = margin
-                    topMargin = margin
-                    bottomMargin = margin
-                }
+                )
+                this.text = text
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     clipToOutline = false
                 }
-                maxLines = maxLine
-
-                this.text = text
-                setTextColor(Color.BLACK)
             }
         }
     }
