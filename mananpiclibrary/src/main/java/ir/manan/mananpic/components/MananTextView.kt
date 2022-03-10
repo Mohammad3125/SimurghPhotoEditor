@@ -24,6 +24,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     MananComponent, Bitmapable, Pathable, Blurable, Texturable, Gradientable, StrokeCapable {
     constructor(context: Context) : this(context, null)
 
+    private var isDrawnOnce = false
     private var shadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
@@ -121,7 +122,15 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun applyScale(scaleFactor: Float) {
-        textSize *= scaleFactor
+
+        if (!isDrawnOnce) {
+            doOnPreDraw {
+                textSize *= scaleFactor
+            }
+        } else {
+            textSize *= scaleFactor
+        }
+
         scaleTexture(scaleFactor, 0f, (extraSpace * 2) + (paddingTop + paddingBottom))
     }
 
@@ -217,6 +226,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             drawText(text, 0f, textBaseLine, textPaint)
         }
+        isDrawnOnce = true
     }
 
     /**
