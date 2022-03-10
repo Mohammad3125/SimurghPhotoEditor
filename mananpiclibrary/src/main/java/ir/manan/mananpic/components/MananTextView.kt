@@ -78,7 +78,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
      * Extra space used to expand the width and height of view to prevent clipping in special cases like Blur mask and so on.
      */
     private var extraSpace = 0f
-    private var lastExtraSpace = 0f
 
     private val shaderMatrix by lazy {
         MananMatrix()
