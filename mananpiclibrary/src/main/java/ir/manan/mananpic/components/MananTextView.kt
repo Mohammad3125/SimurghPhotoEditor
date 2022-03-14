@@ -85,12 +85,21 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     private var paintShader: Shader? = null
 
+    private val finalTexts by lazy {
+        mutableMapOf<String, Float>()
+    }
+
     init {
         textPaint.textSize = dp(300)
     }
 
     override fun reportBound(): RectF {
-        finalBounds.set(x, y, width + x, height + y)
+        finalBounds.set(
+            x - extraSpace,
+            y - extraSpace,
+            width + x + extraSpace,
+            height + y + extraSpace
+        )
         mappingMatrix.run {
             setScale(scaleX, scaleY, finalBounds.centerX(), finalBounds.centerY())
             mapRect(finalBounds)
@@ -171,12 +180,20 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val fontMetrics = textPaint.fontMetrics
 
-        val finalExtraSpace = extraSpace * 2
+        finalTexts.clear()
+        val texts = text.split("\n", ignoreCase = true)
+        val widths = texts.map { string -> textPaint.measureText(string) }
+        for (i in texts.indices) {
+            finalTexts[texts[i]] = widths[i]
+        }
 
-        val textWidth = textPaint.measureText(text) + finalExtraSpace + paddingLeft + paddingRight
+        val longestText = widths.maxOf { it }
+
+        val textWidth =
+            longestText + paddingLeft + paddingRight
 
         val textHeight =
-            abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + finalExtraSpace + paddingTop + paddingBottom
+            (abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + paddingTop + paddingBottom) * finalTexts.size
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
@@ -190,7 +207,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
 
-        finalBounds.set(x, y, width + x, height + y)
+        finalBounds.set(
+            x - extraSpace,
+            y - extraSpace,
+            width + x + extraSpace,
+            height + y + extraSpace
+        )
 
         textBaseLine = height - textPaint.fontMetrics.descent
     }
@@ -199,7 +221,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         canvas?.run {
             super.onDraw(this)
 
-            translate(extraSpace + paddingLeft, -(extraSpace + paddingBottom))
+            translate(paddingLeft.toFloat(), -paddingBottom.toFloat())
+
+            val toShift = ((height.toFloat() / finalTexts.size))
 
             if (textStrokeWidth > 0f) {
                 val currentColor = textColor
@@ -210,7 +234,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 textPaint.shader = null
                 textPaint.color = strokeColor
 
-                drawText(text, 0f, textBaseLine, textPaint)
+                drawTexts(this, toShift)
 
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
@@ -219,7 +243,21 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             }
 
-            drawText(text, 0f, textBaseLine, textPaint)
+            drawTexts(this, toShift)
+
+        }
+    }
+
+    private fun drawTexts(canvas: Canvas, toShift: Float) {
+        var i = 0
+        finalTexts.forEach { map ->
+            canvas.drawText(
+                map.key,
+                (width - map.value) * 0.5f /* Center the text */,
+                textBaseLine - (toShift * (finalTexts.size - (i + 1))),
+                textPaint
+            )
+            i++
         }
     }
 
@@ -467,7 +505,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         if (strokeRadiusPx < 0f) throw IllegalStateException("Stroke width should be a positive number")
         textStrokeWidth = strokeRadiusPx
         this.strokeColor = strokeColor
-        shiftTexture(0f, (strokeRadiusPx - extraSpace) * 2)
         extraSpace = strokeRadiusPx
         requestLayout()
     }
