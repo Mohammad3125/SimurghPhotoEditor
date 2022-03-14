@@ -89,6 +89,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         mutableMapOf<String, Float>()
     }
 
+    /**
+     * Sets alignment of text when drawn.
+     * - [Alignment.CENTER] Centers text.
+     * - [Alignment.LEFT] Draws text to left of view.
+     * - [Alignment.RIGHT] Draws text to right of view.
+     */
+    var textAlign: Alignment = Alignment.CENTER
+
     init {
         textPaint.textSize = dp(300)
     }
@@ -187,10 +195,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             finalTexts[texts[i]] = widths[i]
         }
 
-        val longestText = widths.maxOf { it }
-
         val textWidth =
-            longestText + paddingLeft + paddingRight
+            widths.maxOf { it } + paddingLeft + paddingRight
 
         val textHeight =
             (abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + paddingTop + paddingBottom) * finalTexts.size
@@ -253,13 +259,22 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         finalTexts.forEach { map ->
             canvas.drawText(
                 map.key,
-                (width - map.value) * 0.5f /* Center the text */,
+                (width - map.value) * Alignment.getNumber(textAlign),
                 textBaseLine - (toShift * (finalTexts.size - (i + 1))),
                 textPaint
             )
             i++
         }
     }
+
+    /**
+     * Sets alignment of current text.
+     * @see textAlign
+     */
+    fun setTextAlignment(alignment: Alignment) {
+        textAlign = alignment
+    }
+
 
     /**
      * Sets type face of current text.
@@ -525,5 +540,25 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         shadowDy = 0f
         shadowLColor = 0
         invalidate()
+    }
+
+    /**
+     * Determines alignment of drawn text in [MananTextView].
+     */
+    enum class Alignment {
+        LEFT,
+        RIGHT,
+        CENTER;
+
+        companion object {
+            fun getNumber(alignment: Alignment): Float {
+                return when (alignment) {
+                    LEFT -> 0f
+                    RIGHT -> 1f
+                    else -> 0.5f
+                }
+            }
+        }
+
     }
 }
