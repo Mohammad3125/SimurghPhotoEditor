@@ -9,7 +9,7 @@ import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
-import ir.manan.mananpic.utils.sp
+import ir.manan.mananpic.utils.dp
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -24,7 +24,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     MananComponent, Bitmapable, Pathable, Blurable, Texturable, Gradientable, StrokeCapable {
     constructor(context: Context) : this(context, null)
 
-    private var isDrawnOnce = false
     private var shadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
@@ -35,18 +34,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             style = Paint.Style.FILL
         }
     }
-
-    /**
-     * Size of current text. default if 8sp.
-     * Values will be interpreted as pixels.
-     * Use [android.util.TypedValue] or [ir.manan.mananpic.utils.sp] to convert a sp number to pixels.
-     */
-    var textSize = sp(8)
-        set(value) {
-            textPaint.textSize = value
-            field = value
-            requestLayout()
-        }
 
     /**
      * Text of current text view.
@@ -65,9 +52,20 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             invalidate()
         }
 
+    /* Allocations --------------------------------------------------------------------------------------------  */
+
     private val finalBounds by lazy {
         RectF()
     }
+
+    private val mappingMatrix by lazy {
+        Matrix()
+    }
+
+    private val shaderMatrix by lazy {
+        MananMatrix()
+    }
+
 
     /**
      * Baseline of text to be drawn.
@@ -80,21 +78,24 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
      */
     private var extraSpace = 0f
 
-    private val shaderMatrix by lazy {
-        MananMatrix()
-    }
-
     private var shaderRotationHolder = 0f
 
     private var textStrokeWidth = 0f
     private var strokeColor: Int = Color.BLACK
 
-    private var bitmapShader: BitmapShader? = null
+    private var paintShader: Shader? = null
+
+    init {
+        textPaint.textSize = dp(300)
+    }
 
     override fun reportBound(): RectF {
-        return finalBounds.apply {
-            set(x, y, width + x, height + y)
+        finalBounds.set(x, y, width + x, height + y)
+        mappingMatrix.run {
+            setScale(scaleX, scaleY, finalBounds.centerX(), finalBounds.centerY())
+            mapRect(finalBounds)
         }
+        return finalBounds
     }
 
     override fun reportRotation(): Float {
@@ -122,16 +123,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun applyScale(scaleFactor: Float) {
-
-        if (!isDrawnOnce) {
-            doOnPreDraw {
-                textSize *= scaleFactor
-            }
-        } else {
-            textSize *= scaleFactor
-        }
-
-        scaleTexture(scaleFactor, 0f, (extraSpace * 2) + (paddingTop + paddingBottom))
+        scaleX *= scaleFactor
+        scaleY *= scaleFactor
     }
 
     override fun applyMovement(dx: Float, dy: Float) {
@@ -142,22 +135,24 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     override fun clone(): View {
         return MananFactory.createTextView(context, text).also { textView ->
             textView.setLayerType(layerType, null)
-            textView.textSize = textSize
+            textView.textPaint.textSize = textPaint.textSize
+            textView.scaleX = scaleX
+            textView.scaleY = scaleY
             textView.textColor = textColor
             textView.textPaint.typeface = textPaint.typeface
             textView.textPaint.style = textPaint.style
             textView.textPaint.strokeWidth = textPaint.strokeWidth
             textView.textPaint.pathEffect = textPaint.pathEffect
-            textView.textSize += 0.001f
+
             textView.extraSpace = extraSpace
             textView.textBaseLine = textView.textBaseLine
             textView.strokeColor = strokeColor
             textView.textStrokeWidth = textStrokeWidth
             textView.shaderRotationHolder = shaderRotationHolder
-            textView.bitmapShader = bitmapShader
+            textView.paintShader = paintShader
             doOnPreDraw {
                 textView.shaderMatrix.set(shaderMatrix)
-                textView.textPaint.shader = bitmapShader
+                textView.textPaint.shader = paintShader
                 if (textView.textPaint.shader != null) {
                     textView.textPaint.shader.setLocalMatrix(shaderMatrix)
                 }
@@ -226,7 +221,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             drawText(text, 0f, textBaseLine, textPaint)
         }
-        isDrawnOnce = true
     }
 
     /**
@@ -285,14 +279,16 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             style = Paint.Style.STROKE
 
+            val wasPathNull = pathEffect == null
+
             pathEffect = ComposePathEffect(
                 DashPathEffect(floatArrayOf(on, off), 0f),
                 CornerPathEffect(radius)
             )
 
-            // Hack to apply path effect on stroke.
-            // Will not apply path effect on stroke if this hack is not used.
-            textSize += 0.001f
+            if (wasPathNull) {
+                textPaint.textSize += 0.001f
+            }
 
             invalidate()
         }
@@ -306,8 +302,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         if (textPaint.pathEffect != null) {
             textPaint.pathEffect = null
             textPaint.style = Paint.Style.FILL
-            // Hack to remove path if stroke has been applied.
-            textSize -= 0.001f
+            textPaint.textSize -= 0.001f
             invalidate()
         }
     }
@@ -355,7 +350,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
-        bitmapShader = BitmapShader(bitmap, tileMode, tileMode).apply {
+        paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
             alpha = opacity
             setLocalMatrix(shaderMatrix)
         }
@@ -397,7 +392,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun removeTexture() {
-        bitmapShader = null
+        paintShader = null
         textPaint.shader = null
         invalidate()
     }
