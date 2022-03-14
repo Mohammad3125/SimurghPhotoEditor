@@ -233,7 +233,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             translate(paddingLeft.toFloat(), -paddingBottom.toFloat())
 
-            val toShift = ((height.toFloat() / finalTexts.size))
+            val toShift = ((this@MananTextView.height.toFloat() / finalTexts.size))
 
             if (textStrokeWidth > 0f) {
                 val currentColor = textColor
