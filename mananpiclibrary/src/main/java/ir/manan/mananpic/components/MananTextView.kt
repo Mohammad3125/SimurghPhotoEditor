@@ -95,7 +95,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
      * - [Alignment.LEFT] Draws text to left of view.
      * - [Alignment.RIGHT] Draws text to right of view.
      */
-    var textAlign: Alignment = Alignment.CENTER
+    var alignmentText: Alignment = Alignment.CENTER
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     init {
         textPaint.textSize = dp(300)
@@ -259,7 +263,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         finalTexts.forEach { map ->
             canvas.drawText(
                 map.key,
-                (width - map.value) * Alignment.getNumber(textAlign),
+                (width - map.value) * Alignment.getNumber(alignmentText),
                 textBaseLine - (toShift * (finalTexts.size - (i + 1))),
                 textPaint
             )
@@ -269,10 +273,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     /**
      * Sets alignment of current text.
-     * @see textAlign
+     * @see alignmentText
      */
     fun setTextAlignment(alignment: Alignment) {
-        textAlign = alignment
+        alignmentText = alignment
     }
 
 
