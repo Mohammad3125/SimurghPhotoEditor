@@ -102,6 +102,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
 
     init {
+        setLayerType(LAYER_TYPE_HARDWARE,null)
         textPaint.textSize = dp(300)
     }
 
