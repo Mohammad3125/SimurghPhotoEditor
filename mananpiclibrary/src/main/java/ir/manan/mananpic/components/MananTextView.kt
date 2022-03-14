@@ -451,6 +451,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun removeGradient() {
+        paintShader = null
         textPaint.shader = null
         invalidate()
     }
@@ -465,6 +466,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         tileMode: Shader.TileMode,
         rotation: Float
     ) {
+        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+            setLocalMatrix(shaderMatrix.apply {
+                setRotate(rotation)
+            })
+        }
+
         textPaint.shader =
             LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
                 setLocalMatrix(shaderMatrix.apply {
@@ -484,6 +491,19 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         tileMode: Shader.TileMode,
         rotation: Float
     ) {
+        paintShader = RadialGradient(
+            centerX,
+            centerY,
+            radius,
+            colors,
+            stops,
+            tileMode
+        ).apply {
+            setLocalMatrix(shaderMatrix.apply {
+                setRotate(rotation)
+            })
+        }
+
         textPaint.shader =
             RadialGradient(
                 centerX,
@@ -507,6 +527,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         positions: FloatArray?,
         rotation: Float
     ) {
+        paintShader = SweepGradient(cx, cy, colors, positions).apply {
+            setLocalMatrix(shaderMatrix.apply {
+                setRotate(rotation)
+            })
+        }
+
         textPaint.shader =
             SweepGradient(cx, cy, colors, positions).apply {
                 setLocalMatrix(shaderMatrix.apply {
