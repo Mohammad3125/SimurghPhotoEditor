@@ -246,7 +246,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                     finalTranslateY = extraSpace
                 }
                 Alignment.CENTER -> {
-
+                    finalTranslateY = extraSpace
                 }
                 Alignment.RIGHT -> {
                     finalTranslateX = -(extraSpace * 0.5f)
