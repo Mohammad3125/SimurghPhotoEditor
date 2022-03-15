@@ -9,7 +9,6 @@ import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
-import ir.manan.mananpic.utils.dp
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -21,7 +20,7 @@ import kotlin.math.min
  *
  */
 class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable, Blurable, Texturable, Gradientable, StrokeCapable {
+    MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable {
     constructor(context: Context) : this(context, null)
 
     private var shadowRadius = 0f
@@ -102,16 +101,20 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
 
     init {
-        setLayerType(LAYER_TYPE_HARDWARE,null)
-        textPaint.textSize = dp(300)
+        setLayerType(LAYER_TYPE_HARDWARE, null)
+
+        context.resources.displayMetrics.run {
+            textPaint.textSize =
+                min(widthPixels, heightPixels) / density
+        }
     }
 
     override fun reportBound(): RectF {
         finalBounds.set(
-            x - extraSpace,
-            y - extraSpace,
-            width + x + extraSpace,
-            height + y + extraSpace
+            x,
+            y,
+            width + x,
+            height + y
         )
         mappingMatrix.run {
             setScale(scaleX, scaleY, finalBounds.centerX(), finalBounds.centerY())
@@ -200,11 +203,13 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             finalTexts[texts[i]] = widths[i]
         }
 
+        val finalExtraSpace = extraSpace * 2
+
         val textWidth =
-            widths.maxOf { it } + paddingLeft + paddingRight
+            widths.maxOf { it } + paddingLeft + paddingRight + finalExtraSpace
 
         val textHeight =
-            (abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + paddingTop + paddingBottom) * finalTexts.size
+            (abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + paddingTop + paddingBottom + finalExtraSpace) * finalTexts.size
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
@@ -219,10 +224,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         super.onLayout(changed, left, top, right, bottom)
 
         finalBounds.set(
-            x - extraSpace,
-            y - extraSpace,
-            width + x + extraSpace,
-            height + y + extraSpace
+            x,
+            y,
+            width + x,
+            height + y
         )
 
         textBaseLine = height - textPaint.fontMetrics.descent
@@ -232,7 +237,23 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         canvas?.run {
             super.onDraw(this)
 
-            translate(paddingLeft.toFloat(), -paddingBottom.toFloat())
+            var finalTranslateX = 0f
+            var finalTranslateY = 0f
+
+            when (alignmentText) {
+                Alignment.LEFT -> {
+                    finalTranslateX = extraSpace
+                    finalTranslateY = extraSpace
+                }
+                Alignment.CENTER -> {
+
+                }
+                Alignment.RIGHT -> {
+                    finalTranslateX = -(extraSpace * 0.5f)
+                }
+            }
+
+            translate((finalTranslateX + paddingLeft), -(finalTranslateY + paddingBottom))
 
             val toShift = ((this@MananTextView.height.toFloat() / finalTexts.size))
 
@@ -262,12 +283,19 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private fun drawTexts(canvas: Canvas, toShift: Float) {
         var i = 0
         finalTexts.forEach { map ->
+
+            val totalTranslated = height - (toShift * (finalTexts.size - (i)))
+            shiftTextureWithoutInvalidation(0f, totalTranslated)
+
             canvas.drawText(
                 map.key,
                 (width - map.value) * Alignment.getNumber(alignmentText),
                 textBaseLine - (toShift * (finalTexts.size - (i + 1))),
                 textPaint
             )
+
+            shiftTextureWithoutInvalidation(0f, -totalTranslated)
+
             i++
         }
     }
@@ -365,39 +393,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
     }
 
-    override fun applyBlur(blurRadius: Float) {
-        applyBlur(blurRadius, BlurMaskFilter.Blur.NORMAL)
-    }
-
-    override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
-        setLayerType(LAYER_TYPE_SOFTWARE, null)
-        textPaint.maskFilter = BlurMaskFilter(blurRadius, filter)
-        // Add extra offset to prevent clipping because of software layer.
-        val newExtraSpace = if (blurRadius > textStrokeWidth) {
-            blurRadius
-        } else {
-            textStrokeWidth
-        }
-
-        shiftTexture(0f, (newExtraSpace - extraSpace) * 2)
-
-        extraSpace = newExtraSpace
-
-        requestLayout()
-    }
-
-    override fun removeBlur() {
-        textPaint.maskFilter = null
-
-        // Clear extra space by setting it to size of stroke width.
-        // If stroke width exists then we don't go lower than that,
-        // if it doesn't then extra space would be set to 0.
-        extraSpace = textStrokeWidth
-
-        setLayerType(LAYER_TYPE_NONE, null)
-        requestLayout()
-    }
-
     override fun applyTexture(bitmap: Bitmap, opacity: Float) {
         applyTexture(bitmap, Shader.TileMode.REPEAT, opacity)
     }
@@ -425,6 +420,13 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             shaderMatrix.postTranslate(dx, dy)
             setLocalMatrix(shaderMatrix)
             invalidate()
+        }
+    }
+
+    private fun shiftTextureWithoutInvalidation(dx: Float, dy: Float) {
+        textPaint.shader?.run {
+            shaderMatrix.postTranslate(dx, dy)
+            setLocalMatrix(shaderMatrix)
         }
     }
 
@@ -551,6 +553,28 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         if (strokeRadiusPx < 0f) throw IllegalStateException("Stroke width should be a positive number")
         textStrokeWidth = strokeRadiusPx
         this.strokeColor = strokeColor
+
+
+        val diffCurrentStrokeWithLast = (strokeRadiusPx - extraSpace)
+
+        var finalShiftValueX = 0f
+
+        val finalShiftValueY = diffCurrentStrokeWithLast * 2
+
+        when (alignmentText) {
+            Alignment.LEFT -> {
+
+            }
+            Alignment.RIGHT -> {
+                finalShiftValueX = finalShiftValueY
+            }
+            Alignment.CENTER -> {
+                finalShiftValueX = diffCurrentStrokeWithLast
+            }
+        }
+
+        shiftTexture(finalShiftValueX, finalShiftValueY)
+
         extraSpace = strokeRadiusPx
         requestLayout()
     }
