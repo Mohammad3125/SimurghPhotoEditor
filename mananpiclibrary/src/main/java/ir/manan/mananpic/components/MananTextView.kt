@@ -301,15 +301,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     /**
-     * Sets alignment of current text.
-     * @see alignmentText
-     */
-    fun setTextAlignment(alignment: Alignment) {
-        alignmentText = alignment
-    }
-
-
-    /**
      * Sets type face of current text.
      */
     fun setTypeFace(typeFace: Typeface) {
