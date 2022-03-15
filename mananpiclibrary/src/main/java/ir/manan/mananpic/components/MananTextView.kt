@@ -163,6 +163,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             textView.textPaint.textSize = textPaint.textSize
             textView.scaleX = scaleX
             textView.scaleY = scaleY
+            textView.alignmentText = alignmentText
             textView.textColor = textColor
             textView.textPaint.typeface = textPaint.typeface
             textView.textPaint.style = textPaint.style
