@@ -190,6 +190,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 shadowDy,
                 shadowLColor
             )
+            textView.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom)
         }
     }
 
@@ -254,7 +255,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 }
             }
 
-            translate((finalTranslateX + (paddingLeft - paddingRight)), -(finalTranslateY + (paddingBottom - paddingTop)))
+            translate(
+                (finalTranslateX + (paddingLeft - paddingRight)),
+                -(finalTranslateY + (paddingBottom - paddingTop))
+            )
 
             val toShift = ((this@MananTextView.height.toFloat() / finalTexts.size))
 
