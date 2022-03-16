@@ -20,7 +20,7 @@ import kotlin.math.min
  *
  */
 class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable {
+    MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable, Blurable {
     constructor(context: Context) : this(context, null)
 
     private var shadowRadius = 0f
@@ -254,7 +254,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 }
             }
 
-            translate((finalTranslateX + paddingLeft), -(finalTranslateY + paddingBottom))
+            translate((finalTranslateX + (paddingLeft - paddingRight)), -(finalTranslateY + (paddingBottom - paddingTop)))
 
             val toShift = ((this@MananTextView.height.toFloat() / finalTexts.size))
 
@@ -442,6 +442,60 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             invalidate()
         }
     }
+
+    override fun applyBlur(blurRadius: Float) {
+        applyBlur(blurRadius, BlurMaskFilter.Blur.NORMAL)
+    }
+
+    override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
+        if (layerType != LAYER_TYPE_SOFTWARE) {
+            setLayerType(LAYER_TYPE_SOFTWARE, null)
+        }
+        textPaint.maskFilter = BlurMaskFilter(blurRadius, filter)
+        // Add extra offset to prevent clipping because of software layer.
+        val newExtraSpace = if (blurRadius > textStrokeWidth) {
+            blurRadius
+        } else {
+            textStrokeWidth
+        }
+
+        val diffCurrentStrokeWithLast = (newExtraSpace - extraSpace)
+
+        var finalShiftValueX = 0f
+
+        val finalShiftValueY = diffCurrentStrokeWithLast * 2
+
+        when (alignmentText) {
+            Alignment.LEFT -> {
+
+            }
+            Alignment.RIGHT -> {
+                finalShiftValueX = finalShiftValueY
+            }
+            Alignment.CENTER -> {
+                finalShiftValueX = diffCurrentStrokeWithLast
+            }
+        }
+
+        shiftTexture(finalShiftValueX, finalShiftValueY)
+
+        extraSpace = newExtraSpace
+
+        requestLayout()
+    }
+
+    override fun removeBlur() {
+        textPaint.maskFilter = null
+
+        // Clear extra space by setting it to size of stroke width.
+        // If stroke width exists then we don't go lower than that,
+        // if it doesn't then extra space would be set to 0.
+        extraSpace = textStrokeWidth
+
+        setLayerType(LAYER_TYPE_HARDWARE, null)
+        requestLayout()
+    }
+
 
     override fun removeTexture() {
         paintShader = null
