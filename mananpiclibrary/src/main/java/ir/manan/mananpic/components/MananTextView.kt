@@ -244,7 +244,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             when (alignmentText) {
                 Alignment.LEFT -> {
-                    finalTranslateX = extraSpace
+                    finalTranslateX = (extraSpace * 0.5f)
                     finalTranslateY = extraSpace
                 }
                 Alignment.CENTER -> {
@@ -252,6 +252,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 }
                 Alignment.RIGHT -> {
                     finalTranslateX = -(extraSpace * 0.5f)
+                    finalTranslateY = extraSpace
                 }
             }
 
@@ -463,25 +464,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             textStrokeWidth
         }
 
-        val diffCurrentStrokeWithLast = (newExtraSpace - extraSpace)
-
-        var finalShiftValueX = 0f
-
-        val finalShiftValueY = diffCurrentStrokeWithLast * 2
-
-        when (alignmentText) {
-            Alignment.LEFT -> {
-
-            }
-            Alignment.RIGHT -> {
-                finalShiftValueX = finalShiftValueY
-            }
-            Alignment.CENTER -> {
-                finalShiftValueX = diffCurrentStrokeWithLast
-            }
-        }
-
-        shiftTexture(finalShiftValueX, finalShiftValueY)
+        shiftTextureWithAlignment(newExtraSpace)
 
         extraSpace = newExtraSpace
 
@@ -604,8 +587,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         textStrokeWidth = strokeRadiusPx
         this.strokeColor = strokeColor
 
+        shiftTextureWithAlignment(strokeRadiusPx)
 
-        val diffCurrentStrokeWithLast = (strokeRadiusPx - extraSpace)
+        extraSpace = strokeRadiusPx
+        requestLayout()
+    }
+
+    private fun shiftTextureWithAlignment(currentStroke: Float) {
+        val diffCurrentStrokeWithLast = (currentStroke - extraSpace)
 
         var finalShiftValueX = 0f
 
@@ -624,9 +613,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
 
         shiftTexture(finalShiftValueX, finalShiftValueY)
-
-        extraSpace = strokeRadiusPx
-        requestLayout()
     }
 
     fun setShadowLayer(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
