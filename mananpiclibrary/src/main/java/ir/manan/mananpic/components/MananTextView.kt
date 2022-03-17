@@ -102,11 +102,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     init {
         setLayerType(LAYER_TYPE_HARDWARE, null)
-
-        context.resources.displayMetrics.run {
-            textPaint.textSize =
-                min(widthPixels, heightPixels) / density
-        }
+        // Minimum size of a small font cache recommended in OpenGlRendered properties.
+        textPaint.textSize = 256f
     }
 
     override fun reportBound(): RectF {
