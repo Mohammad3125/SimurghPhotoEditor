@@ -307,8 +307,11 @@ abstract class MananGestureImageView(
 
         // Determine how much the desired width and height is scaled base on
         // smallest desired dimension divided by maximum image dimension.
-        val totalScaled =
-            min(width, height) / max(boundsRectangle.width(), boundsRectangle.height())
+        var totalScaled = width / boundsRectangle.width()
+
+        if (boundsRectangle.height() * totalScaled > height) {
+            totalScaled = height / boundsRectangle.height()
+        }
 
         // Create output bitmap matching desired width,height and config.
         val outputBitmap = Bitmap.createBitmap(width, height, config)

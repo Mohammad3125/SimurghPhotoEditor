@@ -10,8 +10,6 @@ import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * A custom textview created because of clipping issues with current [android.widget.TextView] in android framework.
@@ -338,7 +336,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         // Determine how much the desired width and height is scaled base on
         // smallest desired dimension divided by maximum text dimension.
-        val totalScaled = min(width, height) / max(textBounds.width(), textBounds.height())
+        var totalScaled = width / textBounds.width()
+
+        if (textBounds.height() * totalScaled > height) {
+            totalScaled = height / textBounds.height()
+        }
 
         // Create output bitmap matching desired width,height and config.
         val outputBitmap = Bitmap.createBitmap(width, height, config)
