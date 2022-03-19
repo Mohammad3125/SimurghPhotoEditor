@@ -312,21 +312,28 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun toBitmap(config: Bitmap.Config): Bitmap {
+        val lastXScale = scaleX
+        val lastYScale = scaleY
+        scaleX = 1f
+        scaleY = 1f
         val textBounds = reportBound()
-        val outputBitmap =
-            Bitmap.createBitmap(
-                textBounds.width().toInt(),
-                textBounds.height().toInt(),
-                config
-            )
-
-        val canvas = Canvas(outputBitmap)
-        draw(canvas)
-
-        return outputBitmap
+        return Bitmap.createBitmap(
+            textBounds.width().toInt(),
+            textBounds.height().toInt(),
+            config
+        ).also { bitmap ->
+            draw(Canvas(bitmap))
+            scaleX = lastXScale
+            scaleY = lastYScale
+        }
     }
 
     override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+        val lastXScale = scaleX
+        val lastYScale = scaleY
+        scaleX = 1f
+        scaleY = 1f
+
         val textBounds = reportBound()
 
         // Determine how much the desired width and height is scaled base on
@@ -346,6 +353,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             translate(extraWidth * 0.5f, extraHeight * 0.5f)
             draw(this)
         }
+
+        scaleX = lastXScale
+        scaleY = lastYScale
 
         return outputBitmap
     }
