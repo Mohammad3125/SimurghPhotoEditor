@@ -173,7 +173,7 @@ class PenSelector : PathBasedSelector() {
         // Figure out which handle in a line user has selected.
         // Some handles are specific to one or two type of line and
         // others might be for each type of them.
-        var nearest = 0f
+        var nearest = finalRange
 
         currentHandleSelected = NONE
 
@@ -186,7 +186,7 @@ class PenSelector : PathBasedSelector() {
             )
         ) {
             (abs(bx - initialX) + abs(by - initialY)).let {
-                if (it > nearest) {
+                if (it < nearest) {
                     nearest = it
                     currentHandleSelected = END_HANDLE
                 }
@@ -202,7 +202,7 @@ class PenSelector : PathBasedSelector() {
             )
         ) {
             (abs(handleX - initialX) + abs(handleY - initialY)).let {
-                if (it > nearest) {
+                if (it < nearest) {
                     nearest = it
                     currentHandleSelected = FIRST_BEZIER_HANDLE
                 }
@@ -218,7 +218,7 @@ class PenSelector : PathBasedSelector() {
             ))
         ) {
             (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
-                if (it > nearest) {
+                if (it < nearest) {
                     nearest = it
                     currentHandleSelected = SECOND_BEZIER_HANDLE
                 }
