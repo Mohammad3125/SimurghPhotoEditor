@@ -34,6 +34,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private var isMatrixGesture = false
 
+    private var isNewGesture = false
+
     private var onSelectorStateChangeListener: OnSelectorStateChangeListener? = null
     private var onCloseCallBack: ((Boolean) -> Unit)? = null
 
@@ -102,7 +104,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
-                    if (totalPoints == 2) {
+                    if (totalPoints == 2 && isNewGesture) {
                         val secondPointerX = getX(1)
                         val secondPointerY = getY(1)
 
@@ -149,6 +151,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     }
                     return false
                 }
+                MotionEvent.ACTION_POINTER_UP -> {
+                    isNewGesture = false
+                    return false
+                }
                 MotionEvent.ACTION_UP -> {
                     if (selector != null && !isMatrixGesture) {
                         val mappedPoints = mapTouchPoints(x, y)
@@ -157,6 +163,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     }
                     animateCanvasBack()
                     isMatrixGesture = false
+                    isNewGesture = true
                     return false
                 }
                 else -> {
