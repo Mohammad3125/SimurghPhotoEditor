@@ -9,6 +9,7 @@ import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.*
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import kotlin.math.abs
 
 /**
  * Pen tool for selecting an area of interest with straight, quad bezier and cubic bezier.
@@ -172,32 +173,57 @@ class PenSelector : PathBasedSelector() {
         // Figure out which handle in a line user has selected.
         // Some handles are specific to one or two type of line and
         // others might be for each type of them.
-        currentHandleSelected =
-            if (GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    bx,
-                    by,
-                    finalRange
-                )
-            ) END_HANDLE
-            else if (GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    handleX,
-                    handleY,
-                    finalRange
-                )
-            ) FIRST_BEZIER_HANDLE
-            else if (lineType == CUBIC_BEZIER && (GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    secondHandleX,
-                    secondHandleY,
-                    finalRange
-                ))
-            ) SECOND_BEZIER_HANDLE
-            else NONE
+        var nearest = 0f
+
+        currentHandleSelected = NONE
+
+        if (GestureUtils.isNearTargetPoint(
+                initialX,
+                initialY,
+                bx,
+                by,
+                finalRange
+            )
+        ) {
+            (abs(bx - initialX) + abs(by - initialY)).let {
+                if (it > nearest) {
+                    nearest = it
+                    currentHandleSelected = END_HANDLE
+                }
+            }
+        }
+
+        if (GestureUtils.isNearTargetPoint(
+                initialX,
+                initialY,
+                handleX,
+                handleY,
+                finalRange
+            )
+        ) {
+            (abs(handleX - initialX) + abs(handleY - initialY)).let {
+                if (it > nearest) {
+                    nearest = it
+                    currentHandleSelected = FIRST_BEZIER_HANDLE
+                }
+            }
+        }
+
+        if (lineType == CUBIC_BEZIER && (GestureUtils.isNearTargetPoint(
+                initialX,
+                initialY,
+                secondHandleX,
+                secondHandleY,
+                finalRange
+            ))
+        ) {
+            (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
+                if (it > nearest) {
+                    nearest = it
+                    currentHandleSelected = SECOND_BEZIER_HANDLE
+                }
+            }
+        }
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
