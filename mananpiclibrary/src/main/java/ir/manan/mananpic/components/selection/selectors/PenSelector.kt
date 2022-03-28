@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.view.animation.LinearInterpolator
+import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.selection.selectors.PenSelector.Handle.*
 import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.NORMAL
 import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.QUAD_BEZIER
@@ -80,6 +81,26 @@ class PenSelector : PathBasedSelector() {
             }
             field = value
         }
+
+    /**
+     * Color of circles which represent anchor points.
+     * Default color is #69a2ff.
+     *
+     * Value should be a [ColorInt].
+     */
+    @ColorInt
+    var circlesColor = Color.parseColor("#69a2ff")
+        set(value) {
+            field = value
+            circlesPaint.color = value
+        }
+
+    /**
+     * Color of unselected anchor points. Default color is #7888a1.
+     * Values should be a [ColorInt].
+     */
+    @ColorInt
+    var unselectedCirclesColor = Color.parseColor("#7888a1")
 
     private val helperLinesPath by lazy {
         Path()
@@ -597,14 +618,19 @@ class PenSelector : PathBasedSelector() {
                 drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
             }
 
-            lines.forEach {
-                drawCircle(
-                    it.epx + pathOffsetX,
-                    it.epy + pathOffsetY,
-                    downSizedRadius,
-                    circlesPaint
-                )
+            lines.minus(selectedLine).forEach {
+                if (it != null) {
+                    drawCircle(
+                        it.epx + pathOffsetX,
+                        it.epy + pathOffsetY,
+                        downSizedRadius,
+                        circlesPaint.apply {
+                            color = unselectedCirclesColor
+                        }
+                    )
+                }
             }
+            circlesPaint.color = circlesColor
         }
     }
 
