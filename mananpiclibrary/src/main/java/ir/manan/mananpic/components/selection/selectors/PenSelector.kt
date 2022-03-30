@@ -47,7 +47,7 @@ class PenSelector : PathBasedSelector() {
     private var secondHandleY = 0f
 
     // Determines if initial bezier is drawn.
-    private var isTempLineDrawn = false
+    private var isNewLineDrawn = false
 
     // Variable that holds information about which handle is user currently touching in bezier mode.
     private var currentHandleSelected: Handle = NONE
@@ -75,8 +75,8 @@ class PenSelector : PathBasedSelector() {
             // Set original path to temp path if user changes
             // the type of line while a temporary line has been
             // drawn.
-            if (isTempLineDrawn) {
-                setBezierToPath()
+            if (isNewLineDrawn) {
+                finalizeLine()
                 invalidate()
             }
             field = value
@@ -196,78 +196,81 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        val finalRange = handleTouchRange * canvasMatrix.getOppositeScale()
-        // Figure out which handle in a line user has selected.
-        // Some handles are specific to one or two type of line and
-        // others might be for each type of them.
-        var nearest = finalRange
+        if (!isPathClose) {
+            val finalRange = handleTouchRange * canvasMatrix.getOppositeScale()
+            // Figure out which handle in a line user has selected.
+            // Some handles are specific to one or two type of line and
+            // others might be for each type of them.
+            var nearest = finalRange
 
-        currentHandleSelected = NONE
+            currentHandleSelected = NONE
 
-        if (GestureUtils.isNearTargetPoint(
-                initialX,
-                initialY,
-                bx,
-                by,
-                finalRange
-            )
-        ) {
-            (abs(bx - initialX) + abs(by - initialY)).let {
-                if (it < nearest) {
-                    nearest = it
+            if (GestureUtils.isNearTargetPoint(
+                    initialX,
+                    initialY,
+                    bx,
+                    by,
+                    finalRange
+                )
+            ) {
+                (abs(bx - initialX) + abs(by - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = END_HANDLE
+                    }
+                }
+            }
+
+            if (GestureUtils.isNearTargetPoint(
+                    initialX,
+                    initialY,
+                    handleX,
+                    handleY,
+                    finalRange
+                )
+            ) {
+                (abs(handleX - initialX) + abs(handleY - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = FIRST_BEZIER_HANDLE
+                    }
+                }
+            }
+
+            if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
+                    initialX,
+                    initialY,
+                    secondHandleX,
+                    secondHandleY,
+                    finalRange
+                ))
+            ) {
+                (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = SECOND_BEZIER_HANDLE
+                    }
+                }
+            }
+
+            if (currentHandleSelected == NONE) {
+                lines.find {
+                    GestureUtils.isNearTargetPoint(
+                        initialX,
+                        initialY,
+                        it.epx,
+                        it.epy,
+                        finalRange
+                    )
+                }?.let { line ->
+                    setLineRelatedVariables(line)
+
+                    selectedLine = line
+
                     currentHandleSelected = END_HANDLE
                 }
             }
-        }
 
-        if (GestureUtils.isNearTargetPoint(
-                initialX,
-                initialY,
-                handleX,
-                handleY,
-                finalRange
-            )
-        ) {
-            (abs(handleX - initialX) + abs(handleY - initialY)).let {
-                if (it < nearest) {
-                    nearest = it
-                    currentHandleSelected = FIRST_BEZIER_HANDLE
-                }
-            }
-        }
-
-        if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
-                initialX,
-                initialY,
-                secondHandleX,
-                secondHandleY,
-                finalRange
-            ))
-        ) {
-            (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
-                if (it < nearest) {
-                    nearest = it
-                    currentHandleSelected = SECOND_BEZIER_HANDLE
-                }
-            }
-        }
-
-        if (currentHandleSelected == NONE) {
-            lines.find {
-                GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    it.epx,
-                    it.epy,
-                    finalRange
-                )
-            }?.let { line ->
-                setLineRelatedVariables(line)
-
-                selectedLine = line
-
-                currentHandleSelected = END_HANDLE
-            }
         }
     }
 
@@ -313,7 +316,7 @@ class PenSelector : PathBasedSelector() {
             pathOffsetX += dx
             pathOffsetY += dy
             invalidate()
-        } else if (isTempLineDrawn) {
+        } else if (isNewLineDrawn) {
             when (currentHandleSelected) {
                 FIRST_BEZIER_HANDLE -> {
                     // Reset the bezier path to original path.
@@ -398,11 +401,11 @@ class PenSelector : PathBasedSelector() {
                 // If bezier is drawn and user touched somewhere else instead of bezier handles, then
                 // replace the current path by bezier path and set 'isBezierDrawn' to false to create a
                 // new bezier.
-                if (isTempLineDrawn && currentHandleSelected == NONE) {
-                    setBezierToPath()
+                if (isNewLineDrawn && currentHandleSelected == NONE) {
+                    finalizeLine()
                 }
 
-                if (!isTempLineDrawn && pointCounter > 0) {
+                if (!isNewLineDrawn && pointCounter > 0) {
 
                     if (lineType != NORMAL) {
 
@@ -445,7 +448,7 @@ class PenSelector : PathBasedSelector() {
                         selectedLine = Line(lastX, lastY)
                     }
 
-                    isTempLineDrawn = true
+                    isNewLineDrawn = true
 
                     // Store last point of current bezier to variables.
                     bx = lastX
@@ -459,10 +462,10 @@ class PenSelector : PathBasedSelector() {
                     lines.push(selectedLine)
                 }
 
-                // If line is close to first point that user touched and we have at least 3 lines, then
+                // If line is close to first point that user touched,
                 // close the path.
                 if (shouldClosePath(lastX, lastY)) {
-                    setBezierToPath()
+                    finalizeLine()
                     closePath()
                 }
             }
@@ -472,7 +475,7 @@ class PenSelector : PathBasedSelector() {
 
     }
 
-    private fun setBezierToPath() {
+    private fun finalizeLine() {
         if (lines.indexOf(selectedLine) == lines.size - 1) {
             vx = bx
             vy = by
@@ -480,11 +483,11 @@ class PenSelector : PathBasedSelector() {
             vx = lvx
             vy = lvy
         }
-        isTempLineDrawn = false
+        isNewLineDrawn = false
     }
 
     private fun closePath() {
-        isTempLineDrawn = false
+        isNewLineDrawn = false
         lines.lastElement().run {
             epx = firstX
             epy = firstY
@@ -517,7 +520,7 @@ class PenSelector : PathBasedSelector() {
         pathOffsetX = 0f
         pathOffsetY = 0f
 
-        isTempLineDrawn = false
+        isNewLineDrawn = false
         isPathClose = false
 
         pointCounter = 0
@@ -558,7 +561,7 @@ class PenSelector : PathBasedSelector() {
             val scale = canvasMatrix.getOppositeScale()
             val downSizedRadius = circlesRadius * scale
 
-            if (isTempLineDrawn && (selectedLine is QuadBezier || selectedLine is CubicBezier)) {
+            if (isNewLineDrawn && (selectedLine is QuadBezier || selectedLine is CubicBezier)) {
 
                 helperLinesPath.run {
                     // Set the helper points to current path to start drawings from last point of it.
@@ -606,7 +609,7 @@ class PenSelector : PathBasedSelector() {
 
             concat(canvasMatrix)
 
-            if (isTempLineDrawn) {
+            if (isNewLineDrawn) {
                 // End point of line (either bezier or straight).
                 drawCircle(bx, by, downSizedRadius, circlesPaint)
             }
@@ -646,9 +649,9 @@ class PenSelector : PathBasedSelector() {
 
                     setLineRelatedVariables(currentLine)
 
-                    isTempLineDrawn = true
+                    isNewLineDrawn = true
                 } else {
-                    isTempLineDrawn = false
+                    isNewLineDrawn = false
                 }
 
                 if (isPathClose) {
