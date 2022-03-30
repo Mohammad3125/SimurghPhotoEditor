@@ -656,6 +656,8 @@ class PenSelector : PathBasedSelector() {
 
                 if (isPathClose) {
                     isPathClose = false
+                    pathOffsetX = 0f
+                    pathOffsetY = 0f
                     cancelAnimation()
                 }
             }
