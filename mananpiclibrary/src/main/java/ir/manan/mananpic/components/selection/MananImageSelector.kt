@@ -53,6 +53,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             value?.setOnInvalidateListener(this)
             callOnStateChangeListeners(false)
             requestLayout()
+            selector?.initialize(context, canvasMatrix, boundsRectangle)
         }
 
     init {
@@ -64,12 +65,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onImageLaidOut() {
-        // Initialize the selector.
-        selector?.initialize(
-            context,
-            canvasMatrix,
-            boundsRectangle
-        )
+
     }
 
     @SuppressLint("ClickableViewAccessibility")
