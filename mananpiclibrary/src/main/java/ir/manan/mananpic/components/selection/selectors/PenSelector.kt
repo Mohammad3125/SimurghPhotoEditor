@@ -127,7 +127,7 @@ class PenSelector : PathBasedSelector() {
         repeatMode = ValueAnimator.RESTART
         setFloatValues(0f, 20f)
         addUpdateListener {
-            pointsPaint.pathEffect =
+            linesPaint.pathEffect =
                 ComposePathEffect(
                     DashPathEffect(floatArrayOf(10f, 10f), it.animatedValue as Float),
                     cornerPathEffect
@@ -137,7 +137,7 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
-    private val pointsPaint by lazy {
+    private val linesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
             style = Paint.Style.STROKE
@@ -160,10 +160,17 @@ class PenSelector : PathBasedSelector() {
 
     private var circlesRadius = 0f
 
-    private var pointsPaintStrokeWidth: Float = 0.0f
+    /**
+     * Stroke width of lines drawn.
+     *
+     * Default values is 3dp (initialized after 'initialize' method has been called.)
+     *
+     * Values are interpreted as pixels.
+     */
+    var linesStrokeWidth: Float = 0.0f
         set(value) {
             field = value
-            pointsPaint.strokeWidth = field
+            linesPaint.strokeWidth = field
         }
 
     private val lines = Stack<Line>()
@@ -183,7 +190,9 @@ class PenSelector : PathBasedSelector() {
             if (handleTouchRange == 0f)
                 handleTouchRange = dp(24)
 
-            pointsPaintStrokeWidth = dp(3)
+            if (linesStrokeWidth == 0f) {
+                linesStrokeWidth = dp(3)
+            }
 
             val intervals = dp(2)
 
@@ -532,7 +541,7 @@ class PenSelector : PathBasedSelector() {
 
     private fun cancelAnimation() {
         if (pathEffectAnimator.isRunning || pathEffectAnimator.isStarted) {
-            pointsPaint.pathEffect = null
+            linesPaint.pathEffect = null
             pathEffectAnimator.cancel()
         }
     }
@@ -552,7 +561,7 @@ class PenSelector : PathBasedSelector() {
             pathCopy.transform(canvasMatrix)
 
             // Draw the transformed path.
-            drawPath(pathCopy, pointsPaint)
+            drawPath(pathCopy, linesPaint)
 
             // Reset path copy to release memory.
             pathCopy.rewind()
