@@ -246,6 +246,23 @@ class PenSelector : PathBasedSelector() {
                 }
             }
 
+            if (GestureUtils.isNearTargetPoint(
+                    initialX,
+                    initialY,
+                    firstX,
+                    firstY,
+                    finalRange
+                ) && pointCounter == 1
+            ) {
+                (abs(firstX - initialX) + abs(firstY - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = FIRST_POINT_HANDLE
+                    }
+                }
+            }
+
+
             if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
                     initialX,
                     initialY,
@@ -279,6 +296,8 @@ class PenSelector : PathBasedSelector() {
                     currentHandleSelected = END_HANDLE
                 }
             }
+
+            println("selected handle = ${currentHandleSelected.name}")
 
         }
     }
@@ -325,7 +344,7 @@ class PenSelector : PathBasedSelector() {
             pathOffsetX += dx
             pathOffsetY += dy
             invalidate()
-        } else if (isNewLineDrawn) {
+        } else {
             when (currentHandleSelected) {
                 FIRST_BEZIER_HANDLE -> {
                     // Reset the bezier path to original path.
@@ -375,6 +394,17 @@ class PenSelector : PathBasedSelector() {
 
                     invalidate()
                 }
+                FIRST_POINT_HANDLE -> {
+                    if (pointCounter == 1) {
+                        firstX = ex
+                        firstY = ey
+
+                        vx = ex
+                        vy = ey
+
+                        invalidate()
+                    }
+                }
                 NONE -> {
 
                 }
@@ -414,7 +444,7 @@ class PenSelector : PathBasedSelector() {
                     finalizeLine()
                 }
 
-                if (!isNewLineDrawn && pointCounter > 0) {
+                if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != FIRST_POINT_HANDLE) {
 
                     if (lineType != NORMAL) {
 
@@ -683,7 +713,8 @@ class PenSelector : PathBasedSelector() {
         NONE,
         END_HANDLE,
         FIRST_BEZIER_HANDLE,
-        SECOND_BEZIER_HANDLE
+        SECOND_BEZIER_HANDLE,
+        FIRST_POINT_HANDLE
     }
 
     /**
