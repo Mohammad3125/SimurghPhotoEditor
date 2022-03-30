@@ -296,9 +296,6 @@ class PenSelector : PathBasedSelector() {
                     currentHandleSelected = END_HANDLE
                 }
             }
-
-            println("selected handle = ${currentHandleSelected.name}")
-
         }
     }
 
