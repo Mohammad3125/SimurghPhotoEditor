@@ -17,6 +17,8 @@ import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * View for selecting an area from image like selecting it with pen or selecting an area with brush etc...
@@ -38,6 +40,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private var onSelectorStateChangeListener: OnSelectorStateChangeListener? = null
     private var onCloseCallBack: ((Boolean) -> Unit)? = null
+
+    private var maximumScale = 0f
 
     private val canvasMatrix by lazy {
         MananMatrix()
@@ -65,7 +69,9 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onImageLaidOut() {
-
+        context.resources.displayMetrics.run {
+            maximumScale = max(widthPixels, heightPixels) / min(bitmapWidth, bitmapHeight) * 10f
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -250,7 +256,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private fun animateCanvasBack() {
         matrixAnimator.run {
-            startAnimation(10f, dp(48))
+            startAnimation(maximumScale, dp(48))
             setOnMatrixUpdateListener {
                 invalidate()
             }
