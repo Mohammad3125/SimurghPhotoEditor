@@ -76,7 +76,6 @@ class PenSelector : PathBasedSelector() {
             // the type of line while a temporary line has been
             // drawn.
             if (isNewLineDrawn) {
-                finalizeLine()
                 invalidate()
             }
             field = value
