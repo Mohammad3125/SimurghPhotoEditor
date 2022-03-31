@@ -251,7 +251,7 @@ class PenSelector : PathBasedSelector() {
                     firstX,
                     firstY,
                     finalRange
-                ) && pointCounter == 1
+                ) && (pointCounter == 1 || lines.indexOf(selectedLine) == 0)
             ) {
                 (abs(firstX - initialX) + abs(firstY - initialY)).let {
                     if (it < nearest) {
@@ -295,6 +295,8 @@ class PenSelector : PathBasedSelector() {
                     currentHandleSelected = END_HANDLE
                 }
             }
+
+            println("selected handle ${currentHandleSelected.name}")
         }
     }
 
@@ -391,15 +393,13 @@ class PenSelector : PathBasedSelector() {
                     invalidate()
                 }
                 FIRST_POINT_HANDLE -> {
-                    if (pointCounter == 1) {
-                        firstX = ex
-                        firstY = ey
+                    firstX = ex
+                    firstY = ey
 
-                        vx = ex
-                        vy = ey
+                    vx = ex
+                    vy = ey
 
-                        invalidate()
-                    }
+                    invalidate()
                 }
                 NONE -> {
 
@@ -439,6 +439,8 @@ class PenSelector : PathBasedSelector() {
                 if (isNewLineDrawn && currentHandleSelected == NONE) {
                     finalizeLine()
                 }
+
+                println("move up: ${currentHandleSelected.name}")
 
                 if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != FIRST_POINT_HANDLE) {
 
@@ -499,7 +501,7 @@ class PenSelector : PathBasedSelector() {
 
                 // If line is close to first point that user touched,
                 // close the path.
-                if (shouldClosePath(lastX, lastY)) {
+                if (shouldClosePath(lastX, lastY) && currentHandleSelected != FIRST_POINT_HANDLE) {
                     finalizeLine()
                     closePath()
                 }
@@ -651,7 +653,7 @@ class PenSelector : PathBasedSelector() {
 
             // Draw circle if it's first point that user touches so it will be visible that user
             // has touch the first point.
-            if (pointCounter == 1) {
+            if (pointCounter == 1 || lines.indexOf(selectedLine) == 0) {
                 // Draw first point circle.
                 drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
             }
