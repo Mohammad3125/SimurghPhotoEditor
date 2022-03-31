@@ -295,8 +295,6 @@ class PenSelector : PathBasedSelector() {
                     currentHandleSelected = END_HANDLE
                 }
             }
-
-            println("selected handle ${currentHandleSelected.name}")
         }
     }
 
@@ -439,8 +437,6 @@ class PenSelector : PathBasedSelector() {
                 if (isNewLineDrawn && currentHandleSelected == NONE) {
                     finalizeLine()
                 }
-
-                println("move up: ${currentHandleSelected.name}")
 
                 if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != FIRST_POINT_HANDLE) {
 
