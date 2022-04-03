@@ -162,8 +162,10 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    init {
+    private var excessTouchArea = dp(40)
+    private var excessTouchAreaHalf = excessTouchArea / 2
 
+    init {
         moveDetector = MoveDetector(1, this)
 
         context.theme.obtainStyledAttributes(attr, R.styleable.MananCropper, 0, 0).apply {
@@ -535,12 +537,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     ): MutableMap<Pair<PointF, PointF>, HandleBar> {
 
         return frame.run {
-
-            // Figure out some extra touch area for better touch experience.
-            val excessTouchArea = dp(40)
-            val excessTouchAreaHalf = excessTouchArea / 2
-
-
             // Store areas that handle are located + excess area.
             mutableMapOf<Pair<PointF, PointF>, HandleBar>(
                 Pair(
