@@ -115,7 +115,11 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
 
 
     // Rectangle that represents the crop frame.
-    private lateinit var frameRect: RectF
+    private val frameRect by lazy {
+        RectF()
+    }
+
+
     val cropperDimensions: RectF
         get() = frameRect
 
@@ -240,7 +244,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
      * @param height Height of objects.
      */
     private fun initializeDrawingObjects(left: Float, top: Float, width: Float, height: Float) {
-        frameRect = createFrameRect(left, top, width, height)
+        frameRect.set(left, top, width, height)
         setDrawingDimensions()
     }
 
@@ -427,15 +431,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             if ((point.x in pair.first.x..pair.second.x) && (point.y in pair.first.y..pair.second.y))
                 return mapOfHandleBars[pair]
         return null
-    }
-
-
-    /**
-     * This method creates the overlay window based on width and height of view.
-     * @return Returns a [RectF] representing the overlay window.
-     */
-    private fun createFrameRect(left: Float, top: Float, width: Float, height: Float): RectF {
-        return RectF(left, top, width, height)
     }
 
     /**
