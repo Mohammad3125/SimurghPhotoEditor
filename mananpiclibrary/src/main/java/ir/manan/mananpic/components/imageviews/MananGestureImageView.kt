@@ -373,10 +373,7 @@ abstract class MananGestureImageView(
             rightEdge = bitmapWidth + leftEdge
             bottomEdge = bitmapHeight + topEdge
 
-            val r = -atan2(
-                getSkewX(),
-                (getScaleX())
-            ) * (180f / PI)
+            val r = -atan2(getSkewX().toDouble(), getScaleX().toDouble()) * (180.0 / PI)
 
             imageRotation = GestureUtils.mapTo360(r.toFloat())
 
@@ -391,8 +388,8 @@ abstract class MananGestureImageView(
             val sinTheta = sin(radian)
 
             // Calculates the rotated bounds' center.
-            imagePivotX = (leftEdge + cx * cosTheta - cy * sinTheta).toFloat()
-            imagePivotY = (topEdge + cx * sinTheta + cy * cosTheta).toFloat()
+            imagePivotX = ((leftEdge + cx * cosTheta - cy * sinTheta) - paddingLeft).toFloat()
+            imagePivotY = ((topEdge + cx * sinTheta + cy * cosTheta)- paddingTop).toFloat()
 
             boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
         }
