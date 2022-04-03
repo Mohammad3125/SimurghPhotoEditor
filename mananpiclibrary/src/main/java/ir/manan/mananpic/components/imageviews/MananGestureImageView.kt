@@ -406,6 +406,16 @@ abstract class MananGestureImageView(
         }
     }
 
+    fun flipHorizontal() {
+        imageviewMatrix.postScale(-1f, 1f, imagePivotX, 0f)
+        imageMatrix = imageviewMatrix
+    }
+
+    fun flipVertical() {
+        imageviewMatrix.postScale(1f, -1f, 0f, imagePivotY)
+        imageMatrix = imageviewMatrix
+    }
+
     /**
      * Post scales the matrix and updates it.
      * @param scaleFactor Total amount to scale the matrix.
