@@ -52,6 +52,8 @@ class PenSelector : PathBasedSelector() {
     // Variable that holds information about which handle is user currently touching in bezier mode.
     private var currentHandleSelected: Handle = NONE
 
+    private var isOtherLinesSelected = false
+
 
     /**
      * This range will later determine the range of acceptance for current touch
@@ -293,6 +295,8 @@ class PenSelector : PathBasedSelector() {
                     selectedLine = line
 
                     currentHandleSelected = END_HANDLE
+
+                    isOtherLinesSelected = true
                 }
             }
         }
@@ -340,7 +344,7 @@ class PenSelector : PathBasedSelector() {
             pathOffsetX += dx
             pathOffsetY += dy
             invalidate()
-        } else {
+        } else if (!isOtherLinesSelected) {
             when (currentHandleSelected) {
                 FIRST_BEZIER_HANDLE -> {
                     // Reset the bezier path to original path.
@@ -503,9 +507,8 @@ class PenSelector : PathBasedSelector() {
                 }
             }
         }
-
+        isOtherLinesSelected = false
         invalidate()
-
     }
 
     private fun finalizeLine() {
