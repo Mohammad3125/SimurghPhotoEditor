@@ -352,11 +352,13 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             handleBarPaint.color = selectedHandleBarColor
 
             // After validation set the frame's dimensions.
-            frameRect.set( aspectRatio.validate(
-                frameRect,
-                changedRect,
-                limitRect
-            ))
+            frameRect.set(
+                aspectRatio.validate(
+                    frameRect,
+                    changedRect,
+                    limitRect
+                )
+            )
 
         } else {
             // If non of handle bars has been pressed, move the rectangle inside the view.
