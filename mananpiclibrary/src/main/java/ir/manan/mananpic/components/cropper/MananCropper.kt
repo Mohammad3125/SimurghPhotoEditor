@@ -123,6 +123,10 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     val cropperDimensions: RectF
         get() = frameRect
 
+    private val allocRectF by lazy {
+        RectF()
+    }
+
 
     // List of rectangles representing shadows around frame.
     private lateinit var frameShadows: List<RectF>
@@ -339,22 +343,20 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     override fun onMove(dx: Float, dy: Float): Boolean {
         // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
         val changedRect =
-            aspectRatio.resize(RectF(frameRect), handleBar, dx, dy)
+            aspectRatio.resize(allocRectF.apply {
+                set(frameRect)
+            }, handleBar, dx, dy)
 
         if (handleBar != null) {
             // Change color of handle bar indicating that user is changing size of cropper.
             handleBarPaint.color = selectedHandleBarColor
 
             // After validation set the frame's dimensions.
-            val validatedRect = aspectRatio.validate(
+            frameRect.set( aspectRatio.validate(
                 frameRect,
                 changedRect,
                 limitRect
-            )
-
-            frameRect.set(
-                validatedRect
-            )
+            ))
 
         } else {
             // If non of handle bars has been pressed, move the rectangle inside the view.
