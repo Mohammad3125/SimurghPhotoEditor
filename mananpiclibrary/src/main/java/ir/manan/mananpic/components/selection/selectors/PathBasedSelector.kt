@@ -19,8 +19,20 @@ abstract class PathBasedSelector : Selector() {
     protected var rightEdge = 0f
     protected var bottomEdge = 0f
 
+    /**
+     * Determines if path is closed or not.
+     *
+     *
+     * Selector cannot clip the content if this value is not 'true'.
+     */
     protected var isPathClose = false
 
+    /**
+     * Transformation matrix of parent selector.
+     *
+     *
+     * Selector might use this to scale,translate,rotate it's content on canvas.
+     */
     protected var canvasMatrix = MananMatrix()
 
     // Path that adds circles into it and later will be used to

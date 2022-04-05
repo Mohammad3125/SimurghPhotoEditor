@@ -29,12 +29,14 @@ class PenSelector : PathBasedSelector() {
     private var bx = 0f
     private var by = 0f
 
+    // Represent end point of previous line.
     private var vx = 0f
     private var vy = 0f
 
     private var lvx = 0f
     private var lvy = 0f
 
+    // Total offset of path after it has been closed.
     private var pathOffsetX = 0f
     private var pathOffsetY = 0f
 
@@ -46,12 +48,14 @@ class PenSelector : PathBasedSelector() {
     private var secondHandleX = 0f
     private var secondHandleY = 0f
 
-    // Determines if initial bezier is drawn.
+    /** Determines if a new line is drawn. */
     private var isNewLineDrawn = false
 
-    // Variable that holds information about which handle is user currently touching in bezier mode.
+    /** Variable that holds information about which handle is user currently touching in bezier mode. */
     private var currentHandleSelected: Handle = NONE
 
+    /**
+     *  This variables prevents end point of a line to be shifted if user selects it. */
     private var isOtherLinesSelected = false
 
 
@@ -110,17 +114,15 @@ class PenSelector : PathBasedSelector() {
     private lateinit var context: Context
 
     /**
-     *Counts total number of points on screen.
-     * This variable will later be used to only select bitmap if our points are more than 2 otherwise
-     * we cannot make a side or shape with it to be able to select.
+     * Counts total number of lines drawn.
      */
     private var pointCounter = 0
 
-    // Path effect for corner of path.
+    /** Path effect for corner of path. */
     private lateinit var cornerPathEffect: CornerPathEffect
 
-    // Animator for when a path is closed. This animator basically shifts the
-    // phase of path effect to create a cool animation.
+    /** Animator for when a path is closed. This animator basically shifts the
+    phase of path effect to create a cool animation. */
     private val pathEffectAnimator = ValueAnimator().apply {
         duration = 500
         interpolator = LinearInterpolator()
@@ -138,6 +140,9 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    /**
+     * Paint that draws lines.
+     */
     private val linesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
@@ -145,6 +150,9 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    /**
+     * Paint of circles which is handle points etc...
+     */
     private val circlesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#69a2ff")
@@ -152,6 +160,9 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    /**
+     * Paint that draws helper points.
+     */
     private val helperLinesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
@@ -159,6 +170,9 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    /**
+     * Radius of circles which will be initialized after current selector has been initialized.
+     */
     private var circlesRadius = 0f
 
     /**
@@ -174,8 +188,15 @@ class PenSelector : PathBasedSelector() {
             linesPaint.strokeWidth = field
         }
 
+    /**
+     * This stack is used to store all lines that is drawn on screen.
+     * This can act as a history to implement undo mechanism.
+     */
     private val lines = Stack<Line>()
 
+    /**
+     * Reference to current selected line.
+     */
     private var selectedLine: Line? = null
 
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
@@ -213,6 +234,7 @@ class PenSelector : PathBasedSelector() {
             // others might be for each type of them.
             var nearest = finalRange
 
+            // Reset selected handle.
             currentHandleSelected = NONE
 
             if (GestureUtils.isNearTargetPoint(
@@ -280,6 +302,10 @@ class PenSelector : PathBasedSelector() {
                 }
             }
 
+            // If there isn't any handle of current selected line selected,
+            // then look at other lines' end point and see if user has selected them.
+            // If user has selected another line, then restore state of that line, which may
+            // contain handle points and etc..
             if (currentHandleSelected == NONE) {
                 lines.find {
                     GestureUtils.isNearTargetPoint(
@@ -290,10 +316,15 @@ class PenSelector : PathBasedSelector() {
                         finalRange
                     )
                 }?.let { line ->
+                    // Restore state of current line.
                     setLineRelatedVariables(line)
 
+                    // Select the line.
                     selectedLine = line
 
+                    // Since all end point of handles are visible,
+                    // then select the end handle.
+                    // State of selector will reset to the selected line.
                     currentHandleSelected = END_HANDLE
 
                     isOtherLinesSelected = true
@@ -435,13 +466,13 @@ class PenSelector : PathBasedSelector() {
                 vy = lastY
                 pointCounter++
             } else {
-                // If bezier is drawn and user touched somewhere else instead of bezier handles, then
-                // replace the current path by bezier path and set 'isBezierDrawn' to false to create a
-                // new bezier.
+                // If a new line is drawn and user touched somewhere else instead of lines' handles, then
+                // store the last point of current line as start point of new line (because lines are drawn relative to another).
                 if (isNewLineDrawn && currentHandleSelected == NONE) {
                     finalizeLine()
                 }
 
+                // If we have drawn the first point (pointCounter > 0) and current handle is not first handle then draw a new line.
                 if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != FIRST_POINT_HANDLE) {
 
                     if (lineType != NORMAL) {
@@ -455,6 +486,7 @@ class PenSelector : PathBasedSelector() {
                             handleX = vx + (lineWidth * 0.5f)
                             handleY = vy + (lineHeight * 0.5f)
 
+                            // Create new QuadBezier and select it.
                             selectedLine = QuadBezier(lastX, lastY, handleX, handleY)
                         } else {
                             // First handle of CUBIC_BEZIER is at 33% of
@@ -467,7 +499,7 @@ class PenSelector : PathBasedSelector() {
                             secondHandleX = vx + (lineWidth * 0.66f)
                             secondHandleY = vy + (lineHeight * 0.66f)
 
-                            // Finally draw a cubic with given handle and end point.
+                            // Create new CubicBezier and select it.
                             selectedLine = CubicBezier(
                                 lastX,
                                 lastY,
@@ -479,9 +511,7 @@ class PenSelector : PathBasedSelector() {
 
                         }
                     } else {
-                        // Temporarily draw a line.
-                        // This is temporary because later user might change the end point of that line
-                        // and after that we set current temp path to original path.
+                        // Create new simple line and select it.
                         selectedLine = Line(lastX, lastY)
                     }
 
@@ -496,6 +526,7 @@ class PenSelector : PathBasedSelector() {
 
                     pointCounter++
 
+                    // Push the newly create line to lines holder.
                     lines.push(selectedLine)
                 }
 
@@ -577,14 +608,18 @@ class PenSelector : PathBasedSelector() {
     override fun draw(canvas: Canvas?) {
         canvas?.run {
 
+            // Move the allocation path to first point.
             pathCopy.moveTo(firstX, firstY)
 
+            // Draw lines in stack of lines one by one relative to each other.
             lines.forEach {
                 it.putIntoPath(pathCopy)
             }
 
+            // Offset them if user has offset them.
             pathCopy.offset(pathOffsetX, pathOffsetY)
 
+            // Transform the drawings base on the transformation matrix of parent.
             pathCopy.transform(canvasMatrix)
 
             // Draw the transformed path.
@@ -676,9 +711,12 @@ class PenSelector : PathBasedSelector() {
     override fun undo() {
         lines.run {
             if (isNotEmpty()) {
+                // Remove last line in stack.
                 pop()
 
+                // If it's not empty...
                 if (isNotEmpty()) {
+                    // Then get the previous line and select it and restore its state.
                     val currentLine = peek()
 
                     selectedLine = currentLine
@@ -690,6 +728,8 @@ class PenSelector : PathBasedSelector() {
                     isNewLineDrawn = false
                 }
 
+                // If path is close and user undoes the operation,
+                // then open the path and reset its offset and cancel path animation.
                 if (isPathClose) {
                     isPathClose = false
                     pathOffsetX = 0f
@@ -698,6 +738,7 @@ class PenSelector : PathBasedSelector() {
                 }
             }
 
+            // Decrement the counter.
             if (pointCounter > 0) {
                 --pointCounter
             }
@@ -727,6 +768,10 @@ class PenSelector : PathBasedSelector() {
         var epx: Float,
         var epy: Float,
     ) {
+        /**
+         * Draws content of current line on a given path.
+         * @param path Path that content of current line is going to be drawn on.
+         */
         open fun putIntoPath(path: Path) {
             path.lineTo(epx, epy)
         }
