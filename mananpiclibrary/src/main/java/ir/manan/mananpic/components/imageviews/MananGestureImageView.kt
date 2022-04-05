@@ -300,7 +300,7 @@ abstract class MananGestureImageView(
         val b =
             (mDrawable as BitmapDrawable).bitmap
 
-
+        // Create a bitmap and invert it vertically and or horizontally if it is inverted.
         val finalBitmap = Bitmap.createBitmap(b, 0, 0, b.width, b.height, Matrix().apply {
             postScale(
                 if (imageviewMatrix.getScaleX(true) < 0f) -1f else 1f,
@@ -400,7 +400,7 @@ abstract class MananGestureImageView(
 
             // Calculates the rotated bounds' center.
             imagePivotX = ((leftEdge + cx * cosTheta - cy * sinTheta) - paddingLeft).toFloat()
-            imagePivotY = ((topEdge + cx * sinTheta + cy * cosTheta)- paddingTop).toFloat()
+            imagePivotY = ((topEdge + cx * sinTheta + cy * cosTheta) - paddingTop).toFloat()
 
             boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
         }
