@@ -31,7 +31,7 @@ class XmlPathDataExtractor {
          * @param pullParser Parser that contains xml.
          * @return Index of given attribute name. Returns -1 if it didn't find any attribute with given name.
          */
-        fun findAttributePosition(attributeName: String, pullParser: XmlPullParser): Int {
+        private fun findAttributePosition(attributeName: String, pullParser: XmlPullParser): Int {
             return (0 until pullParser.attributeCount).firstOrNull { i ->
                 pullParser.getAttributeName(
                     i
