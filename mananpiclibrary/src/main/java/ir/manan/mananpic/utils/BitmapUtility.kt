@@ -105,11 +105,8 @@ class BitmapUtility {
             if (!bitmap.hasAlpha()) throw IllegalStateException("bitmap does not support alpha channel")
             if (sensitivity !in 0..254) throw IllegalArgumentException("sensitivity should be between 0 and 254")
 
-            // Get number of available processor.
-            val numberThreads = Runtime.getRuntime().availableProcessors()
-
             // We only need threads because there is only 4 task to be done.
-            val executor = Executors.newFixedThreadPool(if (numberThreads > 4) 4 else numberThreads)
+            val executor = Executors.newFixedThreadPool(4)
 
             // Create four tasks which approach the center of bitmap from sides.
             // This way we can find boundaries of visible pixel much faster.
