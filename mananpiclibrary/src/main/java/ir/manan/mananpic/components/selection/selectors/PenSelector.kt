@@ -3,14 +3,20 @@ package ir.manan.mananpic.components.selection.selectors
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
+import android.graphics.drawable.Drawable
 import android.view.animation.LinearInterpolator
+import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.selection.selectors.PenSelector.Handle.*
-import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.*
+import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.NORMAL
+import ir.manan.mananpic.components.selection.selectors.PenSelector.LineType.QUAD_BEZIER
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.gesture.GestureUtils
+import java.util.*
+import kotlin.math.abs
 
 /**
- * Pen tool for selecting an area of interest with straight, quad bezier and cubic bezier.
+ * Pen tool for selecting an area of interest with straight, quad bezier and cubic bezier lines.
  */
 class PenSelector : PathBasedSelector() {
 
@@ -23,6 +29,17 @@ class PenSelector : PathBasedSelector() {
     private var bx = 0f
     private var by = 0f
 
+    // Represent end point of previous line.
+    private var vx = 0f
+    private var vy = 0f
+
+    private var lvx = 0f
+    private var lvy = 0f
+
+    // Total offset of path after it has been closed.
+    private var pathOffsetX = 0f
+    private var pathOffsetY = 0f
+
     // Handle position for quad bezier.
     private var handleX = 0f
     private var handleY = 0f
@@ -31,15 +48,15 @@ class PenSelector : PathBasedSelector() {
     private var secondHandleX = 0f
     private var secondHandleY = 0f
 
-    // These variables are used to store last location that user touched.
-    private var lbx = 0f
-    private var lby = 0f
+    /** Determines if a new line is drawn. */
+    private var isNewLineDrawn = false
 
-    // Determines if initial bezier is drawn.
-    private var isTempLineDrawn = false
-
-    // Variable that holds information about which handle is user currently touching in bezier mode.
+    /** Variable that holds information about which handle is user currently touching in bezier mode. */
     private var currentHandleSelected: Handle = NONE
+
+    /**
+     *  This variables prevents end point of a line to be shifted if user selects it. */
+    private var isOtherLinesSelected = false
 
 
     /**
@@ -61,21 +78,34 @@ class PenSelector : PathBasedSelector() {
      */
     var lineType = NORMAL
         set(value) {
-            field = value
             // Set original path to temp path if user changes
             // the type of line while a temporary line has been
             // drawn.
-            if (isTempLineDrawn) {
-                setBezierToPath()
+            if (isNewLineDrawn) {
                 invalidate()
             }
+            field = value
         }
 
-    private val tempPath by lazy {
-        Path().apply {
-            fillType = Path.FillType.WINDING
+    /**
+     * Color of circles which represent anchor points.
+     * Default color is #69a2ff.
+     *
+     * Value should be a [ColorInt].
+     */
+    @ColorInt
+    var circlesColor = Color.parseColor("#69a2ff")
+        set(value) {
+            field = value
+            circlesPaint.color = value
         }
-    }
+
+    /**
+     * Color of unselected anchor points. Default color is #7888a1.
+     * Values should be a [ColorInt].
+     */
+    @ColorInt
+    var unselectedCirclesColor = Color.parseColor("#7888a1")
 
     private val helperLinesPath by lazy {
         Path()
@@ -84,17 +114,15 @@ class PenSelector : PathBasedSelector() {
     private lateinit var context: Context
 
     /**
-     *Counts total number of points on screen.
-     * This variable will later be used to only select bitmap if our points are more than 2 otherwise
-     * we cannot make a side or shape with it to be able to select.
+     * Counts total number of lines drawn.
      */
     private var pointCounter = 0
 
-    // Path effect for corner of path.
+    /** Path effect for corner of path. */
     private lateinit var cornerPathEffect: CornerPathEffect
 
-    // Animator for when a path is closed. This animator basically shifts the
-    // phase of path effect to create a cool animation.
+    /** Animator for when a path is closed. This animator basically shifts the
+    phase of path effect to create a cool animation. */
     private val pathEffectAnimator = ValueAnimator().apply {
         duration = 500
         interpolator = LinearInterpolator()
@@ -102,7 +130,7 @@ class PenSelector : PathBasedSelector() {
         repeatMode = ValueAnimator.RESTART
         setFloatValues(0f, 20f)
         addUpdateListener {
-            pointsPaint.pathEffect =
+            linesPaint.pathEffect =
                 ComposePathEffect(
                     DashPathEffect(floatArrayOf(10f, 10f), it.animatedValue as Float),
                     cornerPathEffect
@@ -112,13 +140,19 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
-    private val pointsPaint by lazy {
+    /**
+     * Paint that draws lines.
+     */
+    private val linesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
             style = Paint.Style.STROKE
         }
     }
 
+    /**
+     * Paint of circles which is handle points etc...
+     */
     private val circlesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#69a2ff")
@@ -126,6 +160,9 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    /**
+     * Paint that draws helper points.
+     */
     private val helperLinesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
@@ -133,13 +170,34 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
+    /**
+     * Radius of circles which will be initialized after current selector has been initialized.
+     */
     private var circlesRadius = 0f
 
-    private var pointsPaintStrokeWidth: Float = 0.0f
+    /**
+     * Stroke width of lines drawn.
+     *
+     * Default values is 3dp (initialized after 'initialize' method has been called.)
+     *
+     * Values are interpreted as pixels.
+     */
+    var linesStrokeWidth: Float = 0.0f
         set(value) {
             field = value
-            pointsPaint.strokeWidth = field
+            linesPaint.strokeWidth = field
         }
+
+    /**
+     * This stack is used to store all lines that is drawn on screen.
+     * This can act as a history to implement undo mechanism.
+     */
+    private val lines = Stack<Line>()
+
+    /**
+     * Reference to current selected line.
+     */
+    private var selectedLine: Line? = null
 
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
@@ -154,7 +212,9 @@ class PenSelector : PathBasedSelector() {
             if (handleTouchRange == 0f)
                 handleTouchRange = dp(24)
 
-            pointsPaintStrokeWidth = dp(3)
+            if (linesStrokeWidth == 0f) {
+                linesStrokeWidth = dp(3)
+            }
 
             val intervals = dp(2)
 
@@ -167,109 +227,232 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        // Figure out which handle in a line user has selected.
-        // Some handles are specific to one or two type of line and
-        // others might be for each type of them.
-        currentHandleSelected =
-            if (isNearTargetPoint(
+        if (!isPathClose) {
+            val finalRange = handleTouchRange * canvasMatrix.getOppositeScale()
+            // Figure out which handle in a line user has selected.
+            // Some handles are specific to one or two type of line and
+            // others might be for each type of them.
+            var nearest = finalRange
+
+            // Reset selected handle.
+            currentHandleSelected = NONE
+
+            if (GestureUtils.isNearTargetPoint(
                     initialX,
                     initialY,
                     bx,
                     by,
-                    handleTouchRange,
-                    true
+                    finalRange
                 )
-            ) END_HANDLE
-            else if (isNearTargetPoint(
+            ) {
+                (abs(bx - initialX) + abs(by - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = END_HANDLE
+                    }
+                }
+            }
+
+            if (GestureUtils.isNearTargetPoint(
                     initialX,
                     initialY,
                     handleX,
                     handleY,
-                    handleTouchRange,
-                    true
+                    finalRange
                 )
-            ) FIRST_BEZIER_HANDLE
-            else if (lineType == CUBIC_BEZIER && (isNearTargetPoint(
+            ) {
+                (abs(handleX - initialX) + abs(handleY - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = FIRST_BEZIER_HANDLE
+                    }
+                }
+            }
+
+            if (GestureUtils.isNearTargetPoint(
+                    initialX,
+                    initialY,
+                    firstX,
+                    firstY,
+                    finalRange
+                ) && (pointCounter == 1 || lines.indexOf(selectedLine) == 0)
+            ) {
+                (abs(firstX - initialX) + abs(firstY - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = FIRST_POINT_HANDLE
+                    }
+                }
+            }
+
+
+            if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
                     initialX,
                     initialY,
                     secondHandleX,
                     secondHandleY,
-                    handleTouchRange,
-                    true
+                    finalRange
                 ))
-            ) SECOND_BEZIER_HANDLE
-            else NONE
+            ) {
+                (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
+                    if (it < nearest) {
+                        nearest = it
+                        currentHandleSelected = SECOND_BEZIER_HANDLE
+                    }
+                }
+            }
+
+            // If there isn't any handle of current selected line selected,
+            // then look at other lines' end point and see if user has selected them.
+            // If user has selected another line, then restore state of that line, which may
+            // contain handle points and etc..
+            if (currentHandleSelected == NONE) {
+                lines.find {
+                    GestureUtils.isNearTargetPoint(
+                        initialX,
+                        initialY,
+                        it.epx,
+                        it.epy,
+                        finalRange
+                    )
+                }?.let { line ->
+                    // Restore state of current line.
+                    setLineRelatedVariables(line)
+
+                    // Select the line.
+                    selectedLine = line
+
+                    // Since all end point of handles are visible,
+                    // then select the end handle.
+                    // State of selector will reset to the selected line.
+                    currentHandleSelected = END_HANDLE
+
+                    isOtherLinesSelected = true
+                }
+            }
+        }
+    }
+
+    private fun setLineRelatedVariables(line: Line) {
+        bx = line.epx
+        by = line.epy
+
+        handleX = 0f
+        handleY = 0f
+
+        secondHandleX = 0f
+        secondHandleY = 0f
+
+        if (line is QuadBezier) {
+            handleX = line.handleX
+            handleY = line.handleY
+        }
+        if (line is CubicBezier) {
+
+            handleX = line.firstHandleX
+            handleY = line.firstHandleY
+
+            secondHandleX = line.secondHandleX
+            secondHandleY = line.secondHandleY
+        }
+
+        val index = lines.indexOf(line) - 1
+        if (index < 0) {
+            vx = firstX
+            vy = firstY
+        } else {
+            lines[index].run {
+                vx = epx
+                vy = epy
+            }
+        }
+
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
         // If path is closed then offset (move around) path if user moves his/her finger.
         if (isPathClose) {
-            path.offset(dx, dy)
+            pathOffsetX += dx
+            pathOffsetY += dy
             invalidate()
-        } else if (isTempLineDrawn) {
-            tempPath.run {
-                when (currentHandleSelected) {
-                    FIRST_BEZIER_HANDLE -> {
-                        // Reset the bezier path to original path.
-                        set(path)
-
-                        // Change location of handle that is shown on screen.
+        } else if (!isOtherLinesSelected) {
+            when (currentHandleSelected) {
+                FIRST_BEZIER_HANDLE -> {
+                    // Reset the bezier path to original path.
+                    (selectedLine as? QuadBezier)?.run {
                         handleX += dx
                         handleY += dy
 
-                        if (lineType == QUAD_BEZIER) {
-                            // Draw quad bezier with new handle points.
-                            quadTo(handleX, handleY, bx, by)
-                        } else {
-                            cubicTo(handleX, handleY, secondHandleX, secondHandleY, bx, by)
-                        }
-
-
-                        invalidate()
+                        this@PenSelector.handleX = handleX
+                        this@PenSelector.handleY = handleY
                     }
-                    // Second handle is only for CUBIC_BEZIER.
-                    SECOND_BEZIER_HANDLE -> {
-                        set(path)
 
+                    (selectedLine as? CubicBezier)?.run {
+                        firstHandleX += dx
+                        firstHandleY += dy
+
+                        this@PenSelector.handleX = firstHandleX
+                        this@PenSelector.handleY = firstHandleY
+                    }
+
+                    invalidate()
+                }
+                // Second handle is only for CUBIC_BEZIER.
+                SECOND_BEZIER_HANDLE -> {
+                    (selectedLine as? CubicBezier)?.run {
                         secondHandleX += dx
                         secondHandleY += dy
 
-                        cubicTo(handleX, handleY, secondHandleX, secondHandleY, bx, by)
-
-                        invalidate()
+                        this@PenSelector.secondHandleX = secondHandleX
+                        this@PenSelector.secondHandleY = secondHandleY
                     }
-                    END_HANDLE -> {
-                        // Reset the bezier to current path to discard last drawn quad bezier.
-                        set(path)
-
-                        // Since END_HANDLE is common on every line then we should check
-                        // type of line and then decide what to do with it.
-                        when (lineType) {
-                            QUAD_BEZIER -> {
-                                // Draw quad bezier with new end point.
-                                quadTo(handleX, handleY, ex, ey)
-                            }
-                            CUBIC_BEZIER -> {
-                                cubicTo(handleX, handleY, secondHandleX, secondHandleY, ex, ey)
-                            }
-                            else -> {
-                                lineTo(ex, ey)
-                            }
-                        }
-
-                        // Change the end point of current path.
-                        bx = ex
-                        by = ey
-
-                        invalidate()
-                    }
-                    NONE -> {
-
-                    }
+                    invalidate()
                 }
-                return@run
+                END_HANDLE -> {
+                    selectedLine?.run {
+                        epx = ex
+                        epy = ey
+                    }
+
+                    // Change the end point of current path.
+                    bx = ex
+                    by = ey
+
+                    if (lines.indexOf(selectedLine) == lines.size - 1) {
+                        lvx = ex
+                        lvy = ey
+                    }
+
+                    invalidate()
+                }
+                FIRST_POINT_HANDLE -> {
+                    firstX = ex
+                    firstY = ey
+
+                    vx = ex
+                    vy = ey
+
+                    invalidate()
+                }
+                NONE -> {
+
+                }
             }
         }
+    }
+
+    override fun select(drawable: Drawable): Bitmap? {
+        path.reset()
+
+        path.moveTo(firstX, firstY)
+
+        lines.forEach {
+            it.putIntoPath(path)
+        }
+
+        path.offset(pathOffsetX, pathOffsetY)
+
+        return super.select(drawable)
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
@@ -279,167 +462,144 @@ class PenSelector : PathBasedSelector() {
             if (pointCounter == 0) {
                 firstX = lastX
                 firstY = lastY
-                path.moveTo(lastX, lastY)
-                pushToStack()
+                vx = lastX
+                vy = lastY
                 pointCounter++
             } else {
-
-                // If bezier is drawn and user touched somewhere else instead of bezier handles, then
-                // replace the current path by bezier path and set 'isBezierDrawn' to false to create a
-                // new bezier.
-                if (isTempLineDrawn && currentHandleSelected == NONE) {
-                    setBezierToPath()
+                // If a new line is drawn and user touched somewhere else instead of lines' handles, then
+                // store the last point of current line as start point of new line (because lines are drawn relative to another).
+                if (isNewLineDrawn && currentHandleSelected == NONE) {
+                    finalizeLine()
                 }
 
-                if (!isTempLineDrawn && pointCounter > 0) {
-
-                    tempPath.set(path)
+                // If we have drawn the first point (pointCounter > 0) and current handle is not first handle then draw a new line.
+                if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != FIRST_POINT_HANDLE) {
 
                     if (lineType != NORMAL) {
 
                         // Determine width and height of current line to later
                         // get center of that line to use as handle for bezier.
-                        val lineWidth = (lastX - lbx)
-                        val lineHeight = (lastY - lby)
+                        val lineWidth = (lastX - vx)
+                        val lineHeight = (lastY - vy)
 
                         if (lineType == QUAD_BEZIER) {
-                            handleX = lbx + (lineWidth * 0.5f)
-                            handleY = lby + (lineHeight * 0.5f)
+                            handleX = vx + (lineWidth * 0.5f)
+                            handleY = vy + (lineHeight * 0.5f)
 
-                            tempPath.quadTo(handleX, handleY, lastX, lastY)
+                            // Create new QuadBezier and select it.
+                            selectedLine = QuadBezier(lastX, lastY, handleX, handleY)
                         } else {
                             // First handle of CUBIC_BEZIER is at 33% of
                             // width and height of line.
-                            handleX = lbx + (lineWidth * 0.33f)
-                            handleY = lby + (lineHeight * 0.33f)
+                            handleX = vx + (lineWidth * 0.33f)
+                            handleY = vy + (lineHeight * 0.33f)
 
                             // Second handle of CUBIC_BEZIER is at 66% of
                             // width and height of line.
-                            secondHandleX = lbx + (lineWidth * 0.66f)
-                            secondHandleY = lby + (lineHeight * 0.66f)
+                            secondHandleX = vx + (lineWidth * 0.66f)
+                            secondHandleY = vy + (lineHeight * 0.66f)
 
-                            // Finally draw a cubic with given handle and end point.
-                            tempPath.cubicTo(
+                            // Create new CubicBezier and select it.
+                            selectedLine = CubicBezier(
+                                lastX,
+                                lastY,
                                 handleX,
                                 handleY,
                                 secondHandleX,
                                 secondHandleY,
-                                lastX,
-                                lastY
                             )
+
                         }
                     } else {
-                        // Temporarily draw a line.
-                        // This is temporary because later user might change the end point of that line
-                        // and after that we set current temp path to original path.
-                        tempPath.lineTo(lastX, lastY)
+                        // Create new simple line and select it.
+                        selectedLine = Line(lastX, lastY)
                     }
 
-                    isTempLineDrawn = true
+                    isNewLineDrawn = true
 
                     // Store last point of current bezier to variables.
                     bx = lastX
                     by = lastY
 
+                    lvx = lastX
+                    lvy = lastY
+
                     pointCounter++
+
+                    // Push the newly create line to lines holder.
+                    lines.push(selectedLine)
                 }
 
-
-                // If line is close to first point that user touched and we have at least 3 lines, then
+                // If line is close to first point that user touched,
                 // close the path.
-                if (shouldClosePath(lastX, lastY)) {
-                    if (!tempPath.isEmpty) {
-                        setBezierToPath()
-                    }
-
+                if (shouldClosePath(lastX, lastY) && currentHandleSelected != FIRST_POINT_HANDLE) {
+                    finalizeLine()
                     closePath()
                 }
             }
-            // Store the last location that user has touched (if it's not a handle.)
-            if (currentHandleSelected == NONE) {
-                lbx = lastX
-                lby = lastY
-            }
         }
-
+        isOtherLinesSelected = false
         invalidate()
-
     }
 
-    private fun pushToStack() {
-        paths.push(Path(path))
-    }
-
-    private fun setBezierToPath() {
-        path.set(tempPath)
-
-        // Push original path to stack to take a snapshot of current state.
-        pushToStack()
-
-        tempPath.reset()
-        isTempLineDrawn = false
+    private fun finalizeLine() {
+        if (lines.indexOf(selectedLine) == lines.size - 1) {
+            vx = bx
+            vy = by
+        } else {
+            vx = lvx
+            vy = lvy
+        }
+        isNewLineDrawn = false
     }
 
     private fun closePath() {
-        path.close()
-        tempPath.reset()
-        isTempLineDrawn = false
+        isNewLineDrawn = false
+        lines.lastElement().run {
+            epx = firstX
+            epy = firstY
+        }
         pathEffectAnimator.start()
         isPathClose = true
     }
 
     private fun shouldClosePath(lastX: Float, lastY: Float): Boolean {
-        return (isNearTargetPoint(
+        val finalRange = touchRange * canvasMatrix.getOppositeScale()
+        return (GestureUtils.isNearTargetPoint(
             lastX,
             lastY,
             firstX,
             firstY,
-            touchRange
-        ) || isNearTargetPoint(
+            finalRange
+        ) || GestureUtils.isNearTargetPoint(
             bx,
             by,
             firstX,
             firstY,
-            touchRange
+            finalRange
         )) && pointCounter > 2
     }
 
-    private fun isNearTargetPoint(
-        x: Float,
-        y: Float,
-        targetX: Float,
-        targetY: Float,
-        range: Float,
-        scaleDown: Boolean = true
-    ): Boolean {
-        var finalTouchRange = touchRange
-        if (scaleDown) {
-            // Calculate the touch range if user is zoomed in image.
-            finalTouchRange = range * canvasMatrix.getOppositeScale()
-        }
-
-        return (x in (targetX - finalTouchRange)..(targetX + finalTouchRange) && y in (targetY - finalTouchRange)..(targetY + finalTouchRange))
-    }
-
     override fun resetSelection() {
-        path.rewind()
-        tempPath.reset()
+        lines.clear()
+        path.reset()
 
-        isTempLineDrawn = false
+        pathOffsetX = 0f
+        pathOffsetY = 0f
+
+        isNewLineDrawn = false
         isPathClose = false
 
         pointCounter = 0
 
         cancelAnimation()
 
-        paths.clear()
-
         invalidate()
     }
 
     private fun cancelAnimation() {
         if (pathEffectAnimator.isRunning || pathEffectAnimator.isStarted) {
-            pointsPaint.pathEffect = null
+            linesPaint.pathEffect = null
             pathEffectAnimator.cancel()
         }
     }
@@ -448,54 +608,46 @@ class PenSelector : PathBasedSelector() {
     override fun draw(canvas: Canvas?) {
         canvas?.run {
 
-            if (!isTempLineDrawn) {
-                // Create a copy of path to later transform the transformed path to it.
-                pathCopy.set(path)
+            // Move the allocation path to first point.
+            pathCopy.moveTo(firstX, firstY)
 
-                // Apply matrix to path.
-                path.transform(canvasMatrix)
-
-                // Draw the transformed path.
-                drawPath(path, pointsPaint)
-
-                // Revert it back.
-                path.set(pathCopy)
-
-                // Reset path copy to release memory.
-                pathCopy.rewind()
+            // Draw lines in stack of lines one by one relative to each other.
+            lines.forEach {
+                it.putIntoPath(pathCopy)
             }
-            // Only draw temp path if we have drawn a temporary line.
-            else {
-                pathCopy.set(tempPath)
 
-                tempPath.transform(canvasMatrix)
+            // Offset them if user has offset them.
+            pathCopy.offset(pathOffsetX, pathOffsetY)
 
-                drawPath(tempPath, pointsPaint)
+            // Transform the drawings base on the transformation matrix of parent.
+            pathCopy.transform(canvasMatrix)
 
-                tempPath.set(pathCopy)
+            // Draw the transformed path.
+            drawPath(pathCopy, linesPaint)
 
-                pathCopy.rewind()
-            }
+            // Reset path copy to release memory.
+            pathCopy.rewind()
 
             // Get opposite of current scale to resize the radius.
             val scale = canvasMatrix.getOppositeScale()
             val downSizedRadius = circlesRadius * scale
 
-            if (isTempLineDrawn && lineType != NORMAL) {
+            if (isNewLineDrawn && (selectedLine is QuadBezier || selectedLine is CubicBezier)) {
 
                 helperLinesPath.run {
                     // Set the helper points to current path to start drawings from last point of it.
-                    set(path)
+                    reset()
+                    moveTo(vx, vy)
 
                     // Always draw first handle because both beziers have at least one handle.
                     lineTo(handleX, handleY)
 
-                    if (lineType == QUAD_BEZIER) {
+                    if (selectedLine is QuadBezier) {
                         // If it's QUAD_BEZIER then draw a line to last point of bezier.
                         // This way we draw a line from start point to handle and finally to last
                         // point of bezier.
                         lineTo(bx, by)
-                    } else {
+                    } else if (selectedLine is CubicBezier) {
                         // Else if we're in CUBIC_BEZIER mode the draw a line
                         // from first handle to second handle and then a line
                         // from second handle to end point of bezier.
@@ -516,7 +668,7 @@ class PenSelector : PathBasedSelector() {
                 // Handle for QUAD_BEZIER (also acts as first handle for CUBIC_BEZIER).
                 drawCircle(handleX, handleY, downSizedRadius, circlesPaint)
 
-                if (lineType == CUBIC_BEZIER) {
+                if (selectedLine is CubicBezier) {
                     // Draw second handle only if we're in CUBIC_BEZIER type.
                     drawCircle(secondHandleX, secondHandleY, downSizedRadius, circlesPaint)
                 }
@@ -528,45 +680,69 @@ class PenSelector : PathBasedSelector() {
 
             concat(canvasMatrix)
 
-            if (isTempLineDrawn) {
+            if (isNewLineDrawn) {
                 // End point of line (either bezier or straight).
                 drawCircle(bx, by, downSizedRadius, circlesPaint)
             }
 
             // Draw circle if it's first point that user touches so it will be visible that user
             // has touch the first point.
-            if (pointCounter == 1) {
+            if (pointCounter == 1 || lines.indexOf(selectedLine) == 0) {
                 // Draw first point circle.
                 drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
             }
+
+            lines.minus(selectedLine).forEach {
+                if (it != null) {
+                    drawCircle(
+                        it.epx + pathOffsetX,
+                        it.epy + pathOffsetY,
+                        downSizedRadius,
+                        circlesPaint.apply {
+                            color = unselectedCirclesColor
+                        }
+                    )
+                }
+            }
+            circlesPaint.color = circlesColor
         }
     }
 
     override fun undo() {
-        paths.run {
-            if (!isEmpty()) {
-                // Rewind any bezier path to prevent it from re-drawing.
-                tempPath.rewind()
-                isTempLineDrawn = false
+        lines.run {
+            if (isNotEmpty()) {
+                // Remove last line in stack.
+                pop()
 
-                // If path is currently closed then restore
-                // state to open path (cancel animation and etc...)
-                if (isPathClose) {
-                    isPathClose = false
-                    cancelAnimation()
+                // If it's not empty...
+                if (isNotEmpty()) {
+                    // Then get the previous line and select it and restore its state.
+                    val currentLine = peek()
+
+                    selectedLine = currentLine
+
+                    setLineRelatedVariables(currentLine)
+
+                    isNewLineDrawn = true
+                } else {
+                    isNewLineDrawn = false
                 }
 
-                // Pop the last path from stack.
-                path.set(pop())
-                // Decrement amount of lines counter.
+                // If path is close and user undoes the operation,
+                // then open the path and reset its offset and cancel path animation.
+                if (isPathClose) {
+                    isPathClose = false
+                    pathOffsetX = 0f
+                    pathOffsetY = 0f
+                    cancelAnimation()
+                }
+            }
+
+            // Decrement the counter.
+            if (pointCounter > 0) {
                 --pointCounter
             }
-            // Else if stack is empty and counter is greater than 0 then clear the path
-            // And put it in initial state (state that user have to provide the initial point).
-            else if (isEmpty() && pointCounter > 0) {
-                path.rewind()
-                --pointCounter
-            }
+
             invalidate()
         }
     }
@@ -575,7 +751,8 @@ class PenSelector : PathBasedSelector() {
         NONE,
         END_HANDLE,
         FIRST_BEZIER_HANDLE,
-        SECOND_BEZIER_HANDLE
+        SECOND_BEZIER_HANDLE,
+        FIRST_POINT_HANDLE
     }
 
     /**
@@ -585,5 +762,42 @@ class PenSelector : PathBasedSelector() {
         NORMAL,
         QUAD_BEZIER,
         CUBIC_BEZIER
+    }
+
+    open class Line(
+        var epx: Float,
+        var epy: Float,
+    ) {
+        /**
+         * Draws content of current line on a given path.
+         * @param path Path that content of current line is going to be drawn on.
+         */
+        open fun putIntoPath(path: Path) {
+            path.lineTo(epx, epy)
+        }
+    }
+
+    class QuadBezier(
+        epx: Float,
+        epy: Float,
+        var handleX: Float,
+        var handleY: Float
+    ) : Line(epx, epy) {
+        override fun putIntoPath(path: Path) {
+            path.quadTo(handleX, handleY, epx, epy)
+        }
+    }
+
+    class CubicBezier(
+        epx: Float,
+        epy: Float,
+        var firstHandleX: Float,
+        var firstHandleY: Float,
+        var secondHandleX: Float,
+        var secondHandleY: Float
+    ) : Line(epx, epy) {
+        override fun putIntoPath(path: Path) {
+            path.cubicTo(firstHandleX, firstHandleY, secondHandleX, secondHandleY, epx, epy)
+        }
     }
 }

@@ -22,5 +22,51 @@ class GestureUtils {
             ).toFloat()
         }
 
+        /**
+         * Converts the current degree to be between 0-360 degrees.
+         */
+        fun mapTo360(degree: Float): Float {
+            return when {
+                degree > 360 -> {
+                    degree - 360
+                }
+                degree < 0f -> {
+                    degree + 360
+                }
+                else -> degree
+            }
+        }
+
+        /**
+         * Converts the current degree to be between 0-360 degrees.
+         */
+        fun mapTo360(degree: Double): Double {
+            return when {
+                degree > 360 -> {
+                    degree - 360
+                }
+                degree < 0f -> {
+                    degree + 360
+                }
+                else -> degree
+            }
+        }
+
+        /**
+         * Calculates if a vector is in range of target point.
+         * @param x Touch point x.
+         * @param y Touch point y.
+         * @param targetX Target location x.
+         * @param targetY Target location y.
+         * @param range Acceptable range to check if current touch location is near target location.
+         */
+        fun isNearTargetPoint(
+            x: Float,
+            y: Float,
+            targetX: Float,
+            targetY: Float,
+            range: Float,
+        ) = (x in (targetX - range)..(targetX + range) && y in (targetY - range)..(targetY + range))
+
     }
 }

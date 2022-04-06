@@ -16,9 +16,11 @@ import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.gesture.GestureUtils
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
+import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import kotlin.math.*
 
 /**
@@ -26,7 +28,7 @@ import kotlin.math.*
  * Derived classes could initialize gesture detectors they like and do certain thing like manipulating
  * ImageView's matrix and so on.
  */
-open class MananGestureImageView(
+abstract class MananGestureImageView(
     context: Context,
     attributeSet: AttributeSet?
 ) :
@@ -49,7 +51,7 @@ open class MananGestureImageView(
      * Rotation detector that is used to detect if user performed rotation gesture.
      * It is nullable; meaning a derived class could use rotating gesture or not.
      */
-    protected var rotationDetector: Gesture? = null
+    protected var rotationDetector: RotationDetectorGesture? = null
 
     /**
      * Move detector that is used to detect if user performed move gesture (moved fingers across screen).
@@ -291,10 +293,23 @@ open class MananGestureImageView(
     }
 
     override fun toBitmap(config: Bitmap.Config): Bitmap {
+
         val mDrawable =
             drawable ?: throw IllegalStateException("drawable is null")
 
-        return (mDrawable as BitmapDrawable).bitmap
+        val b =
+            (mDrawable as BitmapDrawable).bitmap
+
+        // Create a bitmap and invert it vertically and or horizontally if it is inverted.
+        val finalBitmap = Bitmap.createBitmap(b, 0, 0, b.width, b.height, Matrix().apply {
+            postScale(
+                if (imageviewMatrix.getScaleX(true) < 0f) -1f else 1f,
+                if (imageviewMatrix.getScaleY() < 0f) -1f else 1f
+            )
+        }, false)
+
+        // Return the mutable copy.
+        return finalBitmap.copy(finalBitmap.config, true)
     }
 
     override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
@@ -303,8 +318,11 @@ open class MananGestureImageView(
 
         // Determine how much the desired width and height is scaled base on
         // smallest desired dimension divided by maximum image dimension.
-        val totalScaled =
-            min(width, height) / max(boundsRectangle.width(), boundsRectangle.height())
+        var totalScaled = width / boundsRectangle.width()
+
+        if (boundsRectangle.height() * totalScaled > height) {
+            totalScaled = height / boundsRectangle.height()
+        }
 
         // Create output bitmap matching desired width,height and config.
         val outputBitmap = Bitmap.createBitmap(width, height, config)
@@ -366,12 +384,9 @@ open class MananGestureImageView(
             rightEdge = bitmapWidth + leftEdge
             bottomEdge = bitmapHeight + topEdge
 
-            val r = -atan2(
-                getSkewX(),
-                (getScaleX())
-            ) * (180f / PI)
+            val r = -atan2(getSkewX().toDouble(), getScaleX().toDouble()) * (180.0 / PI)
 
-            imageRotation = r.toFloat()
+            imageRotation = GestureUtils.mapTo360(r.toFloat())
 
             // Calculate pivot points.
             // Rotation does affect pivot points and it should be calculated.
@@ -384,11 +399,21 @@ open class MananGestureImageView(
             val sinTheta = sin(radian)
 
             // Calculates the rotated bounds' center.
-            imagePivotX = (leftEdge + cx * cosTheta - cy * sinTheta).toFloat()
-            imagePivotY = (topEdge + cx * sinTheta + cy * cosTheta).toFloat()
+            imagePivotX = ((leftEdge + cx * cosTheta - cy * sinTheta) - paddingLeft).toFloat()
+            imagePivotY = ((topEdge + cx * sinTheta + cy * cosTheta) - paddingTop).toFloat()
 
             boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
         }
+    }
+
+    fun flipHorizontal() {
+        imageviewMatrix.postScale(-1f, 1f, imagePivotX, 0f)
+        imageMatrix = imageviewMatrix
+    }
+
+    fun flipVertical() {
+        imageviewMatrix.postScale(1f, -1f, 0f, imagePivotY)
+        imageMatrix = imageviewMatrix
     }
 
     /**

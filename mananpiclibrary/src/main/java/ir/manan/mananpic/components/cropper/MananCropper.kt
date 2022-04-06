@@ -115,9 +115,17 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
 
 
     // Rectangle that represents the crop frame.
-    private lateinit var frameRect: RectF
+    private val frameRect by lazy {
+        RectF()
+    }
+
+
     val cropperDimensions: RectF
         get() = frameRect
+
+    private val allocRectF by lazy {
+        RectF()
+    }
 
 
     // List of rectangles representing shadows around frame.
@@ -158,8 +166,10 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         }
     }
 
-    init {
+    private var excessTouchArea = dp(40)
+    private var excessTouchAreaHalf = excessTouchArea / 2
 
+    init {
         moveDetector = MoveDetector(1, this)
 
         context.theme.obtainStyledAttributes(attr, R.styleable.MananCropper, 0, 0).apply {
@@ -240,7 +250,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
      * @param height Height of objects.
      */
     private fun initializeDrawingObjects(left: Float, top: Float, width: Float, height: Float) {
-        frameRect = createFrameRect(left, top, width, height)
+        frameRect.set(left, top, width, height)
         setDrawingDimensions()
     }
 
@@ -333,21 +343,21 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     override fun onMove(dx: Float, dy: Float): Boolean {
         // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
         val changedRect =
-            aspectRatio.resize(RectF(frameRect), handleBar, dx, dy)
+            aspectRatio.resize(allocRectF.apply {
+                set(frameRect)
+            }, handleBar, dx, dy)
 
         if (handleBar != null) {
             // Change color of handle bar indicating that user is changing size of cropper.
             handleBarPaint.color = selectedHandleBarColor
 
             // After validation set the frame's dimensions.
-            val validatedRect = aspectRatio.validate(
-                frameRect,
-                changedRect,
-                limitRect
-            )
-
             frameRect.set(
-                validatedRect
+                aspectRatio.validate(
+                    frameRect,
+                    changedRect,
+                    limitRect
+                )
             )
 
         } else {
@@ -427,15 +437,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
             if ((point.x in pair.first.x..pair.second.x) && (point.y in pair.first.y..pair.second.y))
                 return mapOfHandleBars[pair]
         return null
-    }
-
-
-    /**
-     * This method creates the overlay window based on width and height of view.
-     * @return Returns a [RectF] representing the overlay window.
-     */
-    private fun createFrameRect(left: Float, top: Float, width: Float, height: Float): RectF {
-        return RectF(left, top, width, height)
     }
 
     /**
@@ -540,12 +541,6 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     ): MutableMap<Pair<PointF, PointF>, HandleBar> {
 
         return frame.run {
-
-            // Figure out some extra touch area for better touch experience.
-            val excessTouchArea = dp(40)
-            val excessTouchAreaHalf = excessTouchArea / 2
-
-
             // Store areas that handle are located + excess area.
             mutableMapOf<Pair<PointF, PointF>, HandleBar>(
                 Pair(

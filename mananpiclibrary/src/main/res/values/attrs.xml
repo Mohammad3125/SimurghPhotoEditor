@@ -26,6 +26,8 @@
         <attr name="pageBackgroundColor" format="color" />
         <attr name="pageWidth" format="integer" />
         <attr name="pageHeight" format="integer" />
+        <attr name="smartGuidelineStrokeColor" format="color" />
+        <attr name="smartGuidelineStrokeWidth" format="dimension" />
     </declare-styleable>
 
     <declare-styleable name="FrameDropper">
@@ -34,16 +36,6 @@
         <attr name="centerCrossColor" format="color" />
         <attr name="centerCrossStrokeWidth" format="dimension" />
         <attr name="centerCrossLineSize" format="dimension" />
-    </declare-styleable>
-
-    <declare-styleable name="MananMainImageView">
-        <attr name="initialPaddingLeft" format="dimension" />
-        <attr name="initialPaddingTop" format="dimension" />
-        <attr name="initialPaddingRight" format="dimension" />
-        <attr name="initialPaddingBottom" format="dimension" />
-        <attr name="initialPaddingHorizontal" format="dimension" />
-        <attr name="initialPaddingVertical" format="dimension" />
-        <attr name="initialPadding" format="dimension" />
     </declare-styleable>
 
 </resources>
