@@ -3,8 +3,17 @@ package ir.manan.mananpic.utils
 import android.content.res.Resources
 import org.xmlpull.v1.XmlPullParser
 
+/**
+ * Class that is responsible for extracting path data from a vector xml.
+ */
 class XmlPathDataExtractor {
     companion object {
+        /**
+         * Retrieves path data from an xml resources.
+         * @param resources Resources object.
+         * @param drawableId Id of vector drawable that contains path data.
+         * @return Extracted path data from given drawable id.
+         */
         fun getPathDataFromXml(resources: Resources, drawableId: Int): String {
             resources.getXml(drawableId).use { parser ->
                 var event = parser.eventType
