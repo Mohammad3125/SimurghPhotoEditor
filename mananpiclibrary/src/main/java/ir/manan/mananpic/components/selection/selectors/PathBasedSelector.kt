@@ -9,7 +9,7 @@ import java.util.*
 import kotlin.math.abs
 
 /**
- * Base class for selectors that manipulate a path to achieve the result.
+ * Base class for selectors that manipulate a [Path] object to define an area of interest to select.
  */
 abstract class PathBasedSelector : Selector() {
 

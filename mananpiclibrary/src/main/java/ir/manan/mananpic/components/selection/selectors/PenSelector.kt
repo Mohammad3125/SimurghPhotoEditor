@@ -16,7 +16,7 @@ import java.util.*
 import kotlin.math.abs
 
 /**
- * Pen tool for selecting an area of interest with straight, quad bezier and cubic bezier.
+ * Pen tool for selecting an area of interest with straight, quad bezier and cubic bezier lines.
  */
 class PenSelector : PathBasedSelector() {
 
