@@ -677,7 +677,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
                             if (totalToShiftX == 0f) {
                                 totalToShiftX = rightToRight
-                            } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
+                            } else if (rightToRightAbs < abs(totalToShiftX)) {
                                 totalToShiftX = rightToRight
                             }
                         }
@@ -685,7 +685,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
                             if (totalToShiftX == 0f) {
                                 totalToShiftX = rightToLeft
-                            } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
+                            } else if (rightToLeftAbs < abs(totalToShiftX)) {
                                 totalToShiftX = rightToLeft
                             }
                         }
@@ -717,7 +717,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
                             if (totalToShiftY == 0f) {
                                 totalToShiftY = bottomToBottom
-                            } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
+                            } else if (bottomToBottomAbs < abs(totalToShiftY)) {
                                 totalToShiftY = bottomToBottom
                             }
                         }
@@ -725,7 +725,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
                             if (totalToShiftY == 0f) {
                                 totalToShiftY = bottomToTop
-                            } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
+                            } else if (bottomToTopAbs < abs(totalToShiftY)) {
                                 totalToShiftY = bottomToTop
                             }
                         }
