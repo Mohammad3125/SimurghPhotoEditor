@@ -33,6 +33,16 @@ class MananMatrixAnimator(
                 val ty = getAnimatedValue("translationY")
 
                 targetMatrix.run {
+                    // If scale property isn't null then scale it.
+                    if (s != null) {
+                        val totalScale = (s as Float) / getScaleX(true)
+                        postScale(
+                            totalScale,
+                            totalScale,
+                            initialBounds.centerX(),
+                            initialBounds.centerY()
+                        )
+                    }
                     // If translation isn't null or in other words, we should animate the translation, then animate it.
                     if (tx != null) {
                         postTranslate(
@@ -49,16 +59,6 @@ class MananMatrixAnimator(
                         )
                     }
 
-                    // If scale property isn't null then scale it.
-                    if (s != null) {
-                        val totalScale = (s as Float) / getScaleX(true)
-                        postScale(
-                            totalScale,
-                            totalScale,
-                            initialBounds.centerX(),
-                            initialBounds.centerY()
-                        )
-                    }
                 }
 
                 callCallbacks()
