@@ -119,6 +119,14 @@ class BrushSelector : PathBasedSelector() {
         }
     }
 
+    override fun getClipPath(): Path? {
+        return if (isPathClose) {
+            path
+        } else {
+            null
+        }
+    }
+
     override fun resetSelection() {
         path.rewind()
         pathBuffer.rewind()

@@ -442,6 +442,12 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun select(drawable: Drawable): Bitmap? {
+        makePathReadyForSelection()
+
+        return super.select(drawable)
+    }
+
+    private fun makePathReadyForSelection() {
         path.reset()
 
         path.moveTo(firstX, firstY)
@@ -451,8 +457,6 @@ class PenSelector : PathBasedSelector() {
         }
 
         path.offset(pathOffsetX, pathOffsetY)
-
-        return super.select(drawable)
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
@@ -745,6 +749,13 @@ class PenSelector : PathBasedSelector() {
 
             invalidate()
         }
+    }
+
+    override fun getClipPath(): Path? {
+        return if (isPathClose) {
+            makePathReadyForSelection()
+            path
+        } else null
     }
 
     private enum class Handle {

@@ -2,10 +2,7 @@ package ir.manan.mananpic.components.selection
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.RectF
+import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -293,6 +290,26 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             // Call listeners in case state of selector changes after undo operation.
             callOnStateChangeListeners(selector!!.isClosed())
         }
+    }
+
+    /**
+     * Returns path data of current selector if it's closed.
+     */
+    fun getPathData(): Path? {
+        selector?.getClipPath()?.run {
+
+
+            // Get how much the current bitmap displayed is scaled comparing to original drawable size.
+            val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
+
+            return Path(this).apply {
+                transform(Matrix().apply {
+                    setScale(totalScaled, totalScaled, leftEdge, topEdge)
+                    postTranslate(-leftEdge, -topEdge)
+                })
+            }
+        }
+        return null
     }
 
     /**
