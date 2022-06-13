@@ -200,7 +200,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         )
                     }
                 }
-                currentEditingView == null -> {
+                else -> {
                     scaleCanvas(sf, focusX, focusY)
                 }
             }
@@ -246,7 +246,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     (currentEditingView as Texturable).shiftTexture(dx, dy)
                 }
             }
-            currentEditingView == null -> {
+            else -> {
                 translateCanvas(dx, dy)
             }
         }
@@ -440,17 +440,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             val pageHeight = pageRect.height()
 
             // First scale down the component to match the page width.
-            applyScale(pageWidth / bound.width())
+            applyScale(min(pageWidth / bound.width(), pageHeight / bound.height()))
 
-            // Refresh the bounds to then determine if we should scale down again or not.
             bound = reportBound()
-            val boundHeight = bound.height()
-
-            // Check if after scaling the other axis exceeds page bounds.
-            if (boundHeight > pageHeight) {
-                applyScale(pageHeight / boundHeight)
-                bound = reportBound()
-            }
 
             // Convert to view to get offset on each axis based on width and height param
             // of view. If a parent has a padding and child has MATCH_PARENT on either width or
