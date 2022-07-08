@@ -283,6 +283,19 @@ abstract class MananGestureImageView(
         super.setImageDrawable(drawable)
     }
 
+
+    /**
+     * Replaces Bitmap but doesn't reset the matrix.
+     * @param bm Bitmap to replace with current one.
+     */
+    fun replaceBitmap(bm: Bitmap) {
+        super.setImageBitmap(bm)
+        val mDrawable = drawable
+        drawableWidth = mDrawable.intrinsicWidth
+        drawableHeight = mDrawable.intrinsicHeight
+        calculateBounds()
+    }
+
     override fun setImageBitmap(bm: Bitmap?) {
         super.setImageBitmap(bm)
         isNewBitmap = true
