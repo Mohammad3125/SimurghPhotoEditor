@@ -72,6 +72,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     /** Later determines if a component should skip fitting inside page phase (used when adding a clone) */
     private var isClone = false
 
+    private var isChildRestored = false
+
     /** If true this class enters texture applying mode */
     private var isApplyingTexture = false
 
@@ -419,13 +421,19 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             // Set this flag to not fit component in page again.
             isChildScaleNormalized = true
         } else {
-            if (!isChildScaleNormalized || changed) {
+            if ((!isChildScaleNormalized || changed) && !isChildRestored) {
                 if (currentEditingView != null) {
                     fitChildInsidePage(currentEditingView!!)
                     isChildScaleNormalized = true
                 }
+                isChildRestored = false
             }
         }
+    }
+
+    override fun setChildRestored() {
+        super.setChildRestored()
+        isChildRestored = true
     }
 
     /**

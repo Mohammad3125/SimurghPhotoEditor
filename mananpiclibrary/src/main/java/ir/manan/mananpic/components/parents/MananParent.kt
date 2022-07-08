@@ -5,6 +5,8 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
@@ -25,6 +27,8 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     FrameLayout(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnMoveListener {
     constructor(context: Context) : this(context, null)
+
+    val viewsCopy = mutableListOf<View>()
 
     /* Detectors --------------------------------------------------- */
 
@@ -238,6 +242,10 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
 
     }
 
+    protected open fun setChildRestored() {
+
+    }
+
     /**
      * Returns the child at given coordinates.
      * If two child overlap it swaps between them on each tap.
@@ -325,6 +333,67 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     override fun onViewRemoved(child: View?) {
         super.onViewRemoved(child)
         callOnChildrenChangedListener(child!!, true)
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val parentState = super.onSaveInstanceState()
+
+        if (childCount > 0) {
+            val ss = MananParentState(parentState!!)
+            ss.childrenArray = Array(childCount) {
+                children.elementAt(it)
+            }
+            return ss
+        }
+        return parentState
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        if (state !is MananParentState) {
+            return super.onRestoreInstanceState(state)
+        }
+
+        super.onRestoreInstanceState(state.superState)
+
+        state.childrenArray?.forEach {
+            (it.parent as ViewGroup).removeView(it)
+            addView(it)
+            setChildRestored()
+        }
+
+    }
+
+    companion object {
+        class MananParentState : BaseSavedState {
+
+            var childrenArray: Array<View>? = null
+
+            constructor(par: Parcelable) : super(par)
+
+            private constructor(ins: Parcel) : super(ins) {
+                childrenArray = ins.readArray(ClassLoader.getSystemClassLoader()) as Array<View>
+            }
+
+            companion object {
+                @JvmField
+                val CREATOR = object : Parcelable.Creator<MananParentState> {
+                    override fun createFromParcel(source: Parcel?): MananParentState {
+                        return MananParentState(source!!)
+                    }
+
+                    override fun newArray(size: Int): Array<MananParentState> {
+                        return arrayOf<MananParentState>()
+                    }
+                }
+            }
+
+            override fun writeToParcel(out: Parcel?, flags: Int) {
+                super.writeToParcel(out, flags)
+                childrenArray?.let {
+                    out?.writeArray(it)
+                }
+            }
+        }
     }
 
     /**
