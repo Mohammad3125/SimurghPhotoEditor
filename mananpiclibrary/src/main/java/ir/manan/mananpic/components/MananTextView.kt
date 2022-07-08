@@ -18,7 +18,8 @@ import kotlin.math.abs
  *
  */
 class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable, Blurable {
+    MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable, Blurable,
+    java.io.Serializable {
     constructor(context: Context) : this(context, null)
 
     private var shadowRadius = 0f
@@ -26,11 +27,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var shadowDy = 0f
     private var shadowLColor = 0
 
-    private val textPaint by lazy {
+    @Transient
+    private val textPaint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
         }
-    }
 
     /**
      * Text of current text view.
@@ -51,18 +52,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     /* Allocations --------------------------------------------------------------------------------------------  */
 
-    private val finalBounds by lazy {
-        RectF()
-    }
+    @Transient
+    private val finalBounds = RectF()
 
-    private val mappingMatrix by lazy {
-        Matrix()
-    }
+    @Transient
+    private val mappingMatrix = Matrix()
 
-    private val shaderMatrix by lazy {
-        MananMatrix()
-    }
-
+    @Transient
+    private val shaderMatrix = MananMatrix()
 
     /**
      * Baseline of text to be drawn.
@@ -80,6 +77,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var textStrokeWidth = 0f
     private var strokeColor: Int = Color.BLACK
 
+    @Transient
     private var paintShader: Shader? = null
 
     private val finalTexts by lazy {

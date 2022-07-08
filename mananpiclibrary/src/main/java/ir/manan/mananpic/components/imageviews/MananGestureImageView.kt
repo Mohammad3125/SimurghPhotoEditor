@@ -35,12 +35,13 @@ abstract class MananGestureImageView(
 ) :
     AppCompatImageView(context, attributeSet), ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnMoveListener, GestureDetector.OnDoubleTapListener,
-    GestureDetector.OnGestureListener, Bitmapable {
+    GestureDetector.OnGestureListener, Bitmapable, java.io.Serializable {
 
     /**
      * Matrix that we later modify and assign to image matrix.
      */
-    protected val imageviewMatrix by lazy { MananMatrix() }
+    @Transient
+    protected val imageviewMatrix = MananMatrix()
 
     /**
      * Scale detector that is used to detect if user scaled matrix.
@@ -91,9 +92,8 @@ abstract class MananGestureImageView(
     protected var bottomEdge = 0f
 
 
-    protected val boundsRectangle by lazy {
-        RectF()
-    }
+    @Transient
+    protected val boundsRectangle = RectF()
 
 
     /**
