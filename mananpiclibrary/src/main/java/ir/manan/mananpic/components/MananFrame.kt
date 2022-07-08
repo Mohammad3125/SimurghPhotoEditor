@@ -434,6 +434,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     override fun setChildRestored() {
         super.setChildRestored()
         isChildRestored = true
+        isChildScaleNormalized = true
     }
 
     /**
