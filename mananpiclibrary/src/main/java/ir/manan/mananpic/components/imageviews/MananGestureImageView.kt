@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.GestureUtils
@@ -276,8 +277,8 @@ abstract class MananGestureImageView(
     }
 
     override fun setImageDrawable(drawable: Drawable?) {
-        if (drawable !is BitmapDrawable) throw IllegalArgumentException(
-            "Type of drawable should only be BitmapDrawable"
+        if (drawable !is BitmapDrawable && drawable !is VectorDrawableCompat) throw IllegalArgumentException(
+            "Type of drawable should only be BitmapDrawable or VectorDrawableCompat"
         )
         super.setImageDrawable(drawable)
     }
@@ -298,7 +299,14 @@ abstract class MananGestureImageView(
             drawable ?: throw IllegalStateException("drawable is null")
 
         val b =
-            (mDrawable as BitmapDrawable).bitmap
+            if (mDrawable is BitmapDrawable) {
+                mDrawable.bitmap
+            } else {
+                Bitmap.createBitmap(mDrawable.intrinsicWidth, mDrawable.intrinsicHeight, config)
+                    .apply {
+                        mDrawable.draw(Canvas(this))
+                    }
+            }
 
         // Create a bitmap and invert it vertically and or horizontally if it is inverted.
         val finalBitmap = Bitmap.createBitmap(b, 0, 0, b.width, b.height, Matrix().apply {
