@@ -358,6 +358,7 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
         state.childrenArray?.forEach {
             (it.parent as ViewGroup).removeView(it)
             addView(it)
+            deselectSelectedView()
             setChildRestored()
         }
 

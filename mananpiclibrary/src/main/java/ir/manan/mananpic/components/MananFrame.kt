@@ -426,9 +426,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     fitChildInsidePage(currentEditingView!!)
                     isChildScaleNormalized = true
                 }
-                isChildRestored = false
             }
         }
+        isChildRestored = false
     }
 
     override fun setChildRestored() {
