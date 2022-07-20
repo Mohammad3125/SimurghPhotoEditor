@@ -13,7 +13,6 @@ import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -205,8 +204,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             val ty = canvasMatrix.getTranslationY()
 
             setTranslate(
-                if (tx < leftEdge) abs(tx) else abs(tx) - (tx * 2),
-                if (ty < topEdge) abs(ty) else abs(ty) - (ty * 2)
+                -tx,
+                -ty
             )
 
             val scale = canvasMatrix.getOppositeScale()
