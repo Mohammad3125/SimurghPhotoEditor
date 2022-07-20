@@ -8,6 +8,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.annotation.ColorInt
+import androidx.core.graphics.toRect
 import androidx.core.view.children
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
@@ -183,6 +184,21 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             if (value < 0f || value > 360) throw IllegalStateException("this value should not be less than 0 or greater than 360")
             field = value
         }
+
+
+    var lockedBackgroundBitmap: Bitmap? = null
+        set(value) {
+            value?.let {
+                lockedBitmapDstRect.set(0, 0, value.width, value.height)
+            }
+            field = value
+        }
+
+    private val lockedBitmapDstRect = Rect()
+
+    private val pageRectRect = Rect()
+
+    private val backgroundBitmapPaint = Paint()
 
     /* Detectors --------------------------------------------------------------------------------------------- */
 
@@ -412,6 +428,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     heightF + bottomHalf + diffVerticalPadding
                 )
             }
+            pageRectRect.set(pageRect.toRect())
         }
 
         // If we're cloning, then match the current selected component (which is new cloned component) to last component that was selected.
@@ -497,6 +514,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     override fun dispatchDraw(canvas: Canvas?) {
         // Draws page rectangle to be visible to user.
         canvas?.drawRect(pageRect, pagePaint)
+
+        lockedBackgroundBitmap?.let {
+            canvas?.drawBitmap(it, lockedBitmapDstRect, pageRectRect, backgroundBitmapPaint)
+        }
 
         super.dispatchDraw(canvas)
     }
@@ -1052,6 +1073,14 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         (currentEditingView as? Texturable)?.run {
             applyTexture(texture, tileMode, textureOpacity)
             isApplyingTexture = true
+        }
+    }
+
+    override fun bringChildToFront(child: View?) {
+        super.bringChildToFront(child)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            requestLayout()
+            invalidate()
         }
     }
 
