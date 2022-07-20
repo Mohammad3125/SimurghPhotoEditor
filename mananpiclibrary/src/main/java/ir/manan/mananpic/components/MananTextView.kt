@@ -74,8 +74,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     private var shaderRotationHolder = 0f
 
-    private var textStrokeWidth = 0f
-    private var strokeColor: Int = Color.BLACK
+    var textStrokeWidth = 0f
+    var strokeColor: Int = Color.BLACK
 
     @Transient
     private var paintShader: Shader? = null
@@ -598,6 +598,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         extraSpace = strokeRadiusPx
         requestLayout()
+        invalidate()
     }
 
     private fun shiftTextureWithAlignment(currentStroke: Float) {
