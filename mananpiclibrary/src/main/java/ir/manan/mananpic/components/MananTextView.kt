@@ -145,6 +145,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         scaleY *= scaleFactor
     }
 
+    override fun reportScaleX(): Float {
+        return scaleX
+    }
+
+    override fun reportScaleY(): Float {
+        return scaleY
+    }
+
     override fun applyMovement(dx: Float, dy: Float) {
         x += dx
         y += dy

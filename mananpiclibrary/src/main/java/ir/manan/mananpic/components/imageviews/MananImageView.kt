@@ -46,6 +46,14 @@ class MananImageView(context: Context, attributeSet: AttributeSet?) :
         return leftEdge
     }
 
+    override fun reportScaleX(): Float {
+        return imageviewMatrix.getScaleX(true)
+    }
+
+    override fun reportScaleY(): Float {
+        return imageviewMatrix.getScaleY(true)
+    }
+
     override fun reportBoundPivotY(): Float {
         return topEdge
     }
