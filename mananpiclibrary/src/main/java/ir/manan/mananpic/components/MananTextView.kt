@@ -9,7 +9,6 @@ import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
-import kotlin.math.abs
 
 /**
  * A custom textview created because of clipping issues with current [android.widget.TextView] in android framework.
@@ -61,11 +60,15 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     @Transient
     private val shaderMatrix = MananMatrix()
 
+    @Transient
+    private val textBoundsRect = Rect()
+
     /**
      * Baseline of text to be drawn.
      */
-    private var textBaseLine = 0f
+    private var textBaseLineY = 0f
 
+    private var textBaseLineX = 0f
 
     /**
      * Extra space used to expand the width and height of view to prevent clipping in special cases like Blur mask and so on.
@@ -172,7 +175,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             textView.textPaint.pathEffect = textPaint.pathEffect
 
             textView.extraSpace = extraSpace
-            textView.textBaseLine = textView.textBaseLine
+            textView.textBaseLineY = textBaseLineY
+            textView.textBaseLineX = textBaseLineX
             textView.strokeColor = strokeColor
             textView.textStrokeWidth = textStrokeWidth
             textView.shaderRotationHolder = shaderRotationHolder
@@ -201,7 +205,15 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         finalTexts.clear()
         val texts = text.split("\n", ignoreCase = true)
-        val widths = texts.map { string -> textPaint.measureText(string) }
+        val widths = texts.map { string ->
+            textPaint.getTextBounds(
+                string,
+                0,
+                string.length,
+                textBoundsRect
+            )
+            textBoundsRect.width().toFloat()
+        }
         for (i in texts.indices) {
             finalTexts[texts[i]] = widths[i]
         }
@@ -211,8 +223,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         val textWidth =
             widths.maxOf { it } + paddingLeft + paddingRight + finalExtraSpace
 
+        textPaint.getTextBounds(text, 0, text.length, textBoundsRect)
+
         val textHeight =
-            (abs(fontMetrics.ascent) + fontMetrics.descent + fontMetrics.leading + paddingTop + paddingBottom + finalExtraSpace) * finalTexts.size
+            (textBoundsRect.height() + paddingTop + paddingBottom + finalExtraSpace) * finalTexts.size
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
@@ -233,7 +247,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             height + y
         )
 
-        textBaseLine = height - textPaint.fontMetrics.descent
+        textBaseLineY = height.toFloat() - textBoundsRect.bottom
+        textBaseLineX = -textBoundsRect.left.toFloat()
+
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -296,8 +312,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             canvas.drawText(
                 map.key,
-                (width - map.value) * Alignment.getNumber(alignmentText),
-                textBaseLine - (toShift * (finalTexts.size - (i + 1))),
+                ((width - map.value) * Alignment.getNumber(alignmentText)) + textBaseLineX,
+                textBaseLineY - (toShift * (finalTexts.size - (i + 1))),
                 textPaint
             )
 
