@@ -201,8 +201,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val fontMetrics = textPaint.fontMetrics
-
         finalTexts.clear()
         val texts = text.split("\n", ignoreCase = true)
         val widths = texts.map { string ->
