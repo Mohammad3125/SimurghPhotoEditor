@@ -93,7 +93,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
      * - [Alignment.LEFT] Draws text to left of view.
      * - [Alignment.RIGHT] Draws text to right of view.
      */
-    var alignmentText: Alignment = Alignment.RIGHT
+    var alignmentText: Alignment = Alignment.CENTER
         set(value) {
             field = value
             invalidate()
