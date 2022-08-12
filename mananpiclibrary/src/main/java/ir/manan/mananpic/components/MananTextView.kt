@@ -93,7 +93,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
      * - [Alignment.LEFT] Draws text to left of view.
      * - [Alignment.RIGHT] Draws text to right of view.
      */
-    var alignmentText: Alignment = Alignment.CENTER
+    var alignmentText: Alignment = Alignment.RIGHT
         set(value) {
             field = value
             invalidate()
@@ -216,15 +216,13 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             finalTexts[texts[i]] = widths[i]
         }
 
-        val finalExtraSpace = extraSpace * 2
-
         val textWidth =
-            widths.maxOf { it } + paddingLeft + paddingRight + finalExtraSpace
+            widths.maxOf { it } + paddingLeft + paddingRight + extraSpace
 
         textPaint.getTextBounds(text, 0, text.length, textBoundsRect)
 
         val textHeight =
-            (textBoundsRect.height() + paddingTop + paddingBottom + finalExtraSpace) * finalTexts.size
+            (textBoundsRect.height() + paddingTop + paddingBottom + extraSpace) * finalTexts.size
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
@@ -257,17 +255,18 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             var finalTranslateX = 0f
             var finalTranslateY = 0f
 
+            val halfSpace = extraSpace * 0.5f
             when (alignmentText) {
                 Alignment.LEFT -> {
-                    finalTranslateX = (extraSpace * 0.5f)
-                    finalTranslateY = extraSpace
+                    finalTranslateX = halfSpace
+                    finalTranslateY = halfSpace
                 }
                 Alignment.CENTER -> {
-                    finalTranslateY = extraSpace
+                    finalTranslateY = halfSpace
                 }
                 Alignment.RIGHT -> {
-                    finalTranslateX = -(extraSpace * 0.5f)
-                    finalTranslateY = extraSpace
+                    finalTranslateX = -halfSpace
+                    finalTranslateY = halfSpace
                 }
             }
 
@@ -628,21 +627,19 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         var finalShiftValueX = 0f
 
-        val finalShiftValueY = diffCurrentStrokeWithLast * 2
-
         when (alignmentText) {
             Alignment.LEFT -> {
 
             }
             Alignment.RIGHT -> {
-                finalShiftValueX = finalShiftValueY
+                finalShiftValueX = diffCurrentStrokeWithLast
             }
             Alignment.CENTER -> {
-                finalShiftValueX = diffCurrentStrokeWithLast
+                finalShiftValueX = diffCurrentStrokeWithLast * 0.5f
             }
         }
 
-        shiftTexture(finalShiftValueX, finalShiftValueY)
+        shiftTexture(finalShiftValueX, diffCurrentStrokeWithLast)
     }
 
     fun setShadowLayer(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
