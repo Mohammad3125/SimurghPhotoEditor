@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.widget.FrameLayout
 import ir.manan.mananpic.components.MananTextView
+import ir.manan.mananpic.components.imageviews.MananCustomImageView
 import ir.manan.mananpic.components.imageviews.MananImageView
 
 /**
@@ -15,13 +16,13 @@ class MananFactory {
         /**
          * Creates a [MananImageView] with required layout params.
          */
-        fun createImageView(context: Context, bitmap: Bitmap): MananImageView {
-            return MananImageView(context).apply {
+        fun createImageView(context: Context, bitmap: Bitmap): MananCustomImageView {
+            return MananCustomImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
                 )
-                setImageBitmap(bitmap)
+                this.bitmap = bitmap
             }
         }
 
