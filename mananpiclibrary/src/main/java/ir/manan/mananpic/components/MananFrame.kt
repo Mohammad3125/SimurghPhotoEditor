@@ -63,6 +63,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     /** Rectangle that later we create to draw an area that we consider as page. */
     private var pageRect = RectF()
 
+
+    private val tempRect = RectF()
+
     /* Selected component related variables ------------------------------------------------------------------------------------------ */
 
     private var previousSelectedComponent: MananComponent? = null
@@ -113,6 +116,33 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             field = value
             invalidate()
         }
+
+    /* Custom scale in x and y dimension ------------------------------------------------------------------------*/
+
+    private val scaleCirclesPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = scaleCirclesColor
+            style = Paint.Style.FILL
+        }
+    }
+
+    @ColorInt
+    var scaleCirclesColor = Color.BLUE
+        set(value) {
+            field = value
+            scaleCirclesPaint.color = value
+            invalidate()
+        }
+
+
+    var scaleCirclesRadius = dp(24)
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    private var currentScaleHandleSelected: ScaleHandles? = null
+
 
     /* Smart guideline ------------------------------------------------------------------------------------------*/
 
@@ -241,9 +271,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 smartGuidelineHolder.clear()
             } else {
                 (currentEditingView as? Texturable)?.rotateTexture(
-                    degree,
-                    reportPivotX(),
-                    reportPivotY()
+                    degree, reportPivotX(), reportPivotY()
                 )
             }
             invalidate()
@@ -251,17 +279,164 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         return true
     }
 
+    override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
+        // Just selects scale handles not any other views.
+        getChildAtPoint(initialX, initialY)
+        return true
+    }
+
     override fun onMove(dx: Float, dy: Float): Boolean {
         super.onMove(dx, dy)
         when {
             currentEditingView != null -> {
-                if (!isApplyingTexture) {
-                    val s = canvasMatrix.getOppositeScale()
-                    currentEditingView!!.applyMovement(dx * s, dy * s)
-                    findSmartGuideLines()
-                    smartRotationLineHolder.clear()
-                } else {
-                    (currentEditingView as Texturable).shiftTexture(dx, dy)
+                when {
+                    currentScaleHandleSelected != null -> {
+
+                        currentEditingView!!.run {
+
+                            val bounds = reportBound()
+
+                            val canvasScale = canvasMatrix.getScaleX(true)
+
+                            val reportedRotation = reportRotation()
+
+                            var sumOfOffset: Float
+
+                            val arrayOffsets = floatArrayOf((dx / canvasScale), (dy / canvasScale))
+
+                            val reportedScaleX = reportScaleX()
+                            val reportedScaleY = reportScaleY()
+
+                            var initialLeft: Float
+                            var initialTop: Float
+
+                            mappingMatrix.run {
+                                setRotate(
+                                    -reportedRotation
+                                )
+
+                                mapPoints(arrayOffsets)
+
+                                sumOfOffset = arrayOffsets[0] + arrayOffsets[1]
+
+                                setScale(
+                                    1f / reportedScaleX,
+                                    1f / reportedScaleY,
+                                    bounds.centerX(),
+                                    bounds.centerY()
+                                )
+
+                                mapRect(tempRect, bounds)
+
+                                initialLeft = tempRect.left
+                                initialTop = tempRect.top
+
+                                setScale(reportedScaleX, reportedScaleY, initialLeft, initialTop)
+
+                                postRotate(reportedRotation, initialLeft, initialTop)
+
+                                mapRect(tempRect, bounds)
+
+                                val currentRight = tempRect.right
+                                val currentLeft = tempRect.left
+                                val currentTop = tempRect.top
+                                val currentBottom = tempRect.bottom
+
+                                when (currentScaleHandleSelected) {
+                                    ScaleHandles.LEFT_HANDLE -> {
+                                        val totalToScaleX =
+                                            if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.width())
+
+                                        applyScale(
+                                            totalToScaleX,
+                                            1f,
+                                        )
+
+                                    }
+                                    ScaleHandles.RIGHT_HANDLE -> {
+
+                                        val totalToScaleX =
+                                            if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.width())
+
+                                        applyScale(
+                                            totalToScaleX,
+                                            1f
+                                        )
+                                    }
+                                    ScaleHandles.TOP_HANDLE -> {
+
+                                        val totalToScaleY =
+                                            if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.height())
+
+                                        applyScale(
+                                            1f,
+                                            totalToScaleY
+                                        )
+                                    }
+                                    ScaleHandles.BOTTOM_HANDLE -> {
+
+                                        val totalToScaleY =
+                                            if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.height())
+
+                                        applyScale(
+                                            1f,
+                                            totalToScaleY
+                                        )
+                                    }
+                                    else -> {
+
+                                    }
+                                }
+
+                                val newScaleX = reportScaleX()
+                                val newScaleY = reportScaleY()
+
+                                setScale(
+                                    newScaleX,
+                                    newScaleY,
+                                    initialLeft,
+                                    initialTop
+                                )
+
+                                postRotate(
+                                    reportedRotation,
+                                    initialLeft,
+                                    initialTop
+                                )
+
+                                mapRect(tempRect, bounds)
+
+                                val diffX =
+                                    ((tempRect.left - currentLeft) + (tempRect.right - currentRight)) * 0.5f
+                                val diffY =
+                                    ((tempRect.top - currentTop) + (tempRect.bottom - currentBottom)) * 0.5f
+
+                                when (currentScaleHandleSelected) {
+                                    ScaleHandles.RIGHT_HANDLE, ScaleHandles.BOTTOM_HANDLE -> {
+                                        applyMovement(diffX, diffY)
+                                    }
+                                    ScaleHandles.TOP_HANDLE, ScaleHandles.LEFT_HANDLE -> {
+                                        applyMovement(-diffX, -diffY)
+                                    }
+                                    else -> {
+
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+                    !isApplyingTexture -> {
+                        val s = canvasMatrix.getOppositeScale()
+                        currentEditingView!!.applyMovement(dx * s, dy * s)
+                        findSmartGuideLines()
+                        smartRotationLineHolder.clear()
+                    }
+
+                    else -> {
+                        (currentEditingView as Texturable).shiftTexture(dx, dy)
+                    }
                 }
             }
             else -> {
@@ -270,6 +445,11 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         }
         invalidate()
         return true
+    }
+
+    override fun onMoveEnded(lastX: Float, lastY: Float) {
+        super.onMoveEnded(lastX, lastY)
+        currentScaleHandleSelected = null
     }
 
     override fun onSelectedComponentChanged(newChild: MananComponent) {
@@ -289,24 +469,18 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         rotationDetector = TwoFingerRotationDetector(this)
 
         matrixAnimator = MananMatrixAnimator(
-            canvasMatrix,
-            pageRect,
-            300L,
-            FastOutSlowInInterpolator()
+            canvasMatrix, pageRect, 300L, FastOutSlowInInterpolator()
         )
 
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
             try {
-                isDrawingBoxEnabled =
-                    getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
+                isDrawingBoxEnabled = getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
 
                 frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
 
-                frameBoxStrokeWidth =
-                    getDimension(
-                        R.styleable.MananFrame_frameBoxStrokeWidth,
-                        frameBoxStrokeWidth
-                    )
+                frameBoxStrokeWidth = getDimension(
+                    R.styleable.MananFrame_frameBoxStrokeWidth, frameBoxStrokeWidth
+                )
 
                 pageBackgroundColor =
                     getColor(R.styleable.MananFrame_pageBackgroundColor, Color.WHITE)
@@ -317,17 +491,19 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
 
-                smartGuideLineStrokeColor =
-                    getColor(
-                        R.styleable.MananFrame_smartGuidelineStrokeColor,
-                        smartGuideLineStrokeColor
-                    )
+                smartGuideLineStrokeColor = getColor(
+                    R.styleable.MananFrame_smartGuidelineStrokeColor, smartGuideLineStrokeColor
+                )
 
-                smartGuideLineStrokeWidth =
-                    getDimension(
-                        R.styleable.MananFrame_smartGuidelineStrokeWidth,
-                        smartGuideLineStrokeWidth
-                    )
+                smartGuideLineStrokeWidth = getDimension(
+                    R.styleable.MananFrame_smartGuidelineStrokeWidth, smartGuideLineStrokeWidth
+                )
+
+                scaleCirclesColor =
+                    getColor(R.styleable.MananFrame_scaleCirclesColor, scaleCirclesColor)
+
+                scaleCirclesRadius =
+                    getDimension(R.styleable.MananFrame_scaleCirclesRadius, scaleCirclesRadius)
 
             } finally {
                 recycle()
@@ -544,9 +720,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 // Match the rotation of canvas to view to be able to
                 // draw rotated rectangle.
                 rotate(
-                    reportRotation(),
-                    reportBoundPivotX() + offsetX,
-                    reportBoundPivotY() + offsetY
+                    reportRotation(), reportBoundPivotX() + offsetX, reportBoundPivotY() + offsetY
                 )
 
                 val oppositeScale = canvasMatrix.getOppositeScale()
@@ -554,8 +728,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 // Draw the box around view.
                 if (isDrawingBoxEnabled) {
                     if (isCanvasMatrixEnabled) {
-                        boxPaint.strokeWidth =
-                            frameBoxStrokeWidth * oppositeScale
+                        boxPaint.strokeWidth = frameBoxStrokeWidth * oppositeScale
                     }
 
                     // Draw a box around component.
@@ -567,6 +740,27 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         boxPaint
                     )
                 }
+
+                val finalRadius = min(
+                    scaleCirclesRadius * min(reportScaleX(), reportScaleY()), scaleCirclesRadius
+                )
+
+                val centerX = bound.centerX()
+                val centerY = bound.centerY()
+
+                drawCircle(
+                    bound.left + offsetX, centerY + offsetY, finalRadius, scaleCirclesPaint
+                )
+                drawCircle(
+                    bound.right + offsetX, centerY + offsetY, finalRadius, scaleCirclesPaint
+                )
+                drawCircle(
+                    centerX + offsetX, bound.bottom + offsetY, finalRadius, scaleCirclesPaint
+                )
+                drawCircle(
+                    centerX + offsetX, bound.top + offsetY, finalRadius, scaleCirclesPaint
+                )
+
 
                 val smartGuidelineStrokeWidth = smartGuideLineStrokeWidth * oppositeScale
 
@@ -584,6 +778,105 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 })
             }
         }
+    }
+
+    override fun getChildAtPoint(x: Float, y: Float): View? {
+        if (childCount == 0) return null
+
+        children.forEach { v ->
+            v as MananComponent
+            // Converting points to float array is required to use matrix 'mapPoints' method.
+            val touchPoints = floatArrayOf(x, y)
+
+            // Get bounds of current component to later validate if touch is in area of
+            // that component or not.
+            val bounds = v.reportBound()
+
+            val vAsView = v as View
+
+            val offsetX = getOffsetX(vAsView)
+            val offsetY = getOffsetY(vAsView)
+
+            val mappedPoints = mappedTouchToComponent(touchPoints, v)
+
+            currentEditingView?.let {
+
+                val vBounds = it.reportBound()
+
+                val selectedMappedPoints = mappedTouchToComponent(touchPoints, it)
+
+                val centerX = vBounds.centerX()
+                val centerY = vBounds.centerY()
+
+                val vv = it as View
+
+                val vOffsetX = getOffsetX(vv)
+                val vOffsetY = getOffsetY(vv)
+
+                val l = vBounds.left + vOffsetX
+                val t = vBounds.top + vOffsetY
+                val r = vBounds.right + vOffsetX
+                val b = vBounds.bottom + vOffsetY
+
+                val touchArea = dp(24)
+
+                currentScaleHandleSelected =
+                    if (selectedMappedPoints[0] in (l - touchArea)..(l + touchArea) && selectedMappedPoints[1] in (centerY - touchArea)..(centerY + touchArea)) {
+                        ScaleHandles.LEFT_HANDLE
+                    } else if (selectedMappedPoints[0] in (r - touchArea)..(r + touchArea) && selectedMappedPoints[1] in (centerY - touchArea)..(centerY + touchArea)) {
+                        ScaleHandles.RIGHT_HANDLE
+                    } else if (selectedMappedPoints[0] in (centerX - touchArea)..(centerX + touchArea) && selectedMappedPoints[1] in (t - touchArea)..(t + touchArea)) {
+                        ScaleHandles.TOP_HANDLE
+                    } else if (selectedMappedPoints[0] in (centerX - touchArea)..(centerX + touchArea) && selectedMappedPoints[1] in (b - touchArea)..(b + touchArea)) {
+                        ScaleHandles.BOTTOM_HANDLE
+                    } else {
+                        null
+                    }
+
+                if (currentScaleHandleSelected != null)
+                    return currentEditingView as View
+            }
+
+            if (mappedPoints[0] in (bounds.left + offsetX)..(bounds.right + offsetX) && mappedPoints[1] in (bounds.top + offsetY..(bounds.bottom + offsetY)))
+                return v
+
+        }
+        return null
+    }
+
+    private fun mappedTouchToComponent(
+        touchPoints: FloatArray, component: MananComponent
+    ): FloatArray {
+
+        val mappedPoints = FloatArray(touchPoints.size)
+
+        mappingMatrix.run {
+            setTranslate(
+                -canvasMatrix.getTranslationX(true), -canvasMatrix.getTranslationY()
+            )
+
+            // Scale down the current matrix as much as canvas matrix scale up.
+            // We do this because if we zoom in image, the rectangle our area that we see
+            // is also smaller so we do this to successfully map our touch points to that area (zoomed area).
+            val scale = canvasMatrix.getOppositeScale()
+            postScale(scale, scale)
+
+            val compAsView = component as View
+
+            val offsetX = getOffsetX(compAsView)
+            val offsetY = getOffsetY(compAsView)
+
+            // Finally handle the rotation of component.
+            postRotate(
+                -component.reportRotation(),
+                component.reportBoundPivotX() + offsetX,
+                component.reportBoundPivotY() + offsetY
+            )
+
+            // Finally map the touch points.
+            mapPoints(mappedPoints, touchPoints)
+        }
+        return mappedPoints
     }
 
     /**
@@ -846,8 +1139,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     fun setSmartGuidelineFlags(flags: Int) {
         // If flag has the ALL in it then store the maximum int value in flag holder to indicate
         // that all of flags has been set, otherwise set it to provided flags.
-        smartGuidelineFlags =
-            if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
+        smartGuidelineFlags = if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
     }
 
     /**
@@ -882,8 +1174,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         mappingRectangle.run {
                             set(reportBound())
                             offset(
-                                getOffsetX(offsetView).toFloat(),
-                                getOffsetY(offsetView).toFloat()
+                                getOffsetX(offsetView).toFloat(), getOffsetY(offsetView).toFloat()
                             )
                         }
                         val centerXBound = mappingRectangle.centerX()
@@ -909,7 +1200,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
      * @throws IllegalStateException if provided array is empty or any element in array is not between 0-360 degrees.
      */
     fun setRotationSmartGuideline(degrees: FloatArray) {
-        if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException("array elements should be between 0-359 degrees")
+        if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException(
+            "array elements should be between 0-359 degrees"
+        )
         if (degrees.isEmpty()) throw IllegalStateException("array should contain at least 1 element")
         smartRotationDegreeHolder = degrees
     }
@@ -964,8 +1257,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         }
 
         // Create bitmap with size of page.
-        val bitmapWithPageSize =
-            Bitmap.createBitmap(pageWidth, pageHeight, Bitmap.Config.ARGB_8888)
+        val bitmapWithPageSize = Bitmap.createBitmap(pageWidth, pageHeight, Bitmap.Config.ARGB_8888)
 
         // Determine how much the rect is scaled down comparing to actual page size.
         // Note that we took width as a number to determine aspect ratio, since aspect ratio is applied
@@ -977,8 +1269,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         currentEditingView = null
 
         val pageColor = pagePaint.color
-        if (transparentBackground)
-            pagePaint.color = Color.TRANSPARENT
+        if (transparentBackground) pagePaint.color = Color.TRANSPARENT
 
         // Temporarily disable canvas matrix manipulation to correctly render the content of page into bitmap.
         isCanvasMatrixEnabled = false
@@ -1066,9 +1357,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
      * @param textureOpacity Opacity of texture that is going to be applied.
      */
     fun setTextureToSelectedChild(
-        texture: Bitmap,
-        tileMode: Shader.TileMode,
-        textureOpacity: Float = 1f
+        texture: Bitmap, tileMode: Shader.TileMode, textureOpacity: Float = 1f
     ) {
         (currentEditingView as? Texturable)?.run {
             applyTexture(texture, tileMode, textureOpacity)
@@ -1120,6 +1409,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             const val CENTER_X = 512
             const val CENTER_Y = 1024
         }
+    }
+
+    private enum class ScaleHandles {
+        LEFT_HANDLE, RIGHT_HANDLE, TOP_HANDLE, BOTTOM_HANDLE
     }
 
 }

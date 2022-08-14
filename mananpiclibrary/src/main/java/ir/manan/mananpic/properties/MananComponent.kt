@@ -61,6 +61,9 @@ interface MananComponent {
      */
     fun applyScale(scaleFactor: Float)
 
+
+    fun applyScale(xFactor: Float, yFactor: Float)
+
     /**
      * Applies movement to target component.
      * @param dx Total pixel the component should be moved in x direction.

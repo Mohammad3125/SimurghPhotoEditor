@@ -34,6 +34,10 @@ class MananImageView(context: Context, attributeSet: AttributeSet?) :
         clearColorFilter()
     }
 
+    override fun applyScale(xFactor: Float, yFactor: Float) {
+        postScale(xFactor, yFactor, imagePivotX, imagePivotY)
+    }
+
     override fun reportBound(): RectF {
         return boundsRectangle
     }
