@@ -751,7 +751,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 val finalRadius =
                     min(
-                        scaleCirclesRadius * min(abs(reportScaleX()), abs(reportScaleY())), scaleCirclesRadius
+                        scaleCirclesRadius * min(abs(reportScaleX()), abs(reportScaleY())),
+                        scaleCirclesRadius
                     )
 
                 val centerX = bound.centerX()
@@ -849,8 +850,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     return currentEditingView as View
             }
 
-            if (mappedPoints[0] in (bounds.left + offsetX)..(bounds.right + offsetX) && mappedPoints[1] in (bounds.top + offsetY..(bounds.bottom + offsetY)))
-                return v
+            if (v !== currentEditingView) {
+                if (mappedPoints[0] in (bounds.left + offsetX)..(bounds.right + offsetX) && mappedPoints[1] in (bounds.top + offsetY..(bounds.bottom + offsetY)))
+                    return v
+            }
 
         }
         return null
