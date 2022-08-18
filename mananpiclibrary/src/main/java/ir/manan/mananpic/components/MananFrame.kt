@@ -143,6 +143,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     private var currentScaleHandleSelected: ScaleHandles? = null
 
+    private var scaleHandlesTouchArea = dp(24)
+
 
     /* Smart guideline ------------------------------------------------------------------------------------------*/
 
@@ -831,7 +833,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 val r = vBounds.right + vOffsetX
                 val b = vBounds.bottom + vOffsetY
 
-                val touchArea = dp(24)
+                val touchArea = scaleHandlesTouchArea / canvasMatrix.getScaleX(true)
 
                 currentScaleHandleSelected =
                     if (selectedMappedPoints[0] in (l - touchArea)..(l + touchArea) && selectedMappedPoints[1] in (centerY - touchArea)..(centerY + touchArea)) {
