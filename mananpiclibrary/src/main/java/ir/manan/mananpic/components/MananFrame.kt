@@ -307,12 +307,20 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                             val reportedScaleX = reportScaleX()
                             val reportedScaleY = reportScaleY()
 
+                            val scaleXSign = if (reportedScaleX >= 0f) 1f else -1f
+                            val scaleYSign = if (reportedScaleY >= 0f) 1f else -1f
+
                             var initialLeft: Float
                             var initialTop: Float
 
                             mappingMatrix.run {
                                 setRotate(
                                     -reportedRotation
+                                )
+
+                                postScale(
+                                    scaleXSign,
+                                    scaleYSign
                                 )
 
                                 mapPoints(arrayOffsets)
@@ -741,9 +749,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     )
                 }
 
-                val finalRadius = min(
-                    scaleCirclesRadius * min(reportScaleX(), reportScaleY()), scaleCirclesRadius
-                )
+                val finalRadius =
+                    min(
+                        scaleCirclesRadius * min(abs(reportScaleX()), abs(reportScaleY())), scaleCirclesRadius
+                    )
 
                 val centerX = bound.centerX()
                 val centerY = bound.centerY()
@@ -803,6 +812,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 val vBounds = it.reportBound()
 
+                val scaleXSign = if (it.reportScaleX() >= 0f) 1f else -1f
+                val scaleYSign = if (it.reportScaleY() >= 0f) 1f else -1f
+
                 val selectedMappedPoints = mappedTouchToComponent(touchPoints, it)
 
                 val centerX = vBounds.centerX()
@@ -822,13 +834,13 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 currentScaleHandleSelected =
                     if (selectedMappedPoints[0] in (l - touchArea)..(l + touchArea) && selectedMappedPoints[1] in (centerY - touchArea)..(centerY + touchArea)) {
-                        ScaleHandles.LEFT_HANDLE
+                        if (scaleXSign == 1f) ScaleHandles.LEFT_HANDLE else ScaleHandles.RIGHT_HANDLE
                     } else if (selectedMappedPoints[0] in (r - touchArea)..(r + touchArea) && selectedMappedPoints[1] in (centerY - touchArea)..(centerY + touchArea)) {
-                        ScaleHandles.RIGHT_HANDLE
+                        if (scaleXSign == 1f) ScaleHandles.RIGHT_HANDLE else ScaleHandles.LEFT_HANDLE
                     } else if (selectedMappedPoints[0] in (centerX - touchArea)..(centerX + touchArea) && selectedMappedPoints[1] in (t - touchArea)..(t + touchArea)) {
-                        ScaleHandles.TOP_HANDLE
+                        if (scaleYSign == 1f) ScaleHandles.TOP_HANDLE else ScaleHandles.BOTTOM_HANDLE
                     } else if (selectedMappedPoints[0] in (centerX - touchArea)..(centerX + touchArea) && selectedMappedPoints[1] in (b - touchArea)..(b + touchArea)) {
-                        ScaleHandles.BOTTOM_HANDLE
+                        if (scaleYSign == 1f) ScaleHandles.BOTTOM_HANDLE else ScaleHandles.TOP_HANDLE
                     } else {
                         null
                     }
