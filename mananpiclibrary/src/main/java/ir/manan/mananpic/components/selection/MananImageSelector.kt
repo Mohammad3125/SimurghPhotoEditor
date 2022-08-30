@@ -2,7 +2,10 @@ package ir.manan.mananpic.components.selection
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Path
+import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -40,6 +43,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private var maximumScale = 0f
 
     private val canvasMatrix by lazy {
+        MananMatrix()
+    }
+
+    private val mappingMatrix by lazy {
         MananMatrix()
     }
 
@@ -198,7 +205,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
      */
     private fun mapTouchPoints(touchX: Float, touchY: Float): FloatArray {
         val touchPoints = floatArrayOf(touchX, touchY)
-        Matrix().run {
+        mappingMatrix.run {
 
             val tx = canvasMatrix.getTranslationX(true)
             val ty = canvasMatrix.getTranslationY()
@@ -302,7 +309,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
 
             return Path(this).apply {
-                transform(Matrix().apply {
+                transform(mappingMatrix.apply {
                     setScale(totalScaled, totalScaled, leftEdge, topEdge)
                     postTranslate(-leftEdge, -topEdge)
                 })
