@@ -22,6 +22,18 @@ class MananMatrixAnimator(
     private var onMatrixUpdateCallback: ((MananMatrix) -> Unit)? = null
     private var onMatrixUpdateListener: OnMatrixUpdateListener? = null
 
+    private val zoomWindow by lazy {
+        RectF()
+    }
+
+    private val mappingMatrix by lazy {
+        Matrix()
+    }
+
+    private val animationPropertyHolderList by lazy {
+        mutableListOf<PropertyValuesHolder>()
+    }
+
     private val canvasMatrixAnimator by lazy {
         ValueAnimator().apply {
             duration = animationDuration
@@ -92,9 +104,9 @@ class MananMatrixAnimator(
             val tx = targetMatrix.getTranslationX()
             val ty = targetMatrix.getTranslationY()
 
-            val zoomWindow = RectF(initialBounds)
+            zoomWindow.set(initialBounds)
 
-            Matrix().run {
+            mappingMatrix.run {
                 setScale(scale, scale)
                 mapRect(zoomWindow)
             }
@@ -112,7 +124,7 @@ class MananMatrixAnimator(
                 -(zoomWindow.bottom - initialBounds.bottom)
 
             canvasMatrixAnimator.run {
-                val animationPropertyHolderList = ArrayList<PropertyValuesHolder>()
+                animationPropertyHolderList.clear()
                 // Add PropertyValuesHolder for each animation property if they should be animated.
                 if (scale < 1f || scale > maximumScaleFactorAllowed)
                     animationPropertyHolderList.add(
