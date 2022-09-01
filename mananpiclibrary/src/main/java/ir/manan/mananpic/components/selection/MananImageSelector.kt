@@ -42,6 +42,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private var maximumScale = 0f
 
+    private val animatorExtraSpaceAroundAxes = dp(128)
+
     private val canvasMatrix by lazy {
         MananMatrix()
     }
@@ -259,7 +261,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private fun animateCanvasBack() {
         matrixAnimator.run {
-            startAnimation(maximumScale, dp(48))
+            startAnimation(maximumScale, animatorExtraSpaceAroundAxes)
             setOnMatrixUpdateListener {
                 invalidate()
             }
