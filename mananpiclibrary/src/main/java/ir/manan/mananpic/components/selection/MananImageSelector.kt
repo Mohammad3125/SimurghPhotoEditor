@@ -10,7 +10,6 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
-import android.view.ViewConfiguration
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.components.selection.selectors.Selector
@@ -56,8 +55,6 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private val matrixAnimator by lazy {
         MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
-
-    private val touchSlope = ViewConfiguration.get(context).scaledTouchSlop
 
     var selector: Selector? = null
         set(value) {
