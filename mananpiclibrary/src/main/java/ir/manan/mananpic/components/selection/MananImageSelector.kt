@@ -142,7 +142,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     // scaling, then call 'onMove' method of selector.
                     if (selector != null && totalPoints == 1 && !isMatrixGesture) {
 
-                        if (dx == 0f || dy == 0f) return true
+                        if (dx == 0f && dy == 0f) return true
 
                         // Calculate how much the canvas is scaled then use
                         // that to slow down the translation by that factor.
