@@ -10,6 +10,7 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.ViewConfiguration
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.components.selection.selectors.Selector
@@ -55,6 +56,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private val matrixAnimator by lazy {
         MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
+
+    private val touchSlope = ViewConfiguration.get(context).scaledTouchSlop
 
     var selector: Selector? = null
         set(value) {
@@ -138,6 +141,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     // screen and user is not performing any other gesture like moving or
                     // scaling, then call 'onMove' method of selector.
                     if (selector != null && totalPoints == 1 && !isMatrixGesture) {
+
+                        if (dx == 0f || dy == 0f) return true
 
                         // Calculate how much the canvas is scaled then use
                         // that to slow down the translation by that factor.
