@@ -28,8 +28,6 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     OnRotateListener, OnMoveListener {
     constructor(context: Context) : this(context, null)
 
-    val viewsCopy = mutableListOf<View>()
-
     /* Detectors --------------------------------------------------- */
 
     protected var rotationDetector: RotationDetectorGesture? = null
