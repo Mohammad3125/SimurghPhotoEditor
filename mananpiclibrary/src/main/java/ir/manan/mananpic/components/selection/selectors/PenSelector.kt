@@ -199,6 +199,10 @@ class PenSelector : PathBasedSelector() {
      */
     private var selectedLine: Line? = null
 
+    override fun shouldParentTransformDrawings(): Boolean {
+        return false
+    }
+
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         this.context = context

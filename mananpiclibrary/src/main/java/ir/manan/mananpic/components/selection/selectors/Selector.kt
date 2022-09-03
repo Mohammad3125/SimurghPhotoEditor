@@ -19,6 +19,8 @@ abstract class Selector {
         invalidateListener = listener
     }
 
+    abstract fun shouldParentTransformDrawings(): Boolean
+
     /**
      * Invalidates the target if it implements [OnDispatchToInvalidate].
      */

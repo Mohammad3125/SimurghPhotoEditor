@@ -51,6 +51,9 @@ class BrushSelector : PathBasedSelector() {
             invalidate()
         }
 
+    override fun shouldParentTransformDrawings(): Boolean {
+        return true
+    }
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         brushPaint.alpha = brushAlpha
@@ -78,20 +81,8 @@ class BrushSelector : PathBasedSelector() {
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            // Create a copy of path to later transform the transformed path to it.
-            pathCopy.set(path)
-
-            // Apply matrix to path.
-            path.transform(canvasMatrix)
-
             // Draw the transformed path.
             drawPath(path, brushPaint)
-
-            // Revert it back.
-            path.set(pathCopy)
-
-            // Reset the pathCopy to release memory.
-            pathCopy.rewind()
         }
     }
 

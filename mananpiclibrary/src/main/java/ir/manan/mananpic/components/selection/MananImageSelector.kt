@@ -252,7 +252,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             concat(canvasMatrix)
             super.onDraw(this)
             // Restore canvas state and let the selector scale itself based on canvas we passed earlier to it.
-            restore()
+
+            if (selector?.shouldParentTransformDrawings() == false) {
+                restore()
+            }
+
             selector?.draw(this)
         }
     }
