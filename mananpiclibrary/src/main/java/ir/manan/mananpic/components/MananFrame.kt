@@ -748,11 +748,13 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 val widthScaleFromPage = bound.width() / pageRect.width()
                 val heightScaleFromPage = bound.height() / pageRect.height()
 
+                val maxScale = max(widthScaleFromPage,heightScaleFromPage)
+
 
                 // Draw the box around view.
                 if (isDrawingBoxEnabled) {
                     if (isCanvasMatrixEnabled) {
-                        boxPaint.strokeWidth = frameBoxStrokeWidth * widthScaleFromPage
+                        boxPaint.strokeWidth = frameBoxStrokeWidth * maxScale
                     }
 
                     // Draw a box around component.
@@ -767,7 +769,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
 
                 if (isCanvasMatrixEnabled) {
-                    scaleHandlesPaint.strokeWidth = scalesHandleThickness * widthScaleFromPage
+                    scaleHandlesPaint.strokeWidth = scalesHandleThickness * maxScale
                 }
 
 
