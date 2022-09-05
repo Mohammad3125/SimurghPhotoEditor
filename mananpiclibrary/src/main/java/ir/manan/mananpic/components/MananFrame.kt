@@ -119,23 +119,30 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     /* Custom scale in x and y dimension ------------------------------------------------------------------------*/
 
-    private val scaleCirclesPaint by lazy {
+    private val scaleHandlesPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = scaleCirclesColor
-            style = Paint.Style.FILL
+            color = scaleHandlesColor
+            style = Paint.Style.FILL_AND_STROKE
+            strokeCap = Paint.Cap.ROUND
         }
     }
 
     @ColorInt
-    var scaleCirclesColor = Color.BLUE
+    var scaleHandlesColor = Color.BLUE
         set(value) {
             field = value
-            scaleCirclesPaint.color = value
+            scaleHandlesPaint.color = value
             invalidate()
         }
 
+    var scalesHandleThickness = dp(7.5f)
+        set(value) {
+            field = value
+            scaleHandlesPaint.strokeWidth = value
+            invalidate()
+        }
 
-    var scaleCirclesRadius = dp(24)
+    var scaleHandleWidth = dp(90)
         set(value) {
             field = value
             invalidate()
@@ -509,11 +516,14 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     R.styleable.MananFrame_smartGuidelineStrokeWidth, smartGuideLineStrokeWidth
                 )
 
-                scaleCirclesColor =
-                    getColor(R.styleable.MananFrame_scaleCirclesColor, scaleCirclesColor)
+                scaleHandlesColor =
+                    getColor(R.styleable.MananFrame_scaleHandlesColor, scaleHandlesColor)
 
-                scaleCirclesRadius =
-                    getDimension(R.styleable.MananFrame_scaleCirclesRadius, scaleCirclesRadius)
+                scalesHandleThickness =
+                    getDimension(R.styleable.MananFrame_scaleHandleThickness, scalesHandleThickness)
+
+                scaleHandleWidth =
+                    getDimension(R.styleable.MananFrame_scaleHandleThickness, scaleHandleWidth)
 
             } finally {
                 recycle()
@@ -735,10 +745,14 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 val oppositeScale = canvasMatrix.getOppositeScale()
 
+                val widthScaleFromPage = bound.width() / pageRect.width()
+                val heightScaleFromPage = bound.height() / pageRect.height()
+
+
                 // Draw the box around view.
                 if (isDrawingBoxEnabled) {
                     if (isCanvasMatrixEnabled) {
-                        boxPaint.strokeWidth = frameBoxStrokeWidth * oppositeScale
+                        boxPaint.strokeWidth = frameBoxStrokeWidth * widthScaleFromPage
                     }
 
                     // Draw a box around component.
@@ -751,26 +765,53 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     )
                 }
 
-                val finalRadius =
-                    min(
-                        scaleCirclesRadius * min(abs(reportScaleX()), abs(reportScaleY())),
-                        scaleCirclesRadius
-                    )
+
+                if (isCanvasMatrixEnabled) {
+                    scaleHandlesPaint.strokeWidth = scalesHandleThickness * widthScaleFromPage
+                }
+
 
                 val centerX = bound.centerX()
                 val centerY = bound.centerY()
 
-                drawCircle(
-                    bound.left + offsetX, centerY + offsetY, finalRadius, scaleCirclesPaint
-                )
-                drawCircle(
-                    bound.right + offsetX, centerY + offsetY, finalRadius, scaleCirclesPaint
-                )
-                drawCircle(
-                    centerX + offsetX, bound.bottom + offsetY, finalRadius, scaleCirclesPaint
-                )
-                drawCircle(
-                    centerX + offsetX, bound.top + offsetY, finalRadius, scaleCirclesPaint
+                val scaleHandleWidthHalf = (scaleHandleWidth * widthScaleFromPage) * 0.5f
+                val scaleHandleHeightHalf = (scaleHandleWidth * heightScaleFromPage) * 0.5f
+
+                val xMinusHandleWidth = centerX - scaleHandleWidthHalf
+                val xPlusHandleWidth = centerX + scaleHandleWidthHalf
+
+                val yMinusHandleHeight = centerY - scaleHandleHeightHalf
+                val yPlusHandleHeight = centerY + scaleHandleHeightHalf
+
+                drawLines(
+                    floatArrayOf(
+                        // TOP HANDLE
+                        xMinusHandleWidth,
+                        bound.top,
+                        xPlusHandleWidth,
+                        bound.top,
+
+                        // RIGHT HANDLE
+                        bound.right,
+                        yMinusHandleHeight,
+                        bound.right,
+                        yPlusHandleHeight,
+
+
+                        // BOTTOM HANDLE
+                        xMinusHandleWidth,
+                        bound.bottom,
+                        xPlusHandleWidth,
+                        bound.bottom,
+
+
+                        // LEFT HANDLE
+                        bound.left,
+                        yMinusHandleHeight,
+                        bound.left,
+                        yPlusHandleHeight
+                    ),
+                    scaleHandlesPaint
                 )
 
 
@@ -1191,7 +1232,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         mappingRectangle.run {
                             set(reportBound())
                             offset(
-                                getOffsetX(offsetView).toFloat(), getOffsetY(offsetView).toFloat()
+                                getOffsetX(offsetView).toFloat(),
+                                getOffsetY(offsetView).toFloat()
                             )
                         }
                         val centerXBound = mappingRectangle.centerX()
@@ -1274,7 +1316,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         }
 
         // Create bitmap with size of page.
-        val bitmapWithPageSize = Bitmap.createBitmap(pageWidth, pageHeight, Bitmap.Config.ARGB_8888)
+        val bitmapWithPageSize =
+            Bitmap.createBitmap(pageWidth, pageHeight, Bitmap.Config.ARGB_8888)
 
         // Determine how much the rect is scaled down comparing to actual page size.
         // Note that we took width as a number to determine aspect ratio, since aspect ratio is applied
