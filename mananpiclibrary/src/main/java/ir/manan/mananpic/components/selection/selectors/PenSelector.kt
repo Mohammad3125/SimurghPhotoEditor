@@ -186,6 +186,7 @@ class PenSelector : PathBasedSelector() {
         set(value) {
             field = value
             linesPaint.strokeWidth = field
+            invalidate()
         }
 
     /**
