@@ -1,19 +1,18 @@
 package ir.manan.mananpic.components.imageviews
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.shapes.Shape
 import android.view.View
 import ir.manan.mananpic.properties.MananComponent
+import ir.manan.mananpic.properties.StrokeCapable
 
-@SuppressLint("ViewConstructor")
 class MananShapeView(
     context: Context,
     var shape: Shape,
     var shapeWidth: Int,
     var shapeHeight: Int
-) : View(context), MananComponent{
+) : View(context), MananComponent, StrokeCapable {
 
     @Transient
     private val shapePaint = Paint()
@@ -22,6 +21,14 @@ class MananShapeView(
         set(value) {
             field = value
             shapePaint.color = value
+            invalidate()
+        }
+
+    private var strokeSize = 0f
+
+    private var strokeColor = Color.BLACK
+        set(value) {
+            field = value
             invalidate()
         }
 
@@ -101,15 +108,47 @@ class MananShapeView(
         shape.resize(shapeWidth.toFloat(), shapeHeight.toFloat())
 
         setMeasuredDimension(
-            shapeWidth,
-            shapeHeight
+            (shapeWidth + strokeSize).toInt(),
+            (shapeHeight + strokeSize).toInt()
         )
     }
 
+    override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
+        strokeSize = strokeRadiusPx
+        this.strokeColor = strokeColor
+        requestLayout()
+    }
+
+    override fun getStrokeColor(): Int {
+        return strokeColor
+    }
+
+    override fun getStrokeWidth(): Float {
+        return strokeSize
+    }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         canvas?.run {
+            val half = strokeSize * 0.5f
+            translate(half, half)
+
+            if (strokeSize > 0f) {
+                val currentColor = shapeColor
+                val currentStyle = shapePaint.style
+                shapePaint.style = Paint.Style.STROKE
+                shapePaint.strokeWidth = strokeSize
+                val currentShader = shapePaint.shader
+                shapePaint.shader = null
+                shapePaint.color = strokeColor
+
+                shape.draw(canvas, shapePaint)
+
+                shapePaint.shader = currentShader
+                shapePaint.style = currentStyle
+                shapePaint.strokeWidth = 0f
+                shapePaint.color = currentColor
+            }
             shape.draw(canvas, shapePaint)
         }
     }
