@@ -8,6 +8,7 @@ import android.view.View
 import ir.manan.mananpic.properties.Colorable
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.properties.StrokeCapable
+import ir.manan.mananpic.properties.Texturable
 
 @SuppressLint("ViewConstructor")
 class MananShapeView(
@@ -15,10 +16,15 @@ class MananShapeView(
     @Transient var shape: Shape,
     var shapeWidth: Int,
     var shapeHeight: Int
-) : View(context), MananComponent, StrokeCapable, Colorable, java.io.Serializable {
+) : View(context), MananComponent, StrokeCapable, Colorable, Texturable, java.io.Serializable {
 
     @Transient
     private val shapePaint = Paint()
+
+    @Transient
+    private var paintShader : Shader? = null
+
+    private var shaderRotationHolder = 0f
 
     var shapeColor = Color.BLACK
         set(value) {
@@ -40,6 +46,9 @@ class MananShapeView(
 
     @Transient
     private val mappingMatrix = Matrix()
+
+    @Transient
+    private val shaderMatrix = Matrix()
     override fun changeColor(color: Int) {
         shapeColor = color
     }
@@ -161,5 +170,69 @@ class MananShapeView(
             }
             shape.draw(canvas, shapePaint)
         }
+    }
+
+    override fun applyTexture(bitmap: Bitmap, opacity: Float) {
+        applyTexture(bitmap, Shader.TileMode.REPEAT, opacity)
+    }
+
+    /**
+     * Applies a texture to the text with default tileMode of [Shader.TileMode.REPEAT]
+     * @param bitmap The bitmap texture that is going to be applied to the view.
+     * @param tileMode The bitmap mode [Shader.TileMode]
+     */
+    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
+        paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
+            alpha = opacity
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
+            alpha = opacity
+            setLocalMatrix(shaderMatrix)
+        }
+        invalidate()
+    }
+
+    override fun shiftTexture(dx: Float, dy: Float) {
+        shapePaint.shader?.run {
+            shaderMatrix.postTranslate(dx, dy)
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    private fun shiftTextureWithoutInvalidation(dx: Float, dy: Float) {
+        shapePaint.shader?.run {
+            shaderMatrix.postTranslate(dx, dy)
+            setLocalMatrix(shaderMatrix)
+        }
+    }
+
+    override fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float) {
+        shapePaint.shader?.run {
+            shaderMatrix.postScale(scaleFactor, scaleFactor, pivotX, pivotY)
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun rotateTexture(rotateTo: Float, pivotX: Float, pivotY: Float) {
+        shapePaint.shader?.run {
+            shaderMatrix.postRotate(
+                rotateTo - shaderRotationHolder,
+                pivotX,
+                pivotY
+            )
+            shaderRotationHolder = rotateTo
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun removeTexture() {
+        paintShader = null
+        shapePaint.shader = null
+        invalidate()
     }
 }
