@@ -78,7 +78,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var shaderRotationHolder = 0f
 
     var textStrokeWidth = 0f
-    var strokeColor: Int = Color.BLACK
+    var textStrokeColor: Int = Color.BLACK
 
     @Transient
     private var paintShader: Shader? = null
@@ -182,7 +182,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             textView.extraSpace = extraSpace
             textView.textBaseLineY = textBaseLineY
             textView.textBaseLineX = textBaseLineX
-            textView.strokeColor = strokeColor
+            textView.textStrokeColor = textStrokeColor
             textView.textStrokeWidth = textStrokeWidth
             textView.shaderRotationHolder = shaderRotationHolder
             textView.paintShader = paintShader
@@ -289,7 +289,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 textPaint.strokeWidth = textStrokeWidth
                 val currentShader = textPaint.shader
                 textPaint.shader = null
-                textPaint.color = strokeColor
+                textPaint.color = textStrokeColor
 
                 drawTexts(this, toShift)
 
@@ -618,13 +618,21 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
         if (strokeRadiusPx < 0f) throw IllegalStateException("Stroke width should be a positive number")
         textStrokeWidth = strokeRadiusPx
-        this.strokeColor = strokeColor
+        this.textStrokeColor = strokeColor
 
         shiftTextureWithAlignment(strokeRadiusPx)
 
         extraSpace = strokeRadiusPx
         requestLayout()
         invalidate()
+    }
+
+    override fun getStrokeColor(): Int {
+        return textStrokeColor
+    }
+
+    override fun getStrokeWidth(): Float {
+        return textStrokeWidth
     }
 
     private fun shiftTextureWithAlignment(currentStroke: Float) {

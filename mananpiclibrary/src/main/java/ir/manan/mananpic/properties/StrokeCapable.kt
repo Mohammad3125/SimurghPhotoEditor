@@ -17,4 +17,9 @@ interface StrokeCapable {
      * @param strokeColor Color of stroke.
      */
     fun setStroke(strokeRadiusPx: Float, @ColorInt strokeColor: Int)
+
+    fun getStrokeColor(): Int
+
+    fun getStrokeWidth() : Float
+
 }
