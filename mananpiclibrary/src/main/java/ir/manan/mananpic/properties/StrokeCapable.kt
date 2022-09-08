@@ -18,6 +18,7 @@ interface StrokeCapable {
      */
     fun setStroke(strokeRadiusPx: Float, @ColorInt strokeColor: Int)
 
+    @ColorInt
     fun getStrokeColor(): Int
 
     fun getStrokeWidth() : Float

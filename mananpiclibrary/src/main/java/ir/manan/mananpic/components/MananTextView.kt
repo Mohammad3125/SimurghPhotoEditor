@@ -18,7 +18,9 @@ import ir.manan.mananpic.utils.MananMatrix
  */
 class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr),
     MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable, Blurable,
+    Colorable,
     java.io.Serializable {
+
     constructor(context: Context) : this(context, null)
 
     private var shadowRadius = 0f
@@ -671,6 +673,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         shadowDy = 0f
         shadowLColor = 0
         invalidate()
+    }
+
+    override fun changeColor(color: Int) {
+        textColor = color
+    }
+
+    override fun getColor(): Int {
+        return textColor
     }
 
     /**

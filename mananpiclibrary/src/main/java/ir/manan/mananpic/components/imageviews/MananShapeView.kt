@@ -1,18 +1,21 @@
 package ir.manan.mananpic.components.imageviews
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.shapes.Shape
 import android.view.View
+import ir.manan.mananpic.properties.Colorable
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.properties.StrokeCapable
 
+@SuppressLint("ViewConstructor")
 class MananShapeView(
     context: Context,
-    var shape: Shape,
+    @Transient var shape: Shape,
     var shapeWidth: Int,
     var shapeHeight: Int
-) : View(context), MananComponent, StrokeCapable {
+) : View(context), MananComponent, StrokeCapable, Colorable, java.io.Serializable {
 
     @Transient
     private val shapePaint = Paint()
@@ -37,6 +40,13 @@ class MananShapeView(
 
     @Transient
     private val mappingMatrix = Matrix()
+    override fun changeColor(color: Int) {
+        shapeColor = color
+    }
+
+    override fun getColor(): Int {
+        return shapeColor
+    }
 
     override fun reportRotation(): Float {
         return rotation
