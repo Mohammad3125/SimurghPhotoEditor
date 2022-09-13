@@ -9,6 +9,7 @@ import ir.manan.mananpic.properties.Filterable
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.MananFactory
 import kotlin.math.max
+import kotlin.math.min
 
 class MananCustomImageView(context: Context) : View(context), MananComponent, Filterable,
     java.io.Serializable, Bitmapable {
@@ -150,48 +151,74 @@ class MananCustomImageView(context: Context) : View(context), MananComponent, Fi
         this.colorFilter = null
     }
 
-    override fun toBitmap(config: Bitmap.Config): Bitmap {
+    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap {
 
         if (bitmap == null) throw IllegalStateException("bitmap of current image view is null")
 
-        bitmap!!.let {
-            // Create a bitmap and invert it vertically and or horizontally if it is inverted.
-            val finalBitmap =
-                Bitmap.createBitmap(it, 0, 0, it.width, it.height, Matrix().apply {
-                    postScale(
-                        if (scaleX < 0f) -1f else 1f,
-                        if (scaleY < 0f) -1f else 1f
-                    )
-                }, false)
+        if (ignoreAxisScale) {
+            return Bitmap.createBitmap(
+                width,
+                height,
+                config
+            ).also { bitmap ->
+                draw(Canvas(bitmap))
+            }
+        } else {
+            val wStroke = width
+            val hStroke = height
 
-            // Return the mutable copy.
-            return finalBitmap.copy(finalBitmap.config, true)
+            var w = wStroke * scaleX
+            var h = hStroke * scaleY
+            val s = max(wStroke, hStroke) / max(w, h)
+            w *= s
+            h *= s
+            return Bitmap.createBitmap(
+                w.toInt(),
+                h.toInt(),
+                config
+            ).also { bitmap ->
+                draw(Canvas(bitmap).also { canvas ->
+                    canvas.scale(w / wStroke, h / hStroke)
+                })
+            }
         }
     }
 
-    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+    override fun toBitmap(
+        width: Int,
+        height: Int,
+        config: Bitmap.Config,
+        ignoreAxisScale: Boolean
+    ): Bitmap {
 
         if (bitmap == null) throw IllegalStateException("bitmap of current image view is null")
 
-        // Determine how much the desired width and height is scaled base on
-        // smallest desired dimension divided by maximum image dimension.
-        var totalScaled = width / bounds.width()
+        val wStroke = this.width
+        val hStroke = this.height
 
-        if (bounds.height() * totalScaled > height) {
-            totalScaled = height / bounds.height()
-        }
+        var w = if(ignoreAxisScale) wStroke.toFloat() else wStroke * scaleX
+        var h = if(ignoreAxisScale) hStroke.toFloat() else hStroke * scaleY
 
-        // Create output bitmap matching desired width,height and config.
+        val s = max(wStroke, hStroke) / max(w, h)
+
+        w *= s
+        h *= s
+
+        val scale = min(width.toFloat() / w, height.toFloat() / h)
+
+        val ws = (w * scale)
+        val hs = (h * scale)
+
         val outputBitmap = Bitmap.createBitmap(width, height, config)
 
-        // Calculate extra width and height remaining to later use to center the image inside bitmap.
-        val extraWidth = (width / totalScaled) - bounds.width()
-        val extraHeight = (height / totalScaled) - bounds.height()
+        val extraWidth = width - ws
+        val extraHeight = height - hs
 
         Canvas(outputBitmap).run {
-            scale(totalScaled, totalScaled)
-            // Finally translate to center the content.
-            translate(-x + extraWidth * 0.5f, -y + extraHeight * 0.5f)
+            translate(extraWidth * 0.5f, extraHeight * 0.5f)
+
+            scale(ws / wStroke, hs / hStroke)
+
             draw(this)
         }
 

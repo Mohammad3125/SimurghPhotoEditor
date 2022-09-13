@@ -235,32 +235,47 @@ class MananShapeView(
         invalidate()
     }
 
-    override fun toBitmap(config: Bitmap.Config): Bitmap {
-        val wStroke = width
-        val hStroke = height
+    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap {
+        if (ignoreAxisScale) {
+            return Bitmap.createBitmap(
+                width,
+                height,
+                config
+            ).also { bitmap ->
+                draw(Canvas(bitmap))
+            }
+        } else {
+            val wStroke = width
+            val hStroke = height
 
-        var w = wStroke * scaleX
-        var h = hStroke * scaleY
-        val s = max(wStroke, hStroke) / max(w, h)
-        w *= s
-        h *= s
-        return Bitmap.createBitmap(
-            w.toInt(),
-            h.toInt(),
-            config
-        ).also { bitmap ->
-            draw(Canvas(bitmap).also { canvas ->
-                canvas.scale(w / wStroke, h / hStroke)
-            })
+            var w = wStroke * scaleX
+            var h = hStroke * scaleY
+            val s = max(wStroke, hStroke) / max(w, h)
+            w *= s
+            h *= s
+            return Bitmap.createBitmap(
+                w.toInt(),
+                h.toInt(),
+                config
+            ).also { bitmap ->
+                draw(Canvas(bitmap).also { canvas ->
+                    canvas.scale(w / wStroke, h / hStroke)
+                })
+            }
         }
     }
 
-    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+    override fun toBitmap(
+        width: Int,
+        height: Int,
+        config: Bitmap.Config,
+        ignoreAxisScale: Boolean
+    ): Bitmap {
         val wStroke = this.width
         val hStroke = this.height
 
-        var w = wStroke * scaleX
-        var h = hStroke * scaleY
+        var w = if(ignoreAxisScale) wStroke.toFloat() else wStroke * scaleX
+        var h = if(ignoreAxisScale) hStroke.toFloat() else hStroke * scaleY
 
         val s = max(wStroke, hStroke) / max(w, h)
 

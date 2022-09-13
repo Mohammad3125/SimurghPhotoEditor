@@ -306,7 +306,7 @@ abstract class MananGestureImageView(
         isNewBitmap = true
     }
 
-    override fun toBitmap(config: Bitmap.Config): Bitmap {
+    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap {
 
         val mDrawable =
             drawable ?: throw IllegalStateException("drawable is null")
@@ -333,7 +333,12 @@ abstract class MananGestureImageView(
         return finalBitmap.copy(finalBitmap.config, true)
     }
 
-    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+    override fun toBitmap(
+        width: Int,
+        height: Int,
+        config: Bitmap.Config,
+        ignoreAxisScale: Boolean
+    ): Bitmap {
 
         if (drawable == null) throw IllegalStateException("drawable is null")
 

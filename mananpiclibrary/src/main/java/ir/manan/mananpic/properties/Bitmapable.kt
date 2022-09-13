@@ -7,7 +7,10 @@ interface Bitmapable {
      * Converts content of implementor to bitmap.
      * @param config Bitmap config for output bitmap.
      */
-    fun toBitmap(config: Bitmap.Config = Bitmap.Config.ARGB_8888): Bitmap
+    fun toBitmap(
+        config: Bitmap.Config = Bitmap.Config.ARGB_8888,
+        ignoreAxisScale: Boolean = true
+    ): Bitmap
 
     /**
      * Converts content to bitmap.
@@ -15,5 +18,10 @@ interface Bitmapable {
      * @param height Desired height for bitmap.
      * @param config Bitmap configuration.
      */
-    fun toBitmap(width: Int, height: Int, config: Bitmap.Config = Bitmap.Config.ARGB_8888): Bitmap
+    fun toBitmap(
+        width: Int,
+        height: Int,
+        config: Bitmap.Config = Bitmap.Config.ARGB_8888,
+        ignoreAxisScale: Boolean = true
+    ): Bitmap
 }
