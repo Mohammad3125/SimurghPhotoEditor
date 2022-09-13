@@ -7,16 +7,15 @@ import android.os.Build
 import android.widget.FrameLayout
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.components.imageviews.MananCustomImageView
-import ir.manan.mananpic.components.imageviews.MananImageView
 import ir.manan.mananpic.components.imageviews.MananShapeView
 
 /**
- * A factory class responsible for creating components like [MananTextView], [MananImageView].
+ * A factory class responsible for creating components like [MananTextView], [MananCustomImageView].
  */
 class MananFactory {
     companion object {
         /**
-         * Creates a [MananImageView] with required layout params.
+         * Creates a [MananCustomImageView] with required layout params.
          */
         fun createImageView(context: Context, bitmap: Bitmap): MananCustomImageView {
             return MananCustomImageView(context).apply {
