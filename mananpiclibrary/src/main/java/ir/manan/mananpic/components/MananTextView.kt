@@ -425,8 +425,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
     }
 
-    override fun applyTexture(bitmap: Bitmap, opacity: Float) {
-        applyTexture(bitmap, Shader.TileMode.REPEAT, opacity)
+    override fun applyTexture(bitmap: Bitmap) {
+        applyTexture(bitmap, Shader.TileMode.MIRROR)
     }
 
     /**
@@ -434,22 +434,22 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
      * @param bitmap The bitmap texture that is going to be applied to the view.
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
-    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
+    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
         paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
-            alpha = opacity
             setLocalMatrix(shaderMatrix)
         }
 
         textPaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
-            alpha = opacity
             setLocalMatrix(shaderMatrix)
         }
         invalidate()
     }
 
-    override fun shiftTexture(dx: Float, dy: Float) {
+    override fun shiftColor(dx: Float, dy: Float) {
         textPaint.shader?.run {
-            shaderMatrix.postTranslate(dx, dy)
+            var s = shaderMatrix.getScaleX(true)
+            if(s > 1f) s = 1f
+            shaderMatrix.postTranslate(dx * s, dy * s)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
@@ -462,7 +462,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
     }
 
-    override fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float) {
+    override fun scaleColor(scaleFactor: Float) {
         textPaint.shader?.run {
             shaderMatrix.postScale(scaleFactor, scaleFactor, pivotX, pivotY)
             setLocalMatrix(shaderMatrix)
@@ -470,14 +470,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
     }
 
-    override fun rotateTexture(rotateTo: Float, pivotX: Float, pivotY: Float) {
+    override fun rotateColor(rotation: Float) {
         textPaint.shader?.run {
             shaderMatrix.postRotate(
-                rotateTo - shaderRotationHolder,
+                rotation - shaderRotationHolder,
                 pivotX,
                 pivotY
             )
-            shaderRotationHolder = rotateTo
+            shaderRotationHolder = rotation
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
@@ -538,21 +538,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         y1: Float,
         colors: IntArray,
         position: FloatArray?,
-        tileMode: Shader.TileMode,
-        rotation: Float
+        tileMode: Shader.TileMode
     ) {
-        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
-            setLocalMatrix(shaderMatrix.apply {
-                setRotate(rotation)
-            })
-        }
+        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode)
 
         textPaint.shader =
-            LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
-                setLocalMatrix(shaderMatrix.apply {
-                    setRotate(rotation)
-                })
-            }
+            LinearGradient(x0, y0, x1, y1, colors, position, tileMode)
 
         invalidate()
     }
@@ -563,8 +554,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         radius: Float,
         colors: IntArray,
         stops: FloatArray?,
-        tileMode: Shader.TileMode,
-        rotation: Float
+        tileMode: Shader.TileMode
     ) {
         paintShader = RadialGradient(
             centerX,
@@ -573,11 +563,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             colors,
             stops,
             tileMode
-        ).apply {
-            setLocalMatrix(shaderMatrix.apply {
-                setRotate(rotation)
-            })
-        }
+        )
 
         textPaint.shader =
             RadialGradient(
@@ -587,11 +573,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 colors,
                 stops,
                 tileMode
-            ).apply {
-                setLocalMatrix(shaderMatrix.apply {
-                    setRotate(rotation)
-                })
-            }
+            )
         invalidate()
     }
 
@@ -599,21 +581,13 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         cx: Float,
         cy: Float,
         colors: IntArray,
-        positions: FloatArray?,
-        rotation: Float
+        positions: FloatArray?
     ) {
-        paintShader = SweepGradient(cx, cy, colors, positions).apply {
-            setLocalMatrix(shaderMatrix.apply {
-                setRotate(rotation)
-            })
-        }
+        paintShader = SweepGradient(cx, cy, colors, positions)
 
         textPaint.shader =
-            SweepGradient(cx, cy, colors, positions).apply {
-                setLocalMatrix(shaderMatrix.apply {
-                    setRotate(rotation)
-                })
-            }
+            SweepGradient(cx, cy, colors, positions)
+
         invalidate()
     }
 
@@ -654,7 +628,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             }
         }
 
-        shiftTexture(finalShiftValueX, diffCurrentStrokeWithLast)
+        shiftColor(finalShiftValueX, diffCurrentStrokeWithLast)
     }
 
     fun setShadowLayer(radius: Float, dx: Float, dy: Float, shadowColor: Int) {

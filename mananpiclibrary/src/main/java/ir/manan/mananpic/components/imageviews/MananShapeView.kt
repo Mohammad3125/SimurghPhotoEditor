@@ -5,10 +5,8 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.shapes.Shape
 import android.view.View
-import ir.manan.mananpic.properties.Colorable
-import ir.manan.mananpic.properties.MananComponent
-import ir.manan.mananpic.properties.StrokeCapable
-import ir.manan.mananpic.properties.Texturable
+import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.utils.MananMatrix
 
 @SuppressLint("ViewConstructor")
 class MananShapeView(
@@ -16,13 +14,14 @@ class MananShapeView(
     @Transient var shape: Shape,
     var shapeWidth: Int,
     var shapeHeight: Int
-) : View(context), MananComponent, StrokeCapable, Colorable, Texturable, java.io.Serializable {
+) : View(context), MananComponent, StrokeCapable, Colorable, Texturable, Gradientable,
+    java.io.Serializable {
 
     @Transient
     private val shapePaint = Paint()
 
     @Transient
-    private var paintShader : Shader? = null
+    private var paintShader: Shader? = null
 
     private var shaderRotationHolder = 0f
 
@@ -48,7 +47,7 @@ class MananShapeView(
     private val mappingMatrix = Matrix()
 
     @Transient
-    private val shaderMatrix = Matrix()
+    private val shaderMatrix = MananMatrix()
     override fun changeColor(color: Int) {
         shapeColor = color
     }
@@ -172,8 +171,8 @@ class MananShapeView(
         }
     }
 
-    override fun applyTexture(bitmap: Bitmap, opacity: Float) {
-        applyTexture(bitmap, Shader.TileMode.REPEAT, opacity)
+    override fun applyTexture(bitmap: Bitmap) {
+        applyTexture(bitmap, Shader.TileMode.MIRROR)
     }
 
     /**
@@ -181,56 +180,131 @@ class MananShapeView(
      * @param bitmap The bitmap texture that is going to be applied to the view.
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
-    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float) {
+    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
         paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
-            alpha = opacity
             setLocalMatrix(shaderMatrix)
         }
 
         shapePaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
-            alpha = opacity
             setLocalMatrix(shaderMatrix)
         }
         invalidate()
     }
 
-    override fun shiftTexture(dx: Float, dy: Float) {
+
+    override fun shiftColor(dx: Float, dy: Float) {
         shapePaint.shader?.run {
-            shaderMatrix.postTranslate(dx, dy)
+            var s = shaderMatrix.getScaleX(true)
+            if(s > 1f) s = 1f
+            shaderMatrix.postTranslate(dx * s , dy * s)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
     }
 
-    private fun shiftTextureWithoutInvalidation(dx: Float, dy: Float) {
+    override fun scaleColor(scaleFactor: Float) {
         shapePaint.shader?.run {
-            shaderMatrix.postTranslate(dx, dy)
-            setLocalMatrix(shaderMatrix)
-        }
-    }
-
-    override fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float) {
-        shapePaint.shader?.run {
-            shaderMatrix.postScale(scaleFactor, scaleFactor, pivotX, pivotY)
+            shaderMatrix.postScale(
+                scaleFactor, scaleFactor, pivotX,
+                pivotY
+            )
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
     }
 
-    override fun rotateTexture(rotateTo: Float, pivotX: Float, pivotY: Float) {
+    override fun rotateColor(rotation: Float) {
         shapePaint.shader?.run {
             shaderMatrix.postRotate(
-                rotateTo - shaderRotationHolder,
+                rotation - shaderRotationHolder,
                 pivotX,
                 pivotY
             )
-            shaderRotationHolder = rotateTo
+
+            shaderRotationHolder = rotation
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
     }
 
     override fun removeTexture() {
+        paintShader = null
+        shapePaint.shader = null
+        invalidate()
+    }
+
+    override fun applyLinearGradient(
+        x0: Float,
+        y0: Float,
+        x1: Float,
+        y1: Float,
+        colors: IntArray,
+        position: FloatArray?,
+        tileMode: Shader.TileMode
+    ) {
+        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader =
+            LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+                setLocalMatrix(shaderMatrix)
+            }
+
+        invalidate()
+    }
+
+    override fun applyRadialGradient(
+        centerX: Float,
+        centerY: Float,
+        radius: Float,
+        colors: IntArray,
+        stops: FloatArray?,
+        tileMode: Shader.TileMode
+    ) {
+        paintShader = RadialGradient(
+            centerX,
+            centerY,
+            radius,
+            colors,
+            stops,
+            tileMode
+        ).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader =
+            RadialGradient(
+                centerX,
+                centerY,
+                radius,
+                colors,
+                stops,
+                tileMode
+            ).apply {
+                setLocalMatrix(shaderMatrix)
+            }
+        invalidate()
+    }
+
+    override fun applySweepGradient(
+        cx: Float,
+        cy: Float,
+        colors: IntArray,
+        positions: FloatArray?
+    ) {
+        paintShader = SweepGradient(cx, cy, colors, positions).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader =
+            SweepGradient(cx, cy, colors, positions).apply {
+                setLocalMatrix(shaderMatrix)
+            }
+        invalidate()
+    }
+
+    override fun removeGradient() {
         paintShader = null
         shapePaint.shader = null
         invalidate()

@@ -6,13 +6,13 @@ import android.graphics.Shader
 /**
  * This interface makes a view texturable.
  */
-interface Texturable {
+interface Texturable : ComplexColor {
     /**
      * This method makes a view texturable.
      * @param bitmap The texture that is going to be applied to the view.
      * @param opacity The opacity of the texture that is going to be applied. It should be in range of 0f to 1f.
      */
-    fun applyTexture(bitmap: Bitmap, opacity: Float = 1f)
+    fun applyTexture(bitmap: Bitmap)
 
 
     /**
@@ -21,29 +21,7 @@ interface Texturable {
      * @param tileMode The bitmap mode [Shader.TileMode]
      * @param opacity The opacity of the texture that is going to be applied. It should be in range of 0f to 1f.
      */
-    fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode, opacity: Float = 1f)
-
-    /** Shifts texture in each axis by given amount.
-     * @param dx Total to shift texture in x direction.
-     * @param dy Total to shift texture in y direction.
-     */
-    fun shiftTexture(dx: Float, dy: Float)
-
-    /**
-     * Scales the texture with given factor. Scale factor of 1f means no scaling and 0.5f means half the current size.
-     * @param scaleFactor Total to scale the texture.
-     * @param pivotX Texture will be scale around that point in x direction.
-     * @param pivotX Texture will be scale around that point in y direction.
-     */
-    fun scaleTexture(scaleFactor: Float, pivotX: Float, pivotY: Float)
-
-    /**
-     * Rotates texture to given degree.
-     * @param rotateTo Degree that texture will be rotated to.
-     * @param pivotX Texture will rotate around that point in x direction.
-     * @param pivotX Texture will rotate around that point in y direction.
-     */
-    fun rotateTexture(rotateTo: Float, pivotX: Float, pivotY: Float)
+    fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode)
 
     fun removeTexture()
 

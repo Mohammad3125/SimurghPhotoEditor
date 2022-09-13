@@ -5,7 +5,7 @@ import android.graphics.Shader
 /**
  * Interface definition for a view that is capable of gradient coloring.
  */
-interface Gradientable {
+interface Gradientable : ComplexColor {
 
     /**
      * Create a shader that draws a linear gradient along a line.
@@ -28,8 +28,7 @@ interface Gradientable {
         y1: Float,
         colors: IntArray,
         position: FloatArray?,
-        tileMode: Shader.TileMode = Shader.TileMode.MIRROR,
-        rotation: Float = 0f
+        tileMode: Shader.TileMode = Shader.TileMode.MIRROR
     )
 
 
@@ -45,7 +44,6 @@ interface Gradientable {
      *                 the colors array. If <code>null</code>, colors are distributed evenly
      *                 between the center and edge of the circle.
      * @param tileMode The Shader tiling mode
-     * @param rotation Rotation of gradient.
      */
     fun applyRadialGradient(
         centerX: Float,
@@ -53,13 +51,12 @@ interface Gradientable {
         radius: Float,
         colors: IntArray,
         stops: FloatArray?,
-        tileMode: Shader.TileMode = Shader.TileMode.MIRROR,
-        rotation: Float = 0f
+        tileMode: Shader.TileMode = Shader.TileMode.MIRROR
     )
 
 
     /**
-     * A Shader that draws a sweep gradient around a center point.
+     * A Shader that draws a sweep gradient around a given point.
      *
      * @param cx       The x-coordinate of the center
      * @param cy       The y-coordinate of the center
@@ -72,14 +69,12 @@ interface Gradientable {
      *                 If positions is NULL, then the colors are automatically
      *                 spaced evenly.
      *
-     * @param rotation Rotation of gradient.
      */
     fun applySweepGradient(
         cx: Float,
         cy: Float,
         colors: IntArray,
         positions: FloatArray?,
-        rotation: Float = 0f
     )
 
 

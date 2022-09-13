@@ -14,7 +14,6 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.parents.MananParent
 import ir.manan.mananpic.properties.MananComponent
-import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
@@ -78,8 +77,12 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     private var isChildRestored = false
 
-    /** If true this class enters texture applying mode */
-    private var isApplyingTexture = false
+    /** If true this class enters gesture sharing mode */
+    private var isSharingGestures = false
+
+    private var onGesturesShared: ((scale: Float, dx: Float, dy: Float, rotation: Float, pivotX: Float, pivotY: Float) -> Unit)? =
+        null
+    private var onGesturesSharedListener: OnGesturesSharedListener? = null
 
     /* Box around selected view related variables ------------------------------------------------------------------------------------------*/
 
@@ -246,15 +249,11 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             val sf = detector.scaleFactor
             when {
                 currentEditingView != null -> {
-                    if (!isApplyingTexture) {
+                    if (!isSharingGestures) {
                         currentEditingView!!.applyScale(sf)
                         smartGuidelineHolder.clear()
                     } else {
-                        (currentEditingView as? Texturable?)?.scaleTexture(
-                            sf,
-                            currentEditingView!!.reportPivotX(),
-                            currentEditingView!!.reportPivotY()
-                        )
+                        callGestureSharedListeners(sf, 0f, 0f, NO_ROTATION, focusX, focusY)
                     }
                 }
                 else -> {
@@ -274,13 +273,18 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onRotate(degree: Float): Boolean {
         currentEditingView?.run {
-            if (!isApplyingTexture) {
+            if (!isSharingGestures) {
                 applyRotation(degree)
                 findRotationSmartGuidelines()
                 smartGuidelineHolder.clear()
             } else {
-                (currentEditingView as? Texturable)?.rotateTexture(
-                    degree, reportPivotX(), reportPivotY()
+                callGestureSharedListeners(
+                    1f,
+                    0f,
+                    0f,
+                    degree,
+                    reportPivotX(),
+                    reportPivotY()
                 )
             }
             invalidate()
@@ -444,7 +448,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         }
                     }
 
-                    !isApplyingTexture -> {
+                    !isSharingGestures -> {
                         val s = canvasMatrix.getOppositeScale()
                         currentEditingView!!.applyMovement(dx * s, dy * s)
                         findSmartGuideLines()
@@ -452,7 +456,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     }
 
                     else -> {
-                        (currentEditingView as Texturable).shiftTexture(dx, dy)
+                        callGestureSharedListeners(1f, dx, dy, NO_ROTATION, 0f, 0f)
                     }
                 }
             }
@@ -748,7 +752,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 val widthScaleFromPage = bound.width() / pageRect.width()
                 val heightScaleFromPage = bound.height() / pageRect.height()
 
-                val maxScale = max(widthScaleFromPage,heightScaleFromPage)
+                val maxScale = max(widthScaleFromPage, heightScaleFromPage)
 
 
                 // Draw the box around view.
@@ -1374,17 +1378,17 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onChildCloned() {
         isClone = true
-        isApplyingTexture = false
+        isSharingGestures = false
     }
 
     override fun onViewAdded(child: View?) {
         previousSelectedComponent = currentEditingView
-        isApplyingTexture = false
+        isSharingGestures = false
         super.onViewAdded(child)
     }
 
     override fun onViewRemoved(child: View?) {
-        isApplyingTexture = false
+        isSharingGestures = false
         super.onViewRemoved(child)
     }
 
@@ -1409,22 +1413,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
 
     /**
-     * Sets texture on selected component (if it implements [Texturable].) and any gestures
-     * from no on will be applied to texture instead of child unless you finalize the
-     * texture replacement by [applyTexture] method.
-     * This method doesn't throw any exception if selected component is not [Texturable].
-     * ### YOU HAVE TO CALL [applyTexture] TO FINALIZE TEXTURE PLACEMENT.
-     * @param texture Bitmap that is going to be textured on selected component.
-     * @param tileMode Tile mode of shader if texture exceeds the component's bounds.
-     * @param textureOpacity Opacity of texture that is going to be applied.
+     * [MananFrame] starts sharing its gestures via [setOnGestureSharedListener] and [setOnGestureSharedListener].
      */
-    fun setTextureToSelectedChild(
-        texture: Bitmap, tileMode: Shader.TileMode, textureOpacity: Float = 1f
-    ) {
-        (currentEditingView as? Texturable)?.run {
-            applyTexture(texture, tileMode, textureOpacity)
-            isApplyingTexture = true
-        }
+    fun startSharingGesture() {
+        isSharingGestures = true
     }
 
     override fun bringChildToFront(child: View?) {
@@ -1437,18 +1429,38 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
 
     /**
-     * Finalizes texture placement on selected component.
-     * [setTextureToSelectedChild] method should be called before this method otherwise this method is useless.
+     * [MananFrame] doesn't share its gestures anymore.
+     * [startSharingGesture] method should be called before this method otherwise this method is useless.
      */
-    fun applyTexture() {
-        currentEditingView?.run {
-            isApplyingTexture = false
-            rotationDetector?.resetRotation(currentEditingView!!.reportRotation())
+    fun setGestureSharingDone() {
+        currentEditingView?.let { comp ->
+            isSharingGestures = false
+            rotationDetector?.resetRotation(comp.reportRotation())
         }
     }
 
+    fun setOnGestureSharedListener(listener: OnGesturesSharedListener) {
+        onGesturesSharedListener = listener
+    }
+
+    fun setOnGestureSharedListener(listener: (scale: Float, dx: Float, dy: Float, rotation: Float, pivotX: Float, pivotY: Float) -> Unit) {
+        onGesturesShared = listener
+    }
+
+    private fun callGestureSharedListeners(
+        scale: Float,
+        dx: Float,
+        dy: Float,
+        rotation: Float,
+        pivotX: Float,
+        pivotY: Float
+    ) {
+        onGesturesSharedListener?.onShare(scale, dx, dy, rotation, pivotX, pivotY)
+        onGesturesShared?.invoke(scale, dx, dy, rotation, pivotX, pivotY)
+    }
+
     override fun deselectSelectedView() {
-        if (!isApplyingTexture) {
+        if (!isSharingGestures) {
             super.deselectSelectedView()
         }
     }
@@ -1475,6 +1487,22 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     private enum class ScaleHandles {
         LEFT_HANDLE, RIGHT_HANDLE, TOP_HANDLE, BOTTOM_HANDLE
+    }
+
+
+    interface OnGesturesSharedListener {
+        fun onShare(
+            scaleFactor: Float,
+            dx: Float,
+            dy: Float,
+            rotation: Float,
+            pivotX: Float,
+            pivotY: Float
+        )
+    }
+
+    companion object {
+        const val NO_ROTATION = 999f
     }
 
 }
