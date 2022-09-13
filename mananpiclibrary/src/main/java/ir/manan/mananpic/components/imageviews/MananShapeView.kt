@@ -236,8 +236,8 @@ class MananShapeView(
     }
 
     override fun toBitmap(config: Bitmap.Config): Bitmap {
-        val wStroke = shapeWidth + strokeSize
-        val hStroke = shapeHeight + strokeSize
+        val wStroke = width
+        val hStroke = height
 
         var w = wStroke * scaleX
         var h = hStroke * scaleY
@@ -256,8 +256,8 @@ class MananShapeView(
     }
 
     override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
-        val wStroke = shapeWidth + strokeSize
-        val hStroke = shapeHeight + strokeSize
+        val wStroke = this.width
+        val hStroke = this.height
 
         var w = wStroke * scaleX
         var h = hStroke * scaleY
