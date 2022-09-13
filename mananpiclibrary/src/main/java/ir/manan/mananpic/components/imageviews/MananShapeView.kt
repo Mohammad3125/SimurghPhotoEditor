@@ -236,9 +236,12 @@ class MananShapeView(
     }
 
     override fun toBitmap(config: Bitmap.Config): Bitmap {
-        var w = shapeWidth * scaleX
-        var h = shapeHeight * scaleY
-        val s = max(shapeWidth, shapeHeight) / max(w, h)
+        val wStroke = shapeWidth + strokeSize
+        val hStroke = shapeHeight + strokeSize
+
+        var w = wStroke * scaleX
+        var h = hStroke * scaleY
+        val s = max(wStroke, hStroke) / max(w, h)
         w *= s
         h *= s
         return Bitmap.createBitmap(
@@ -247,15 +250,20 @@ class MananShapeView(
             config
         ).also { bitmap ->
             draw(Canvas(bitmap).also { canvas ->
-                canvas.scale(w / shapeWidth, h / shapeHeight)
+                canvas.scale(w / wStroke, h / hStroke)
             })
         }
     }
 
     override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
-        var w = shapeWidth * scaleX
-        var h = shapeHeight * scaleY
-        val s = max(shapeWidth, shapeHeight) / max(w, h)
+        val wStroke = shapeWidth + strokeSize
+        val hStroke = shapeHeight + strokeSize
+
+        var w = wStroke * scaleX
+        var h = hStroke * scaleY
+
+        val s = max(wStroke, hStroke) / max(w, h)
+
         w *= s
         h *= s
 
@@ -272,7 +280,7 @@ class MananShapeView(
         Canvas(outputBitmap).run {
             translate(extraWidth * 0.5f, extraHeight * 0.5f)
 
-            scale(ws / shapeWidth, hs / shapeHeight)
+            scale(ws / wStroke, hs / hStroke)
 
             draw(this)
         }
