@@ -7,6 +7,8 @@ import android.graphics.drawable.shapes.Shape
 import android.view.View
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananMatrix
+import kotlin.math.max
+import kotlin.math.min
 
 @SuppressLint("ViewConstructor")
 class MananShapeView(
@@ -14,7 +16,7 @@ class MananShapeView(
     @Transient var shape: Shape,
     var shapeWidth: Int,
     var shapeHeight: Int
-) : View(context), MananComponent, StrokeCapable, Colorable, Texturable, Gradientable,
+) : View(context), Bitmapable, MananComponent, StrokeCapable, Colorable, Texturable, Gradientable,
     java.io.Serializable {
 
     @Transient
@@ -195,8 +197,8 @@ class MananShapeView(
     override fun shiftColor(dx: Float, dy: Float) {
         shapePaint.shader?.run {
             var s = shaderMatrix.getScaleX(true)
-            if(s > 1f) s = 1f
-            shaderMatrix.postTranslate(dx * s , dy * s)
+            if (s > 1f) s = 1f
+            shaderMatrix.postTranslate(dx * s, dy * s)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
@@ -231,6 +233,51 @@ class MananShapeView(
         paintShader = null
         shapePaint.shader = null
         invalidate()
+    }
+
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
+        var w = shapeWidth * scaleX
+        var h = shapeHeight * scaleY
+        val s = max(shapeWidth, shapeHeight) / max(w, h)
+        w *= s
+        h *= s
+        return Bitmap.createBitmap(
+            w.toInt(),
+            h.toInt(),
+            config
+        ).also { bitmap ->
+            draw(Canvas(bitmap).also { canvas ->
+                canvas.scale(w / shapeWidth, h / shapeHeight)
+            })
+        }
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+        var w = shapeWidth * scaleX
+        var h = shapeHeight * scaleY
+        val s = max(shapeWidth, shapeHeight) / max(w, h)
+        w *= s
+        h *= s
+
+        val scale = min(width.toFloat() / w, height.toFloat() / h)
+
+        val ws = (w * scale)
+        val hs = (h * scale)
+
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        val extraWidth = width - ws
+        val extraHeight = height - hs
+
+        Canvas(outputBitmap).run {
+            translate(extraWidth * 0.5f, extraHeight * 0.5f)
+
+            scale(ws / shapeWidth, hs / shapeHeight)
+
+            draw(this)
+        }
+
+        return outputBitmap
     }
 
     override fun applyLinearGradient(
