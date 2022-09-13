@@ -9,6 +9,8 @@ import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A custom textview created because of clipping issues with current [android.widget.TextView] in android framework.
@@ -336,54 +338,54 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun toBitmap(config: Bitmap.Config): Bitmap {
-        val lastXScale = scaleX
-        val lastYScale = scaleY
-        scaleX = 1f
-        scaleY = 1f
-        val textBounds = reportBound()
+        val wStroke = width
+        val hStroke = height
+
+        var w = wStroke * scaleX
+        var h = hStroke * scaleY
+        val s = max(wStroke, hStroke) / max(w, h)
+        w *= s
+        h *= s
         return Bitmap.createBitmap(
-            textBounds.width().toInt(),
-            textBounds.height().toInt(),
+            w.toInt(),
+            h.toInt(),
             config
         ).also { bitmap ->
-            draw(Canvas(bitmap))
-            scaleX = lastXScale
-            scaleY = lastYScale
+            draw(Canvas(bitmap).also { canvas ->
+                canvas.scale(w / wStroke, h / hStroke)
+            })
         }
     }
 
     override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
-        val lastXScale = scaleX
-        val lastYScale = scaleY
-        scaleX = 1f
-        scaleY = 1f
+        val wStroke = this.width
+        val hStroke = this.height
 
-        val textBounds = reportBound()
+        var w = wStroke * scaleX
+        var h = hStroke * scaleY
 
-        // Determine how much the desired width and height is scaled base on
-        // smallest desired dimension divided by maximum text dimension.
-        var totalScaled = width / textBounds.width()
+        val s = max(wStroke, hStroke) / max(w, h)
 
-        if (textBounds.height() * totalScaled > height) {
-            totalScaled = height / textBounds.height()
-        }
+        w *= s
+        h *= s
 
-        // Create output bitmap matching desired width,height and config.
+        val scale = min(width.toFloat() / w, height.toFloat() / h)
+
+        val ws = (w * scale)
+        val hs = (h * scale)
+
         val outputBitmap = Bitmap.createBitmap(width, height, config)
 
-        // Calculate extra width and height remaining to later use to center the image inside bitmap.
-        val extraWidth = (width / totalScaled) - textBounds.width()
-        val extraHeight = (height / totalScaled) - textBounds.height()
+        val extraWidth = width - ws
+        val extraHeight = height - hs
 
         Canvas(outputBitmap).run {
-            scale(totalScaled, totalScaled)
-            // Finally translate to center the content.
             translate(extraWidth * 0.5f, extraHeight * 0.5f)
+
+            scale(ws / wStroke, hs / hStroke)
+
             draw(this)
         }
-
-        scaleX = lastXScale
-        scaleY = lastYScale
 
         return outputBitmap
     }
