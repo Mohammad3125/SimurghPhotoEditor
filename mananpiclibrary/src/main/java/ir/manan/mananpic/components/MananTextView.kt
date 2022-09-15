@@ -464,9 +464,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     override fun shiftColor(dx: Float, dy: Float) {
         textPaint.shader?.run {
-            var s = shaderMatrix.getScaleX(true)
-            if(s > 1f) s = 1f
-            shaderMatrix.postTranslate(dx * s, dy * s)
+            shaderMatrix.postTranslate(dx, dy)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
