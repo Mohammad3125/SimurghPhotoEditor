@@ -20,15 +20,14 @@ import kotlin.math.min
  */
 class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr),
     MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable, Blurable,
-    Colorable,
-    java.io.Serializable {
+    Colorable, java.io.Serializable, Shadowable {
 
     constructor(context: Context) : this(context, null)
 
     private var shadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
-    private var shadowLColor = 0
+    private var shadowLColor = Color.YELLOW
 
     private var rawWidth = 0f
     private var rawHeight = 0f
@@ -206,7 +205,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 }
             }
             textView.textPaint.maskFilter = textPaint.maskFilter
-            textView.setShadowLayer(
+            textView.setShadow(
                 shadowRadius,
                 shadowDx,
                 shadowDy,
@@ -689,7 +688,23 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         shiftColor(finalShiftValueX, diffCurrentStrokeWithLast)
     }
 
-    fun setShadowLayer(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
+    override fun getShadowDx(): Float {
+        return shadowDx
+    }
+
+    override fun getShadowDy(): Float {
+        return shadowDy
+    }
+
+    override fun getShadowRadius(): Float {
+        return shadowRadius
+    }
+
+    override fun getShadowColor(): Int {
+        return shadowLColor
+    }
+
+    override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
         shadowRadius = radius
         shadowDx = dx
         shadowDy = dy
@@ -697,12 +712,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         invalidate()
     }
 
-    fun clearShadowLayer() {
+    override fun clearShadow() {
         textPaint.clearShadowLayer()
         shadowRadius = 0f
         shadowDx = 0f
         shadowDy = 0f
-        shadowLColor = 0
+        shadowLColor = Color.YELLOW
         invalidate()
     }
 
