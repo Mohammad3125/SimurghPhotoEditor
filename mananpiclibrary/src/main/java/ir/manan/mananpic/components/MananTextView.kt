@@ -286,6 +286,26 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             val toShift = ((this@MananTextView.height.toFloat() / finalTexts.size))
 
+            if (shadowRadius > 0) {
+                val currentColor = textColor
+                val currentStyle = textPaint.style
+                val currentShader = textPaint.shader
+                textPaint.shader = null
+                textPaint.style = Paint.Style.FILL_AND_STROKE
+                textPaint.strokeWidth = textStrokeWidth
+
+                textPaint.setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowLColor)
+
+                drawTexts(this, toShift)
+
+                textPaint.shader = currentShader
+                textPaint.style = currentStyle
+                textPaint.strokeWidth = 0f
+                textPaint.color = currentColor
+
+                textPaint.clearShadowLayer()
+            }
+
             if (textStrokeWidth > 0f) {
                 val currentColor = textColor
                 val currentStyle = textPaint.style
@@ -660,7 +680,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         shadowDx = dx
         shadowDy = dy
         shadowLColor = shadowColor
-        textPaint.setShadowLayer(radius, dx, dy, shadowColor)
         invalidate()
     }
 
