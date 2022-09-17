@@ -9,6 +9,7 @@ import androidx.core.view.setPadding
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.components.imageviews.MananCustomImageView
 import ir.manan.mananpic.components.imageviews.MananShapeView
+import kotlin.math.max
 
 /**
  * A factory class responsible for creating components like [MananTextView], [MananCustomImageView].
@@ -37,20 +38,22 @@ class MananFactory {
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
                 )
-                setPadding(dp(500).toInt())
+                val ds = context.resources.displayMetrics
+                setPadding(max(ds.widthPixels, ds.heightPixels))
                 this.text = text
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     clipToOutline = false
                 }
             }
         }
+
         fun createShapeView(
             context: Context,
             shape: Shape,
             shapeWidth: Int,
             shapeHeight: Int
         ): MananShapeView {
-            return MananShapeView(context,shape, shapeWidth, shapeHeight).apply {
+            return MananShapeView(context, shape, shapeWidth, shapeHeight).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
