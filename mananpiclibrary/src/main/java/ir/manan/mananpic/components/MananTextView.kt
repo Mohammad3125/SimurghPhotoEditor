@@ -6,6 +6,7 @@ import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.view.doOnPreDraw
+import androidx.core.view.setPadding
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
@@ -705,6 +706,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
+        val ds = context.resources.displayMetrics
+        setPadding(max(ds.widthPixels, ds.heightPixels))
         shadowRadius = radius
         shadowDx = dx
         shadowDy = dy
@@ -713,6 +716,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun clearShadow() {
+        setPadding(0)
         textPaint.clearShadowLayer()
         shadowRadius = 0f
         shadowDx = 0f
