@@ -30,6 +30,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var shadowDy = 0f
     private var shadowLColor = 0
 
+    private var rawWidth = 0f
+    private var rawHeight = 0f
+
     @Transient
     private val textPaint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -117,7 +120,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             height + y
         )
         mappingMatrix.run {
-            setScale(scaleX, scaleY, finalBounds.centerX(), finalBounds.centerY())
+            setScale(
+                (rawWidth / width) * scaleX,
+                (rawHeight / height) * scaleY,
+                finalBounds.centerX(),
+                finalBounds.centerY()
+            )
             mapRect(finalBounds)
         }
         return finalBounds
@@ -225,20 +233,23 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             finalTexts[texts[i]] = widths[i]
         }
 
+        rawWidth = widths.maxOf { it } + extraSpace
         val textWidth =
-            widths.maxOf { it } + paddingLeft + paddingRight + extraSpace
+            rawWidth + paddingLeft + paddingRight
 
         textPaint.getTextBounds(text, 0, text.length, textBoundsRect)
 
+        rawHeight = ((textBoundsRect.height().toFloat() + extraSpace) * finalTexts.size)
+
         val textHeight =
-            (textBoundsRect.height() + paddingTop + paddingBottom + extraSpace) * finalTexts.size
+            (rawHeight + paddingTop + paddingBottom)
 
         pivotX = textWidth * 0.5f
         pivotY = textHeight * 0.5f
 
         setMeasuredDimension(
-            if (suggestedMinimumWidth > textWidth) suggestedMinimumWidth else textWidth.toInt(),
-            if (suggestedMinimumHeight > textHeight) suggestedMinimumWidth else textHeight.toInt()
+            max(suggestedMinimumWidth, textWidth.toInt()),
+            max(suggestedMinimumHeight, textHeight.toInt())
         )
     }
 
@@ -252,7 +263,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             height + y
         )
 
-        textBaseLineY = height.toFloat() - textBoundsRect.bottom
+        //textBaseLineY = height.toFloat - textBoundsRect.bottom; // for sticking at bottom
+        textBaseLineY =
+            ((rawHeight + height) * 0.5f) - textBoundsRect.bottom
+
         textBaseLineX = -textBoundsRect.left.toFloat()
 
     }
@@ -284,7 +298,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 -(finalTranslateY + (paddingBottom - paddingTop))
             )
 
-            val toShift = ((this@MananTextView.height.toFloat() / finalTexts.size))
+            val toShift = ((rawHeight / finalTexts.size))
 
             if (shadowRadius > 0) {
                 val currentColor = textColor
@@ -333,7 +347,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         var i = 0
         finalTexts.forEach { map ->
 
-            val totalTranslated = height - (toShift * (finalTexts.size - (i)))
+            val totalTranslated = rawHeight - (toShift * (finalTexts.size - (i)))
             shiftTextureWithoutInvalidation(0f, totalTranslated)
 
             canvas.drawText(
