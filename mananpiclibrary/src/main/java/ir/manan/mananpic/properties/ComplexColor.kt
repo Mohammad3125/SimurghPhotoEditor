@@ -23,4 +23,11 @@ interface ComplexColor {
      * @param py Point in y axis which complex color rotates around.
      */
     fun rotateColor(rotation: Float)
+
+
+    /**
+     * Resets the matrix associated with complex color.
+     */
+    fun resetComplexColorMatrix()
+
 }

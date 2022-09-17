@@ -376,8 +376,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         val wStroke = this.width
         val hStroke = this.height
 
-        var w = if(ignoreAxisScale) wStroke.toFloat() else wStroke * scaleX
-        var h = if(ignoreAxisScale) hStroke.toFloat() else hStroke * scaleY
+        var w = if (ignoreAxisScale) wStroke.toFloat() else wStroke * scaleX
+        var h = if (ignoreAxisScale) hStroke.toFloat() else hStroke * scaleY
 
         val s = max(wStroke, hStroke) / max(w, h)
 
@@ -493,6 +493,15 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 pivotY
             )
             shaderRotationHolder = rotation
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun resetComplexColorMatrix() {
+        textPaint.shader?.run {
+            shaderMatrix.reset()
+            shaderRotationHolder = 0f
             setLocalMatrix(shaderMatrix)
             invalidate()
         }

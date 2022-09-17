@@ -229,6 +229,15 @@ class MananShapeView(
         }
     }
 
+    override fun resetComplexColorMatrix() {
+        shapePaint.shader?.run {
+            shaderMatrix.reset()
+            shaderRotationHolder = 0f
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
     override fun removeTexture() {
         paintShader = null
         shapePaint.shader = null
