@@ -26,6 +26,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     constructor(context: Context) : this(context, null)
 
     private var shadowRadius = 0f
+    private var trueShadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
     private var shadowLColor = Color.YELLOW
@@ -207,7 +208,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             }
             textView.textPaint.maskFilter = textPaint.maskFilter
             textView.setShadow(
-                shadowRadius,
+                trueShadowRadius,
                 shadowDx,
                 shadowDy,
                 shadowLColor
@@ -658,6 +659,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         extraSpace = strokeRadiusPx
         requestLayout()
+        shadowRadius -= 0.00001f
         invalidate()
     }
 
@@ -698,7 +700,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun getShadowRadius(): Float {
-        return shadowRadius
+        return trueShadowRadius
     }
 
     override fun getShadowColor(): Int {
@@ -709,6 +711,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         val ds = context.resources.displayMetrics
         setPadding(max(ds.widthPixels, ds.heightPixels))
         shadowRadius = radius
+        trueShadowRadius = radius
         shadowDx = dx
         shadowDy = dy
         shadowLColor = shadowColor
