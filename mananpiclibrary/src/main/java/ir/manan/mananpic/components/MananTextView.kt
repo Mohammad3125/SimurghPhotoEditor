@@ -108,6 +108,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             invalidate()
         }
 
+
+    private var pathOnValue = 0f
+    private var pathOffValue = 0f
+    private var pathStrokeWidth = 0f
+    private var pathRadius = 0f
+
     init {
         setLayerType(LAYER_TYPE_HARDWARE, null)
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
@@ -322,13 +328,15 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 textPaint.clearShadowLayer()
             }
 
-            if (textStrokeWidth > 0f) {
+            if (textStrokeWidth > 0f && textPaint.pathEffect == null) {
                 val currentColor = textColor
                 val currentStyle = textPaint.style
+                val currentPath = textPaint.pathEffect
+                val currentShader = textPaint.shader
                 textPaint.style = Paint.Style.STROKE
                 textPaint.strokeWidth = textStrokeWidth
-                val currentShader = textPaint.shader
                 textPaint.shader = null
+                textPaint.pathEffect = null
                 textPaint.color = textStrokeColor
 
                 drawTexts(this, toShift)
@@ -336,6 +344,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
                 textPaint.strokeWidth = 0f
+                textPaint.pathEffect = currentPath
                 textPaint.color = currentColor
 
             }
@@ -444,8 +453,13 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
         textPaint.apply {
 
+            pathOnValue = on
+            pathOffValue = off
+            pathRadius = radius
+            pathStrokeWidth = strokeWidth
+
             if (textStrokeWidth == 0f) {
-                this.strokeWidth = strokeWidth
+                this.strokeWidth = pathStrokeWidth
             }
 
             style = Paint.Style.STROKE
@@ -453,8 +467,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             val wasPathNull = pathEffect == null
 
             pathEffect = ComposePathEffect(
-                DashPathEffect(floatArrayOf(on, off), 0f),
-                CornerPathEffect(radius)
+                DashPathEffect(floatArrayOf(pathOnValue, pathOffValue), 0f),
+                CornerPathEffect(pathRadius)
             )
 
             if (wasPathNull) {
@@ -470,6 +484,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun removePath() {
+        pathOnValue = 0f
+        pathOffValue = 0f
+        pathRadius = 0f
+        pathStrokeWidth = 0f
         if (textPaint.pathEffect != null) {
             textPaint.pathEffect = null
             textPaint.style = Paint.Style.FILL
@@ -783,6 +801,22 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     override fun getColor(): Int {
         return textColor
+    }
+
+    override fun getOnValue(): Float {
+        return pathOnValue
+    }
+
+    override fun getOffValue(): Float {
+        return pathOffValue
+    }
+
+    override fun getPathRadius(): Float {
+        return pathRadius
+    }
+
+    override fun getPathStrokeWidth(): Float {
+        return pathStrokeWidth
     }
 
     /**

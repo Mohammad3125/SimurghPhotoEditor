@@ -5,6 +5,14 @@ package ir.manan.mananpic.properties
  */
 interface Pathable {
 
+    fun getOnValue() : Float
+
+    fun getOffValue() : Float
+
+    fun getPathRadius() : Float
+
+    fun getPathStrokeWidth() : Float
+
     /**
      * A function for applying the path effect on certain views that are capable of.
      * @param on This parameter means the times that path is visible and drawing.
