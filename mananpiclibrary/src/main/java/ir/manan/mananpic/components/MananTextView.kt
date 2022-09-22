@@ -30,6 +30,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var shadowDx = 0f
     private var shadowDy = 0f
     private var shadowLColor = Color.YELLOW
+    private var isShadowCleared = true
 
     private var rawWidth = 0f
     private var rawHeight = 0f
@@ -282,14 +283,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             val halfSpace = extraSpace * 0.5f
             when (alignmentText) {
                 Alignment.LEFT -> {
-                    finalTranslateX = halfSpace
+                    finalTranslateX = halfSpace + paddingRight
                     finalTranslateY = halfSpace
                 }
                 Alignment.CENTER -> {
                     finalTranslateY = halfSpace
                 }
                 Alignment.RIGHT -> {
-                    finalTranslateX = -halfSpace
+                    finalTranslateX = -(halfSpace + paddingLeft)
                     finalTranslateY = halfSpace
                 }
             }
@@ -709,7 +710,26 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
         val ds = context.resources.displayMetrics
-        setPadding(max(ds.widthPixels, ds.heightPixels))
+        val wP = ds.widthPixels
+        val hP = ds.heightPixels
+        val mx = max(wP, hP)
+        setPadding(mx)
+
+        if (isShadowCleared) {
+            when (alignmentText) {
+                Alignment.LEFT -> {
+                    shiftColor(0f, paddingBottom.toFloat())
+                }
+                Alignment.RIGHT -> {
+                    shiftColor(paddingLeft * 2f, paddingBottom.toFloat())
+                }
+                Alignment.CENTER -> {
+                    shiftColor((paddingLeft.toFloat()), paddingBottom.toFloat())
+                }
+            }
+            isShadowCleared = false
+        }
+
         shadowRadius = radius
         trueShadowRadius = radius
         shadowDx = dx
@@ -719,12 +739,41 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun clearShadow() {
+        var prePadX = paddingLeft.toFloat()
+        val prePadY = paddingBottom.toFloat()
+
+        when (alignmentText) {
+            Alignment.LEFT -> {
+                prePadX = 0f
+            }
+            Alignment.RIGHT -> {
+                prePadX = paddingLeft.toFloat() * 2f
+            }
+            Alignment.CENTER -> {
+            }
+        }
+
         setPadding(0)
+
+        shiftColor(-prePadX, -prePadY) // Alignment center
+
+        when (alignmentText) {
+            Alignment.LEFT -> {
+                shiftColor(0f, paddingBottom.toFloat())
+            }
+            Alignment.RIGHT -> {
+                shiftColor(paddingLeft * 2f, paddingBottom.toFloat())
+            }
+            Alignment.CENTER -> {
+                shiftColor((paddingLeft.toFloat()), paddingBottom.toFloat())
+            }
+        }
         textPaint.clearShadowLayer()
         shadowRadius = 0f
         shadowDx = 0f
         shadowDy = 0f
         shadowLColor = Color.YELLOW
+        isShadowCleared = true
         invalidate()
     }
 
