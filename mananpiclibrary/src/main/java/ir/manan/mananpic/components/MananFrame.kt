@@ -1242,13 +1242,14 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                                 getOffsetY(offsetView).toFloat()
                             )
                         }
-                        val centerXBound = mappingRectangle.centerX()
-                        val extraSpaceForLineY = mappingRectangle.height() * 0.33f
 
-                        smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(mappingRectangle.top - extraSpaceForLineY)
-                        smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(mappingRectangle.bottom + extraSpaceForLineY)
+                        val centerYBound = mappingRectangle.centerY()
+                        val pW = pageRect.width()
+
+                        smartRotationLineHolder.add(-pW)
+                        smartRotationLineHolder.add(centerYBound)
+                        smartRotationLineHolder.add(pW * 2f)
+                        smartRotationLineHolder.add(centerYBound)
 
                         return true
                     }
