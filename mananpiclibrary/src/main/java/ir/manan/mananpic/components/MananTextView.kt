@@ -464,16 +464,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             style = Paint.Style.STROKE
 
-            val wasPathNull = pathEffect == null
-
             pathEffect = ComposePathEffect(
                 DashPathEffect(floatArrayOf(pathOnValue, pathOffValue), 0f),
                 CornerPathEffect(pathRadius)
             )
 
-            if (wasPathNull) {
-                textPaint.textSize += 0.001f
-            }
+            textPaint.textSize += 0.0001f
 
             invalidate()
         }
