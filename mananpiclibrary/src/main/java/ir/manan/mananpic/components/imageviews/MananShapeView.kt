@@ -474,12 +474,7 @@ class MananShapeView(
     }
 
     override fun clearShadow() {
-        val prePadX = paddingLeft.toFloat()
-        val prePadY = paddingBottom.toFloat()
-
         setPadding(0)
-
-//        shiftColor(-prePadX, -prePadY) // Alignment center
 
         shapePaint.clearShadowLayer()
         shadowRadius = 0f
