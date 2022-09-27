@@ -5,8 +5,10 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.shapes.Shape
 import android.view.View
+import androidx.core.view.doOnPreDraw
 import androidx.core.view.setPadding
 import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.max
 import kotlin.math.min
@@ -106,7 +108,36 @@ class MananShapeView(
     }
 
     override fun clone(): View {
-        return this
+        return MananFactory.createShapeView(context, shape, shapeWidth, shapeHeight)
+            .also { shapeView ->
+                shapeView.setLayerType(layerType, null)
+                shapeView.scaleX = scaleX
+                shapeView.scaleY = scaleY
+                shapeView.shapeColor = shapeColor
+                shapeView.shapePaint.style = shapePaint.style
+                shapeView.shapePaint.strokeWidth = shapePaint.strokeWidth
+                shapeView.shapePaint.pathEffect = shapePaint.pathEffect
+
+                shapeView.strokeSize = strokeSize
+                shapeView.strokeColor = strokeColor
+                shapeView.shaderRotationHolder = shaderRotationHolder
+                shapeView.paintShader = paintShader
+                doOnPreDraw {
+                    shapeView.shaderMatrix.set(shaderMatrix)
+                    shapeView.shapePaint.shader = paintShader
+                    if (shapeView.shapePaint.shader != null) {
+                        shapeView.shapePaint.shader.setLocalMatrix(shaderMatrix)
+                    }
+                }
+                shapeView.shapePaint.maskFilter = shapePaint.maskFilter
+                shapeView.setShadow(
+                    trueShadowRadius,
+                    shadowDx,
+                    shadowDy,
+                    shadowLColor
+                )
+                shapeView.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom)
+            }
     }
 
     override fun reportBoundPivotY(): Float {
