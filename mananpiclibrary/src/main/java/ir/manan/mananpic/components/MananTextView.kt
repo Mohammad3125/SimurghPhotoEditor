@@ -156,7 +156,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun reportPivotY(): Float {
-        return pivotX
+        return pivotY
     }
 
     override fun applyRotation(degree: Float) {
