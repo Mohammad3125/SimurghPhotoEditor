@@ -34,7 +34,7 @@ class MananShapeView(
     private var rawHeight = 0f
 
     @Transient
-    private val shapePaint = Paint()
+    private val shapePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     @Transient
     private var paintShader: Shader? = null
@@ -64,6 +64,7 @@ class MananShapeView(
 
     @Transient
     private val shaderMatrix = MananMatrix()
+
     override fun changeColor(color: Int) {
         shapeColor = color
     }
