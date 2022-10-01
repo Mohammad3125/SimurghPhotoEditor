@@ -2,12 +2,12 @@ package ir.manan.mananpic.utils
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.shapes.Shape
 import android.os.Build
 import android.widget.FrameLayout
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.components.imageviews.MananCustomImageView
 import ir.manan.mananpic.components.imageviews.MananShapeView
+import ir.manan.mananpic.components.shapes.MananShape
 
 /**
  * A factory class responsible for creating components like [MananTextView], [MananCustomImageView].
@@ -45,7 +45,7 @@ class MananFactory {
 
         fun createShapeView(
             context: Context,
-            shape: Shape,
+            shape: MananShape,
             shapeWidth: Int,
             shapeHeight: Int
         ): MananShapeView {

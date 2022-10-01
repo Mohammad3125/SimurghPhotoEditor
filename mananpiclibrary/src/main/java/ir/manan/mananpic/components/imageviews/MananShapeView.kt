@@ -3,10 +3,10 @@ package ir.manan.mananpic.components.imageviews
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.shapes.Shape
 import android.view.View
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.setPadding
+import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
@@ -16,7 +16,7 @@ import kotlin.math.min
 @SuppressLint("ViewConstructor")
 class MananShapeView(
     context: Context,
-    @Transient var shape: Shape,
+    @Transient var shape: MananShape,
     var shapeWidth: Int,
     var shapeHeight: Int
 ) : View(context), Bitmapable, MananComponent, StrokeCapable, Colorable, Texturable, Gradientable,
