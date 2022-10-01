@@ -242,6 +242,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     fun resetSelection() {
         selector?.resetSelection()
+        callOnStateChangeListeners(selector!!.isClosed())
     }
 
     override fun onDraw(canvas: Canvas?) {
