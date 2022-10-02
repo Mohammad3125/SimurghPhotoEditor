@@ -13,10 +13,7 @@ class ShapeSelector : Selector() {
     var shape: MananShape? = null
         set(value) {
             field = value
-            isShapeCreated = false
-            shapeOffsetX = 0f
-            shapeOffsetY = 0f
-            shape?.resize(0f, 0f)
+            resetSelection()
             invalidate()
         }
 
@@ -67,7 +64,15 @@ class ShapeSelector : Selector() {
     private var shapeOffsetX = 0f
     private var shapeOffsetY = 0f
 
+    var shapeRotation = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     private val pathCopy = Path()
+
+    private val mappingMatrix = Matrix()
 
     override fun shouldParentTransformDrawings(): Boolean {
         return true
@@ -214,6 +219,13 @@ class ShapeSelector : Selector() {
     override fun draw(canvas: Canvas?) {
         canvas?.let {
             canvas.translate(shapeOffsetX, shapeOffsetY)
+
+            canvas.rotate(
+                shapeRotation,
+                shapeBoundaryRectF.width() * 0.5f,
+                shapeBoundaryRectF.height() * 0.5f
+            )
+
             shape?.draw(canvas, shapePaint)
         }
     }
@@ -223,6 +235,7 @@ class ShapeSelector : Selector() {
         shapeOffsetX = 0f
         shapeOffsetY = 0f
         shape?.resize(0f, 0f)
+        shapeRotation = 0f
         invalidate()
     }
 
@@ -234,7 +247,18 @@ class ShapeSelector : Selector() {
         return shape?.getPath()?.let {
             pathCopy.apply {
                 set(it)
-                offset(shapeOffsetX, shapeOffsetY)
+
+                transform(mappingMatrix.apply {
+
+                    setRotate(
+                        shapeRotation,
+                        shapeBoundaryRectF.width() * 0.5f,
+                        shapeBoundaryRectF.height() * 0.5f
+                    )
+
+                    postTranslate(shapeOffsetX, shapeOffsetY)
+                })
+
             }
         }
     }
