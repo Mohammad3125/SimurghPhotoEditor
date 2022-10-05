@@ -95,10 +95,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     @RequiresApi(api = 21)
     var letterSpacing = 0f
         set(value) {
-            if(VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-            field = value
-            textPaint.letterSpacing = field
-            requestLayout()
+            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                field = value
+                textPaint.letterSpacing = field
+                requestLayout()
             } else {
                 throw IllegalStateException("letter spacing is only available after api 21")
             }
@@ -108,7 +108,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var paintShader: Shader? = null
 
     private val finalTexts by lazy {
-        mutableMapOf<String, Float>()
+        mutableListOf<Pair<String, Float>>()
     }
 
     /**
@@ -250,10 +250,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 string.length,
                 textBoundsRect
             )
-            textBoundsRect.width().toFloat()
-        }
-        for (i in texts.indices) {
-            finalTexts[texts[i]] = widths[i]
+            val w = textBoundsRect.width().toFloat()
+            finalTexts.add(string to w)
+            w
         }
 
         rawWidth = widths.maxOf { it } + extraSpace
@@ -262,7 +261,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         textPaint.getTextBounds(text, 0, text.length, textBoundsRect)
 
-        rawHeight = ((textBoundsRect.height().toFloat() + extraSpace) * finalTexts.size)
+        val heights = texts.map {
+            textPaint.getTextBounds(it, 0, it.length, textBoundsRect)
+            textBoundsRect.height().toFloat()
+        }
+
+        rawHeight = ((heights.maxOf { it } + extraSpace) * finalTexts.size)
 
         val textHeight =
             (rawHeight + paddingTop + paddingBottom)
@@ -377,8 +381,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             shiftTextureWithoutInvalidation(0f, totalTranslated)
 
             canvas.drawText(
-                map.key,
-                ((width - map.value) * Alignment.getNumber(alignmentText)) + textBaseLineX,
+                map.first,
+                ((width - map.second) * Alignment.getNumber(alignmentText)) + textBaseLineX,
                 textBaseLineY - (toShift * (finalTexts.size - (i + 1))),
                 textPaint
             )
