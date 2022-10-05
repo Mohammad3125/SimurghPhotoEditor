@@ -2,9 +2,12 @@ package ir.manan.mananpic.components
 
 import android.content.Context
 import android.graphics.*
+import android.os.Build.VERSION
+import android.os.Build.VERSION_CODES
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.setPadding
 import ir.manan.mananpic.properties.*
@@ -88,6 +91,18 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     var textStrokeWidth = 0f
     var textStrokeColor: Int = Color.BLACK
+
+    @RequiresApi(api = 21)
+    var letterSpacing = 0f
+        set(value) {
+            if(VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+            field = value
+            textPaint.letterSpacing = field
+            requestLayout()
+            } else {
+                throw IllegalStateException("letter spacing is only available after api 21")
+            }
+        }
 
     @Transient
     private var paintShader: Shader? = null
