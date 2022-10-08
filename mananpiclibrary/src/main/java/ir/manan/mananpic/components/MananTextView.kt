@@ -119,6 +119,16 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         mutableListOf<Int>()
     }
 
+    private val finalHeights by lazy {
+        mutableListOf<Float>()
+    }
+
+    var lineSpacing = 0f
+        set(value) {
+            field = value
+            requestLayout()
+        }
+
     /**
      * Sets alignment of text when drawn.
      * - [Alignment.CENTER] Centers text.
@@ -261,6 +271,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         var maxWidth = 0f
 
+        var maxHeight = 0f
+
         texts.map { string ->
             textPaint.getTextBounds(
                 string,
@@ -269,14 +281,20 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 textBoundsRect
             )
             val w = textBoundsRect.width().toFloat()
+            val h = textBoundsRect.height().toFloat()
 
             if (w > maxWidth) {
                 maxWidth = w
             }
 
+            if (h > maxHeight) {
+                maxHeight = h
+            }
+
             finalTexts.add(string)
             finalWidths.add(w)
             finalBaselines.add(textBoundsRect.left)
+            finalHeights.add(h)
 
         }
 
@@ -285,14 +303,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         val textWidth =
             rawWidth + paddingLeft + paddingRight
 
-        textPaint.getTextBounds(text, 0, text.length, textBoundsRect)
-
-        val heights = texts.map {
-            textPaint.getTextBounds(it, 0, it.length, textBoundsRect)
-            textBoundsRect.height().toFloat()
-        }
-
-        rawHeight = ((heights.maxOf { it } + extraSpace) * finalTexts.size)
+        rawHeight =
+            ((maxHeight + extraSpace + if (finalTexts.size > 1) lineSpacing * 2f else 0f) * finalTexts.size)
 
         val textHeight =
             (rawHeight + paddingTop + paddingBottom)
@@ -349,7 +361,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 -(finalTranslateY + (paddingBottom - paddingTop))
             )
 
-            val toShift = ((rawHeight / finalTexts.size))
+            var toShift = ((rawHeight / finalTexts.size))
+
+            if (finalTexts.size > 1) {
+                toShift += lineSpacing
+            }
 
             if (shadowRadius > 0) {
                 val currentColor = textColor
