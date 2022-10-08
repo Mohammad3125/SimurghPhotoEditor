@@ -221,6 +221,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             textView.textPaint.style = textPaint.style
             textView.textPaint.strokeWidth = textPaint.strokeWidth
             textView.textPaint.pathEffect = textPaint.pathEffect
+            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                textView.letterSpacing = letterSpacing
+            }
 
             textView.extraSpace = extraSpace
             textView.textBaseLineY = textBaseLineY
