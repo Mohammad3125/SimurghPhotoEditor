@@ -228,6 +228,17 @@ abstract class MananGestureImageView(
     protected open fun onImageLaidOut() {
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+
+        resizeDrawable()
+
+        initialScale = imageviewMatrix.getScaleX(true)
+
+        calculateBounds()
+
+    }
+
     /**
      * Called when drawable is about to be resized to fit the view's dimensions.
      * @return Modified matrix.

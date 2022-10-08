@@ -56,6 +56,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        selector?.initialize(context, canvasMatrix, boundsRectangle)
+    }
+
     var selector: Selector? = null
         set(value) {
             field = value
