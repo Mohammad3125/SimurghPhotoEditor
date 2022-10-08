@@ -255,8 +255,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         finalBaselines.clear()
 
         val texts = text.split("\n", ignoreCase = true)
+
         var maxWidth = 0f
-        var maxWidthIndex = 0
 
         texts.map { string ->
             textPaint.getTextBounds(
@@ -269,7 +269,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             if (w > maxWidth) {
                 maxWidth = w
-                maxWidthIndex = texts.lastIndexOf(string)
             }
 
             finalTexts.add(string)
@@ -279,8 +278,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
 
         rawWidth = maxWidth + extraSpace
-
-        textBaseLineX = finalBaselines[maxWidthIndex].toFloat()
 
         val textWidth =
             rawWidth + paddingLeft + paddingRight
