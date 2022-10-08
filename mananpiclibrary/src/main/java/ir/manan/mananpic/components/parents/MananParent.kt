@@ -88,6 +88,8 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
         ViewConfiguration.get(context)
     }
 
+    var isGesturesEnabled = true
+
     /* Listeners ------------------------------------------------------------------  */
 
     private var onChildClicked: ((View, Boolean) -> Unit)? = null
@@ -184,10 +186,13 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        scaleDetector?.onTouchEvent(event)
-        rotationDetector?.onTouchEvent(event)
-        translationDetector?.onTouchEvent(event)
-        return true
+        if (isGesturesEnabled) {
+            scaleDetector?.onTouchEvent(event)
+            rotationDetector?.onTouchEvent(event)
+            translationDetector?.onTouchEvent(event)
+            return true
+        }
+        return false
     }
 
     override fun onDraw(canvas: Canvas?) {
