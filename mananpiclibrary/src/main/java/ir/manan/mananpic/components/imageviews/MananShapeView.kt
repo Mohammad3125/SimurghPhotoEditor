@@ -184,8 +184,8 @@ class MananShapeView(
 
 
         setMeasuredDimension(
-            (shapeWidth + strokeSize + paddingEnd + paddingStart).toInt(),
-            (shapeHeight + strokeSize + paddingTop + paddingBottom).toInt()
+            (rawWidth + paddingEnd + paddingStart).toInt(),
+            (rawHeight + paddingTop + paddingBottom).toInt()
         )
     }
 
