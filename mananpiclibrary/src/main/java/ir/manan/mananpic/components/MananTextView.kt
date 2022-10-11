@@ -420,8 +420,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             val space =
                 if (finalTexts.size > 1 && ((index != finalTexts.lastIndex && finalTexts.size < 3) || (finalTexts.size > 2))) lineSpacing * 0.5f else 0f
 
-            println("space $space")
-
             canvas.drawText(
                 s,
                 ((width - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalBaselines[index],
