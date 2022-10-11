@@ -435,9 +435,24 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     /**
      * Sets type face of current text.
+     * @param style Style of typeface, [Typeface.ITALIC],[Typeface.BOLD],[Typeface.BOLD_ITALIC],[Typeface.NORMAL]
      */
-    fun setTypeFace(typeFace: Typeface) {
-        textPaint.typeface = typeFace
+    fun setTypeface(typeface: Typeface, style: Int) {
+        val finalTypeface =
+            if (style > 0) {
+                Typeface.create(typeface, style)
+            } else {
+                typeface
+            }
+        textPaint.typeface = finalTypeface
+        requestLayout()
+    }
+
+    /**
+     * Sets type face of current text.
+     */
+    fun setTypeface(typeface: Typeface) {
+        textPaint.typeface = typeface
         requestLayout()
     }
 
