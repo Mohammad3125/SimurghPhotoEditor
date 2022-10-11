@@ -266,6 +266,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         finalTexts.clear()
         finalWidths.clear()
         finalBaselines.clear()
+        finalHeights.clear()
 
         val texts = text.split("\n", ignoreCase = true)
 
@@ -304,7 +305,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             rawWidth + paddingLeft + paddingRight
 
         rawHeight =
-            ((maxHeight + extraSpace + if (finalTexts.size > 1) lineSpacing * 2f else 0f) * finalTexts.size)
+            ((maxHeight + extraSpace) * finalTexts.size) + (lineSpacing * finalTexts.lastIndex)
 
         val textHeight =
             (rawHeight + paddingTop + paddingBottom)
@@ -361,11 +362,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 -(finalTranslateY + (paddingBottom - paddingTop))
             )
 
-            var toShift = ((rawHeight / finalTexts.size))
-
-            if (finalTexts.size > 1) {
-                toShift += lineSpacing
-            }
+            val toShift = ((rawHeight / finalTexts.size))
 
             if (shadowRadius > 0) {
                 val currentColor = textColor
@@ -419,10 +416,16 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             val totalTranslated = rawHeight - (toShift * (finalTexts.size - (index)))
             shiftTextureWithoutInvalidation(0f, totalTranslated)
 
+
+            val space =
+                if (finalTexts.size > 1 && ((index != finalTexts.lastIndex && finalTexts.size < 3) || (finalTexts.size > 2))) lineSpacing * 0.5f else 0f
+
+            println("space $space")
+
             canvas.drawText(
                 s,
                 ((width - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalBaselines[index],
-                textBaseLineY - (toShift * (finalTexts.size - (index + 1))),
+                (textBaseLineY - space - (toShift * (finalTexts.lastIndex - index))),
                 textPaint
             )
 
