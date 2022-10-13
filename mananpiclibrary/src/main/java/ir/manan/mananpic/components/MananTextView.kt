@@ -280,6 +280,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         var maxHeight = 0f
 
         val isOneLine = texts.size == 1
+        var isFirstPass = true
 
         texts.map { string ->
             textPaint.getTextBounds(
@@ -306,10 +307,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             var finalExtra = extraSpace
 
-            if (!isOneLine) {
+            if (!isOneLine && !isFirstPass) {
                 finalExtra += lineSpacing
             }
             finalHeights.add(h + finalExtra)
+
+            isFirstPass = false
 
         }
 
