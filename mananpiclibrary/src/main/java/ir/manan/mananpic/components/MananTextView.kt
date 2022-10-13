@@ -115,7 +115,11 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         mutableListOf<Float>()
     }
 
-    private val finalBaselines by lazy {
+    private val finalXBaseLine by lazy {
+        mutableListOf<Int>()
+    }
+
+    private val finalYBaseLine by lazy {
         mutableListOf<Int>()
     }
 
@@ -265,7 +269,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         finalTexts.clear()
         finalWidths.clear()
-        finalBaselines.clear()
+        finalXBaseLine.clear()
+        finalYBaseLine.clear()
         finalHeights.clear()
 
         val texts = text.split("\n", ignoreCase = true)
@@ -273,6 +278,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         var maxWidth = 0f
 
         var maxHeight = 0f
+
+        val isOneLine = texts.size == 1
 
         texts.map { string ->
             textPaint.getTextBounds(
@@ -294,8 +301,15 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             finalTexts.add(string)
             finalWidths.add(w)
-            finalBaselines.add(textBoundsRect.left)
-            finalHeights.add(h)
+            finalXBaseLine.add(textBoundsRect.left)
+            finalYBaseLine.add(textBoundsRect.bottom)
+
+            var finalExtra = extraSpace
+
+            if (!isOneLine) {
+                finalExtra += lineSpacing
+            }
+            finalHeights.add(h + finalExtra)
 
         }
 
@@ -304,8 +318,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         val textWidth =
             rawWidth + paddingLeft + paddingRight
 
-        rawHeight =
-            ((maxHeight + extraSpace) * finalTexts.size) + (lineSpacing * finalTexts.lastIndex)
+        rawHeight = finalHeights.sum()
 
         val textHeight =
             (rawHeight + paddingTop + paddingBottom)
@@ -331,7 +344,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
         //textBaseLineY = height.toFloat - textBoundsRect.bottom; // for sticking at bottom
         textBaseLineY =
-            ((rawHeight + height) * 0.5f) - textBoundsRect.bottom
+            ((rawHeight + height) * 0.5f) + textBoundsRect.bottom
 
     }
 
@@ -411,23 +424,24 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     private fun drawTexts(canvas: Canvas, toShift: Float) {
+
+        var acc = 0f
         finalTexts.forEachIndexed { index, s ->
 
-            val totalTranslated = rawHeight - (toShift * (finalTexts.size - (index)))
-            shiftTextureWithoutInvalidation(0f, totalTranslated)
+            val toTransfer = acc
 
+            shiftTextureWithoutInvalidation(0f, toTransfer)
 
-            val space =
-                if (finalTexts.size > 1 && ((index != finalTexts.lastIndex && finalTexts.size < 3) || (finalTexts.size > 2))) lineSpacing * 0.5f else 0f
+            acc += finalHeights[index]
 
             canvas.drawText(
                 s,
-                ((width - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalBaselines[index],
-                (textBaseLineY - space - (toShift * (finalTexts.lastIndex - index))),
+                ((width - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
+                (if (!isShadowCleared) (height - rawHeight) * 0.5f else 0f) + (acc - finalYBaseLine[index]),
                 textPaint
             )
 
-            shiftTextureWithoutInvalidation(0f, -totalTranslated)
+            shiftTextureWithoutInvalidation(0f, -toTransfer)
         }
     }
 
