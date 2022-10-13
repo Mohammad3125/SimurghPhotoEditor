@@ -342,10 +342,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             height + y
         )
 
-        //textBaseLineY = height.toFloat - textBoundsRect.bottom; // for sticking at bottom
-        textBaseLineY =
-            ((rawHeight + height) * 0.5f) + textBoundsRect.bottom
-
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -375,8 +371,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 -(finalTranslateY + (paddingBottom - paddingTop))
             )
 
-            val toShift = ((rawHeight / finalTexts.size))
-
             if (shadowRadius > 0) {
                 val currentColor = textColor
                 val currentStyle = textPaint.style
@@ -387,7 +381,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
                 textPaint.setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowLColor)
 
-                drawTexts(this, toShift)
+                drawTexts(this)
 
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
@@ -408,7 +402,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 textPaint.pathEffect = null
                 textPaint.color = textStrokeColor
 
-                drawTexts(this, toShift)
+                drawTexts(this)
 
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
@@ -418,12 +412,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
             }
 
-            drawTexts(this, toShift)
+            drawTexts(this)
 
         }
     }
 
-    private fun drawTexts(canvas: Canvas, toShift: Float) {
+    private fun drawTexts(canvas: Canvas) {
 
         var acc = 0f
         finalTexts.forEachIndexed { index, s ->
