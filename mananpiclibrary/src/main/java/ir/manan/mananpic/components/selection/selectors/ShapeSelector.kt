@@ -297,5 +297,14 @@ class ShapeSelector : Selector() {
     )
 
     override fun undo() {
+        if (shapesHolder.isNotEmpty()) {
+            shapesHolder.removeLast()
+
+            if (shapesHolder.isNotEmpty()) {
+                currentWrapper = shapesHolder.last()
+            }
+
+            invalidate()
+        }
     }
 }
