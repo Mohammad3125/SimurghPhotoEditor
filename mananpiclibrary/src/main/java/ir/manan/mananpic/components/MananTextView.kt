@@ -874,6 +874,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         invalidate()
     }
 
+    override fun isGradientApplied(): Boolean {
+        return (textPaint.shader != null && (textPaint.shader is LinearGradient || textPaint.shader is RadialGradient || textPaint.shader is SweepGradient))
+    }
+
     override fun changeColor(color: Int) {
         textColor = color
     }

@@ -474,6 +474,10 @@ class MananShapeView(
         invalidate()
     }
 
+    override fun isGradientApplied(): Boolean {
+        return (shapePaint.shader != null && (shapePaint.shader is LinearGradient || shapePaint.shader is RadialGradient || shapePaint.shader is SweepGradient))
+    }
+
     override fun getShadowDx(): Float {
         return shadowDx
     }

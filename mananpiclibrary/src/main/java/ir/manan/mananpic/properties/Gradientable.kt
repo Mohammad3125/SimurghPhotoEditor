@@ -77,6 +77,8 @@ interface Gradientable : ComplexColor {
         positions: FloatArray?,
     )
 
+    fun isGradientApplied(): Boolean
+
 
     /**
      * Removes any gradient that's been applied to the target.
