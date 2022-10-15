@@ -12,4 +12,10 @@ class MananCircle : MananBaseShape() {
         fPath.rewind()
         fPath.addCircle(finalSize, finalSize, finalSize, Path.Direction.CW)
     }
+
+    override fun clone(): MananCircle {
+        val c = MananCircle()
+        c.resize(desiredWidth, desiredHeight)
+        return c
+    }
 }

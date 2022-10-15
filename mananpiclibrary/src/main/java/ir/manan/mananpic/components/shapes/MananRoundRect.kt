@@ -31,4 +31,10 @@ class MananRoundRect(var radius: FloatArray) : MananBaseShape() {
         fPath.rewind()
         fPath.addRoundRect(allocatedRectF, radius, Path.Direction.CW)
     }
+
+    override fun clone(): MananRoundRect {
+        val rR = MananRoundRect(radius)
+        rR.resize(desiredWidth, desiredHeight)
+        return rR
+    }
 }

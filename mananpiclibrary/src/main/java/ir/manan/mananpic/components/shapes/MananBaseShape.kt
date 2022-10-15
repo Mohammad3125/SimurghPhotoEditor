@@ -29,4 +29,8 @@ open class MananBaseShape : MananShape() {
 
         return fPath
     }
+
+    override fun clone(): MananShape {
+        return super.clone() as MananShape
+    }
 }

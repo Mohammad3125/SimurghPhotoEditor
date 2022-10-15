@@ -21,4 +21,8 @@ abstract class MananShape {
      * Returns a path representing the shape.
      */
     abstract fun getPath(): Path
+
+    open fun clone(): MananShape {
+        throw IllegalStateException("Cannot clone an abstract class [${javaClass.name}]")
+    }
 }
