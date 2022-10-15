@@ -10,12 +10,7 @@ import kotlin.math.abs
 
 class ShapeSelector : Selector() {
 
-    var shape: MananShape? = null
-        set(value) {
-            field = value
-            resetSelection()
-            invalidate()
-        }
+    private val shapesHolder = mutableListOf<ShapeWrapper>()
 
     // Paint for circles in path.
     private val shapePaint =
@@ -49,8 +44,6 @@ class ShapeSelector : Selector() {
 
     private lateinit var vBounds: RectF
 
-    private val shapeBoundaryRectF = RectF()
-
     private var isInitialized = false
 
     private var isShapeCreated = false
@@ -61,18 +54,20 @@ class ShapeSelector : Selector() {
     private var lastX = 0f
     private var lastY = 0f
 
-    private var shapeOffsetX = 0f
-    private var shapeOffsetY = 0f
-
     var shapeRotation = 0f
         set(value) {
             field = value
+            currentWrapper?.rotation = field
             invalidate()
         }
 
     private val pathCopy = Path()
 
     private val mappingMatrix = Matrix()
+
+    private var isShapesEmpty = false
+
+    private var currentWrapper: ShapeWrapper? = null
 
     override fun shouldParentTransformDrawings(): Boolean {
         return true
@@ -88,33 +83,48 @@ class ShapeSelector : Selector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        if (!isShapeCreated) {
+        if (!isShapeCreated && !isShapesEmpty) {
             firstX = initialX
             firstY = initialY
-            shapeOffsetX = initialX
-            shapeOffsetY = initialY
+
+            currentWrapper?.offsetX = initialX
+            currentWrapper?.offsetY = initialY
         }
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
-        if (!isShapeCreated) {
+        if (!isShapeCreated && !isShapesEmpty) {
             lastX = ex
             lastY = ey
-            shapeBoundaryRectF.set(firstX, firstY, lastX, lastY)
-            shape?.resize(shapeBoundaryRectF.width(), shapeBoundaryRectF.height())
+
+            currentWrapper?.run {
+                bounds.set(firstX, firstY, lastX, lastY)
+
+                shape.resize(
+                    bounds.width(),
+                    bounds.height()
+                )
+            }
+
         } else {
-            shapeOffsetX += dx
-            shapeOffsetY += dy
+            currentWrapper?.let { wrapper ->
+                wrapper.offsetX += dx
+                wrapper.offsetY += dy
+            }
         }
         invalidate()
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
-        if (!isShapeCreated) {
+        if (!isShapeCreated && !isShapesEmpty) {
             this.lastX = lastX
             this.lastY = lastY
-            shapeBoundaryRectF.set(firstX, firstY, lastX, lastY)
-            shape?.resize(shapeBoundaryRectF.width(), shapeBoundaryRectF.height())
+
+            currentWrapper?.run {
+                bounds.set(firstX, firstY, lastX, lastY)
+                shape.resize(bounds.width(), bounds.height())
+            }
+
             isShapeCreated = true
         }
     }
@@ -218,50 +228,73 @@ class ShapeSelector : Selector() {
 
     override fun draw(canvas: Canvas?) {
         canvas?.let {
-            canvas.translate(shapeOffsetX, shapeOffsetY)
+            shapesHolder.forEach {
+                canvas.save()
 
-            canvas.rotate(
-                shapeRotation,
-                shapeBoundaryRectF.width() * 0.5f,
-                shapeBoundaryRectF.height() * 0.5f
-            )
+                canvas.translate(it.offsetX, it.offsetY)
 
-            shape?.draw(canvas, shapePaint)
+                canvas.rotate(
+                    it.rotation,
+                    it.bounds.width() * 0.5f,
+                    it.bounds.height() * 0.5f
+                )
+
+                it.shape.draw(canvas, shapePaint)
+
+                canvas.restore()
+            }
         }
     }
 
     override fun resetSelection() {
         isShapeCreated = false
-        shapeOffsetX = 0f
-        shapeOffsetY = 0f
-        shape?.resize(0f, 0f)
         shapeRotation = 0f
+        isShapesEmpty = true
+        shapesHolder.clear()
         invalidate()
     }
 
     override fun isClosed(): Boolean {
-        return (shape != null && isShapeCreated)
+        return (!isShapesEmpty && isShapeCreated)
     }
 
     override fun getClipPath(): Path? {
-        return shape?.getPath()?.let {
-            pathCopy.apply {
-                set(it)
 
-                transform(mappingMatrix.apply {
+        if (isShapesEmpty) return null
+
+        return pathCopy.apply {
+            rewind()
+
+            shapesHolder.forEach { shapeWrapper ->
+                addPath(shapeWrapper.shape.getPath(), mappingMatrix.apply {
 
                     setRotate(
-                        shapeRotation,
-                        shapeBoundaryRectF.width() * 0.5f,
-                        shapeBoundaryRectF.height() * 0.5f
+                        shapeWrapper.rotation,
+                        shapeWrapper.bounds.width() * 0.5f,
+                        shapeWrapper.bounds.height() * 0.5f
                     )
 
-                    postTranslate(shapeOffsetX, shapeOffsetY)
-                })
+                    postTranslate(shapeWrapper.offsetX, shapeWrapper.offsetY)
 
+                })
             }
         }
     }
+
+    fun addShape(shape: MananShape) {
+        currentWrapper = ShapeWrapper(shape, RectF(), 0f, 0f, 0f)
+        shapesHolder.add(currentWrapper!!)
+        isShapesEmpty = false
+        isShapeCreated = false
+    }
+
+    private data class ShapeWrapper(
+        val shape: MananShape,
+        val bounds: RectF,
+        var rotation: Float,
+        var offsetX: Float,
+        var offsetY: Float
+    )
 
     override fun undo() {
     }
