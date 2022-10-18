@@ -155,7 +155,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var blendMode = PorterDuff.Mode.SRC
 
     init {
-//        setLayerType(LAYER_TYPE_HARDWARE, null)
+//        setLayerType(LAYER_TYPE_HARDWARE, textPaint)
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
         textPaint.textSize = 256f
     }
@@ -870,12 +870,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun setBlendMode(blendMode: PorterDuff.Mode) {
+        setLayerType(LAYER_TYPE_SOFTWARE,textPaint)
         textPaint.xfermode = PorterDuffXfermode(blendMode)
         this.blendMode = blendMode
         invalidate()
     }
 
     override fun clearBlend() {
+        setLayerType(LAYER_TYPE_NONE,null)
         textPaint.xfermode = null
         blendMode = PorterDuff.Mode.SRC
         invalidate()
