@@ -139,6 +139,9 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
             it.colorFilter = colorFilter
             it.scaleX = scaleX
             it.scaleY = scaleY
+            if (blendMode != PorterDuff.Mode.SRC) {
+                it.setBlendMode(blendMode)
+            }
             doOnPreDraw {
                 it.rotation = rotation
             }

@@ -133,6 +133,9 @@ class MananShapeView(
                     }
                 }
                 shapeView.shapePaint.maskFilter = shapePaint.maskFilter
+                if (blendMode != PorterDuff.Mode.SRC) {
+                    shapeView.setBlendMode(blendMode)
+                }
                 shapeView.setShadow(
                     trueShadowRadius,
                     shadowDx,

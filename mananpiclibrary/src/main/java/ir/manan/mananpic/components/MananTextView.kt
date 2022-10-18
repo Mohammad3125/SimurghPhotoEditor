@@ -257,6 +257,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 }
             }
             textView.textPaint.maskFilter = textPaint.maskFilter
+            if (blendMode != PorterDuff.Mode.SRC) {
+                textView.setBlendMode(blendMode)
+            }
             textView.setShadow(
                 trueShadowRadius,
                 shadowDx,
@@ -870,14 +873,12 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun setBlendMode(blendMode: PorterDuff.Mode) {
-        setLayerType(LAYER_TYPE_SOFTWARE,textPaint)
         textPaint.xfermode = PorterDuffXfermode(blendMode)
         this.blendMode = blendMode
         invalidate()
     }
 
     override fun clearBlend() {
-        setLayerType(LAYER_TYPE_NONE,null)
         textPaint.xfermode = null
         blendMode = PorterDuff.Mode.SRC
         invalidate()
