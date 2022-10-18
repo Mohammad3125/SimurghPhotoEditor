@@ -23,7 +23,7 @@ import kotlin.math.min
  *
  */
 class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr),
-    MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable, Blurable,
+    MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable,
     Colorable, java.io.Serializable, Shadowable {
 
     constructor(context: Context) : this(context, null)
@@ -152,7 +152,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var pathRadius = 0f
 
     init {
-        setLayerType(LAYER_TYPE_HARDWARE, null)
+//        setLayerType(LAYER_TYPE_HARDWARE, null)
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
         textPaint.textSize = 256f
     }
@@ -639,42 +639,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             invalidate()
         }
     }
-
-    override fun applyBlur(blurRadius: Float) {
-        applyBlur(blurRadius, BlurMaskFilter.Blur.NORMAL)
-    }
-
-    override fun applyBlur(blurRadius: Float, filter: BlurMaskFilter.Blur) {
-        if (layerType != LAYER_TYPE_SOFTWARE) {
-            setLayerType(LAYER_TYPE_SOFTWARE, null)
-        }
-        textPaint.maskFilter = BlurMaskFilter(blurRadius, filter)
-        // Add extra offset to prevent clipping because of software layer.
-        val newExtraSpace = if (blurRadius > textStrokeWidth) {
-            blurRadius
-        } else {
-            textStrokeWidth
-        }
-
-        shiftTextureWithAlignment(newExtraSpace)
-
-        extraSpace = newExtraSpace
-
-        requestLayout()
-    }
-
-    override fun removeBlur() {
-        textPaint.maskFilter = null
-
-        // Clear extra space by setting it to size of stroke width.
-        // If stroke width exists then we don't go lower than that,
-        // if it doesn't then extra space would be set to 0.
-        extraSpace = textStrokeWidth
-
-        setLayerType(LAYER_TYPE_HARDWARE, null)
-        requestLayout()
-    }
-
 
     override fun removeTexture() {
         paintShader = null
