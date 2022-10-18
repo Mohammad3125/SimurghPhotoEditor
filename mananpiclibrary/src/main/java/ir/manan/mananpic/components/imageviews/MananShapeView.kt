@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.*
 import android.view.View
 import androidx.core.view.doOnPreDraw
-import androidx.core.view.setPadding
 import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
@@ -500,12 +499,6 @@ class MananShapeView(
     }
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
-        val ds = context.resources.displayMetrics
-        val wP = ds.widthPixels
-        val hP = ds.heightPixels
-        val mx = max(wP, hP)
-        setPadding(mx)
-
         shadowRadius = radius
         trueShadowRadius = radius
         shadowDx = dx
@@ -515,8 +508,6 @@ class MananShapeView(
     }
 
     override fun clearShadow() {
-        setPadding(0)
-
         shapePaint.clearShadowLayer()
         shadowRadius = 0f
         shadowDx = 0f

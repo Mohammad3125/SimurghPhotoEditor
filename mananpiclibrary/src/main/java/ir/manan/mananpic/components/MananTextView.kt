@@ -9,7 +9,6 @@ import android.util.AttributeSet
 import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.core.view.doOnPreDraw
-import androidx.core.view.setPadding
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
@@ -776,27 +775,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
-        val ds = context.resources.displayMetrics
-        val wP = ds.widthPixels
-        val hP = ds.heightPixels
-        val mx = max(wP, hP)
-        setPadding(mx)
-
-        if (isShadowCleared) {
-            when (alignmentText) {
-                Alignment.LEFT -> {
-                    shiftColor(0f, paddingBottom.toFloat())
-                }
-                Alignment.RIGHT -> {
-                    shiftColor(paddingLeft * 2f, paddingBottom.toFloat())
-                }
-                Alignment.CENTER -> {
-                    shiftColor((paddingLeft.toFloat()), paddingBottom.toFloat())
-                }
-            }
-            isShadowCleared = false
-        }
-
         shadowRadius = radius
         trueShadowRadius = radius
         shadowDx = dx
@@ -806,35 +784,6 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     }
 
     override fun clearShadow() {
-        var prePadX = paddingLeft.toFloat()
-        val prePadY = paddingBottom.toFloat()
-
-        when (alignmentText) {
-            Alignment.LEFT -> {
-                prePadX = 0f
-            }
-            Alignment.RIGHT -> {
-                prePadX = paddingLeft.toFloat() * 2f
-            }
-            Alignment.CENTER -> {
-            }
-        }
-
-        setPadding(0)
-
-        shiftColor(-prePadX, -prePadY) // Alignment center
-
-        when (alignmentText) {
-            Alignment.LEFT -> {
-                shiftColor(0f, paddingBottom.toFloat())
-            }
-            Alignment.RIGHT -> {
-                shiftColor(paddingLeft * 2f, paddingBottom.toFloat())
-            }
-            Alignment.CENTER -> {
-                shiftColor((paddingLeft.toFloat()), paddingBottom.toFloat())
-            }
-        }
         textPaint.clearShadowLayer()
         shadowRadius = 0f
         shadowDx = 0f
