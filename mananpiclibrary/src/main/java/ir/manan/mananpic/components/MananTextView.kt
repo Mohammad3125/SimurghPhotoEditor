@@ -24,6 +24,7 @@ import kotlin.math.min
  */
 class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr),
     MananComponent, Bitmapable, Pathable, Texturable, Gradientable, StrokeCapable,
+    Blendable,
     Colorable, java.io.Serializable, Shadowable {
 
     constructor(context: Context) : this(context, null)
@@ -150,6 +151,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     private var pathOffValue = 0f
     private var pathStrokeWidth = 0f
     private var pathRadius = 0f
+
+    private var blendMode = PorterDuff.Mode.SRC
 
     init {
 //        setLayerType(LAYER_TYPE_HARDWARE, null)
@@ -864,6 +867,22 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     override fun getPathStrokeWidth(): Float {
         return pathStrokeWidth
+    }
+
+    override fun setBlendMode(blendMode: PorterDuff.Mode) {
+        textPaint.xfermode = PorterDuffXfermode(blendMode)
+        this.blendMode = blendMode
+        invalidate()
+    }
+
+    override fun clearBlend() {
+        textPaint.xfermode = null
+        blendMode = PorterDuff.Mode.SRC
+        invalidate()
+    }
+
+    override fun getBlendMode(): PorterDuff.Mode {
+        return blendMode
     }
 
     /**

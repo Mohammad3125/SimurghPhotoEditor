@@ -5,13 +5,14 @@ import android.graphics.*
 import android.view.View
 import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.Bitmapable
+import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.MananFactory
 import kotlin.math.max
 import kotlin.math.min
 
 class MananCustomImageView(context: Context) : View(context), MananComponent,
-    java.io.Serializable, Bitmapable {
+    java.io.Serializable, Bitmapable, Blendable {
     @Transient
     var bitmap: Bitmap? = null
 
@@ -33,6 +34,8 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
             field = value
             invalidate()
         }
+
+    private var blendMode : PorterDuff.Mode = PorterDuff.Mode.SRC
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         bitmap?.let {
@@ -193,5 +196,21 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
     fun replaceBitmap(bitmap: Bitmap) {
         this.bitmap = bitmap
         requestLayout()
+    }
+
+    override fun setBlendMode(blendMode: PorterDuff.Mode) {
+        bitmapPaint.xfermode = PorterDuffXfermode(blendMode)
+        this.blendMode = blendMode
+        invalidate()
+    }
+
+    override fun clearBlend() {
+        bitmapPaint.xfermode = null
+        blendMode = PorterDuff.Mode.SRC
+        invalidate()
+    }
+
+    override fun getBlendMode(): PorterDuff.Mode {
+        return blendMode
     }
 }

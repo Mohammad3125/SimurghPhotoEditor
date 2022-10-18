@@ -20,7 +20,7 @@ class MananShapeView(
     var shapeWidth: Int,
     var shapeHeight: Int
 ) : View(context), Bitmapable, MananComponent, StrokeCapable, Colorable, Texturable, Gradientable,
-    Shadowable,
+    Shadowable, Blendable,
     java.io.Serializable {
 
     private var shadowRadius = 0f
@@ -64,6 +64,8 @@ class MananShapeView(
 
     @Transient
     private val shaderMatrix = MananMatrix()
+
+    private var blendMode : PorterDuff.Mode = PorterDuff.Mode.SRC
 
     override fun changeColor(color: Int) {
         shapeColor = color
@@ -520,4 +522,21 @@ class MananShapeView(
         isShadowCleared = true
         invalidate()
     }
+
+    override fun setBlendMode(blendMode: PorterDuff.Mode) {
+        shapePaint.xfermode = PorterDuffXfermode(blendMode)
+        this.blendMode = blendMode
+        invalidate()
+    }
+
+    override fun clearBlend() {
+        shapePaint.xfermode = null
+        blendMode = PorterDuff.Mode.SRC
+        invalidate()
+    }
+
+    override fun getBlendMode(): PorterDuff.Mode {
+        return blendMode
+    }
+
 }
