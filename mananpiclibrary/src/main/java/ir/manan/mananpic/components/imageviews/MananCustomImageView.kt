@@ -5,13 +5,12 @@ import android.graphics.*
 import android.view.View
 import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.Bitmapable
-import ir.manan.mananpic.properties.Filterable
 import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.MananFactory
 import kotlin.math.max
 import kotlin.math.min
 
-class MananCustomImageView(context: Context) : View(context), MananComponent, Filterable,
+class MananCustomImageView(context: Context) : View(context), MananComponent,
     java.io.Serializable, Bitmapable {
     @Transient
     var bitmap: Bitmap? = null
@@ -141,14 +140,6 @@ class MananCustomImageView(context: Context) : View(context), MananComponent, Fi
                 it.rotation = rotation
             }
         }
-    }
-
-    override fun applyFilter(colorFilter: ColorFilter) {
-        this.colorFilter = colorFilter
-    }
-
-    override fun removeFilter() {
-        this.colorFilter = null
     }
 
     override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap {
