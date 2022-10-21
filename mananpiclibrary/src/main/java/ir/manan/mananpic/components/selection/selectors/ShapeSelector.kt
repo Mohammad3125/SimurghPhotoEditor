@@ -281,6 +281,7 @@ class ShapeSelector : Selector() {
         if (isClosed()) {
             shapesHolder.forEach {
                 changeMatrix.mapRect(it.bounds)
+                it.shape.resize(it.bounds.width(), it.bounds.height())
             }
             invalidate()
         }
