@@ -309,6 +309,8 @@ class ShapeSelector : Selector() {
 
             if (shapesHolder.isNotEmpty()) {
                 currentWrapper = shapesHolder.last()
+            } else {
+                isShapesEmpty = true
             }
 
             invalidate()
