@@ -2,10 +2,7 @@ package ir.manan.mananpic.components.selection
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Path
-import android.graphics.RectF
+import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -42,6 +39,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private var maximumScale = 0f
 
+    private val rectAlloc by lazy {
+        RectF()
+    }
+
     private val animatorExtraSpaceAroundAxes = dp(128)
 
     private val canvasMatrix by lazy {
@@ -57,8 +58,19 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+
+        rectAlloc.set(boundsRectangle)
+
         super.onSizeChanged(w, h, oldw, oldh)
-        selector?.initialize(context, canvasMatrix, boundsRectangle)
+
+        mappingMatrix.setRectToRect(
+            rectAlloc,
+            boundsRectangle, Matrix.ScaleToFit.CENTER
+        )
+
+        rectAlloc.set(boundsRectangle)
+
+        selector?.onSizeChanged(rectAlloc, mappingMatrix)
     }
 
     var selector: Selector? = null
@@ -67,7 +79,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             value?.setOnInvalidateListener(this)
             callOnStateChangeListeners(false)
             requestLayout()
-            selector?.initialize(context, canvasMatrix, boundsRectangle)
+            rectAlloc.set(boundsRectangle)
+            selector?.initialize(context, canvasMatrix, rectAlloc)
         }
 
     init {
@@ -151,10 +164,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                         val s = canvasMatrix.getOppositeScale()
                         val exactMapPoints = mapTouchPoints(x, y)
                         selector!!.onMove(
-                            dx * s,
-                            dy * s,
-                            exactMapPoints[0],
-                            exactMapPoints[1]
+                            dx * s, dy * s, exactMapPoints[0], exactMapPoints[1]
                         )
 
                         // Reset initial positions.
@@ -220,8 +230,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             val ty = canvasMatrix.getTranslationY()
 
             setTranslate(
-                -tx,
-                -ty
+                -tx, -ty
             )
 
             val scale = canvasMatrix.getOppositeScale()
@@ -234,8 +243,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     fun select(): Bitmap? {
-        if (drawable != null && selector != null)
-            return selector!!.select(drawable)
+        if (drawable != null && selector != null) return selector!!.select(drawable)
 
         return null
     }

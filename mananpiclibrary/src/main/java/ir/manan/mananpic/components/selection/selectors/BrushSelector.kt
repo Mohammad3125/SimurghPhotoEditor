@@ -54,6 +54,7 @@ class BrushSelector : PathBasedSelector() {
     override fun shouldParentTransformDrawings(): Boolean {
         return true
     }
+
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
         brushPaint.alpha = brushAlpha
@@ -108,6 +109,18 @@ class BrushSelector : PathBasedSelector() {
         } else {
             null
         }
+    }
+
+    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+        if (isClosed()) {
+            path.transform(changeMatrix)
+            invalidate()
+        }
+
+        leftEdge = newBounds.left
+        topEdge = newBounds.top
+        rightEdge = newBounds.right
+        bottomEdge = newBounds.bottom
     }
 
     override fun resetSelection() {

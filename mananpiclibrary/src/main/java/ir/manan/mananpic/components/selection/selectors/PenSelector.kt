@@ -111,6 +111,10 @@ class PenSelector : PathBasedSelector() {
         Path()
     }
 
+    private val sizeChangeMatrix by lazy {
+        MananMatrix()
+    }
+
     private lateinit var context: Context
 
     /**
@@ -462,6 +466,8 @@ class PenSelector : PathBasedSelector() {
         }
 
         path.offset(pathOffsetX, pathOffsetY)
+
+        path.transform(sizeChangeMatrix)
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
@@ -592,6 +598,7 @@ class PenSelector : PathBasedSelector() {
     override fun resetSelection() {
         lines.clear()
         path.reset()
+        sizeChangeMatrix.reset()
 
         pathOffsetX = 0f
         pathOffsetY = 0f
@@ -627,6 +634,10 @@ class PenSelector : PathBasedSelector() {
 
             // Offset them if user has offset them.
             pathCopy.offset(pathOffsetX, pathOffsetY)
+
+            if (!sizeChangeMatrix.isIdentity) {
+                pathCopy.transform(sizeChangeMatrix)
+            }
 
             // Transform the drawings base on the transformation matrix of parent.
             pathCopy.transform(canvasMatrix)
@@ -664,7 +675,10 @@ class PenSelector : PathBasedSelector() {
                         lineTo(bx, by)
                     }
 
+                    transform(sizeChangeMatrix)
+
                     transform(canvasMatrix)
+
                 }
 
                 // Finally draw helper lines path.
@@ -673,6 +687,10 @@ class PenSelector : PathBasedSelector() {
                 save()
 
                 concat(canvasMatrix)
+
+                if (!sizeChangeMatrix.isIdentity) {
+                    concat(sizeChangeMatrix)
+                }
 
                 // Handle for QUAD_BEZIER (also acts as first handle for CUBIC_BEZIER).
                 drawCircle(handleX, handleY, downSizedRadius, circlesPaint)
@@ -688,6 +706,10 @@ class PenSelector : PathBasedSelector() {
             save()
 
             concat(canvasMatrix)
+
+            if (!sizeChangeMatrix.isIdentity) {
+                concat(sizeChangeMatrix)
+            }
 
             if (isNewLineDrawn) {
                 // End point of line (either bezier or straight).
@@ -761,6 +783,19 @@ class PenSelector : PathBasedSelector() {
             makePathReadyForSelection()
             path
         } else null
+    }
+
+    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+        if (lines.isNotEmpty()) {
+            sizeChangeMatrix.postConcat(changeMatrix)
+            invalidate()
+        }
+
+        leftEdge = newBounds.left
+        topEdge = newBounds.top
+        rightEdge = newBounds.right
+        bottomEdge = newBounds.bottom
+
     }
 
     private enum class Handle {

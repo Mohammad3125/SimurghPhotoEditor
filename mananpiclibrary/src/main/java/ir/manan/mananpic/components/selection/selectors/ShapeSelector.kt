@@ -42,7 +42,9 @@ class ShapeSelector : Selector() {
             invalidate()
         }
 
-    private lateinit var vBounds: RectF
+    private val vBounds by lazy {
+        RectF()
+    }
 
     private var isInitialized = false
 
@@ -76,7 +78,7 @@ class ShapeSelector : Selector() {
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         isInitialized = true
 
-        vBounds = bounds
+        vBounds.set(bounds)
 
         shapePaint.color = shapeColor
         shapePaint.alpha = shapeAlpha
@@ -86,9 +88,6 @@ class ShapeSelector : Selector() {
         if (!isShapeCreated && !isShapesEmpty) {
             firstX = initialX
             firstY = initialY
-
-            currentWrapper?.offsetX = initialX
-            currentWrapper?.offsetY = initialY
         }
     }
 
@@ -107,10 +106,7 @@ class ShapeSelector : Selector() {
             }
 
         } else {
-            currentWrapper?.let { wrapper ->
-                wrapper.offsetX += dx
-                wrapper.offsetY += dy
-            }
+            currentWrapper?.bounds!!.offset(dx, dy)
         }
         invalidate()
     }
@@ -231,7 +227,7 @@ class ShapeSelector : Selector() {
             shapesHolder.forEach {
                 canvas.save()
 
-                canvas.translate(it.offsetX, it.offsetY)
+                canvas.translate(it.bounds.left, it.bounds.top)
 
                 canvas.rotate(
                     it.rotation,
@@ -274,11 +270,22 @@ class ShapeSelector : Selector() {
                         shapeWrapper.bounds.height() * 0.5f
                     )
 
-                    postTranslate(shapeWrapper.offsetX, shapeWrapper.offsetY)
+                    postTranslate(shapeWrapper.bounds.left, shapeWrapper.bounds.top)
 
                 })
             }
         }
+    }
+
+    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+        if (isClosed()) {
+            shapesHolder.forEach {
+                changeMatrix.mapRect(it.bounds)
+            }
+            invalidate()
+        }
+
+        vBounds.set(newBounds)
     }
 
     fun addShape(shape: MananShape) {
