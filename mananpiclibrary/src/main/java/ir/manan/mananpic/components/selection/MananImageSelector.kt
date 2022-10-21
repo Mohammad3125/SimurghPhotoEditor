@@ -253,6 +253,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         canvasMatrix.reset()
     }
 
+    fun setImageBitmapWithoutMatrixReset(bm: Bitmap?) {
+        super.setImageBitmap(bm)
+    }
+
     fun resetSelection() {
         selector?.resetSelection()
         callOnStateChangeListeners(selector!!.isClosed())
