@@ -368,6 +368,45 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
+    fun setColorsAndPositions(colors: IntArray, positions: FloatArray) {
+        if (colors.size < 2) {
+            throw IllegalStateException("colors array size should be equal or more than 2")
+        }
+        if (positions.size < 2) {
+            throw IllegalStateException("positions array size should be equal or more than 2")
+        }
+
+        if (colors.size != positions.size) {
+            throw IllegalStateException("colors array and position array do not have same length")
+        }
+
+        if (!isFirstCirclesAdded) {
+            circleHandles.clear()
+
+            doOnLayout {
+                colors.forEachIndexed { index, color ->
+                    circleHandles.add(
+                        CircleHandle(
+                            width.toFloat() * positions[index],
+                            color
+                        )
+                    )
+                }
+            }
+        } else {
+            colors.forEachIndexed { index, color ->
+                circleHandles.add(
+                    CircleHandle(
+                        width.toFloat() * positions[index],
+                        color
+                    )
+                )
+            }
+        }
+
+        invalidate()
+    }
+
     private data class CircleHandle(var x: Float, @ColorInt var color: Int) {
         fun calculateRelativePosition(fromPosition: Float): Float = x / fromPosition
     }
