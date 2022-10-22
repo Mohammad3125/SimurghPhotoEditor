@@ -146,6 +146,13 @@ class MananShapeView(
                     shadowLColor
                 )
                 shapeView.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom)
+
+                if (gradientColors != null) {
+                    shapeView.gradientColors = gradientColors!!.clone()
+                }
+                if (gradientPositions != null) {
+                    shapeView.gradientPositions = gradientPositions!!.clone()
+                }
             }
     }
 

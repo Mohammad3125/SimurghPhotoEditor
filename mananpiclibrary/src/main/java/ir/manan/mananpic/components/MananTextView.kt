@@ -270,6 +270,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
                 shadowLColor
             )
             textView.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom)
+
+            if (gradientColors != null) {
+                textView.gradientColors = gradientColors!!.clone()
+            }
+            if (gradientPositions != null) {
+                textView.gradientPositions = gradientPositions!!.clone()
+            }
+
         }
     }
 
