@@ -79,16 +79,6 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
     private var isFirstCirclesAdded = false
 
-    init {
-        doOnLayout {
-            circleHandles.add(CircleHandle(colorCircleStrokeWidth + colorCircleRadius, Color.WHITE))
-            circleHandles.add(
-                CircleHandle(width - (colorCircleStrokeWidth + colorCircleRadius), Color.BLACK)
-            )
-            isFirstCirclesAdded = true
-        }
-    }
-
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
         val halfHeight = height * 0.5f
         if (initialX.coerceIn(-circleHandleTouchArea, width + circleHandleTouchArea) == initialX &&
@@ -247,6 +237,14 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         super.onDraw(canvas)
         canvas?.also { c ->
 
+            if(!isFirstCirclesAdded && circleHandles.isEmpty()) {
+                circleHandles.add(CircleHandle(colorCircleStrokeWidth + colorCircleRadius, Color.WHITE))
+                circleHandles.add(
+                    CircleHandle(width - (colorCircleStrokeWidth + colorCircleRadius), Color.BLACK)
+                )
+                isFirstCirclesAdded = true
+            }
+
             if (shouldChangeShader) {
 
 
@@ -380,20 +378,9 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
             throw IllegalStateException("colors array and position array do not have same length")
         }
 
-        if (!isFirstCirclesAdded) {
-            circleHandles.clear()
+        circleHandles.clear()
 
-            doOnLayout {
-                colors.forEachIndexed { index, color ->
-                    circleHandles.add(
-                        CircleHandle(
-                            width.toFloat() * positions[index],
-                            color
-                        )
-                    )
-                }
-            }
-        } else {
+        doOnLayout {
             colors.forEachIndexed { index, color ->
                 circleHandles.add(
                     CircleHandle(
