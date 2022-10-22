@@ -80,6 +80,12 @@ interface Gradientable : ComplexColor {
     fun isGradientApplied(): Boolean
 
 
+    fun reportPositions() : FloatArray?
+
+
+    fun reportColors() : IntArray?
+
+
     /**
      * Removes any gradient that's been applied to the target.
      */

@@ -153,6 +153,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     private var blendMode = PorterDuff.Mode.SRC
 
+    private var gradientColors: IntArray? = null
+
+    private var gradientPositions: FloatArray? = null
+
     init {
 //        setLayerType(LAYER_TYPE_HARDWARE, textPaint)
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
@@ -654,6 +658,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
     override fun removeGradient() {
         paintShader = null
         textPaint.shader = null
+        gradientColors = null
+        gradientPositions = null
         invalidate()
     }
 
@@ -666,6 +672,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         position: FloatArray?,
         tileMode: Shader.TileMode
     ) {
+
+        gradientColors = colors
+        gradientPositions = position
+
         paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode)
 
         textPaint.shader =
@@ -682,6 +692,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         stops: FloatArray?,
         tileMode: Shader.TileMode
     ) {
+
+        gradientColors = colors
+        gradientPositions = stops
+
         paintShader = RadialGradient(
             centerX,
             centerY,
@@ -709,6 +723,9 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         colors: IntArray,
         positions: FloatArray?
     ) {
+        gradientColors = colors
+        gradientPositions = positions
+
         paintShader = SweepGradient(cx, cy, colors, positions)
 
         textPaint.shader =
@@ -835,6 +852,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     override fun getBlendMode(): PorterDuff.Mode {
         return blendMode
+    }
+
+    override fun reportPositions(): FloatArray? {
+        return gradientPositions
+    }
+
+    override fun reportColors(): IntArray? {
+        return gradientColors
     }
 
     /**

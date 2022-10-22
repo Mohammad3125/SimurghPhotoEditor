@@ -64,7 +64,11 @@ class MananShapeView(
     @Transient
     private val shaderMatrix = MananMatrix()
 
-    private var blendMode : PorterDuff.Mode = PorterDuff.Mode.SRC
+    private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
+
+    private var gradientColors: IntArray? = null
+
+    private var gradientPositions: FloatArray? = null
 
     override fun changeColor(color: Int) {
         shapeColor = color
@@ -410,6 +414,9 @@ class MananShapeView(
         position: FloatArray?,
         tileMode: Shader.TileMode
     ) {
+        gradientColors = colors
+        gradientPositions = position
+
         paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
             setLocalMatrix(shaderMatrix)
         }
@@ -430,6 +437,9 @@ class MananShapeView(
         stops: FloatArray?,
         tileMode: Shader.TileMode
     ) {
+        gradientColors = colors
+        gradientPositions = stops
+
         paintShader = RadialGradient(
             centerX,
             centerY,
@@ -461,6 +471,9 @@ class MananShapeView(
         colors: IntArray,
         positions: FloatArray?
     ) {
+        gradientColors = colors
+        gradientPositions = positions
+
         paintShader = SweepGradient(cx, cy, colors, positions).apply {
             setLocalMatrix(shaderMatrix)
         }
@@ -475,6 +488,8 @@ class MananShapeView(
     override fun removeGradient() {
         paintShader = null
         shapePaint.shader = null
+        gradientColors = null
+        gradientPositions = null
         invalidate()
     }
 
@@ -532,5 +547,14 @@ class MananShapeView(
     override fun getBlendMode(): PorterDuff.Mode {
         return blendMode
     }
+
+    override fun reportPositions(): FloatArray? {
+        return gradientPositions
+    }
+
+    override fun reportColors(): IntArray? {
+        return gradientColors
+    }
+
 
 }
