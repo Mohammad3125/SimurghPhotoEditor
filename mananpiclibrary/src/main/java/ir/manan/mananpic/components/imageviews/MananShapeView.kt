@@ -29,6 +29,8 @@ class MananShapeView(
     private var shadowLColor = Color.YELLOW
     private var isShadowCleared = true
 
+    private var strokeShape = shape.clone()
+
     private var rawWidth = 0f
     private var rawHeight = 0f
 
@@ -194,9 +196,12 @@ class MananShapeView(
 
         shape.resize(rawWidth, rawHeight)
 
-        rawWidth += strokeSize
-        rawHeight += strokeSize
+        strokeShape.resize(rawWidth + strokeSize,rawHeight + strokeSize)
 
+        val finalS = strokeSize * 2f
+
+        rawWidth += finalS
+        rawHeight += finalS
 
         setMeasuredDimension(
             (rawWidth + paddingEnd + paddingStart).toInt(),
@@ -233,6 +238,9 @@ class MananShapeView(
         super.onDraw(canvas)
         canvas?.run {
             val half = strokeSize * 0.5f
+
+            save()
+
             translate(half + (paddingStart), half + (paddingTop))
 
             if (shadowRadius > 0) {
@@ -264,13 +272,18 @@ class MananShapeView(
                 shapePaint.shader = null
                 shapePaint.color = strokeColor
 
-                shape.draw(canvas, shapePaint)
+                strokeShape.draw(canvas, shapePaint)
 
                 shapePaint.shader = currentShader
                 shapePaint.style = currentStyle
                 shapePaint.strokeWidth = 0f
                 shapePaint.color = currentColor
             }
+
+            restore()
+
+            translate(strokeSize + (paddingStart), strokeSize + (paddingTop))
+
             shape.draw(canvas, shapePaint)
         }
     }
