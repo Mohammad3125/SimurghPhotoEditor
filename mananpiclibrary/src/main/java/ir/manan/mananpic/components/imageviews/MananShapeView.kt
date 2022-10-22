@@ -99,8 +99,8 @@ class MananShapeView(
         )
         mappingMatrix.run {
             setScale(
-                (rawWidth / width) * scaleX,
-                (rawHeight / height) * scaleY,
+                scaleX,
+                scaleY,
                 bounds.centerX(),
                 bounds.centerY()
             )

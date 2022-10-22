@@ -168,8 +168,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         )
         mappingMatrix.run {
             setScale(
-                (rawWidth / width) * scaleX,
-                (rawHeight / height) * scaleY,
+                scaleX,
+                scaleY,
                 finalBounds.centerX(),
                 finalBounds.centerY()
             )
