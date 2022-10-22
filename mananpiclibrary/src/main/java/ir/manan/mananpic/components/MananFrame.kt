@@ -270,7 +270,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onScaleEnd(detector: ScaleGestureDetector?) {
         super.onScaleEnd(detector)
-        findSmartGuideLines()
+        if (!isSharingGestures) {
+            findSmartGuideLines()
+        }
         invalidate()
     }
 
@@ -1281,6 +1283,17 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
      */
     fun clearSmartGuidelineFlags() {
         smartGuidelineFlags = 0
+    }
+
+    fun eraseSmartGuidelines() {
+        smartGuidelineDashedLine.clear()
+        smartGuidelineHolder.clear()
+        invalidate()
+    }
+
+    fun eraseRotationSmartGuidelines() {
+        smartRotationLineHolder.clear()
+        invalidate()
     }
 
     /**
