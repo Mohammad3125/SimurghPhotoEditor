@@ -856,10 +856,6 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     smartGuidePaint.pathEffect = null
                 }
 
-//                // Draw smart guidelines.
-//                drawLines(smartGuidelineHolder.toFloatArray(), smartGuidePaint.apply {
-//                    strokeWidth = smartGuidelineStrokeWidth
-//                })
             }
         }
     }
@@ -1169,31 +1165,31 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                     smartGuidelineHolder.run {
 
-                        val isPage = childBounds !== pageRect
+                        val isNotPage = childBounds !== pageRect
 
                         // Draw a line on left side of selected component if two lefts are the same
                         // or right of other component is same to left of selected component
                         if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
                             add(mappingRectangle.left)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(minTop)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(mappingRectangle.left)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxBottom)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
                         // Draw a line on right side of selected component if left side of other
                         // component is right side of selected component or two rights are the same.
                         if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
                             add(mappingRectangle.right)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(minTop)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(mappingRectangle.right)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxBottom)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
 
                         // Draw a line on other component top if it's top is same as
@@ -1201,37 +1197,61 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         // top of other component.
                         if (totalToShiftY == topToTop || totalToShiftY == topToBottom) {
                             add(minLeft)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.top)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxRight)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.top)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
                         // Draw a line on other component bottom if bottom of it is same as
                         // selected component's top or two bottoms are the same.
                         if (totalToShiftY == bottomToTop || totalToShiftY == bottomToBottom) {
                             add(minLeft)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.bottom)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxRight)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.bottom)
-                            smartGuidelineDashedLine.add(isPage)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
 
                         // Finally draw a line from center of each component to another.
                         if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
-                            add(mappingRectangle.centerX())
-                            smartGuidelineDashedLine.add(isPage)
-                            add(mappingRectangle.centerY())
-                            smartGuidelineDashedLine.add(isPage)
-                            add(childBounds.centerX())
-                            smartGuidelineDashedLine.add(isPage)
-                            add(childBounds.centerY())
-                            smartGuidelineDashedLine.add(isPage)
+                            if (isNotPage) {
+                                add(mappingRectangle.centerX())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(mappingRectangle.centerY())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(childBounds.centerX())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(childBounds.centerY())
+                                smartGuidelineDashedLine.add(isNotPage)
+                            } else {
+                                if (totalToShiftX == centerXDiff) {
+                                    add(mappingRectangle.centerX())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(pageRect.top)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(mappingRectangle.centerX())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(pageRect.bottom)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                }
+
+                                if (totalToShiftY == centerYDiff) {
+                                    add(pageRect.left)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(mappingRectangle.centerY())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(pageRect.right)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(mappingRectangle.centerY())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                }
+                            }
                         }
 
                     }
