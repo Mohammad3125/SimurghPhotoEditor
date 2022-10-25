@@ -1,6 +1,7 @@
 package ir.manan.mananpic.components.shapes
 
 import android.graphics.Path
+import kotlin.math.abs
 import kotlin.math.min
 
 class MananCircle : MananBaseShape() {
@@ -10,7 +11,7 @@ class MananCircle : MananBaseShape() {
 
         val finalSize = min(desiredWidth, desiredHeight) / 2f
         fPath.rewind()
-        fPath.addCircle(finalSize, finalSize, finalSize, Path.Direction.CW)
+        fPath.addCircle(finalSize, finalSize, abs(finalSize), Path.Direction.CW)
     }
 
     override fun clone(): MananCircle {
