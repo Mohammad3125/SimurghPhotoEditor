@@ -18,6 +18,15 @@ class ShapeSelector : Selector() {
             style = Paint.Style.FILL
         }
 
+    private val shapeOutlinePaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            color = Color.WHITE
+            strokeWidth = 5f
+        }
+
+    private lateinit var outlineShape: MananShape
+
     /**
      * Shape color. Default is [Color.BLACK]
      */
@@ -106,7 +115,7 @@ class ShapeSelector : Selector() {
             }
 
         } else {
-            currentWrapper?.bounds!!.offset(dx, dy)
+            currentWrapper?.bounds?.offset(dx, dy)
         }
         invalidate()
     }
@@ -119,9 +128,9 @@ class ShapeSelector : Selector() {
             currentWrapper?.run {
                 bounds.set(firstX, firstY, lastX, lastY)
                 shape.resize(bounds.width(), bounds.height())
+                isShapeCreated = true
             }
 
-            isShapeCreated = true
         }
     }
 
