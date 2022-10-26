@@ -4,11 +4,9 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import ir.manan.mananpic.components.shapes.MananShape
-import ir.manan.mananpic.utils.BitmapUtility
 import ir.manan.mananpic.utils.MananMatrix
-import kotlin.math.abs
 
-class ShapeSelector : Selector() {
+class ShapeSelector : PathBasedSelector() {
 
     private val shapesHolder = mutableListOf<ShapeWrapper>()
 
@@ -17,15 +15,6 @@ class ShapeSelector : Selector() {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
         }
-
-    private val shapeOutlinePaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            color = Color.WHITE
-            strokeWidth = 5f
-        }
-
-    private lateinit var outlineShape: MananShape
 
     /**
      * Shape color. Default is [Color.BLACK]
@@ -72,8 +61,6 @@ class ShapeSelector : Selector() {
             invalidate()
         }
 
-    private val pathCopy = Path()
-
     private val mappingMatrix = Matrix()
 
     private var isShapesEmpty = false
@@ -85,6 +72,7 @@ class ShapeSelector : Selector() {
     }
 
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
+        super.initialize(context, matrix, bounds)
         isInitialized = true
 
         vBounds.set(bounds)
@@ -135,118 +123,33 @@ class ShapeSelector : Selector() {
     }
 
     override fun select(drawable: Drawable): Bitmap? {
-        val shapePath = getClipPath()
-        return if (isClosed() && shapePath != null) {
-            val currentPointBounds = RectF()
-            // Get selected bound of normal path (path that is not scaled.)
-            shapePath.computeBounds(currentPointBounds, true)
-
-            val leftEdge = vBounds.left
-            val topEdge = vBounds.top
-            val rightEdge = vBounds.right
-            val bottomEdge = vBounds.bottom
-
-            // If rect area of path doesn't intersect the visible part of
-            // image, then return null.
-            if (!currentPointBounds.intersects(
-                    leftEdge,
-                    topEdge,
-                    rightEdge,
-                    bottomEdge
-                )
-            ) return null
-
-            // Get how much the current bitmap displayed is scaled comparing to original drawable size.
-            val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
-
-            // Scale the path to that scale value by using Matrix.
-            val scaledPoint = Path(shapePath).apply {
-                transform(Matrix().apply {
-                    setScale(totalScaled, totalScaled, leftEdge, topEdge)
-                })
-            }
-
-            // Get selected bound of scaled path.
-            val selectedBounds = RectF()
-            scaledPoint.computeBounds(selectedBounds, true)
-
-            // Create two variables determining final size of bitmap that is returned.
-            var finalBitmapWidth = selectedBounds.width()
-            var finalBitmapHeight = selectedBounds.height()
-
-            // Calculate the difference of current path with image's bound.
-            val differenceImageBottomAndPathBottom = currentPointBounds.bottom - bottomEdge
-            val differenceImageRightAndPathRight = currentPointBounds.right - rightEdge
-            val differenceImageLeftAndPathLeft = currentPointBounds.left - leftEdge
-            val differenceImageTopAndPathTop = currentPointBounds.top - topEdge
-
-            // This section reduces size of bitmap to visible part of image if path exceeds that bounds of image.
-
-            if (differenceImageBottomAndPathBottom > 0f)
-                finalBitmapHeight -= (differenceImageBottomAndPathBottom * totalScaled)
-
-            if (differenceImageRightAndPathRight > 0f)
-                finalBitmapWidth -= (differenceImageRightAndPathRight * totalScaled)
-
-            if (differenceImageLeftAndPathLeft < 0f) {
-                val diffAbs = (abs(differenceImageLeftAndPathLeft)) * totalScaled
-                selectedBounds.left += diffAbs
-                finalBitmapWidth -= diffAbs
-            }
-
-            if (differenceImageTopAndPathTop < 0f) {
-                val diffAbs = (abs(differenceImageTopAndPathTop)) * totalScaled
-                selectedBounds.top += diffAbs
-                finalBitmapHeight -= diffAbs
-            }
-
-            // Finally create a bitmap to draw contents on.
-            val createdBitmap =
-                Bitmap.createBitmap(
-                    finalBitmapWidth.toInt(),
-                    finalBitmapHeight.toInt(),
-                    Bitmap.Config.ARGB_8888
-                )
-
-            Canvas(createdBitmap).run {
-                // Translate canvas back to left-top of bitmap.
-                translate(-selectedBounds.left, -selectedBounds.top)
-                // Clip the content.
-                clipPath(scaledPoint)
-                // Translate the drawable to left edge and top edge of current image and
-                // draw it.
-                translate(leftEdge, topEdge)
-                drawable.draw(this)
-            }
-
-            resetSelection()
-
-
-            return BitmapUtility.downSizeBitmap(
-                createdBitmap,
-                BitmapUtility.getVisiblePixelsRectangleConcurrent(createdBitmap)
-            )
-        } else {
-            null
+        getClipPath()?.let { clip ->
+            path.rewind()
+            path.set(clip)
         }
+        return super.select(drawable)
     }
 
     override fun draw(canvas: Canvas?) {
-        canvas?.let {
-            shapesHolder.forEach {
-                canvas.save()
+        canvas?.let { c ->
+            path.rewind()
 
-                canvas.translate(it.bounds.left, it.bounds.top)
+            shapesHolder.forEach { wrapper ->
+                wrapper.shape.drawToPath(path, Matrix().apply {
+                    setTranslate(wrapper.bounds.left, wrapper.bounds.top)
+                    postRotate(wrapper.rotation, wrapper.bounds.centerX(), wrapper.bounds.centerY())
+                })
+            }
 
-                canvas.rotate(
-                    it.rotation,
-                    it.bounds.width() * 0.5f,
-                    it.bounds.height() * 0.5f
-                )
-
-                it.shape.draw(canvas, shapePaint)
-
-                canvas.restore()
+            if (isSelectionInverse) {
+                path.fillType = Path.FillType.INVERSE_WINDING
+                c.clipPath(path)
+                pathCopy.rewind()
+                pathCopy.addRect(vBounds, Path.Direction.CCW)
+                c.drawPath(pathCopy, shapePaint)
+            } else {
+                path.fillType = Path.FillType.WINDING
+                c.drawPath(path, shapePaint)
             }
         }
     }
@@ -269,7 +172,7 @@ class ShapeSelector : Selector() {
 
         return pathCopy.apply {
             rewind()
-
+            fillType = path.fillType
             shapesHolder.forEach { shapeWrapper ->
                 addPath(shapeWrapper.shape.getPath(), mappingMatrix.apply {
 
@@ -292,10 +195,15 @@ class ShapeSelector : Selector() {
                 changeMatrix.mapRect(it.bounds)
                 it.shape.resize(it.bounds.width(), it.bounds.height())
             }
-            invalidate()
         }
 
         vBounds.set(newBounds)
+        leftEdge = vBounds.left
+        topEdge = vBounds.top
+        rightEdge = vBounds.right
+        bottomEdge = vBounds.bottom
+
+        invalidate()
     }
 
     fun addShape(shape: MananShape) {
@@ -314,6 +222,14 @@ class ShapeSelector : Selector() {
     )
 
     override fun undo() {
+
+        if (isSelectionInverse) {
+            isSelectionInverse = false
+            if (shapesHolder.isEmpty()) {
+                invalidate()
+            }
+        }
+
         if (shapesHolder.isNotEmpty()) {
             shapesHolder.removeLast()
 

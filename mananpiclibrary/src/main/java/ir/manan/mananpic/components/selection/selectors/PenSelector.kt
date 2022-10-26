@@ -457,13 +457,15 @@ class PenSelector : PathBasedSelector() {
     }
 
     private fun makePathReadyForSelection() {
-        path.reset()
+        path.rewind()
 
         path.moveTo(firstX, firstY)
 
         lines.forEach {
             it.putIntoPath(path)
         }
+
+        path.fillType = if(isSelectionInverse) Path.FillType.INVERSE_WINDING else Path.FillType.WINDING
 
         path.offset(pathOffsetX, pathOffsetY)
 
@@ -639,10 +641,13 @@ class PenSelector : PathBasedSelector() {
                 pathCopy.transform(sizeChangeMatrix)
             }
 
+            if (isSelectionInverse && isClosed()) {
+                pathCopy.addRect(leftEdge, topEdge, rightEdge, bottomEdge, Path.Direction.CW)
+            }
+
             // Transform the drawings base on the transformation matrix of parent.
             pathCopy.transform(canvasMatrix)
 
-            // Draw the transformed path.
             drawPath(pathCopy, linesPaint)
 
             // Reset path copy to release memory.
@@ -740,6 +745,12 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun undo() {
+        if (isSelectionInverse) {
+            isSelectionInverse = false
+            if (lines.isEmpty()) {
+                invalidate()
+            }
+        }
         lines.run {
             if (isNotEmpty()) {
                 // Remove last line in stack.
@@ -788,7 +799,6 @@ class PenSelector : PathBasedSelector() {
     override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
         if (lines.isNotEmpty()) {
             sizeChangeMatrix.postConcat(changeMatrix)
-            invalidate()
         }
 
         leftEdge = newBounds.left
@@ -796,6 +806,7 @@ class PenSelector : PathBasedSelector() {
         rightEdge = newBounds.right
         bottomEdge = newBounds.bottom
 
+        invalidate()
     }
 
     private enum class Handle {

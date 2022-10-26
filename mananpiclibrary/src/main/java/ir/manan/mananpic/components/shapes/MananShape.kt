@@ -1,6 +1,7 @@
 package ir.manan.mananpic.components.shapes
 
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 
@@ -21,6 +22,8 @@ abstract class MananShape {
      * Returns a path representing the shape.
      */
     abstract fun getPath(): Path
+
+    abstract fun drawToPath(path: Path, transform: Matrix?)
 
     open fun clone(): MananShape {
         throw IllegalStateException("Cannot clone an abstract class [${javaClass.name}]")

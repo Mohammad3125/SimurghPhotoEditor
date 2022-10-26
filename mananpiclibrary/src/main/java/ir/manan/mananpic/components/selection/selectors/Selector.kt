@@ -89,6 +89,10 @@ abstract class Selector {
      */
     abstract fun getClipPath(): Path?
 
+    abstract fun toggleInverse()
+
+    abstract fun isInverse() : Boolean
+
 
     abstract fun onSizeChanged(newBounds : RectF, changeMatrix: Matrix)
 

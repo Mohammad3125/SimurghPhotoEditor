@@ -200,6 +200,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
         isMatrixGesture = true
+        println("onScaleBegin")
         return !matrixAnimator.isAnimationRunning()
     }
 
@@ -243,9 +244,12 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     }
 
     fun select(): Bitmap? {
-        if (drawable != null && selector != null) return selector!!.select(drawable)
-
-        return null
+        var b : Bitmap? = null
+        if (drawable != null && selector != null) {
+            b = selector!!.select(drawable)
+            callOnStateChangeListeners(selector!!.isClosed())
+        }
+        return b
     }
 
     override fun setImageBitmap(bm: Bitmap?) {
@@ -323,6 +327,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             callOnStateChangeListeners(selector!!.isClosed())
         }
     }
+
+    fun toggleSelection() {
+        selector?.toggleInverse()
+    }
+
 
     /**
      * Returns path data of current selector if it's closed.

@@ -75,7 +75,7 @@ class BrushSelector : PathBasedSelector() {
     }
 
     private fun drawCircles(touchX: Float, touchY: Float) {
-        path.addCircle(touchX, touchY, brushSize, Path.Direction.CW)
+        path.addCircle(touchX, touchY, brushSize, Path.Direction.CCW)
         invalidate()
         isPathClose = true
     }
@@ -83,11 +83,26 @@ class BrushSelector : PathBasedSelector() {
     override fun draw(canvas: Canvas?) {
         canvas?.run {
             // Draw the transformed path.
-            drawPath(path, brushPaint)
+            if (isSelectionInverse) {
+                path.fillType = Path.FillType.INVERSE_WINDING
+                clipPath(path)
+                pathCopy.rewind()
+                pathCopy.addRect(leftEdge, topEdge, rightEdge, bottomEdge, Path.Direction.CCW)
+                drawPath(pathCopy, brushPaint)
+            } else {
+                path.fillType = Path.FillType.WINDING
+                drawPath(path, brushPaint)
+            }
         }
     }
 
     override fun undo() {
+        if (isSelectionInverse) {
+            isSelectionInverse = false
+            if (paths.isEmpty()) {
+                invalidate()
+            }
+        }
         paths.run {
             if (isNotEmpty()) {
                 pop()

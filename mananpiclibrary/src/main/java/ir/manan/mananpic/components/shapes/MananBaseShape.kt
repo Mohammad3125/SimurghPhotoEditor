@@ -1,12 +1,15 @@
 package ir.manan.mananpic.components.shapes
 
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 
 open class MananBaseShape : MananShape() {
 
     protected val fPath = Path()
+
+    protected val copyPath = Path()
 
     protected var desiredWidth = 0f
     protected var desiredHeight = 0f
@@ -28,6 +31,14 @@ open class MananBaseShape : MananShape() {
         if (!isPathResized) throw IllegalStateException("Shape should be resized before calling converting to path")
 
         return fPath
+    }
+
+    override fun drawToPath(path: Path, transform: Matrix?) {
+        copyPath.set(fPath)
+        if (transform != null) {
+            copyPath.transform(transform)
+        }
+        path.addPath(copyPath, 0f, 0f)
     }
 
     override fun clone(): MananShape {
