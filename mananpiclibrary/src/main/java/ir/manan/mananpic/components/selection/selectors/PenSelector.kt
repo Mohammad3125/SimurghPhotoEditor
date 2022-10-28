@@ -111,10 +111,6 @@ class PenSelector : PathBasedSelector() {
         Path()
     }
 
-    private val sizeChangeMatrix by lazy {
-        MananMatrix()
-    }
-
     private lateinit var context: Context
 
     /**
@@ -468,8 +464,6 @@ class PenSelector : PathBasedSelector() {
         path.fillType = if(isSelectionInverse) Path.FillType.INVERSE_WINDING else Path.FillType.WINDING
 
         path.offset(pathOffsetX, pathOffsetY)
-
-        path.transform(sizeChangeMatrix)
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
@@ -600,7 +594,6 @@ class PenSelector : PathBasedSelector() {
     override fun resetSelection() {
         lines.clear()
         path.reset()
-        sizeChangeMatrix.reset()
 
         pathOffsetX = 0f
         pathOffsetY = 0f
@@ -636,10 +629,6 @@ class PenSelector : PathBasedSelector() {
 
             // Offset them if user has offset them.
             pathCopy.offset(pathOffsetX, pathOffsetY)
-
-            if (!sizeChangeMatrix.isIdentity) {
-                pathCopy.transform(sizeChangeMatrix)
-            }
 
             if (isSelectionInverse && isClosed()) {
                 pathCopy.addRect(leftEdge, topEdge, rightEdge, bottomEdge, Path.Direction.CW)
@@ -680,8 +669,6 @@ class PenSelector : PathBasedSelector() {
                         lineTo(bx, by)
                     }
 
-                    transform(sizeChangeMatrix)
-
                     transform(canvasMatrix)
 
                 }
@@ -692,10 +679,6 @@ class PenSelector : PathBasedSelector() {
                 save()
 
                 concat(canvasMatrix)
-
-                if (!sizeChangeMatrix.isIdentity) {
-                    concat(sizeChangeMatrix)
-                }
 
                 // Handle for QUAD_BEZIER (also acts as first handle for CUBIC_BEZIER).
                 drawCircle(handleX, handleY, downSizedRadius, circlesPaint)
@@ -711,10 +694,6 @@ class PenSelector : PathBasedSelector() {
             save()
 
             concat(canvasMatrix)
-
-            if (!sizeChangeMatrix.isIdentity) {
-                concat(sizeChangeMatrix)
-            }
 
             if (isNewLineDrawn) {
                 // End point of line (either bezier or straight).
@@ -797,8 +776,14 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
-        if (lines.isNotEmpty()) {
-            sizeChangeMatrix.postConcat(changeMatrix)
+        val fl = floatArrayOf(firstX, firstY)
+        changeMatrix.mapPoints(fl)
+
+        firstX = fl[0]
+        firstY = fl[1]
+
+        lines.forEach {
+            it.transform(changeMatrix)
         }
 
         leftEdge = newBounds.left
@@ -830,12 +815,28 @@ class PenSelector : PathBasedSelector() {
         var epx: Float,
         var epy: Float,
     ) {
+
+        protected var floatArrayPointsHolder = FloatArray(6) {
+            0f
+        }
+
         /**
          * Draws content of current line on a given path.
          * @param path Path that content of current line is going to be drawn on.
          */
         open fun putIntoPath(path: Path) {
             path.lineTo(epx, epy)
+        }
+
+        open fun transform(matrix: Matrix) {
+            floatArrayPointsHolder[0] = epx
+            floatArrayPointsHolder[1] = epy
+
+            matrix.mapPoints(floatArrayPointsHolder)
+
+            epx = floatArrayPointsHolder[0]
+            epy = floatArrayPointsHolder[1]
+
         }
     }
 
@@ -847,6 +848,16 @@ class PenSelector : PathBasedSelector() {
     ) : Line(epx, epy) {
         override fun putIntoPath(path: Path) {
             path.quadTo(handleX, handleY, epx, epy)
+        }
+
+        override fun transform(matrix: Matrix) {
+            super.transform(matrix)
+            floatArrayPointsHolder[2] = handleX
+            floatArrayPointsHolder[3] = handleY
+            matrix.mapPoints(floatArrayPointsHolder)
+
+            handleX = floatArrayPointsHolder[2]
+            handleY = floatArrayPointsHolder[3]
         }
     }
 
@@ -860,6 +871,23 @@ class PenSelector : PathBasedSelector() {
     ) : Line(epx, epy) {
         override fun putIntoPath(path: Path) {
             path.cubicTo(firstHandleX, firstHandleY, secondHandleX, secondHandleY, epx, epy)
+        }
+
+        override fun transform(matrix: Matrix) {
+            super.transform(matrix)
+
+            floatArrayPointsHolder[2] = firstHandleX
+            floatArrayPointsHolder[3] = firstHandleY
+            floatArrayPointsHolder[4] = secondHandleX
+            floatArrayPointsHolder[5] = secondHandleY
+
+            matrix.mapPoints(floatArrayPointsHolder)
+
+            firstHandleX = floatArrayPointsHolder[2]
+            firstHandleY = floatArrayPointsHolder[3]
+            secondHandleX = floatArrayPointsHolder[4]
+            secondHandleY = floatArrayPointsHolder[5]
+
         }
     }
 }
