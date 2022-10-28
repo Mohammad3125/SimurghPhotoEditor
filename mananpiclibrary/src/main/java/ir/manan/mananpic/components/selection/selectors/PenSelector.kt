@@ -36,10 +36,6 @@ class PenSelector : PathBasedSelector() {
     private var lvx = 0f
     private var lvy = 0f
 
-    // Total offset of path after it has been closed.
-    private var pathOffsetX = 0f
-    private var pathOffsetY = 0f
-
     // Handle position for quad bezier.
     private var handleX = 0f
     private var handleY = 0f
@@ -199,6 +195,10 @@ class PenSelector : PathBasedSelector() {
      * Reference to current selected line.
      */
     private var selectedLine: Line? = null
+
+    private val mappingMatrix by lazy {
+        Matrix()
+    }
 
     override fun shouldParentTransformDrawings(): Boolean {
         return false
@@ -377,8 +377,14 @@ class PenSelector : PathBasedSelector() {
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
         // If path is closed then offset (move around) path if user moves his/her finger.
         if (isPathClose) {
-            pathOffsetX += dx
-            pathOffsetY += dy
+            mappingMatrix.setTranslate(dx,dy)
+
+            firstX += dx
+            firstY += dy
+
+            lines.forEach { line ->
+                line.transform(mappingMatrix)
+            }
             invalidate()
         } else if (!isOtherLinesSelected) {
             when (currentHandleSelected) {
@@ -461,9 +467,8 @@ class PenSelector : PathBasedSelector() {
             it.putIntoPath(path)
         }
 
-        path.fillType = if(isSelectionInverse) Path.FillType.INVERSE_WINDING else Path.FillType.WINDING
-
-        path.offset(pathOffsetX, pathOffsetY)
+        path.fillType =
+            if (isSelectionInverse) Path.FillType.INVERSE_WINDING else Path.FillType.WINDING
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
@@ -595,9 +600,6 @@ class PenSelector : PathBasedSelector() {
         lines.clear()
         path.reset()
 
-        pathOffsetX = 0f
-        pathOffsetY = 0f
-
         isNewLineDrawn = false
         isPathClose = false
 
@@ -626,9 +628,6 @@ class PenSelector : PathBasedSelector() {
             lines.forEach {
                 it.putIntoPath(pathCopy)
             }
-
-            // Offset them if user has offset them.
-            pathCopy.offset(pathOffsetX, pathOffsetY)
 
             if (isSelectionInverse && isClosed()) {
                 pathCopy.addRect(leftEdge, topEdge, rightEdge, bottomEdge, Path.Direction.CW)
@@ -710,8 +709,8 @@ class PenSelector : PathBasedSelector() {
             lines.minus(selectedLine).forEach {
                 if (it != null) {
                     drawCircle(
-                        it.epx + pathOffsetX,
-                        it.epy + pathOffsetY,
+                        it.epx,
+                        it.epy,
                         downSizedRadius,
                         circlesPaint.apply {
                             color = unselectedCirclesColor
@@ -753,8 +752,6 @@ class PenSelector : PathBasedSelector() {
                 // then open the path and reset its offset and cancel path animation.
                 if (isPathClose) {
                     isPathClose = false
-                    pathOffsetX = 0f
-                    pathOffsetY = 0f
                     cancelAnimation()
                 }
             }
