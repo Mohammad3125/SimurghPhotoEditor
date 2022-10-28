@@ -334,6 +334,11 @@ class PenSelector : PathBasedSelector() {
                 isOtherLinesSelected = true
             }
         }
+
+        if (currentHandleSelected == NONE && isPathClose) {
+            selectedLine = null
+            invalidate()
+        }
     }
 
     private fun setLineRelatedVariables(line: Line) {
