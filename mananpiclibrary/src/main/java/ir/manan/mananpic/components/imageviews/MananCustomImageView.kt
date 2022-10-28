@@ -17,7 +17,9 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
     var bitmap: Bitmap? = null
 
     @Transient
-    private val bitmapPaint = Paint()
+    private val bitmapPaint = Paint().apply {
+        isFilterBitmap = true
+    }
 
     private var bitmapWidth = 0
     private var bitmapHeight = 0
