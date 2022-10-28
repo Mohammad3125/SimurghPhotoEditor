@@ -760,6 +760,7 @@ class PenSelector : PathBasedSelector() {
                     isNewLineDrawn = true
                 } else {
                     isNewLineDrawn = false
+                    selectedLine = null
                 }
 
                 // If path is close and user undoes the operation,
