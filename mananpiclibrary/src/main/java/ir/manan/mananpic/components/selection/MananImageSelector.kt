@@ -83,6 +83,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             selector?.initialize(context, canvasMatrix, rectAlloc)
         }
 
+    private val touchPointMappedArray = FloatArray(2)
+
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -114,6 +116,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     // His/her finger across screen.
                     initialX = x
                     initialY = y
+
                     return true
                 }
                 MotionEvent.ACTION_POINTER_DOWN -> {
@@ -124,8 +127,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                 }
                 MotionEvent.ACTION_MOVE -> {
                     // Determine total amount that user moved his/her finger on screen.
-                    var dx = x - initialX
-                    var dy = y - initialY
+                    val dx : Float
+                    val dy : Float
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
@@ -157,19 +160,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     // scaling, then call 'onMove' method of selector.
                     if (selector != null && totalPoints == 1 && !isMatrixGesture) {
 
-                        if (dx == 0f && dy == 0f) return true
+                        repeat(historySize) {
+                            callSelectorOnMove(getHistoricalX(0, it), getHistoricalY(0, it))
+                        }
 
-                        // Calculate how much the canvas is scaled then use
-                        // that to slow down the translation by that factor.
-                        val s = canvasMatrix.getOppositeScale()
-                        val exactMapPoints = mapTouchPoints(x, y)
-                        selector!!.onMove(
-                            dx * s, dy * s, exactMapPoints[0], exactMapPoints[1]
-                        )
-
-                        // Reset initial positions.
-                        initialX = x
-                        initialY = y
+                        callSelectorOnMove(x, y)
 
                         return true
                     }
@@ -198,9 +193,28 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         return false
     }
 
+    private fun callSelectorOnMove(ex: Float, ey: Float) {
+        val dx = ex - initialX
+        val dy = ey - initialY
+
+        if (dx == 0f && dy == 0f) return
+
+        // Calculate how much the canvas is scaled then use
+        // that to slow down the translation by that factor.
+        val s = canvasMatrix.getOppositeScale()
+        val exactMapPoints = mapTouchPoints(ex, ey)
+
+        selector!!.onMove(
+            dx * s, dy * s, exactMapPoints[0], exactMapPoints[1]
+        )
+
+        // Reset initial positions.
+        initialX = ex
+        initialY = ey
+    }
+
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
         isMatrixGesture = true
-        println("onScaleBegin")
         return !matrixAnimator.isAnimationRunning()
     }
 
@@ -224,7 +238,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
      * correct coordinates of touch if canvas is scaled and or translated.
      */
     private fun mapTouchPoints(touchX: Float, touchY: Float): FloatArray {
-        val touchPoints = floatArrayOf(touchX, touchY)
+        touchPointMappedArray[0] = touchX
+        touchPointMappedArray[1] = touchY
         mappingMatrix.run {
 
             val tx = canvasMatrix.getTranslationX(true)
@@ -237,14 +252,14 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             val scale = canvasMatrix.getOppositeScale()
             postScale(scale, scale)
 
-            mapPoints(touchPoints)
+            mapPoints(touchPointMappedArray)
 
         }
-        return touchPoints
+        return touchPointMappedArray
     }
 
     fun select(): Bitmap? {
-        var b : Bitmap? = null
+        var b: Bitmap? = null
         if (drawable != null && selector != null) {
             b = selector!!.select(drawable)
             callOnStateChangeListeners(selector!!.isClosed())
