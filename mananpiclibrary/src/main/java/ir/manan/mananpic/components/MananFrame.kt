@@ -485,7 +485,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     init {
 
-        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            setLayerType(LAYER_TYPE_SOFTWARE, null)
+        }
 
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
