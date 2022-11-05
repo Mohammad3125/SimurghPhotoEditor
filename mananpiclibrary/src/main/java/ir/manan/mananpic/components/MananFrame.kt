@@ -309,193 +309,195 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onMove(dx: Float, dy: Float): Boolean {
         super.onMove(dx, dy)
-        if (currentEditingView != null) {
-            currentEditingView?.run {
-                when {
-                    currentScaleHandleSelected != null -> {
+        currentEditingView?.run {
+            when {
+                currentScaleHandleSelected != null -> {
 
-                        val bounds = reportBound()
+                    val bounds = reportBound()
 
-                        val canvasScale = canvasMatrix.getScaleX(true)
+                    val canvasScale = canvasMatrix.getScaleX(true)
 
-                        val reportedRotation = reportRotation()
+                    val reportedRotation = reportRotation()
 
-                        var sumOfOffset: Float
+                    var sumOfOffset: Float
 
-                        val arrayOffsets = floatArrayOf((dx / canvasScale), (dy / canvasScale))
+                    val arrayOffsets = floatArrayOf((dx / canvasScale), (dy / canvasScale))
 
-                        val reportedScaleX = reportScaleX()
-                        val reportedScaleY = reportScaleY()
+                    val reportedScaleX = reportScaleX()
+                    val reportedScaleY = reportScaleY()
 
-                        val scaleXSign = if (reportedScaleX >= 0f) 1f else -1f
-                        val scaleYSign = if (reportedScaleY >= 0f) 1f else -1f
+                    val scaleXSign = if (reportedScaleX >= 0f) 1f else -1f
+                    val scaleYSign = if (reportedScaleY >= 0f) 1f else -1f
 
-                        var initialLeft: Float
-                        var initialTop: Float
+                    var initialLeft: Float
+                    var initialTop: Float
 
-                        mappingMatrix.run {
-                            setRotate(
-                                -reportedRotation
-                            )
-
-                            postScale(
-                                scaleXSign,
-                                scaleYSign
-                            )
-
-                            mapPoints(arrayOffsets)
-
-                            sumOfOffset = arrayOffsets[0] + arrayOffsets[1]
-
-                            setScale(
-                                1f / reportedScaleX,
-                                1f / reportedScaleY,
-                                bounds.centerX(),
-                                bounds.centerY()
-                            )
-
-                            mapRect(tempRect, bounds)
-
-                            initialLeft = tempRect.left
-                            initialTop = tempRect.top
-
-                            setScale(reportedScaleX, reportedScaleY, initialLeft, initialTop)
-
-                            postRotate(reportedRotation, initialLeft, initialTop)
-
-                            mapRect(tempRect, bounds)
-
-                            val currentRight = tempRect.right
-                            val currentLeft = tempRect.left
-                            val currentTop = tempRect.top
-                            val currentBottom = tempRect.bottom
-
-                            when (currentScaleHandleSelected) {
-                                ScaleHandles.LEFT_HANDLE -> {
-                                    val totalToScaleX =
-                                        if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.width())
-
-                                    applyScale(
-                                        totalToScaleX,
-                                        1f,
-                                    )
-
-                                }
-                                ScaleHandles.RIGHT_HANDLE -> {
-
-                                    val totalToScaleX =
-                                        if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.width())
-
-                                    applyScale(
-                                        totalToScaleX,
-                                        1f
-                                    )
-                                }
-                                ScaleHandles.TOP_HANDLE -> {
-
-                                    val totalToScaleY =
-                                        if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.height())
-
-                                    applyScale(
-                                        1f,
-                                        totalToScaleY
-                                    )
-                                }
-                                ScaleHandles.BOTTOM_HANDLE -> {
-
-                                    val totalToScaleY =
-                                        if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.height())
-
-                                    applyScale(
-                                        1f,
-                                        totalToScaleY
-                                    )
-                                }
-                                else -> {
-
-                                }
-                            }
-
-                            val newScaleX = reportScaleX()
-                            val newScaleY = reportScaleY()
-
-                            setScale(
-                                newScaleX,
-                                newScaleY,
-                                initialLeft,
-                                initialTop
-                            )
-
-                            postRotate(
-                                reportedRotation,
-                                initialLeft,
-                                initialTop
-                            )
-
-                            mapRect(tempRect, bounds)
-
-                            val diffX =
-                                ((tempRect.left - currentLeft) + (tempRect.right - currentRight)) * 0.5f
-                            val diffY =
-                                ((tempRect.top - currentTop) + (tempRect.bottom - currentBottom)) * 0.5f
-
-                            when (currentScaleHandleSelected) {
-                                ScaleHandles.RIGHT_HANDLE, ScaleHandles.BOTTOM_HANDLE -> {
-                                    applyMovement(diffX, diffY)
-                                }
-                                ScaleHandles.TOP_HANDLE, ScaleHandles.LEFT_HANDLE -> {
-                                    applyMovement(-diffX, -diffY)
-                                }
-                                else -> {
-
-                                }
-                            }
-
-                        }
-                    }
-
-                    !isSharingGestures -> {
-                        val s = canvasMatrix.getOppositeScale()
-                        applyMovement(dx * s, dy * s)
-                        findSmartGuideLines()
-                        smartRotationLineHolder.clear()
-                    }
-
-                    isSharingGestures -> {
-                        mappingMatrix.setRotate(-reportRotation())
-                        floatArrayAcc[0] = dx
-                        floatArrayAcc[1] = dy
-                        mappingMatrix.mapPoints(floatArrayAcc)
-                        callGestureSharedListeners(
-                            1f,
-                            floatArrayAcc[0],
-                            floatArrayAcc[1],
-                            NO_ROTATION,
-                            0f,
-                            0f
+                    mappingMatrix.run {
+                        setRotate(
+                            -reportedRotation
                         )
-                    }
-                    else -> {
-                        translateCanvas(dx, dy)
+
+                        postScale(
+                            scaleXSign,
+                            scaleYSign
+                        )
+
+                        mapPoints(arrayOffsets)
+
+                        sumOfOffset = arrayOffsets[0] + arrayOffsets[1]
+
+                        setScale(
+                            1f / reportedScaleX,
+                            1f / reportedScaleY,
+                            bounds.centerX(),
+                            bounds.centerY()
+                        )
+
+                        mapRect(tempRect, bounds)
+
+                        initialLeft = tempRect.left
+                        initialTop = tempRect.top
+
+                        setScale(reportedScaleX, reportedScaleY, initialLeft, initialTop)
+
+                        postRotate(reportedRotation, initialLeft, initialTop)
+
+                        mapRect(tempRect, bounds)
+
+                        val currentRight = tempRect.right
+                        val currentLeft = tempRect.left
+                        val currentTop = tempRect.top
+                        val currentBottom = tempRect.bottom
+
+                        when (currentScaleHandleSelected) {
+                            ScaleHandles.LEFT_HANDLE -> {
+                                val totalToScaleX =
+                                    if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.width())
+
+                                applyScale(
+                                    totalToScaleX,
+                                    1f,
+                                )
+
+                            }
+                            ScaleHandles.RIGHT_HANDLE -> {
+
+                                val totalToScaleX =
+                                    if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.width())
+
+                                applyScale(
+                                    totalToScaleX,
+                                    1f
+                                )
+                            }
+                            ScaleHandles.TOP_HANDLE -> {
+
+                                val totalToScaleY =
+                                    if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.height())
+
+                                applyScale(
+                                    1f,
+                                    totalToScaleY
+                                )
+                            }
+                            ScaleHandles.BOTTOM_HANDLE -> {
+
+                                val totalToScaleY =
+                                    if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.height())
+
+                                applyScale(
+                                    1f,
+                                    totalToScaleY
+                                )
+                            }
+                            else -> {
+
+                            }
+                        }
+
+                        val newScaleX = reportScaleX()
+                        val newScaleY = reportScaleY()
+
+                        setScale(
+                            newScaleX,
+                            newScaleY,
+                            initialLeft,
+                            initialTop
+                        )
+
+                        postRotate(
+                            reportedRotation,
+                            initialLeft,
+                            initialTop
+                        )
+
+                        mapRect(tempRect, bounds)
+
+                        val diffX =
+                            ((tempRect.left - currentLeft) + (tempRect.right - currentRight)) * 0.5f
+                        val diffY =
+                            ((tempRect.top - currentTop) + (tempRect.bottom - currentBottom)) * 0.5f
+
+                        when (currentScaleHandleSelected) {
+                            ScaleHandles.RIGHT_HANDLE, ScaleHandles.BOTTOM_HANDLE -> {
+                                applyMovement(diffX, diffY)
+                            }
+                            ScaleHandles.TOP_HANDLE, ScaleHandles.LEFT_HANDLE -> {
+                                applyMovement(-diffX, -diffY)
+                            }
+                            else -> {
+
+                            }
+                        }
+
                     }
                 }
 
+                !isSharingGestures -> {
+                    val s = canvasMatrix.getOppositeScale()
+                    applyMovement(dx * s, dy * s)
+                    findSmartGuideLines()
+                    smartRotationLineHolder.clear()
+                }
+
+                isSharingGestures -> {
+                    mappingMatrix.setRotate(-reportRotation())
+                    floatArrayAcc[0] = dx
+                    floatArrayAcc[1] = dy
+                    mappingMatrix.mapPoints(floatArrayAcc)
+                    callGestureSharedListeners(
+                        1f,
+                        floatArrayAcc[0],
+                        floatArrayAcc[1],
+                        NO_ROTATION,
+                        0f,
+                        0f
+                    )
+                }
+
+                else -> {
+
+                }
             }
+            invalidate()
+            return true
+        }
+        if (isSharingGestures) {
+            callGestureSharedListeners(
+                1f,
+                dx,
+                dy,
+                NO_ROTATION,
+                0f,
+                0f
+            )
         } else {
-            if (isSharingGestures) {
-                callGestureSharedListeners(
-                    1f,
-                    dx,
-                    dy,
-                    NO_ROTATION,
-                    0f,
-                    0f
-                )
-            }
+            translateCanvas(dx, dy)
         }
         invalidate()
         return true
     }
+
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         super.onMoveEnded(lastX, lastY)
@@ -529,7 +531,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
             try {
-                isDrawingBoxEnabled = getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
+                isDrawingBoxEnabled =
+                    getBoolean(R.styleable.MananFrame_isDrawingBoxEnabled, false)
 
                 frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
 
@@ -558,7 +561,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     getColor(R.styleable.MananFrame_scaleHandlesColor, scaleHandlesColor)
 
                 scalesHandleThickness =
-                    getDimension(R.styleable.MananFrame_scaleHandleThickness, scalesHandleThickness)
+                    getDimension(
+                        R.styleable.MananFrame_scaleHandleThickness,
+                        scalesHandleThickness
+                    )
 
                 scaleHandleWidth =
                     getDimension(R.styleable.MananFrame_scaleHandleThickness, scaleHandleWidth)
@@ -778,7 +784,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 // Match the rotation of canvas to view to be able to
                 // draw rotated rectangle.
                 rotate(
-                    reportRotation(), reportBoundPivotX() + offsetX, reportBoundPivotY() + offsetY
+                    reportRotation(),
+                    reportBoundPivotX() + offsetX,
+                    reportBoundPivotY() + offsetY
                 )
 
                 val oppositeScale = canvasMatrix.getOppositeScale()
