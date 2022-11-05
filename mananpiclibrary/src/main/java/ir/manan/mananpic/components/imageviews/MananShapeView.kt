@@ -29,6 +29,7 @@ class MananShapeView(
     private var shadowLColor = Color.YELLOW
     private var isShadowCleared = true
 
+    @Transient
     private var strokeShape = shape.clone()
 
     private var rawWidth = 0f
