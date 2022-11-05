@@ -17,6 +17,17 @@ interface MananComponent {
      */
     fun reportRotation(): Float
 
+
+    /**
+     * Returns current component's scale in x dimension.
+     */
+    fun reportScaleX(): Float
+
+    /**
+     * Returns current component's scale in y dimension.
+     */
+    fun reportScaleY(): Float
+
     /**
      * Reports location of point around which bound is rotated.
      */
@@ -49,6 +60,9 @@ interface MananComponent {
      * scale factor of 1f means no scaling is applied.
      */
     fun applyScale(scaleFactor: Float)
+
+
+    fun applyScale(xFactor: Float, yFactor: Float)
 
     /**
      * Applies movement to target component.

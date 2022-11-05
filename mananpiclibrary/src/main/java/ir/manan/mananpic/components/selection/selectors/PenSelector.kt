@@ -36,10 +36,6 @@ class PenSelector : PathBasedSelector() {
     private var lvx = 0f
     private var lvy = 0f
 
-    // Total offset of path after it has been closed.
-    private var pathOffsetX = 0f
-    private var pathOffsetY = 0f
-
     // Handle position for quad bezier.
     private var handleX = 0f
     private var handleY = 0f
@@ -186,6 +182,7 @@ class PenSelector : PathBasedSelector() {
         set(value) {
             field = value
             linesPaint.strokeWidth = field
+            invalidate()
         }
 
     /**
@@ -198,6 +195,14 @@ class PenSelector : PathBasedSelector() {
      * Reference to current selected line.
      */
     private var selectedLine: Line? = null
+
+    private val mappingMatrix by lazy {
+        Matrix()
+    }
+
+    override fun shouldParentTransformDrawings(): Boolean {
+        return false
+    }
 
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
@@ -227,109 +232,112 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        if (!isPathClose) {
-            val finalRange = handleTouchRange * canvasMatrix.getOppositeScale()
-            // Figure out which handle in a line user has selected.
-            // Some handles are specific to one or two type of line and
-            // others might be for each type of them.
-            var nearest = finalRange
+        val finalRange = handleTouchRange * canvasMatrix.getOppositeScale()
+        // Figure out which handle in a line user has selected.
+        // Some handles are specific to one or two type of line and
+        // others might be for each type of them.
+        var nearest = finalRange
 
-            // Reset selected handle.
-            currentHandleSelected = NONE
+        // Reset selected handle.
+        currentHandleSelected = NONE
 
-            if (GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    bx,
-                    by,
-                    finalRange
-                )
-            ) {
-                (abs(bx - initialX) + abs(by - initialY)).let {
-                    if (it < nearest) {
-                        nearest = it
-                        currentHandleSelected = END_HANDLE
-                    }
-                }
-            }
-
-            if (GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    handleX,
-                    handleY,
-                    finalRange
-                )
-            ) {
-                (abs(handleX - initialX) + abs(handleY - initialY)).let {
-                    if (it < nearest) {
-                        nearest = it
-                        currentHandleSelected = FIRST_BEZIER_HANDLE
-                    }
-                }
-            }
-
-            if (GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    firstX,
-                    firstY,
-                    finalRange
-                ) && (pointCounter == 1 || lines.indexOf(selectedLine) == 0)
-            ) {
-                (abs(firstX - initialX) + abs(firstY - initialY)).let {
-                    if (it < nearest) {
-                        nearest = it
-                        currentHandleSelected = FIRST_POINT_HANDLE
-                    }
-                }
-            }
-
-
-            if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    secondHandleX,
-                    secondHandleY,
-                    finalRange
-                ))
-            ) {
-                (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
-                    if (it < nearest) {
-                        nearest = it
-                        currentHandleSelected = SECOND_BEZIER_HANDLE
-                    }
-                }
-            }
-
-            // If there isn't any handle of current selected line selected,
-            // then look at other lines' end point and see if user has selected them.
-            // If user has selected another line, then restore state of that line, which may
-            // contain handle points and etc..
-            if (currentHandleSelected == NONE) {
-                lines.find {
-                    GestureUtils.isNearTargetPoint(
-                        initialX,
-                        initialY,
-                        it.epx,
-                        it.epy,
-                        finalRange
-                    )
-                }?.let { line ->
-                    // Restore state of current line.
-                    setLineRelatedVariables(line)
-
-                    // Select the line.
-                    selectedLine = line
-
-                    // Since all end point of handles are visible,
-                    // then select the end handle.
-                    // State of selector will reset to the selected line.
+        if (GestureUtils.isNearTargetPoint(
+                initialX,
+                initialY,
+                bx,
+                by,
+                finalRange
+            )
+        ) {
+            (abs(bx - initialX) + abs(by - initialY)).let {
+                if (it < nearest) {
+                    nearest = it
                     currentHandleSelected = END_HANDLE
-
-                    isOtherLinesSelected = true
                 }
             }
+        }
+
+        if (GestureUtils.isNearTargetPoint(
+                initialX,
+                initialY,
+                handleX,
+                handleY,
+                finalRange
+            )
+        ) {
+            (abs(handleX - initialX) + abs(handleY - initialY)).let {
+                if (it < nearest) {
+                    nearest = it
+                    currentHandleSelected = FIRST_BEZIER_HANDLE
+                }
+            }
+        }
+
+        if (GestureUtils.isNearTargetPoint(
+                initialX,
+                initialY,
+                firstX,
+                firstY,
+                finalRange
+            ) && (pointCounter == 1 || lines.indexOf(selectedLine) == 0)
+        ) {
+            (abs(firstX - initialX) + abs(firstY - initialY)).let {
+                if (it < nearest) {
+                    nearest = it
+                    currentHandleSelected = FIRST_POINT_HANDLE
+                }
+            }
+        }
+
+
+        if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
+                initialX,
+                initialY,
+                secondHandleX,
+                secondHandleY,
+                finalRange
+            ))
+        ) {
+            (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
+                if (it < nearest) {
+                    nearest = it
+                    currentHandleSelected = SECOND_BEZIER_HANDLE
+                }
+            }
+        }
+
+        // If there isn't any handle of current selected line selected,
+        // then look at other lines' end point and see if user has selected them.
+        // If user has selected another line, then restore state of that line, which may
+        // contain handle points and etc..
+        if (currentHandleSelected == NONE) {
+            lines.find {
+                GestureUtils.isNearTargetPoint(
+                    initialX,
+                    initialY,
+                    it.epx,
+                    it.epy,
+                    finalRange
+                )
+            }?.let { line ->
+                // Restore state of current line.
+                setLineRelatedVariables(line)
+
+                // Select the line.
+                selectedLine = line
+
+                // Since all end point of handles are visible,
+                // then select the end handle.
+                // State of selector will reset to the selected line.
+                currentHandleSelected = END_HANDLE
+
+                isOtherLinesSelected = true
+            }
+        }
+
+        if (currentHandleSelected == NONE && isPathClose) {
+            selectedLine = null
+            invalidate()
         }
     }
 
@@ -371,9 +379,18 @@ class PenSelector : PathBasedSelector() {
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
         // If path is closed then offset (move around) path if user moves his/her finger.
-        if (isPathClose) {
-            pathOffsetX += dx
-            pathOffsetY += dy
+        if (isPathClose && currentHandleSelected == NONE) {
+            mappingMatrix.setTranslate(dx, dy)
+
+            firstX += dx
+            firstY += dy
+
+            selectedLine = null
+
+            lines.forEach { line ->
+                line.transform(mappingMatrix)
+            }
+
             invalidate()
         } else if (!isOtherLinesSelected) {
             when (currentHandleSelected) {
@@ -412,6 +429,11 @@ class PenSelector : PathBasedSelector() {
                     selectedLine?.run {
                         epx = ex
                         epy = ey
+
+                        if (selectedLine === lines.lastElement() && isPathClose) {
+                            firstX = epx
+                            firstY = epy
+                        }
                     }
 
                     // Change the end point of current path.
@@ -429,6 +451,13 @@ class PenSelector : PathBasedSelector() {
                     firstX = ex
                     firstY = ey
 
+                    if (isPathClose) {
+                        lines.lastElement()?.let { lastLine ->
+                            lastLine.epx = firstX
+                            lastLine.epy = firstY
+                        }
+                    }
+
                     vx = ex
                     vy = ey
 
@@ -442,7 +471,13 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun select(drawable: Drawable): Bitmap? {
-        path.reset()
+        makePathReadyForSelection()
+
+        return super.select(drawable)
+    }
+
+    private fun makePathReadyForSelection() {
+        path.rewind()
 
         path.moveTo(firstX, firstY)
 
@@ -450,9 +485,8 @@ class PenSelector : PathBasedSelector() {
             it.putIntoPath(path)
         }
 
-        path.offset(pathOffsetX, pathOffsetY)
-
-        return super.select(drawable)
+        path.fillType =
+            if (isSelectionInverse) Path.FillType.INVERSE_WINDING else Path.FillType.WINDING
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
@@ -581,11 +615,9 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun resetSelection() {
+        selectedLine = null
         lines.clear()
         path.reset()
-
-        pathOffsetX = 0f
-        pathOffsetY = 0f
 
         isNewLineDrawn = false
         isPathClose = false
@@ -616,13 +648,13 @@ class PenSelector : PathBasedSelector() {
                 it.putIntoPath(pathCopy)
             }
 
-            // Offset them if user has offset them.
-            pathCopy.offset(pathOffsetX, pathOffsetY)
+            if (isSelectionInverse && isClosed()) {
+                pathCopy.addRect(leftEdge, topEdge, rightEdge, bottomEdge, Path.Direction.CW)
+            }
 
             // Transform the drawings base on the transformation matrix of parent.
             pathCopy.transform(canvasMatrix)
 
-            // Draw the transformed path.
             drawPath(pathCopy, linesPaint)
 
             // Reset path copy to release memory.
@@ -632,7 +664,7 @@ class PenSelector : PathBasedSelector() {
             val scale = canvasMatrix.getOppositeScale()
             val downSizedRadius = circlesRadius * scale
 
-            if (isNewLineDrawn && (selectedLine is QuadBezier || selectedLine is CubicBezier)) {
+            if ((selectedLine is QuadBezier || selectedLine is CubicBezier)) {
 
                 helperLinesPath.run {
                     // Set the helper points to current path to start drawings from last point of it.
@@ -656,6 +688,7 @@ class PenSelector : PathBasedSelector() {
                     }
 
                     transform(canvasMatrix)
+
                 }
 
                 // Finally draw helper lines path.
@@ -680,9 +713,9 @@ class PenSelector : PathBasedSelector() {
 
             concat(canvasMatrix)
 
-            if (isNewLineDrawn) {
+            selectedLine?.let { line ->
                 // End point of line (either bezier or straight).
-                drawCircle(bx, by, downSizedRadius, circlesPaint)
+                drawCircle(line.epx, line.epy, downSizedRadius, circlesPaint)
             }
 
             // Draw circle if it's first point that user touches so it will be visible that user
@@ -692,15 +725,15 @@ class PenSelector : PathBasedSelector() {
                 drawCircle(firstX, firstY, downSizedRadius, circlesPaint)
             }
 
+            circlesPaint.color = unselectedCirclesColor
+
             lines.minus(selectedLine).forEach {
                 if (it != null) {
                     drawCircle(
-                        it.epx + pathOffsetX,
-                        it.epy + pathOffsetY,
+                        it.epx,
+                        it.epy,
                         downSizedRadius,
-                        circlesPaint.apply {
-                            color = unselectedCirclesColor
-                        }
+                        circlesPaint
                     )
                 }
             }
@@ -709,6 +742,12 @@ class PenSelector : PathBasedSelector() {
     }
 
     override fun undo() {
+        if (isSelectionInverse) {
+            isSelectionInverse = false
+            if (lines.isEmpty()) {
+                invalidate()
+            }
+        }
         lines.run {
             if (isNotEmpty()) {
                 // Remove last line in stack.
@@ -726,14 +765,13 @@ class PenSelector : PathBasedSelector() {
                     isNewLineDrawn = true
                 } else {
                     isNewLineDrawn = false
+                    selectedLine = null
                 }
 
                 // If path is close and user undoes the operation,
                 // then open the path and reset its offset and cancel path animation.
                 if (isPathClose) {
                     isPathClose = false
-                    pathOffsetX = 0f
-                    pathOffsetY = 0f
                     cancelAnimation()
                 }
             }
@@ -745,6 +783,36 @@ class PenSelector : PathBasedSelector() {
 
             invalidate()
         }
+    }
+
+    override fun getClipPath(): Path? {
+        return if (isPathClose) {
+            makePathReadyForSelection()
+            path
+        } else null
+    }
+
+    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+        val fl = floatArrayOf(firstX, firstY)
+        changeMatrix.mapPoints(fl)
+
+        firstX = fl[0]
+        firstY = fl[1]
+
+        lines.forEach {
+            it.transform(changeMatrix)
+        }
+
+        selectedLine?.let { selected ->
+            setLineRelatedVariables(selected)
+        }
+
+        leftEdge = newBounds.left
+        topEdge = newBounds.top
+        rightEdge = newBounds.right
+        bottomEdge = newBounds.bottom
+
+        invalidate()
     }
 
     private enum class Handle {
@@ -768,12 +836,28 @@ class PenSelector : PathBasedSelector() {
         var epx: Float,
         var epy: Float,
     ) {
+
+        protected var floatArrayPointsHolder = FloatArray(6) {
+            0f
+        }
+
         /**
          * Draws content of current line on a given path.
          * @param path Path that content of current line is going to be drawn on.
          */
         open fun putIntoPath(path: Path) {
             path.lineTo(epx, epy)
+        }
+
+        open fun transform(matrix: Matrix) {
+            floatArrayPointsHolder[0] = epx
+            floatArrayPointsHolder[1] = epy
+
+            matrix.mapPoints(floatArrayPointsHolder)
+
+            epx = floatArrayPointsHolder[0]
+            epy = floatArrayPointsHolder[1]
+
         }
     }
 
@@ -785,6 +869,16 @@ class PenSelector : PathBasedSelector() {
     ) : Line(epx, epy) {
         override fun putIntoPath(path: Path) {
             path.quadTo(handleX, handleY, epx, epy)
+        }
+
+        override fun transform(matrix: Matrix) {
+            super.transform(matrix)
+            floatArrayPointsHolder[2] = handleX
+            floatArrayPointsHolder[3] = handleY
+            matrix.mapPoints(floatArrayPointsHolder)
+
+            handleX = floatArrayPointsHolder[2]
+            handleY = floatArrayPointsHolder[3]
         }
     }
 
@@ -798,6 +892,23 @@ class PenSelector : PathBasedSelector() {
     ) : Line(epx, epy) {
         override fun putIntoPath(path: Path) {
             path.cubicTo(firstHandleX, firstHandleY, secondHandleX, secondHandleY, epx, epy)
+        }
+
+        override fun transform(matrix: Matrix) {
+            super.transform(matrix)
+
+            floatArrayPointsHolder[2] = firstHandleX
+            floatArrayPointsHolder[3] = firstHandleY
+            floatArrayPointsHolder[4] = secondHandleX
+            floatArrayPointsHolder[5] = secondHandleY
+
+            matrix.mapPoints(floatArrayPointsHolder)
+
+            firstHandleX = floatArrayPointsHolder[2]
+            firstHandleY = floatArrayPointsHolder[3]
+            secondHandleX = floatArrayPointsHolder[4]
+            secondHandleY = floatArrayPointsHolder[5]
+
         }
     }
 }

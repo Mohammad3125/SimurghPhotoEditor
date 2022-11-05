@@ -8,12 +8,12 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.annotation.ColorInt
+import androidx.core.graphics.toRect
 import androidx.core.view.children
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.parents.MananParent
 import ir.manan.mananpic.properties.MananComponent
-import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
@@ -62,6 +62,11 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     /** Rectangle that later we create to draw an area that we consider as page. */
     private var pageRect = RectF()
 
+
+    private val tempRect = RectF()
+
+    private val floatArrayAcc = FloatArray(2)
+
     /* Selected component related variables ------------------------------------------------------------------------------------------ */
 
     private var previousSelectedComponent: MananComponent? = null
@@ -72,8 +77,14 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     /** Later determines if a component should skip fitting inside page phase (used when adding a clone) */
     private var isClone = false
 
-    /** If true this class enters texture applying mode */
-    private var isApplyingTexture = false
+    private var isChildRestored = false
+
+    /** If true this class enters gesture sharing mode */
+    private var isSharingGestures = false
+
+    private var onGesturesShared: ((scale: Float, dx: Float, dy: Float, rotation: Float, pivotX: Float, pivotY: Float) -> Unit)? =
+        null
+    private var onGesturesSharedListener: OnGesturesSharedListener? = null
 
     /* Box around selected view related variables ------------------------------------------------------------------------------------------*/
 
@@ -111,6 +122,42 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             invalidate()
         }
 
+    /* Custom scale in x and y dimension ------------------------------------------------------------------------*/
+
+    private val scaleHandlesPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = scaleHandlesColor
+            style = Paint.Style.FILL_AND_STROKE
+            strokeCap = Paint.Cap.ROUND
+        }
+    }
+
+    @ColorInt
+    var scaleHandlesColor = Color.BLUE
+        set(value) {
+            field = value
+            scaleHandlesPaint.color = value
+            invalidate()
+        }
+
+    var scalesHandleThickness = dp(7.5f)
+        set(value) {
+            field = value
+            scaleHandlesPaint.strokeWidth = value
+            invalidate()
+        }
+
+    var scaleHandleWidth = dp(90)
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    private var currentScaleHandleSelected: ScaleHandles? = null
+
+    private var scaleHandlesTouchArea = dp(24)
+
+
     /* Smart guideline ------------------------------------------------------------------------------------------*/
 
     private val smartGuidePaint by lazy {
@@ -121,6 +168,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
      * Holds lines for smart guidelines.
      */
     private val smartGuidelineHolder = arrayListOf<Float>()
+    private val smartGuidelineDashedLine = arrayListOf<Boolean>()
 
     private var smartGuidelineFlags: Int = 0
 
@@ -150,6 +198,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             field = value
             invalidate()
         }
+
+    private val smartGuideLineDashedPathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
 
     /**
      * Total distance for smart guideline to trigger itself.
@@ -182,6 +232,21 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             field = value
         }
 
+
+    var lockedBackgroundBitmap: Bitmap? = null
+        set(value) {
+            value?.let {
+                lockedBitmapDstRect.set(0, 0, value.width, value.height)
+            }
+            field = value
+        }
+
+    private val lockedBitmapDstRect = Rect()
+
+    private val pageRectRect = Rect()
+
+    private val backgroundBitmapPaint = Paint()
+
     /* Detectors --------------------------------------------------------------------------------------------- */
 
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
@@ -189,19 +254,19 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             val sf = detector.scaleFactor
             when {
                 currentEditingView != null -> {
-                    if (!isApplyingTexture) {
+                    if (!isSharingGestures) {
                         currentEditingView!!.applyScale(sf)
                         smartGuidelineHolder.clear()
                     } else {
-                        (currentEditingView as? Texturable?)?.scaleTexture(
-                            sf,
-                            currentEditingView!!.reportPivotX(),
-                            currentEditingView!!.reportPivotY()
-                        )
+                        callGestureSharedListeners(sf, 0f, 0f, NO_ROTATION, focusX, focusY)
                     }
                 }
-                currentEditingView == null -> {
-                    scaleCanvas(sf, focusX, focusY)
+                else -> {
+                    if (isSharingGestures) {
+                        callGestureSharedListeners(sf, 0f, 0f, NO_ROTATION, 0f, 0f)
+                    } else {
+                        scaleCanvas(sf, focusX, focusY)
+                    }
                 }
             }
             invalidate()
@@ -211,47 +276,232 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onScaleEnd(detector: ScaleGestureDetector?) {
         super.onScaleEnd(detector)
-        findSmartGuideLines()
+        if (!isSharingGestures) {
+            findSmartGuideLines()
+        }
         invalidate()
     }
 
     override fun onRotate(degree: Float): Boolean {
-        currentEditingView?.run {
-            if (!isApplyingTexture) {
-                applyRotation(degree)
-                findRotationSmartGuidelines()
-                smartGuidelineHolder.clear()
-            } else {
-                (currentEditingView as? Texturable)?.rotateTexture(
-                    degree,
-                    reportPivotX(),
-                    reportPivotY()
-                )
-            }
+        if (!isSharingGestures && currentEditingView != null) {
+            currentEditingView!!.applyRotation(degree)
+            findRotationSmartGuidelines()
+            smartGuidelineHolder.clear()
             invalidate()
+        } else if (isSharingGestures) {
+            callGestureSharedListeners(
+                1f,
+                0f,
+                0f,
+                degree,
+                0f,
+                0f
+            )
         }
+        return true
+    }
+
+    override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
+        // Just selects scale handles not any other views.
+        getChildAtPoint(initialX, initialY)
         return true
     }
 
     override fun onMove(dx: Float, dy: Float): Boolean {
         super.onMove(dx, dy)
-        when {
-            currentEditingView != null -> {
-                if (!isApplyingTexture) {
+        currentEditingView?.run {
+            when {
+                currentScaleHandleSelected != null -> {
+
+                    val bounds = reportBound()
+
+                    val canvasScale = canvasMatrix.getScaleX(true)
+
+                    val reportedRotation = reportRotation()
+
+                    var sumOfOffset: Float
+
+                    val arrayOffsets = floatArrayOf((dx / canvasScale), (dy / canvasScale))
+
+                    val reportedScaleX = reportScaleX()
+                    val reportedScaleY = reportScaleY()
+
+                    val scaleXSign = if (reportedScaleX >= 0f) 1f else -1f
+                    val scaleYSign = if (reportedScaleY >= 0f) 1f else -1f
+
+                    var initialLeft: Float
+                    var initialTop: Float
+
+                    mappingMatrix.run {
+                        setRotate(
+                            -reportedRotation
+                        )
+
+                        postScale(
+                            scaleXSign,
+                            scaleYSign
+                        )
+
+                        mapPoints(arrayOffsets)
+
+                        sumOfOffset = arrayOffsets[0] + arrayOffsets[1]
+
+                        setScale(
+                            1f / reportedScaleX,
+                            1f / reportedScaleY,
+                            bounds.centerX(),
+                            bounds.centerY()
+                        )
+
+                        mapRect(tempRect, bounds)
+
+                        initialLeft = tempRect.left
+                        initialTop = tempRect.top
+
+                        setScale(reportedScaleX, reportedScaleY, initialLeft, initialTop)
+
+                        postRotate(reportedRotation, initialLeft, initialTop)
+
+                        mapRect(tempRect, bounds)
+
+                        val currentRight = tempRect.right
+                        val currentLeft = tempRect.left
+                        val currentTop = tempRect.top
+                        val currentBottom = tempRect.bottom
+
+                        when (currentScaleHandleSelected) {
+                            ScaleHandles.LEFT_HANDLE -> {
+                                val totalToScaleX =
+                                    if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.width())
+
+                                applyScale(
+                                    totalToScaleX,
+                                    1f,
+                                )
+
+                            }
+                            ScaleHandles.RIGHT_HANDLE -> {
+
+                                val totalToScaleX =
+                                    if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.width())
+
+                                applyScale(
+                                    totalToScaleX,
+                                    1f
+                                )
+                            }
+                            ScaleHandles.TOP_HANDLE -> {
+
+                                val totalToScaleY =
+                                    if (sumOfOffset == 0f) 1f else 1f + (-sumOfOffset / bounds.height())
+
+                                applyScale(
+                                    1f,
+                                    totalToScaleY
+                                )
+                            }
+                            ScaleHandles.BOTTOM_HANDLE -> {
+
+                                val totalToScaleY =
+                                    if (sumOfOffset == 0f) 1f else 1f + (sumOfOffset / bounds.height())
+
+                                applyScale(
+                                    1f,
+                                    totalToScaleY
+                                )
+                            }
+                            else -> {
+
+                            }
+                        }
+
+                        val newScaleX = reportScaleX()
+                        val newScaleY = reportScaleY()
+
+                        setScale(
+                            newScaleX,
+                            newScaleY,
+                            initialLeft,
+                            initialTop
+                        )
+
+                        postRotate(
+                            reportedRotation,
+                            initialLeft,
+                            initialTop
+                        )
+
+                        mapRect(tempRect, bounds)
+
+                        val diffX =
+                            ((tempRect.left - currentLeft) + (tempRect.right - currentRight)) * 0.5f
+                        val diffY =
+                            ((tempRect.top - currentTop) + (tempRect.bottom - currentBottom)) * 0.5f
+
+                        when (currentScaleHandleSelected) {
+                            ScaleHandles.RIGHT_HANDLE, ScaleHandles.BOTTOM_HANDLE -> {
+                                applyMovement(diffX, diffY)
+                            }
+                            ScaleHandles.TOP_HANDLE, ScaleHandles.LEFT_HANDLE -> {
+                                applyMovement(-diffX, -diffY)
+                            }
+                            else -> {
+
+                            }
+                        }
+
+                    }
+                }
+
+                !isSharingGestures -> {
                     val s = canvasMatrix.getOppositeScale()
-                    currentEditingView!!.applyMovement(dx * s, dy * s)
+                    applyMovement(dx * s, dy * s)
                     findSmartGuideLines()
                     smartRotationLineHolder.clear()
-                } else {
-                    (currentEditingView as Texturable).shiftTexture(dx, dy)
+                }
+
+                isSharingGestures -> {
+                    mappingMatrix.setRotate(-reportRotation())
+                    floatArrayAcc[0] = dx
+                    floatArrayAcc[1] = dy
+                    mappingMatrix.mapPoints(floatArrayAcc)
+                    callGestureSharedListeners(
+                        1f,
+                        floatArrayAcc[0],
+                        floatArrayAcc[1],
+                        NO_ROTATION,
+                        0f,
+                        0f
+                    )
+                }
+
+                else -> {
+
                 }
             }
-            currentEditingView == null -> {
-                translateCanvas(dx, dy)
-            }
+            invalidate()
+            return true
+        }
+        if (isSharingGestures) {
+            callGestureSharedListeners(
+                1f,
+                dx,
+                dy,
+                NO_ROTATION,
+                0f,
+                0f
+            )
+        } else {
+            translateCanvas(dx, dy)
         }
         invalidate()
         return true
+    }
+
+
+    override fun onMoveEnded(lastX: Float, lastY: Float) {
+        super.onMoveEnded(lastX, lastY)
+        currentScaleHandleSelected = null
     }
 
     override fun onSelectedComponentChanged(newChild: MananComponent) {
@@ -260,6 +510,11 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     }
 
     init {
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            setLayerType(LAYER_TYPE_SOFTWARE, null)
+        }
+
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 isQuickScaleEnabled = false
@@ -271,10 +526,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         rotationDetector = TwoFingerRotationDetector(this)
 
         matrixAnimator = MananMatrixAnimator(
-            canvasMatrix,
-            pageRect,
-            300L,
-            FastOutSlowInInterpolator()
+            canvasMatrix, pageRect, 300L, FastOutSlowInInterpolator()
         )
 
         context.theme.obtainStyledAttributes(attr, R.styleable.MananFrame, 0, 0).apply {
@@ -284,11 +536,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 frameBoxColor = getColor(R.styleable.MananFrame_frameBoxColor, Color.BLACK)
 
-                frameBoxStrokeWidth =
-                    getDimension(
-                        R.styleable.MananFrame_frameBoxStrokeWidth,
-                        frameBoxStrokeWidth
-                    )
+                frameBoxStrokeWidth = getDimension(
+                    R.styleable.MananFrame_frameBoxStrokeWidth, frameBoxStrokeWidth
+                )
 
                 pageBackgroundColor =
                     getColor(R.styleable.MananFrame_pageBackgroundColor, Color.WHITE)
@@ -299,17 +549,25 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 pageSizeRatio = pageWidth.toFloat() / pageHeight.toFloat()
 
-                smartGuideLineStrokeColor =
-                    getColor(
-                        R.styleable.MananFrame_smartGuidelineStrokeColor,
-                        smartGuideLineStrokeColor
+                smartGuideLineStrokeColor = getColor(
+                    R.styleable.MananFrame_smartGuidelineStrokeColor, smartGuideLineStrokeColor
+                )
+
+                smartGuideLineStrokeWidth = getDimension(
+                    R.styleable.MananFrame_smartGuidelineStrokeWidth, smartGuideLineStrokeWidth
+                )
+
+                scaleHandlesColor =
+                    getColor(R.styleable.MananFrame_scaleHandlesColor, scaleHandlesColor)
+
+                scalesHandleThickness =
+                    getDimension(
+                        R.styleable.MananFrame_scaleHandleThickness,
+                        scalesHandleThickness
                     )
 
-                smartGuideLineStrokeWidth =
-                    getDimension(
-                        R.styleable.MananFrame_smartGuidelineStrokeWidth,
-                        smartGuideLineStrokeWidth
-                    )
+                scaleHandleWidth =
+                    getDimension(R.styleable.MananFrame_scaleHandleThickness, scaleHandleWidth)
 
             } finally {
                 recycle()
@@ -410,6 +668,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     heightF + bottomHalf + diffVerticalPadding
                 )
             }
+            pageRectRect.set(pageRect.toRect())
         }
 
         // If we're cloning, then match the current selected component (which is new cloned component) to last component that was selected.
@@ -419,13 +678,20 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             // Set this flag to not fit component in page again.
             isChildScaleNormalized = true
         } else {
-            if (!isChildScaleNormalized || changed) {
+            if ((!isChildScaleNormalized || changed) && !isChildRestored) {
                 if (currentEditingView != null) {
                     fitChildInsidePage(currentEditingView!!)
                     isChildScaleNormalized = true
                 }
             }
         }
+        isChildRestored = false
+    }
+
+    override fun setChildRestored() {
+        super.setChildRestored()
+        isChildRestored = true
+        isChildScaleNormalized = true
     }
 
     /**
@@ -440,17 +706,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             val pageHeight = pageRect.height()
 
             // First scale down the component to match the page width.
-            applyScale(pageWidth / bound.width())
+            applyScale(min(pageWidth / bound.width(), pageHeight / bound.height()))
 
-            // Refresh the bounds to then determine if we should scale down again or not.
             bound = reportBound()
-            val boundHeight = bound.height()
-
-            // Check if after scaling the other axis exceeds page bounds.
-            if (boundHeight > pageHeight) {
-                applyScale(pageHeight / boundHeight)
-                bound = reportBound()
-            }
 
             // Convert to view to get offset on each axis based on width and height param
             // of view. If a parent has a padding and child has MATCH_PARENT on either width or
@@ -497,6 +755,10 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         // Draws page rectangle to be visible to user.
         canvas?.drawRect(pageRect, pagePaint)
 
+        lockedBackgroundBitmap?.let {
+            canvas?.drawBitmap(it, lockedBitmapDstRect, pageRectRect, backgroundBitmapPaint)
+        }
+
         super.dispatchDraw(canvas)
     }
 
@@ -529,11 +791,16 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                 val oppositeScale = canvasMatrix.getOppositeScale()
 
+                val widthScaleFromPage = bound.width() / pageRect.width()
+                val heightScaleFromPage = bound.height() / pageRect.height()
+
+                val maxScale = max(widthScaleFromPage, heightScaleFromPage)
+
+
                 // Draw the box around view.
                 if (isDrawingBoxEnabled) {
                     if (isCanvasMatrixEnabled) {
-                        boxPaint.strokeWidth =
-                            frameBoxStrokeWidth * oppositeScale
+                        boxPaint.strokeWidth = frameBoxStrokeWidth * maxScale
                     }
 
                     // Draw a box around component.
@@ -546,6 +813,56 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                     )
                 }
 
+
+                if (isCanvasMatrixEnabled) {
+                    scaleHandlesPaint.strokeWidth = scalesHandleThickness * maxScale
+                }
+
+
+                val centerX = bound.centerX()
+                val centerY = bound.centerY()
+
+                val scaleHandleWidthHalf = (scaleHandleWidth * widthScaleFromPage) * 0.5f
+                val scaleHandleHeightHalf = (scaleHandleWidth * heightScaleFromPage) * 0.5f
+
+                val xMinusHandleWidth = centerX - scaleHandleWidthHalf
+                val xPlusHandleWidth = centerX + scaleHandleWidthHalf
+
+                val yMinusHandleHeight = centerY - scaleHandleHeightHalf
+                val yPlusHandleHeight = centerY + scaleHandleHeightHalf
+
+                drawLines(
+                    floatArrayOf(
+                        // TOP HANDLE
+                        xMinusHandleWidth,
+                        bound.top,
+                        xPlusHandleWidth,
+                        bound.top,
+
+                        // RIGHT HANDLE
+                        bound.right,
+                        yMinusHandleHeight,
+                        bound.right,
+                        yPlusHandleHeight,
+
+
+                        // BOTTOM HANDLE
+                        xMinusHandleWidth,
+                        bound.bottom,
+                        xPlusHandleWidth,
+                        bound.bottom,
+
+
+                        // LEFT HANDLE
+                        bound.left,
+                        yMinusHandleHeight,
+                        bound.left,
+                        yPlusHandleHeight
+                    ),
+                    scaleHandlesPaint
+                )
+
+
                 val smartGuidelineStrokeWidth = smartGuideLineStrokeWidth * oppositeScale
 
                 // Draw rotation smart guidelines.
@@ -556,12 +873,131 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                 // Restore the previous state of canvas which is not rotated.
                 restore()
 
-                // Draw smart guidelines.
-                drawLines(smartGuidelineHolder.toFloatArray(), smartGuidePaint.apply {
-                    strokeWidth = smartGuidelineStrokeWidth
-                })
+                for (i in smartGuidelineHolder.indices step 4) {
+
+                    if (smartGuidelineDashedLine[i]) {
+                        smartGuidePaint.pathEffect = smartGuideLineDashedPathEffect
+                    }
+
+                    smartGuidePaint.strokeWidth = smartGuidelineStrokeWidth
+
+                    drawLine(
+                        smartGuidelineHolder[i],
+                        smartGuidelineHolder[i + 1],
+                        smartGuidelineHolder[i + 2],
+                        smartGuidelineHolder[i + 3],
+                        smartGuidePaint
+                    )
+
+                    smartGuidePaint.pathEffect = null
+                }
+
             }
         }
+    }
+
+    override fun getChildAtPoint(x: Float, y: Float): View? {
+        if (childCount == 0) return null
+
+        children.forEach { v ->
+            v as MananComponent
+            // Converting points to float array is required to use matrix 'mapPoints' method.
+            val touchPoints = floatArrayOf(x, y)
+
+            // Get bounds of current component to later validate if touch is in area of
+            // that component or not.
+            val bounds = v.reportBound()
+
+            val vAsView = v as View
+
+            val offsetX = getOffsetX(vAsView)
+            val offsetY = getOffsetY(vAsView)
+
+            val mappedPoints = mappedTouchToComponent(touchPoints, v)
+
+            currentEditingView?.let {
+
+                val vBounds = it.reportBound()
+
+                val scaleXSign = if (it.reportScaleX() >= 0f) 1f else -1f
+                val scaleYSign = if (it.reportScaleY() >= 0f) 1f else -1f
+
+                val selectedMappedPoints = mappedTouchToComponent(touchPoints, it)
+
+                val centerX = vBounds.centerX()
+                val centerY = vBounds.centerY()
+
+                val vv = it as View
+
+                val vOffsetX = getOffsetX(vv)
+                val vOffsetY = getOffsetY(vv)
+
+                val l = vBounds.left + vOffsetX
+                val t = vBounds.top + vOffsetY
+                val r = vBounds.right + vOffsetX
+                val b = vBounds.bottom + vOffsetY
+
+                val touchArea = scaleHandlesTouchArea / canvasMatrix.getScaleX(true)
+
+                currentScaleHandleSelected =
+                    if (selectedMappedPoints[0] in (l - touchArea)..(l + touchArea) && selectedMappedPoints[1] in (centerY - touchArea)..(centerY + touchArea)) {
+                        if (scaleXSign == 1f) ScaleHandles.LEFT_HANDLE else ScaleHandles.RIGHT_HANDLE
+                    } else if (selectedMappedPoints[0] in (r - touchArea)..(r + touchArea) && selectedMappedPoints[1] in (centerY - touchArea)..(centerY + touchArea)) {
+                        if (scaleXSign == 1f) ScaleHandles.RIGHT_HANDLE else ScaleHandles.LEFT_HANDLE
+                    } else if (selectedMappedPoints[0] in (centerX - touchArea)..(centerX + touchArea) && selectedMappedPoints[1] in (t - touchArea)..(t + touchArea)) {
+                        if (scaleYSign == 1f) ScaleHandles.TOP_HANDLE else ScaleHandles.BOTTOM_HANDLE
+                    } else if (selectedMappedPoints[0] in (centerX - touchArea)..(centerX + touchArea) && selectedMappedPoints[1] in (b - touchArea)..(b + touchArea)) {
+                        if (scaleYSign == 1f) ScaleHandles.BOTTOM_HANDLE else ScaleHandles.TOP_HANDLE
+                    } else {
+                        null
+                    }
+
+                if (currentScaleHandleSelected != null)
+                    return currentEditingView as View
+            }
+
+            if (v !== currentEditingView) {
+                if (mappedPoints[0] in (bounds.left + offsetX)..(bounds.right + offsetX) && mappedPoints[1] in (bounds.top + offsetY..(bounds.bottom + offsetY)))
+                    return v
+            }
+
+        }
+        return null
+    }
+
+    private fun mappedTouchToComponent(
+        touchPoints: FloatArray, component: MananComponent
+    ): FloatArray {
+
+        val mappedPoints = FloatArray(touchPoints.size)
+
+        mappingMatrix.run {
+            setTranslate(
+                -canvasMatrix.getTranslationX(true), -canvasMatrix.getTranslationY()
+            )
+
+            // Scale down the current matrix as much as canvas matrix scale up.
+            // We do this because if we zoom in image, the rectangle our area that we see
+            // is also smaller so we do this to successfully map our touch points to that area (zoomed area).
+            val scale = canvasMatrix.getOppositeScale()
+            postScale(scale, scale)
+
+            val compAsView = component as View
+
+            val offsetX = getOffsetX(compAsView)
+            val offsetY = getOffsetY(compAsView)
+
+            // Finally handle the rotation of component.
+            postRotate(
+                -component.reportRotation(),
+                component.reportBoundPivotX() + offsetX,
+                component.reportBoundPivotY() + offsetY
+            )
+
+            // Finally map the touch points.
+            mapPoints(mappedPoints, touchPoints)
+        }
+        return mappedPoints
     }
 
     /**
@@ -582,6 +1018,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
      */
     private fun findSmartGuideLines() {
         if (currentEditingView != null && smartGuidelineFlags != 0) {
+
+            smartGuidelineDashedLine.clear()
+
             smartGuidelineHolder.clear()
 
             val finalDistanceValue =
@@ -685,7 +1124,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
                             if (totalToShiftX == 0f) {
                                 totalToShiftX = rightToRight
-                            } else if (totalToShiftX != 0f && rightToRightAbs < abs(totalToShiftX)) {
+                            } else if (rightToRightAbs < abs(totalToShiftX)) {
                                 totalToShiftX = rightToRight
                             }
                         }
@@ -693,7 +1132,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
                             if (totalToShiftX == 0f) {
                                 totalToShiftX = rightToLeft
-                            } else if (totalToShiftX != 0f && rightToLeftAbs < abs(totalToShiftX)) {
+                            } else if (rightToLeftAbs < abs(totalToShiftX)) {
                                 totalToShiftX = rightToLeft
                             }
                         }
@@ -725,7 +1164,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
                             if (totalToShiftY == 0f) {
                                 totalToShiftY = bottomToBottom
-                            } else if (totalToShiftY != 0f && bottomToBottomAbs < abs(totalToShiftY)) {
+                            } else if (bottomToBottomAbs < abs(totalToShiftY)) {
                                 totalToShiftY = bottomToBottom
                             }
                         }
@@ -733,7 +1172,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
                             if (totalToShiftY == 0f) {
                                 totalToShiftY = bottomToTop
-                            } else if (totalToShiftY != 0f && bottomToTopAbs < abs(totalToShiftY)) {
+                            } else if (bottomToTopAbs < abs(totalToShiftY)) {
                                 totalToShiftY = bottomToTop
                             }
                         }
@@ -762,21 +1201,31 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
                     smartGuidelineHolder.run {
 
+                        val isNotPage = childBounds !== pageRect
+
                         // Draw a line on left side of selected component if two lefts are the same
                         // or right of other component is same to left of selected component
                         if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
                             add(mappingRectangle.left)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(minTop)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(mappingRectangle.left)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxBottom)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
                         // Draw a line on right side of selected component if left side of other
                         // component is right side of selected component or two rights are the same.
                         if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
                             add(mappingRectangle.right)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(minTop)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(mappingRectangle.right)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxBottom)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
 
                         // Draw a line on other component top if it's top is same as
@@ -784,25 +1233,61 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                         // top of other component.
                         if (totalToShiftY == topToTop || totalToShiftY == topToBottom) {
                             add(minLeft)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.top)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxRight)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.top)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
                         // Draw a line on other component bottom if bottom of it is same as
                         // selected component's top or two bottoms are the same.
                         if (totalToShiftY == bottomToTop || totalToShiftY == bottomToBottom) {
                             add(minLeft)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.bottom)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(maxRight)
+                            smartGuidelineDashedLine.add(isNotPage)
                             add(childBounds.bottom)
+                            smartGuidelineDashedLine.add(isNotPage)
                         }
 
                         // Finally draw a line from center of each component to another.
                         if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
-                            add(mappingRectangle.centerX())
-                            add(mappingRectangle.centerY())
-                            add(childBounds.centerX())
-                            add(childBounds.centerY())
+                            if (isNotPage) {
+                                add(mappingRectangle.centerX())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(mappingRectangle.centerY())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(childBounds.centerX())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(childBounds.centerY())
+                                smartGuidelineDashedLine.add(isNotPage)
+                            } else {
+                                if (totalToShiftX == centerXDiff) {
+                                    add(mappingRectangle.centerX())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(pageRect.top)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(mappingRectangle.centerX())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(pageRect.bottom)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                }
+
+                                if (totalToShiftY == centerYDiff) {
+                                    add(pageRect.left)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(mappingRectangle.centerY())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(pageRect.right)
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                    add(mappingRectangle.centerY())
+                                    smartGuidelineDashedLine.add(isNotPage)
+                                }
+                            }
                         }
 
                     }
@@ -824,8 +1309,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
     fun setSmartGuidelineFlags(flags: Int) {
         // If flag has the ALL in it then store the maximum int value in flag holder to indicate
         // that all of flags has been set, otherwise set it to provided flags.
-        smartGuidelineFlags =
-            if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
+        smartGuidelineFlags = if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
     }
 
     /**
@@ -833,6 +1317,17 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
      */
     fun clearSmartGuidelineFlags() {
         smartGuidelineFlags = 0
+    }
+
+    fun eraseSmartGuidelines() {
+        smartGuidelineDashedLine.clear()
+        smartGuidelineHolder.clear()
+        invalidate()
+    }
+
+    fun eraseRotationSmartGuidelines() {
+        smartRotationLineHolder.clear()
+        invalidate()
     }
 
     /**
@@ -864,13 +1359,14 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
                                 getOffsetY(offsetView).toFloat()
                             )
                         }
-                        val centerXBound = mappingRectangle.centerX()
-                        val extraSpaceForLineY = mappingRectangle.height() * 0.33f
 
-                        smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(mappingRectangle.top - extraSpaceForLineY)
-                        smartRotationLineHolder.add(centerXBound)
-                        smartRotationLineHolder.add(mappingRectangle.bottom + extraSpaceForLineY)
+                        val centerYBound = mappingRectangle.centerY()
+                        val pW = pageRect.width()
+
+                        smartRotationLineHolder.add(-pW)
+                        smartRotationLineHolder.add(centerYBound)
+                        smartRotationLineHolder.add(pW * 2f)
+                        smartRotationLineHolder.add(centerYBound)
 
                         return true
                     }
@@ -887,7 +1383,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
      * @throws IllegalStateException if provided array is empty or any element in array is not between 0-360 degrees.
      */
     fun setRotationSmartGuideline(degrees: FloatArray) {
-        if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException("array elements should be between 0-359 degrees")
+        if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException(
+            "array elements should be between 0-359 degrees"
+        )
         if (degrees.isEmpty()) throw IllegalStateException("array should contain at least 1 element")
         smartRotationDegreeHolder = degrees
     }
@@ -955,8 +1453,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         currentEditingView = null
 
         val pageColor = pagePaint.color
-        if (transparentBackground)
-            pagePaint.color = Color.TRANSPARENT
+        if (transparentBackground) pagePaint.color = Color.TRANSPARENT
 
         // Temporarily disable canvas matrix manipulation to correctly render the content of page into bitmap.
         isCanvasMatrixEnabled = false
@@ -999,17 +1496,17 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     override fun onChildCloned() {
         isClone = true
-        isApplyingTexture = false
+        isSharingGestures = false
     }
 
     override fun onViewAdded(child: View?) {
         previousSelectedComponent = currentEditingView
-        isApplyingTexture = false
+        isSharingGestures = false
         super.onViewAdded(child)
     }
 
     override fun onViewRemoved(child: View?) {
-        isApplyingTexture = false
+        isSharingGestures = false
         super.onViewRemoved(child)
     }
 
@@ -1034,40 +1531,54 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
 
     /**
-     * Sets texture on selected component (if it implements [Texturable].) and any gestures
-     * from no on will be applied to texture instead of child unless you finalize the
-     * texture replacement by [applyTexture] method.
-     * This method doesn't throw any exception if selected component is not [Texturable].
-     * ### YOU HAVE TO CALL [applyTexture] TO FINALIZE TEXTURE PLACEMENT.
-     * @param texture Bitmap that is going to be textured on selected component.
-     * @param tileMode Tile mode of shader if texture exceeds the component's bounds.
-     * @param textureOpacity Opacity of texture that is going to be applied.
+     * [MananFrame] starts sharing its gestures via [setOnGestureSharedListener] and [setOnGestureSharedListener].
      */
-    fun setTextureToSelectedChild(
-        texture: Bitmap,
-        tileMode: Shader.TileMode,
-        textureOpacity: Float = 1f
-    ) {
-        (currentEditingView as? Texturable)?.run {
-            applyTexture(texture, tileMode, textureOpacity)
-            isApplyingTexture = true
+    fun startSharingGesture() {
+        isSharingGestures = true
+    }
+
+    override fun bringChildToFront(child: View?) {
+        super.bringChildToFront(child)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            requestLayout()
+            invalidate()
         }
     }
 
 
     /**
-     * Finalizes texture placement on selected component.
-     * [setTextureToSelectedChild] method should be called before this method otherwise this method is useless.
+     * [MananFrame] doesn't share its gestures anymore.
+     * [startSharingGesture] method should be called before this method otherwise this method is useless.
      */
-    fun applyTexture() {
-        currentEditingView?.run {
-            isApplyingTexture = false
-            rotationDetector?.resetRotation(currentEditingView!!.reportRotation())
+    fun setGestureSharingDone() {
+        currentEditingView?.let { comp ->
+            isSharingGestures = false
+            rotationDetector?.resetRotation(comp.reportRotation())
         }
     }
 
+    fun setOnGestureSharedListener(listener: OnGesturesSharedListener) {
+        onGesturesSharedListener = listener
+    }
+
+    fun setOnGestureSharedListener(listener: (scale: Float, dx: Float, dy: Float, rotation: Float, pivotX: Float, pivotY: Float) -> Unit) {
+        onGesturesShared = listener
+    }
+
+    private fun callGestureSharedListeners(
+        scale: Float,
+        dx: Float,
+        dy: Float,
+        rotation: Float,
+        pivotX: Float,
+        pivotY: Float
+    ) {
+        onGesturesSharedListener?.onShare(scale, dx, dy, rotation, pivotX, pivotY)
+        onGesturesShared?.invoke(scale, dx, dy, rotation, pivotX, pivotY)
+    }
+
     override fun deselectSelectedView() {
-        if (!isApplyingTexture) {
+        if (!isSharingGestures) {
             super.deselectSelectedView()
         }
     }
@@ -1090,6 +1601,26 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
             const val CENTER_X = 512
             const val CENTER_Y = 1024
         }
+    }
+
+    private enum class ScaleHandles {
+        LEFT_HANDLE, RIGHT_HANDLE, TOP_HANDLE, BOTTOM_HANDLE
+    }
+
+
+    interface OnGesturesSharedListener {
+        fun onShare(
+            scaleFactor: Float,
+            dx: Float,
+            dy: Float,
+            rotation: Float,
+            pivotX: Float,
+            pivotY: Float
+        )
+    }
+
+    companion object {
+        const val NO_ROTATION = 999f
     }
 
 }

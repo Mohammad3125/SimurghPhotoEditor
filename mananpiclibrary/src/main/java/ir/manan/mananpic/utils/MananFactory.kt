@@ -5,23 +5,25 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.widget.FrameLayout
 import ir.manan.mananpic.components.MananTextView
-import ir.manan.mananpic.components.imageviews.MananImageView
+import ir.manan.mananpic.components.imageviews.MananCustomImageView
+import ir.manan.mananpic.components.imageviews.MananShapeView
+import ir.manan.mananpic.components.shapes.MananShape
 
 /**
- * A factory class responsible for creating components like [MananTextView], [MananImageView].
+ * A factory class responsible for creating components like [MananTextView], [MananCustomImageView].
  */
 class MananFactory {
     companion object {
         /**
-         * Creates a [MananImageView] with required layout params.
+         * Creates a [MananCustomImageView] with required layout params.
          */
-        fun createImageView(context: Context, bitmap: Bitmap): MananImageView {
-            return MananImageView(context).apply {
+        fun createImageView(context: Context, bitmap: Bitmap): MananCustomImageView {
+            return MananCustomImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
                 )
-                setImageBitmap(bitmap)
+                this.bitmap = bitmap
             }
         }
 
@@ -38,6 +40,20 @@ class MananFactory {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     clipToOutline = false
                 }
+            }
+        }
+
+        fun createShapeView(
+            context: Context,
+            shape: MananShape,
+            shapeWidth: Int,
+            shapeHeight: Int
+        ): MananShapeView {
+            return MananShapeView(context, shape, shapeWidth, shapeHeight).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
             }
         }
     }

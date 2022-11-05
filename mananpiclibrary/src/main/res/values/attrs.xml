@@ -28,6 +28,9 @@
         <attr name="pageHeight" format="integer" />
         <attr name="smartGuidelineStrokeColor" format="color" />
         <attr name="smartGuidelineStrokeWidth" format="dimension" />
+        <attr name="scaleHandlesColor" format="color" />
+        <attr name="scaleHandleThickness" format="dimension" />
+        <attr name="scaleHandleWidth" format="dimension" />
     </declare-styleable>
 
     <declare-styleable name="FrameDropper">

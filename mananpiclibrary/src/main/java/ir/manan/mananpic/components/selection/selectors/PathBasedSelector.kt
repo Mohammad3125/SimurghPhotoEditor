@@ -54,6 +54,8 @@ abstract class PathBasedSelector : Selector() {
         Path()
     }
 
+    protected var isSelectionInverse = false
+
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         leftEdge = bounds.left
         topEdge = bounds.top
@@ -67,7 +69,15 @@ abstract class PathBasedSelector : Selector() {
         if (isClosed()) {
             // Get selected bound of normal path (path that is not scaled.)
             val currentPointBounds = RectF()
-            path.computeBounds(currentPointBounds, true)
+            val isInverse = path.fillType == Path.FillType.INVERSE_WINDING
+
+            if (isInverse) {
+                pathCopy.rewind()
+                pathCopy.addRect(leftEdge, topEdge, rightEdge, bottomEdge, Path.Direction.CW)
+                pathCopy.computeBounds(currentPointBounds, true)
+            } else {
+                path.computeBounds(currentPointBounds, true)
+            }
 
             // If rect area of path doesn't intersect the visible part of
             // image, then return null.
@@ -91,7 +101,16 @@ abstract class PathBasedSelector : Selector() {
 
             // Get selected bound of scaled path.
             val selectedBounds = RectF()
-            scaledPoint.computeBounds(selectedBounds, true)
+            if (isInverse) {
+                val scaledCopyPath = Path(pathCopy).apply {
+                    transform(Matrix().apply {
+                        setScale(totalScaled, totalScaled, leftEdge, topEdge)
+                    })
+                }
+                scaledCopyPath.computeBounds(selectedBounds, true)
+            } else {
+                scaledPoint.computeBounds(selectedBounds, true)
+            }
 
             // Create two variables determining final size of bitmap that is returned.
             var finalBitmapWidth = selectedBounds.width()
@@ -151,6 +170,17 @@ abstract class PathBasedSelector : Selector() {
             )
         }
         return null
+    }
+
+    override fun toggleInverse() {
+        if (isClosed()) {
+            isSelectionInverse = !isSelectionInverse
+            invalidate()
+        }
+    }
+
+    override fun isInverse(): Boolean {
+        return isSelectionInverse
     }
 
     override fun isClosed(): Boolean {

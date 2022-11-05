@@ -676,7 +676,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
                 val listRatios = aspectRatioString.trim().split("-")
 
                 // If either it's size is greater than 2 or it's empty or null then this is not a valid string.
-                if (listRatios.size > 2 || listRatios.isNullOrEmpty()) return AspectRatioFree()
+                if (listRatios.size > 2 || listRatios.isEmpty()) return AspectRatioFree()
 
                 // Check that strings in list are digits only.
                 listRatios.forEach { string -> if (!string.isDigitsOnly()) return AspectRatioFree() }

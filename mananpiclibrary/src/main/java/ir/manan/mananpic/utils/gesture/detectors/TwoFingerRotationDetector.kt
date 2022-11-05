@@ -53,7 +53,7 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
                         // round(3 / 8.5f ~= 0.3529) -> 0f = 8.5 * 0 = 0.
                         // Now imagine we had rotation of 8 and step of 8.5f, the result would be:
                         // round(8 / 8.5f ~= 0.9411) -> 1f = 8.5 * 1f = 8.5.
-                        listener.onRotate(step * (round(validatedRotation / step)))
+                        listener.onRotate(mapTo360(step * (round(validatedRotation / step))))
                     } else {
                         listener.onRotate(validatedRotation)
                     }

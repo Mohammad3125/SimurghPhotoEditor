@@ -1,9 +1,7 @@
 package ir.manan.mananpic.components.selection.selectors
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.RectF
+import android.graphics.*
 import android.graphics.drawable.Drawable
 import ir.manan.mananpic.utils.MananMatrix
 
@@ -17,6 +15,8 @@ abstract class Selector {
     fun setOnInvalidateListener(listener: OnDispatchToInvalidate) {
         invalidateListener = listener
     }
+
+    abstract fun shouldParentTransformDrawings(): Boolean
 
     /**
      * Invalidates the target if it implements [OnDispatchToInvalidate].
@@ -82,6 +82,19 @@ abstract class Selector {
      * A closed selection is ready to be cropper/clipped.
      */
     abstract fun isClosed(): Boolean
+
+    /*
+        Returns the clip path.
+        Clip path should be closed to be returned, otherwise null will be returned.
+     */
+    abstract fun getClipPath(): Path?
+
+    abstract fun toggleInverse()
+
+    abstract fun isInverse() : Boolean
+
+
+    abstract fun onSizeChanged(newBounds : RectF, changeMatrix: Matrix)
 
 
     /**

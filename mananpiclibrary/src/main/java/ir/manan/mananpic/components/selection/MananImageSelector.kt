@@ -2,10 +2,7 @@ package ir.manan.mananpic.components.selection
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.RectF
+import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -16,7 +13,6 @@ import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -43,12 +39,38 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private var maximumScale = 0f
 
+    private val rectAlloc by lazy {
+        RectF()
+    }
+
+    private val animatorExtraSpaceAroundAxes = dp(128)
+
     private val canvasMatrix by lazy {
+        MananMatrix()
+    }
+
+    private val mappingMatrix by lazy {
         MananMatrix()
     }
 
     private val matrixAnimator by lazy {
         MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+
+        rectAlloc.set(boundsRectangle)
+
+        super.onSizeChanged(w, h, oldw, oldh)
+
+        mappingMatrix.setRectToRect(
+            rectAlloc,
+            boundsRectangle, Matrix.ScaleToFit.CENTER
+        )
+
+        rectAlloc.set(boundsRectangle)
+
+        selector?.onSizeChanged(rectAlloc, mappingMatrix)
     }
 
     var selector: Selector? = null
@@ -57,8 +79,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             value?.setOnInvalidateListener(this)
             callOnStateChangeListeners(false)
             requestLayout()
-            selector?.initialize(context, canvasMatrix, boundsRectangle)
+            rectAlloc.set(boundsRectangle)
+            selector?.initialize(context, canvasMatrix, rectAlloc)
         }
+
+    private val touchPointMappedArray = FloatArray(2)
 
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
@@ -91,6 +116,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     // His/her finger across screen.
                     initialX = x
                     initialY = y
+
                     return true
                 }
                 MotionEvent.ACTION_POINTER_DOWN -> {
@@ -101,8 +127,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                 }
                 MotionEvent.ACTION_MOVE -> {
                     // Determine total amount that user moved his/her finger on screen.
-                    var dx = x - initialX
-                    var dy = y - initialY
+                    val dx : Float
+                    val dy : Float
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
@@ -134,20 +160,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                     // scaling, then call 'onMove' method of selector.
                     if (selector != null && totalPoints == 1 && !isMatrixGesture) {
 
-                        // Calculate how much the canvas is scaled then use
-                        // that to slow down the translation by that factor.
-                        val s = canvasMatrix.getOppositeScale()
-                        val exactMapPoints = mapTouchPoints(x, y)
-                        selector!!.onMove(
-                            dx * s,
-                            dy * s,
-                            exactMapPoints[0],
-                            exactMapPoints[1]
-                        )
+                        repeat(historySize) {
+                            callSelectorOnMove(getHistoricalX(0, it), getHistoricalY(0, it))
+                        }
 
-                        // Reset initial positions.
-                        initialX = x
-                        initialY = y
+                        callSelectorOnMove(x, y)
 
                         return true
                     }
@@ -176,6 +193,26 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         return false
     }
 
+    private fun callSelectorOnMove(ex: Float, ey: Float) {
+        val dx = ex - initialX
+        val dy = ey - initialY
+
+        if (dx == 0f && dy == 0f) return
+
+        // Calculate how much the canvas is scaled then use
+        // that to slow down the translation by that factor.
+        val s = canvasMatrix.getOppositeScale()
+        val exactMapPoints = mapTouchPoints(ex, ey)
+
+        selector!!.onMove(
+            dx * s, dy * s, exactMapPoints[0], exactMapPoints[1]
+        )
+
+        // Reset initial positions.
+        initialX = ex
+        initialY = ey
+    }
+
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
         isMatrixGesture = true
         return !matrixAnimator.isAnimationRunning()
@@ -201,31 +238,33 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
      * correct coordinates of touch if canvas is scaled and or translated.
      */
     private fun mapTouchPoints(touchX: Float, touchY: Float): FloatArray {
-        val touchPoints = floatArrayOf(touchX, touchY)
-        Matrix().run {
+        touchPointMappedArray[0] = touchX
+        touchPointMappedArray[1] = touchY
+        mappingMatrix.run {
 
             val tx = canvasMatrix.getTranslationX(true)
             val ty = canvasMatrix.getTranslationY()
 
             setTranslate(
-                if (tx < leftEdge) abs(tx) else abs(tx) - (tx * 2),
-                if (ty < topEdge) abs(ty) else abs(ty) - (ty * 2)
+                -tx, -ty
             )
 
             val scale = canvasMatrix.getOppositeScale()
             postScale(scale, scale)
 
-            mapPoints(touchPoints)
+            mapPoints(touchPointMappedArray)
 
         }
-        return touchPoints
+        return touchPointMappedArray
     }
 
     fun select(): Bitmap? {
-        if (drawable != null && selector != null)
-            return selector!!.select(drawable)
-
-        return null
+        var b: Bitmap? = null
+        if (drawable != null && selector != null) {
+            b = selector!!.select(drawable)
+            callOnStateChangeListeners(selector!!.isClosed())
+        }
+        return b
     }
 
     override fun setImageBitmap(bm: Bitmap?) {
@@ -233,8 +272,13 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         canvasMatrix.reset()
     }
 
+    fun setImageBitmapWithoutMatrixReset(bm: Bitmap?) {
+        super.setImageBitmap(bm)
+    }
+
     fun resetSelection() {
         selector?.resetSelection()
+        callOnStateChangeListeners(selector!!.isClosed())
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -245,7 +289,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             concat(canvasMatrix)
             super.onDraw(this)
             // Restore canvas state and let the selector scale itself based on canvas we passed earlier to it.
-            restore()
+
+            if (selector?.shouldParentTransformDrawings() == false) {
+                restore()
+            }
+
             selector?.draw(this)
         }
     }
@@ -256,7 +304,7 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     private fun animateCanvasBack() {
         matrixAnimator.run {
-            startAnimation(maximumScale, dp(48))
+            startAnimation(maximumScale, animatorExtraSpaceAroundAxes)
             setOnMatrixUpdateListener {
                 invalidate()
             }
@@ -293,6 +341,31 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
             // Call listeners in case state of selector changes after undo operation.
             callOnStateChangeListeners(selector!!.isClosed())
         }
+    }
+
+    fun toggleSelection() {
+        selector?.toggleInverse()
+    }
+
+
+    /**
+     * Returns path data of current selector if it's closed.
+     */
+    fun getPathData(): Path? {
+        selector?.getClipPath()?.run {
+
+
+            // Get how much the current bitmap displayed is scaled comparing to original drawable size.
+            val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
+
+            return Path(this).apply {
+                transform(mappingMatrix.apply {
+                    setScale(totalScaled, totalScaled, leftEdge, topEdge)
+                    postTranslate(-leftEdge, -topEdge)
+                })
+            }
+        }
+        return null
     }
 
     /**

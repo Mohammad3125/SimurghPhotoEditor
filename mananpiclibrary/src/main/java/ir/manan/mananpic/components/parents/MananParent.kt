@@ -5,6 +5,8 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
@@ -85,6 +87,8 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     private val viewConfiguration by lazy {
         ViewConfiguration.get(context)
     }
+
+    var isGesturesEnabled = true
 
     /* Listeners ------------------------------------------------------------------  */
 
@@ -182,10 +186,13 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        scaleDetector?.onTouchEvent(event)
-        rotationDetector?.onTouchEvent(event)
-        translationDetector?.onTouchEvent(event)
-        return true
+        if (isGesturesEnabled) {
+            scaleDetector?.onTouchEvent(event)
+            rotationDetector?.onTouchEvent(event)
+            translationDetector?.onTouchEvent(event)
+            return true
+        }
+        return false
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -235,6 +242,10 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
      * Called after a clone of selected component has been made via [cloneSelectedComponent].
      */
     protected open fun onChildCloned() {
+
+    }
+
+    protected open fun setChildRestored() {
 
     }
 
@@ -325,6 +336,68 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     override fun onViewRemoved(child: View?) {
         super.onViewRemoved(child)
         callOnChildrenChangedListener(child!!, true)
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val parentState = super.onSaveInstanceState()
+
+        if (childCount > 0) {
+            val ss = MananParentState(parentState!!)
+            ss.childrenArray = Array(childCount) {
+                children.elementAt(it)
+            }
+            return ss
+        }
+        return parentState
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        if (state !is MananParentState) {
+            return super.onRestoreInstanceState(state)
+        }
+
+        super.onRestoreInstanceState(state.superState)
+
+        state.childrenArray?.forEach {
+            (it.parent as ViewGroup).removeView(it)
+            addView(it)
+            deselectSelectedView()
+            setChildRestored()
+        }
+
+    }
+
+    companion object {
+        class MananParentState : BaseSavedState {
+
+            var childrenArray: Array<View>? = null
+
+            constructor(par: Parcelable) : super(par)
+
+            private constructor(ins: Parcel) : super(ins) {
+                childrenArray = ins.readArray(ClassLoader.getSystemClassLoader()) as Array<View>
+            }
+
+            companion object {
+                @JvmField
+                val CREATOR = object : Parcelable.Creator<MananParentState> {
+                    override fun createFromParcel(source: Parcel?): MananParentState {
+                        return MananParentState(source!!)
+                    }
+
+                    override fun newArray(size: Int): Array<MananParentState> {
+                        return arrayOf<MananParentState>()
+                    }
+                }
+            }
+
+            override fun writeToParcel(out: Parcel?, flags: Int) {
+                super.writeToParcel(out, flags)
+                childrenArray?.let {
+                    out?.writeArray(it)
+                }
+            }
+        }
     }
 
     /**

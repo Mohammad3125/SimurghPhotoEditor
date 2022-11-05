@@ -51,8 +51,9 @@ class BrushSelector : PathBasedSelector() {
             invalidate()
         }
 
-    // Used to buffer last path that has been drawn to then be added to stack of paths.
-    private val pathBuffer = Path()
+    override fun shouldParentTransformDrawings(): Boolean {
+        return true
+    }
 
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         super.initialize(context, matrix, bounds)
@@ -70,58 +71,75 @@ class BrushSelector : PathBasedSelector() {
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         drawCircles(lastX, lastY)
 
-        // If buffer is not empty add the current path to stack.
-        if (!pathBuffer.isEmpty) {
-            paths.add(Path(pathBuffer))
-        }
-        // Add current path to buffer to store it as last path and then add it to stack if
-        // another path has been added. we do this to not have duplicate path at top of stack
-        // which would mess up the undo operation.
-        pathBuffer.set(Path(path))
+        paths.add(Path(path))
     }
 
     private fun drawCircles(touchX: Float, touchY: Float) {
-        path.addCircle(touchX, touchY, brushSize, Path.Direction.CW)
+        path.addCircle(touchX, touchY, brushSize, Path.Direction.CCW)
         invalidate()
         isPathClose = true
     }
 
     override fun draw(canvas: Canvas?) {
         canvas?.run {
-            // Create a copy of path to later transform the transformed path to it.
-            pathCopy.set(path)
-
-            // Apply matrix to path.
-            path.transform(canvasMatrix)
-
             // Draw the transformed path.
-            drawPath(path, brushPaint)
-
-            // Revert it back.
-            path.set(pathCopy)
-
-            // Reset the pathCopy to release memory.
-            pathCopy.rewind()
-        }
-    }
-
-    override fun undo() {
-        paths.run {
-            if (!isEmpty()) {
-                path.set(pop())
-                invalidate()
+            if (isSelectionInverse) {
+                path.fillType = Path.FillType.INVERSE_WINDING
+                clipPath(path)
+                pathCopy.rewind()
+                pathCopy.addRect(leftEdge, topEdge, rightEdge, bottomEdge, Path.Direction.CCW)
+                drawPath(pathCopy, brushPaint)
             } else {
-                path.rewind()
-                pathBuffer.rewind()
-                isPathClose = false
-                invalidate()
+                path.fillType = Path.FillType.WINDING
+                drawPath(path, brushPaint)
             }
         }
     }
 
+    override fun undo() {
+        if (isSelectionInverse) {
+            isSelectionInverse = false
+            if (paths.isEmpty()) {
+                invalidate()
+            }
+        }
+        paths.run {
+            if (isNotEmpty()) {
+                pop()
+                if (isNotEmpty()) {
+                    path.set(peek())
+                    invalidate()
+                    return@run
+                }
+            }
+            path.rewind()
+            isPathClose = false
+            invalidate()
+        }
+    }
+
+    override fun getClipPath(): Path? {
+        return if (isPathClose) {
+            path
+        } else {
+            null
+        }
+    }
+
+    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+        if (isClosed()) {
+            path.transform(changeMatrix)
+            invalidate()
+        }
+
+        leftEdge = newBounds.left
+        topEdge = newBounds.top
+        rightEdge = newBounds.right
+        bottomEdge = newBounds.bottom
+    }
+
     override fun resetSelection() {
         path.rewind()
-        pathBuffer.rewind()
         paths.clear()
         isPathClose = false
         invalidate()

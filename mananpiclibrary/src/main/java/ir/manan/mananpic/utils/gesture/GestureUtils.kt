@@ -27,7 +27,7 @@ class GestureUtils {
          */
         fun mapTo360(degree: Float): Float {
             return when {
-                degree > 360 -> {
+                degree >= 360 -> {
                     degree - 360
                 }
                 degree < 0f -> {
@@ -42,7 +42,7 @@ class GestureUtils {
          */
         fun mapTo360(degree: Double): Double {
             return when {
-                degree > 360 -> {
+                degree >= 360 -> {
                     degree - 360
                 }
                 degree < 0f -> {
