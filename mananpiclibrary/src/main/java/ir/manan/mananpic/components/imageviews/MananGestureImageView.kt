@@ -164,57 +164,57 @@ abstract class MananGestureImageView(
     override fun onMoveEnded(lastX: Float, lastY: Float) {
     }
 
-    override fun onScale(detector: ScaleGestureDetector?): Boolean {
+    override fun onScale(p0: ScaleGestureDetector): Boolean {
         return false
     }
 
-    override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+    override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
         return true
     }
 
-    override fun onScaleEnd(detector: ScaleGestureDetector?) {
+    override fun onScaleEnd(p0: ScaleGestureDetector) {
 
     }
 
-    override fun onSingleTapUp(e: MotionEvent?): Boolean {
+    override fun onSingleTapUp(p0: MotionEvent): Boolean {
         return true
     }
 
-    override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+    override fun onSingleTapConfirmed(p0: MotionEvent): Boolean {
         return false
     }
 
-    override fun onDoubleTap(e: MotionEvent?): Boolean {
+    override fun onDoubleTap(p0: MotionEvent): Boolean {
         return true
     }
 
-    override fun onDoubleTapEvent(e: MotionEvent?): Boolean {
+    override fun onDoubleTapEvent(p0: MotionEvent): Boolean {
         return false
     }
 
-    override fun onDown(e: MotionEvent?): Boolean {
+    override fun onDown(p0: MotionEvent): Boolean {
         return false
     }
 
-    override fun onShowPress(e: MotionEvent?) {
+    override fun onShowPress(p0: MotionEvent) {
     }
 
     override fun onScroll(
-        e1: MotionEvent?,
-        e2: MotionEvent?,
+        p0: MotionEvent,
+        p1: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
         return false
     }
 
-    override fun onLongPress(e: MotionEvent?) {
+    override fun onLongPress(p0: MotionEvent) {
 
     }
 
     override fun onFling(
-        e1: MotionEvent?,
-        e2: MotionEvent?,
+        p0: MotionEvent,
+        p1: MotionEvent,
         velocityX: Float,
         velocityY: Float
     ): Boolean {
@@ -380,10 +380,12 @@ abstract class MananGestureImageView(
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        scaleDetector?.onTouchEvent(event)
-        rotationDetector?.onTouchEvent(event)
-        moveDetector?.onTouchEvent(event)
-        commonGestureDetector?.onTouchEvent(event)
+        event?.let { ev ->
+            scaleDetector?.onTouchEvent(ev)
+            rotationDetector?.onTouchEvent(ev)
+            moveDetector?.onTouchEvent(ev)
+            commonGestureDetector?.onTouchEvent(ev)
+        }
         return if (areGesturesNull()) super.onTouchEvent(event)
         else true
     }

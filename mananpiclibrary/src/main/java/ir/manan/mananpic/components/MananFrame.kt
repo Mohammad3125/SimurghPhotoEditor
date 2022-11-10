@@ -249,9 +249,9 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     /* Detectors --------------------------------------------------------------------------------------------- */
 
-    override fun onScale(detector: ScaleGestureDetector?): Boolean {
-        detector?.run {
-            val sf = detector.scaleFactor
+    override fun onScale(p0: ScaleGestureDetector): Boolean {
+        p0.run {
+            val sf = scaleFactor
             when {
                 currentEditingView != null -> {
                     if (!isSharingGestures) {
@@ -274,8 +274,8 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         return true
     }
 
-    override fun onScaleEnd(detector: ScaleGestureDetector?) {
-        super.onScaleEnd(detector)
+    override fun onScaleEnd(p0: ScaleGestureDetector) {
+        super.onScaleEnd(p0)
         if (!isSharingGestures) {
             findSmartGuideLines()
         }

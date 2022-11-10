@@ -213,23 +213,22 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         initialY = ey
     }
 
-    override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+    override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
         isMatrixGesture = true
         return !matrixAnimator.isAnimationRunning()
     }
 
-    override fun onScale(detector: ScaleGestureDetector?): Boolean {
-        detector?.run {
+    override fun onScale(p0: ScaleGestureDetector): Boolean {
+        p0.run {
             val sf = scaleFactor
             canvasMatrix.postScale(sf, sf, focusX, focusY)
             invalidate()
             return true
         }
-        return false
     }
 
-    override fun onScaleEnd(detector: ScaleGestureDetector?) {
-        super.onScaleEnd(detector)
+    override fun onScaleEnd(p0: ScaleGestureDetector) {
+        super.onScaleEnd(p0)
         animateCanvasBack()
     }
 
