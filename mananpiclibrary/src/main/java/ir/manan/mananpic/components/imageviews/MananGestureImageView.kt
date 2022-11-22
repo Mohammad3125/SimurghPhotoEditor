@@ -138,11 +138,11 @@ abstract class MananGestureImageView(
         scaleType = ScaleType.MATRIX
     }
 
-    override fun onRotateBegin(initialDegree: Float): Boolean {
+    override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
         return false
     }
 
-    override fun onRotate(degree: Float): Boolean {
+    override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
         return false
     }
 

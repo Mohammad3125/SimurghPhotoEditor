@@ -165,11 +165,11 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
         currentEditingView = newChild
     }
 
-    override fun onRotateBegin(initialDegree: Float): Boolean {
+    override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
         return true
     }
 
-    override fun onRotate(degree: Float): Boolean {
+    override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
         return true
     }
 

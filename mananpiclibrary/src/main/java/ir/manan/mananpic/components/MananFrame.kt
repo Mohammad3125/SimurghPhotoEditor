@@ -282,7 +282,7 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
         invalidate()
     }
 
-    override fun onRotate(degree: Float): Boolean {
+    override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
         if (!isSharingGestures && currentEditingView != null) {
             currentEditingView!!.applyRotation(degree)
             findRotationSmartGuidelines()

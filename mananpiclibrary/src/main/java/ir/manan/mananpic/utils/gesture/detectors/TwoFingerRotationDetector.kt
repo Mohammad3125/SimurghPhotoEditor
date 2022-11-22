@@ -24,6 +24,15 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
      */
     private var step = 0f
 
+    private var x0 = 0f
+    private var y0 = 0f
+
+    private var x1 = 0f
+    private var y1 = 0f
+
+    private var dx = 0f
+    private var dy = 0f
+
     private var wasTouchedWithTwoPointers = false
 
     override fun setRotationStep(rotationStep: Float) {
@@ -35,15 +44,28 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
         return when (event?.actionMasked) {
             MotionEvent.ACTION_POINTER_DOWN -> {
                 event.run {
-                    initialRotation -= calculateAngle(event)
-                    listener.onRotateBegin(initialRotation)
+
+                    calculatePoints(event)
+
+                    initialRotation -= calculateAngle(dx.toDouble(), dy.toDouble())
+                    listener.onRotateBegin(
+                        initialRotation,
+                        x0 + ((x1 - x0) * 0.5f),
+                        y0 + ((y1 - y0) * 0.5f)
+                    )
                 }
                 true
             }
 
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount == 2) {
-                    val rawRotation = calculateAngle(event) + initialRotation
+
+                    calculatePoints(event)
+
+                    val px = x0 + ((x1 - x0) * 0.5f)
+                    val py = y0 + ((y1 - y0) * 0.5f)
+
+                    val rawRotation = calculateAngle(dx.toDouble(), dy.toDouble()) + initialRotation
 
                     val validatedRotation = mapTo360(rawRotation)
 
@@ -53,9 +75,13 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
                         // round(3 / 8.5f ~= 0.3529) -> 0f = 8.5 * 0 = 0.
                         // Now imagine we had rotation of 8 and step of 8.5f, the result would be:
                         // round(8 / 8.5f ~= 0.9411) -> 1f = 8.5 * 1f = 8.5.
-                        listener.onRotate(mapTo360(step * (round(validatedRotation / step))))
+                        listener.onRotate(
+                            mapTo360(step * (round(validatedRotation / step))),
+                            px,
+                            py
+                        )
                     } else {
-                        listener.onRotate(validatedRotation)
+                        listener.onRotate(validatedRotation, px, py)
                     }
 
                     wasTouchedWithTwoPointers = true
@@ -65,7 +91,9 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
             }
 
             MotionEvent.ACTION_POINTER_UP -> {
-                initialRotation += calculateAngle(event)
+                calculatePoints(event)
+
+                initialRotation += calculateAngle(dx.toDouble(), dy.toDouble())
                 false
             }
 
@@ -86,17 +114,26 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
         }
     }
 
+    private fun calculatePoints(event: MotionEvent) {
+        x0 = event.getX(0)
+        y0 = event.getY(0)
+
+        x1 = event.getX(1)
+        y1 = event.getY(1)
+
+        dx = x0 - x1
+        dy = y1 - y0
+    }
+
     override fun resetRotation(resetTo: Float) {
         initialRotation = resetTo
     }
 
 
-    private fun calculateAngle(event: MotionEvent): Float {
-        event.run {
-            return GestureUtils.calculateAngle(
-                (getX(0) - getX(1)).toDouble(),
-                (getY(1) - getY(0)).toDouble()
-            )
-        }
+    private fun calculateAngle(dx: Double, dy: Double): Float {
+        return GestureUtils.calculateAngle(
+            dx,
+            dy
+        )
     }
 }

@@ -8,12 +8,12 @@ interface OnRotateListener {
      * This method gets invoked when first rotation gesture is detected.
      * @return Return true to show interest in consuming the event.
      */
-    fun onRotateBegin(initialDegree: Float): Boolean
+    fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean
 
     /**
      * This method gets invoked every time a rotation is get detected by detector.
      * @return Return true to show interest in consuming the event.
      */
-    fun onRotate(degree: Float): Boolean
+    fun onRotate(degree: Float, px: Float, py: Float): Boolean
     fun onRotateEnded()
 }

@@ -127,8 +127,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                 }
                 MotionEvent.ACTION_MOVE -> {
                     // Determine total amount that user moved his/her finger on screen.
-                    val dx : Float
-                    val dy : Float
+                    val dx: Float
+                    val dy: Float
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
