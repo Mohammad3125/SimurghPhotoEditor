@@ -239,21 +239,10 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private fun mapTouchPoints(touchX: Float, touchY: Float): FloatArray {
         touchPointMappedArray[0] = touchX
         touchPointMappedArray[1] = touchY
-        mappingMatrix.run {
 
-            val tx = canvasMatrix.getTranslationX(true)
-            val ty = canvasMatrix.getTranslationY()
+        canvasMatrix.invert(mappingMatrix)
+        mappingMatrix.mapPoints(touchPointMappedArray)
 
-            setTranslate(
-                -tx, -ty
-            )
-
-            val scale = canvasMatrix.getOppositeScale()
-            postScale(scale, scale)
-
-            mapPoints(touchPointMappedArray)
-
-        }
         return touchPointMappedArray
     }
 

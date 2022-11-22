@@ -971,32 +971,22 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
         val mappedPoints = FloatArray(touchPoints.size)
 
-        mappingMatrix.run {
-            setTranslate(
-                -canvasMatrix.getTranslationX(true), -canvasMatrix.getTranslationY()
-            )
+        canvasMatrix.invert(mappingMatrix)
 
-            // Scale down the current matrix as much as canvas matrix scale up.
-            // We do this because if we zoom in image, the rectangle our area that we see
-            // is also smaller so we do this to successfully map our touch points to that area (zoomed area).
-            val scale = canvasMatrix.getOppositeScale()
-            postScale(scale, scale)
+        val compAsView = component as View
 
-            val compAsView = component as View
+        val offsetX = getOffsetX(compAsView)
+        val offsetY = getOffsetY(compAsView)
 
-            val offsetX = getOffsetX(compAsView)
-            val offsetY = getOffsetY(compAsView)
+        // Finally handle the rotation of component.
+        mappingMatrix.postRotate(
+            -component.reportRotation(),
+            component.reportBoundPivotX() + offsetX,
+            component.reportBoundPivotY() + offsetY
+        )
 
-            // Finally handle the rotation of component.
-            postRotate(
-                -component.reportRotation(),
-                component.reportBoundPivotX() + offsetX,
-                component.reportBoundPivotY() + offsetY
-            )
+        mappingMatrix.mapPoints(mappedPoints, touchPoints)
 
-            // Finally map the touch points.
-            mapPoints(mappedPoints, touchPoints)
-        }
         return mappedPoints
     }
 
