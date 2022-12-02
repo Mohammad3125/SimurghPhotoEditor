@@ -50,9 +50,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isMoved = false
 
-    private var lastDrawnX = 0f
-    private var lastDrawnY = 0f
-
     // Used to retrieve touch slopes.
     private var scaledTouchSlope = 0
 
@@ -472,11 +469,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         var index = stateHistory.lastIndex + historyCounter
 
-        if (index > -1) {
+        if (index == stateHistory.lastIndex) {
+            index -= 1
+        }
 
-            if (index == stateHistory.lastIndex) {
-                index -= 1
-            }
+        if (index > -1) {
 
             stateHistory[index].let { state ->
                 state.restoreState()
