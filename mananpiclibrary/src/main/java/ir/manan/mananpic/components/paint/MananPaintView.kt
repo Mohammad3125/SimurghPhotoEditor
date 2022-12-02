@@ -50,6 +50,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isMoved = false
 
+    private var lastDrawnX = 0f
+    private var lastDrawnY = 0f
+
     // Used to retrieve touch slopes.
     private var scaledTouchSlope = 0
 
@@ -281,15 +284,27 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                             callSelectorOnMove(
                                 historicX,
-                                historicY
+                                historicY,
+                                historicX - initialX,
+                                historicY - initialY
                             )
+
+                            initialX = x
+                            initialY = y
+
 
                         }
 
                         callSelectorOnMove(
                             x,
                             y,
+                            x - initialX,
+                            y - initialY
                         )
+
+                        initialX = x
+                        initialY = y
+
 
 
                         return true
@@ -357,10 +372,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
 
-    private fun callSelectorOnMove(ex: Float, ey: Float) {
-        val dx = ex - initialX
-        val dy = ey - initialY
-
+    private fun callSelectorOnMove(ex: Float, ey: Float, dx: Float, dy: Float) {
         if (dx == 0f && dy == 0f) return
 
         // Calculate how much the canvas is scaled then use
