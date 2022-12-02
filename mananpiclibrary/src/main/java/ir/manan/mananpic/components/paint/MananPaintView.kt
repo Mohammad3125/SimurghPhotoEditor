@@ -107,6 +107,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isFirstLayerCreation = true
 
+
+    private var onTapUp: ((Unit) -> Unit)? = null
+
+    private var onDoubleTapUpInterface: OnDoubleTapUp? = null
+
+
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -296,7 +302,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     if (isMatrixGesture && !isMoved) {
-                        undo()
+                        callListeners()
                     }
 
                     if (painter != null && selectedLayer != null && !isMatrixGesture && !isFirstMove && !selectedLayer!!.isLocked) {
@@ -456,7 +462,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         if (index > -1) {
 
-            if(index == stateHistory.lastIndex) {
+            if (index == stateHistory.lastIndex) {
                 index -= 1
             }
 
@@ -592,6 +598,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    fun setOnDoubleTapUpListener(onDoubleTapUp: OnDoubleTapUp) {
+        onDoubleTapUpInterface = onDoubleTapUp
+    }
+
+    fun setOnDoubleTapUpListener(callback: ((Unit) -> Unit)) {
+        onTapUp = callback
+    }
+
+    private fun callListeners() {
+        onTapUp?.invoke(Unit)
+        onDoubleTapUpInterface?.onDoubleTapUp()
+    }
+
     private sealed class State(val stateRef: PaintLayer) {
         abstract fun restoreState()
     }
@@ -631,5 +650,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+
+    interface OnDoubleTapUp {
+        fun onDoubleTapUp()
+    }
 
 }
