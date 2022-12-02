@@ -18,6 +18,7 @@ import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 class MananPaintView(context: Context, attrSet: AttributeSet?) :
     MananGestureImageView(context, attrSet), Selector.OnDispatchToInvalidate {
@@ -146,8 +147,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             selectedLayer = PaintLayer(
                 Bitmap.createBitmap(
-                    bitmapWidth.toInt(),
-                    bitmapHeight.toInt(),
+                    bitmapWidth.roundToInt(),
+                    bitmapHeight.roundToInt(),
                     Bitmap.Config.ARGB_8888
                 ), Matrix(), false, 1f, PorterDuff.Mode.SRC
             )
@@ -514,8 +515,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         selectedLayer = PaintLayer(
             Bitmap.createBitmap(
-                bitmapWidth.toInt(),
-                bitmapHeight.toInt(),
+                bitmapWidth.roundToInt(),
+                bitmapHeight.roundToInt(),
                 Bitmap.Config.ARGB_8888
             ), Matrix(), false, 1f, PorterDuff.Mode.SRC
         )
