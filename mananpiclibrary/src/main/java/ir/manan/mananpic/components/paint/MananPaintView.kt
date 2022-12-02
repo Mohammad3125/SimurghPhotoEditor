@@ -168,7 +168,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         if (isPainterChanged) {
             rectAlloc.set(boundsRectangle)
-            painter?.initialize(context, this, canvasMatrix, rectAlloc, width, height)
+            painter?.initialize(context, canvasMatrix, rectAlloc, width, height)
             painter?.onLayerChanged(selectedLayer!!)
             isPainterChanged = false
         }

@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
-import android.view.View
 import ir.manan.mananpic.components.selection.selectors.BrushSelector
 import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
@@ -22,7 +21,6 @@ abstract class Painter {
 
     abstract fun initialize(
         context: Context,
-        view: View,
         matrix: MananMatrix,
         bounds: RectF,
         viewWidth: Int,

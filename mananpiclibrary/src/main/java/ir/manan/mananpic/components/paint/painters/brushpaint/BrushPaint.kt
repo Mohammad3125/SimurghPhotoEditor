@@ -2,7 +2,6 @@ package ir.manan.mananpic.components.paint.painters.brushpaint
 
 import android.content.Context
 import android.graphics.*
-import android.view.View
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
@@ -70,8 +69,6 @@ class BrushPaint : Painter() {
         Matrix()
     }
 
-    private lateinit var v: View
-
     private val hsvHolder = FloatArray(3)
 
     private var hueDegreeHolder = 0f
@@ -88,14 +85,11 @@ class BrushPaint : Painter() {
 
     override fun initialize(
         context: Context,
-        view: View,
         matrix: MananMatrix,
         bounds: RectF,
         viewWidth: Int,
         viewHeight: Int
     ) {
-
-        v = view
 
         viewBounds.set(bounds)
 
