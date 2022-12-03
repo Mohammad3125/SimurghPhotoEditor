@@ -83,7 +83,7 @@ class NativeBrush : Brush() {
 //        hueFlow = 12f
 //        hueDistance = 30
 
-        smoothness = 0.20f
+        smoothness = 0.30f
 
     }
 

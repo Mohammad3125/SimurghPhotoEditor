@@ -316,9 +316,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     if (isMatrixGesture && !isMoved) {
                         callListeners()
-                    }
-
-                    if (painter != null && selectedLayer != null && !isMatrixGesture && !isFirstMove && !selectedLayer!!.isLocked) {
+                    } else if (painter != null && selectedLayer != null && !isMatrixGesture && !isFirstMove && !selectedLayer!!.isLocked) {
 
                         selectedLayer!!.let { layer ->
                             addState(
@@ -363,7 +361,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 stateHistory.removeAt(stateHistory.lastIndex)
             }
 
-            println()
         } else {
             stateHistory.add(state)
         }
@@ -479,10 +476,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             stateHistory[index].let { state ->
                 state.restoreState()
 
-                if (state is LayersState && !state.layers.contains(selectedLayer)) {
-                    selectedLayer = state.stateRef
+                if ((state is AddLayerState || state is RemoveLayerState) && !layerHolder.contains(
+                        selectedLayer
+                    )
+                ) {
+                    selectedLayer = layerHolder[layerHolder.lastIndex]
                 }
             }
+
             painter?.onLayerChanged(selectedLayer)
 
             historyCounter--
@@ -513,16 +514,27 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun addNewLayer() {
 
-        selectedLayer = PaintLayer(
-            Bitmap.createBitmap(
-                bitmapWidth.roundToInt(),
-                bitmapHeight.roundToInt(),
-                Bitmap.Config.ARGB_8888
-            ), Matrix(), false, 1f, PorterDuff.Mode.SRC
+        val b = Bitmap.createBitmap(
+            bitmapWidth.roundToInt(),
+            bitmapHeight.roundToInt(),
+            Bitmap.Config.ARGB_8888
         )
-        addState(LayersState(selectedLayer!!, layerHolder, layerHolder.toMutableList()))
+
+        selectedLayer = PaintLayer(
+            b, Matrix(), false, 1f, PorterDuff.Mode.SRC
+        )
+
 
         layerHolder.add(selectedLayer!!)
+
+        addState(
+            AddLayerState(
+                selectedLayer!!,
+                layerHolder,
+                layerHolder.toMutableList(),
+                b.copy(b.config, true)
+            )
+        )
 
         painter?.onLayerChanged(selectedLayer!!)
 
@@ -571,7 +583,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         }
 
-        addState(LayersState(selectedLayer!!, layerHolder, layerHolder.toMutableList()))
+        addState(RemoveLayerState(selectedLayer!!, layerHolder, layerHolder.toMutableList()))
 
         layerHolder.removeAt(index)
         invalidate()
@@ -625,13 +637,26 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         abstract fun restoreState()
     }
 
-    private class LayersState(
+    private class AddLayerState(
         stateRef: PaintLayer,
         val lHolder: MutableList<PaintLayer>,
         val layers: MutableList<PaintLayer>,
+        val bitmap: Bitmap
     ) :
         State(stateRef) {
 
+        override fun restoreState() {
+            lHolder.clear()
+            lHolder.addAll(layers)
+            stateRef.bitmap = bitmap
+        }
+    }
+
+    private class RemoveLayerState(
+        stateRef: PaintLayer,
+        val lHolder: MutableList<PaintLayer>,
+        val layers: MutableList<PaintLayer>
+    ) : State(stateRef) {
         override fun restoreState() {
             lHolder.clear()
             lHolder.addAll(layers)
