@@ -76,7 +76,20 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
 
-    private val layerHolder = mutableListOf<PaintLayer>()
+    private var layerHolder = mutableListOf<PaintLayer>()
+
+    private val touchPointMappedArray = FloatArray(2)
+
+    private var isFirstLayerCreation = true
+
+    private var onTapUp: ((Unit) -> Unit)? = null
+
+    private var onDoubleTapUpInterface: OnDoubleTapUp? = null
+
+    private var onLayersChanged: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)? =
+        null
+    private var onLayersChangedListener: OnLayersChanged? = null
+
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
@@ -103,16 +116,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             requestLayout()
 
         }
-
-    private val touchPointMappedArray = FloatArray(2)
-
-    private var isFirstLayerCreation = true
-
-
-    private var onTapUp: ((Unit) -> Unit)? = null
-
-    private var onDoubleTapUpInterface: OnDoubleTapUp? = null
-
 
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
@@ -153,16 +156,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 ), Matrix(), false, 1f, PorterDuff.Mode.SRC
             )
 
-            selectedLayer!!.let { layer ->
-                addState(
-                    BitmapState(
-                        layer,
-                        layer.bitmap.copy(layer.bitmap.config, true)
-                    )
-                )
-            }
-
             layerHolder.add(selectedLayer!!)
+
+            saveState()
+
+            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
 
             isFirstLayerCreation = false
         }
@@ -256,18 +254,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         if (isFirstMove) {
 
                             if (historyCounter < 0) {
-
                                 val times = (stateHistory.lastIndex + historyCounter + 1)
-
-                                selectedLayer!!.let { layer ->
-                                    stateHistory.add(
-                                        times, BitmapState(
-                                            layer,
-                                            layer.bitmap.copy(layer.bitmap.config, true)
-                                        )
-                                    )
-                                }
-
+                                saveState(times)
                             }
 
                             val mappedPoints = mapTouchPoints(initialX, initialY)
@@ -315,21 +303,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     if (isMatrixGesture && !isMoved) {
-                        callListeners()
+                        callOnDoubleTapListeners()
                     } else if (painter != null && selectedLayer != null && !isMatrixGesture && !isFirstMove && !selectedLayer!!.isLocked) {
 
-                        selectedLayer!!.let { layer ->
-                            addState(
-                                BitmapState(
-                                    layer,
-                                    layer.bitmap.copy(layer.bitmap.config, true)
-                                )
-                            )
-                        }
+                        saveState()
 
                         val mappedPoints = mapTouchPoints(x, y)
 
                         painter!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
+
+                        callOnLayerChangedListeners(
+                            layerHolder.toList(),
+                            layerHolder.indexOf(selectedLayer)
+                        )
                     }
 
                     isMatrixGesture = false
@@ -349,21 +335,27 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return false
     }
 
-    private fun addState(state: State) {
+    private fun saveState(index: Int = -1) {
 
-        if (historyCounter < 0) {
+        if (historyCounter < -1) {
 
-            val t = (stateHistory.lastIndex + historyCounter + 1)
-            val times = stateHistory.lastIndex - t
+            val times = stateHistory.lastIndex - (stateHistory.lastIndex + historyCounter)
+
             historyCounter += times
 
             repeat(times) {
-                stateHistory.removeAt(stateHistory.lastIndex)
+                stateHistory.removeLast()
             }
 
+        }
+
+        val state = State(layerHolder.map { layer -> layer.clone() })
+        if (index > -1) {
+            stateHistory.add(index, state)
         } else {
             stateHistory.add(state)
         }
+
     }
 
 
@@ -469,20 +461,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         if (index == stateHistory.lastIndex) {
             index -= 1
+            historyCounter--
         }
 
         if (index > -1) {
 
-            stateHistory[index].let { state ->
-                state.restoreState()
+            stateHistory[index].restoreState(this)
 
-                if ((state is AddLayerState || state is RemoveLayerState) && !layerHolder.contains(
-                        selectedLayer
-                    )
-                ) {
-                    selectedLayer = layerHolder[layerHolder.lastIndex]
-                }
-            }
+            callOnLayerChangedListeners(
+                layerHolder.toList(),
+                layerHolder.indexOf(selectedLayer)
+            )
 
             painter?.onLayerChanged(selectedLayer)
 
@@ -498,13 +487,20 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         if (index <= stateHistory.lastIndex) {
 
+
             if (index != stateHistory.lastIndex) {
                 historyCounter++
 
-                stateHistory[index + 1].restoreState()
+                stateHistory[index + 1].restoreState(this)
+
             } else {
-                stateHistory[index].restoreState()
+                stateHistory[index].restoreState(this)
             }
+
+            callOnLayerChangedListeners(
+                layerHolder.toList(),
+                layerHolder.indexOf(selectedLayer)
+            )
 
             painter?.onLayerChanged(selectedLayer)
 
@@ -524,17 +520,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             b, Matrix(), false, 1f, PorterDuff.Mode.SRC
         )
 
-
         layerHolder.add(selectedLayer!!)
 
-        addState(
-            AddLayerState(
-                selectedLayer!!,
-                layerHolder,
-                layerHolder.toMutableList(),
-                b.copy(b.config, true)
-            )
-        )
+        saveState()
+
+        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
 
         painter?.onLayerChanged(selectedLayer!!)
 
@@ -564,8 +554,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun changeLayerLockState(index: Int, shouldLock: Boolean) {
         checkIndex(index)
         layerHolder[index].let { layer ->
-            addState(LockState(layer, layer.isLocked))
             layer.isLocked = shouldLock
+            saveState()
         }
     }
 
@@ -583,9 +573,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         }
 
-        addState(RemoveLayerState(selectedLayer!!, layerHolder, layerHolder.toMutableList()))
-
         layerHolder.removeAt(index)
+
+        saveState()
+
+        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+
         invalidate()
     }
 
@@ -597,6 +590,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         checkIndex(index)
         selectedLayer = layerHolder[index]
         painter?.onLayerChanged(selectedLayer)
+        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
     }
 
     fun getIndexOfSelectedLayer(): Int {
@@ -628,66 +622,43 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         onTapUp = callback
     }
 
-    private fun callListeners() {
+    fun setOnLayersChangedListener(onLayersChanged: OnLayersChanged) {
+        onLayersChangedListener = onLayersChanged
+    }
+
+    fun setOnLayersChangedListener(callback: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)) {
+        onLayersChanged = callback
+    }
+
+    private fun callOnDoubleTapListeners() {
         onTapUp?.invoke(Unit)
         onDoubleTapUpInterface?.onDoubleTapUp()
     }
 
-    private sealed class State(val stateRef: PaintLayer) {
-        abstract fun restoreState()
+    private fun callOnLayerChangedListeners(layers: List<PaintLayer>, selectedLayerIndex: Int) {
+        onLayersChangedListener?.onLayersChanged(layers, selectedLayerIndex)
+        onLayersChanged?.invoke(layers, selectedLayerIndex)
     }
 
-    private class AddLayerState(
-        stateRef: PaintLayer,
-        val lHolder: MutableList<PaintLayer>,
-        val layers: MutableList<PaintLayer>,
-        val bitmap: Bitmap
-    ) :
-        State(stateRef) {
-
-        override fun restoreState() {
-            lHolder.clear()
-            lHolder.addAll(layers)
-            stateRef.bitmap = bitmap
+    private class State(
+        val layers: List<PaintLayer>,
+    ) {
+        fun restoreState(paintView: MananPaintView) {
+            paintView.run {
+                var i = layerHolder.indexOf(selectedLayer)
+                if (i > layers.lastIndex) i = layers.lastIndex
+                selectedLayer = layers[i]
+                layerHolder = layers.toMutableList()
+            }
         }
     }
-
-    private class RemoveLayerState(
-        stateRef: PaintLayer,
-        val lHolder: MutableList<PaintLayer>,
-        val layers: MutableList<PaintLayer>
-    ) : State(stateRef) {
-        override fun restoreState() {
-            lHolder.clear()
-            lHolder.addAll(layers)
-        }
-    }
-
-    private class BitmapState(stateRef: PaintLayer, val bitmap: Bitmap) : State(stateRef) {
-        override fun restoreState() {
-            stateRef.bitmap = this.bitmap
-        }
-    }
-
-    private class LockState(stateRef: PaintLayer, val isLocked: Boolean) : State(stateRef) {
-        override fun restoreState() {
-            stateRef.isLocked = isLocked
-        }
-
-        override fun toString(): String {
-            return "LockState  $isLocked"
-        }
-    }
-
-    private class MatrixState(stateRef: PaintLayer, val matrix: Matrix) : State(stateRef) {
-        override fun restoreState() {
-            stateRef.layerMatrix.set(matrix)
-        }
-    }
-
 
     interface OnDoubleTapUp {
         fun onDoubleTapUp()
+    }
+
+    interface OnLayersChanged {
+        fun onLayersChanged(layers: List<PaintLayer>, selectedLayerIndex: Int)
     }
 
 }
