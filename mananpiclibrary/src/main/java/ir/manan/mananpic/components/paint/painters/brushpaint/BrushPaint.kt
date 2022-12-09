@@ -268,16 +268,18 @@ class BrushPaint : Painter() {
 
             val r = ((brush!!.size) * scatterSize).toInt()
 
-            val randomScatterX =
-                Random.nextInt(-r, r).toFloat()
+            if (r != 0) {
+                val randomScatterX =
+                    Random.nextInt(-r, r).toFloat()
 
-            val randomScatterY =
-                Random.nextInt(-r, r).toFloat()
+                val randomScatterY =
+                    Random.nextInt(-r, r).toFloat()
 
-            canvas.translate(
-                touchX - viewBounds.left + randomScatterX,
-                touchY - viewBounds.top + randomScatterY
-            )
+                canvas.translate(
+                    touchX - viewBounds.left + randomScatterX,
+                    touchY - viewBounds.top + randomScatterY
+                )
+            }
         } else {
             canvas.translate(touchX - viewBounds.left, touchY - viewBounds.top)
         }
@@ -379,25 +381,25 @@ class BrushPaint : Painter() {
 
         if (!isBrushNull && !isLayerNull) {
 
-            if (textureBitmap != null) {
-
-                bufferCanvas.save()
-
-                bufferCanvas.translate(-viewBounds.left, -viewBounds.top)
-
-                bufferCanvas.drawRect(
-                    0f, 0f, textureRect.right, textureRect.bottom,
-                    texturePaint
-                )
-
-                bufferCanvas.restore()
-
-                bufferCanvas.drawBitmap(ccBitmap, 0f, 0f, bitmapPaint)
-
-                paintCanvas.drawBitmap(bufferBitmap, 0f, 0f, bitmapPaint)
-
-                bufferCanvas.drawColor(Color.TRANSPARENT)
-            }
+//            if (textureBitmap != null) {
+//
+//                bufferCanvas.save()
+//
+//                bufferCanvas.translate(-viewBounds.left, -viewBounds.top)
+//
+//                bufferCanvas.drawRect(
+//                    0f, 0f, textureRect.right, textureRect.bottom,
+//                    texturePaint
+//                )
+//
+//                bufferCanvas.restore()
+//
+//                bufferCanvas.drawBitmap(ccBitmap, 0f, 0f, bitmapPaint)
+//
+//                paintCanvas.drawBitmap(bufferBitmap, 0f, 0f, bitmapPaint)
+//
+//                bufferCanvas.drawColor(Color.TRANSPARENT)
+//            }
 
             if (shouldBlendAlpha) {
                 paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
