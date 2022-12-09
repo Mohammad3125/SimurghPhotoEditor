@@ -112,11 +112,6 @@ class BrushPaint : Painter() {
 
         brush?.let {
 
-            if (isFirstTouch) {
-                isFirstTouch = false
-            } else {
-                bitmapHolder.push(ccBitmap.copy(ccBitmap.config, true))
-            }
             lastDrawnEx = initialX
             lastDrawnEy = initialY
 
@@ -478,14 +473,5 @@ class BrushPaint : Painter() {
     }
 
     override fun undo() {
-        bitmapHolder.run {
-            if (isNotEmpty()) {
-                ccBitmap = pop()
-                paintCanvas.setBitmap(ccBitmap)
-            } else {
-                ccBitmap.eraseColor(Color.WHITE)
-            }
-        }
-        invalidate()
     }
 }
