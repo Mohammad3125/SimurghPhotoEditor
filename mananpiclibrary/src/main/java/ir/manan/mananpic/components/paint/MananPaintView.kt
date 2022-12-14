@@ -475,6 +475,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun addNewLayer() {
 
+        if (redoStack.isNotEmpty() || (undoStack.isNotEmpty() && selectedLayer !== undoStack.peek().ref)) {
+            saveState()
+        }
+
         selectedLayer = PaintLayer(
             Bitmap.createBitmap(
                 bitmapWidth.roundToInt(),
