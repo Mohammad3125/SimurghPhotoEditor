@@ -6,7 +6,6 @@ import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.GestureUtils
-import java.util.*
 import java.util.concurrent.Executors
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -74,10 +73,6 @@ class BrushPaint : Painter() {
     private var hueDegreeHolder = 0f
 
     private var hueFlip = true
-
-    private val bitmapHolder = Stack<Bitmap>()
-
-    private var isFirstTouch = true
 
     private var areCanvasesInitialized = false
 

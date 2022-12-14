@@ -15,6 +15,7 @@ import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
+import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -36,8 +37,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isMatrixGesture = false
 
-    private var historyCounter = 0
-
     private var isNewGesture = false
 
     private var maximumScale = 0f
@@ -58,7 +57,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         RectF()
     }
 
-    private val stateHistory = mutableListOf<State>()
+    private val undoStack = Stack<State>()
+
+    private val redoStack = Stack<State>()
 
     private val animatorExtraSpaceAroundAxes = dp(128)
 
@@ -148,24 +149,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         if (isFirstLayerCreation) {
 
-            selectedLayer = PaintLayer(
-                Bitmap.createBitmap(
-                    bitmapWidth.roundToInt(),
-                    bitmapHeight.roundToInt(),
-                    Bitmap.Config.ARGB_8888
-                ), Matrix(), false, 1f, PorterDuff.Mode.SRC
-            )
-
-            layerHolder.add(selectedLayer!!)
-
-            saveState()
-
-            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+            addNewLayer()
 
             isFirstLayerCreation = false
         }
 
         if (isPainterChanged) {
+            // TODO, this method does not get invoked again, even after 'requestLayout' call.
             rectAlloc.set(boundsRectangle)
             painter?.initialize(context, canvasMatrix, rectAlloc, width, height)
             painter?.onLayerChanged(selectedLayer!!)
@@ -253,9 +243,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         if (isFirstMove) {
 
-                            if (historyCounter < 0) {
-                                val times = (stateHistory.lastIndex + historyCounter + 1)
-                                saveState(times)
+                            if (redoStack.isNotEmpty() || selectedLayer !== undoStack.peek().ref) {
+                                saveState()
                             }
 
                             val mappedPoints = mapTouchPoints(initialX, initialY)
@@ -306,11 +295,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         callOnDoubleTapListeners()
                     } else if (painter != null && selectedLayer != null && !isMatrixGesture && !isFirstMove && !selectedLayer!!.isLocked) {
 
-                        saveState()
 
                         val mappedPoints = mapTouchPoints(x, y)
 
                         painter!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
+
+                        saveState()
 
                         callOnLayerChangedListeners(
                             layerHolder.toList(),
@@ -334,30 +324,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
         return false
     }
-
-    private fun saveState(index: Int = -1) {
-
-        if (historyCounter < -1) {
-
-            val times = stateHistory.lastIndex - (stateHistory.lastIndex + historyCounter)
-
-            historyCounter += times
-
-            repeat(times) {
-                stateHistory.removeLast()
-            }
-
-        }
-
-        val state = State(layerHolder.map { layer -> layer.clone() })
-        if (index > -1) {
-            stateHistory.add(index, state)
-        } else {
-            stateHistory.add(state)
-        }
-
-    }
-
 
     private fun callSelectorOnMove(ex: Float, ey: Float, dx: Float, dy: Float) {
         if (dx == 0f && dy == 0f) return
@@ -452,49 +418,50 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    /**
-     * Undoes the state of selector (if selector is not null.)
-     */
-    fun undo() {
+    private fun saveState() {
 
-        var index = stateHistory.lastIndex + historyCounter
-
-        if (index == stateHistory.lastIndex) {
-            index -= 1
-            historyCounter--
+        if (redoStack.isNotEmpty()) {
+            redoStack.clear()
         }
 
-        if (index > -1) {
+        selectedLayer?.run {
+            addToHistory()
+        }
+    }
 
-            stateHistory[index].restoreState(this)
-
-            callOnLayerChangedListeners(
-                layerHolder.toList(),
-                layerHolder.indexOf(selectedLayer)
+    private fun addToHistory() {
+        val copiedList = MutableList(layerHolder.size) {
+            layerHolder[it]
+        }
+        undoStack.add(
+            State(
+                selectedLayer!!,
+                selectedLayer!!.bitmap.copy(Bitmap.Config.ARGB_8888, true),
+                copiedList,
             )
+        )
+    }
 
-            painter?.onLayerChanged(selectedLayer)
-
-            historyCounter--
-
-            invalidate()
-        }
-
+    fun undo() {
+        swapStacks(undoStack, redoStack)
     }
 
     fun redo() {
-        val index = (stateHistory.lastIndex + historyCounter) + 1
+        swapStacks(redoStack, undoStack)
+    }
 
-        if (index <= stateHistory.lastIndex) {
+    private fun swapStacks(popStack: Stack<State>, pushStack: Stack<State>) {
+        if (popStack.isNotEmpty()) {
+            val poppedState = popStack.pop()
 
-
-            if (index != stateHistory.lastIndex) {
-                historyCounter++
-
-                stateHistory[index + 1].restoreState(this)
-
+            if (pushStack.isEmpty()) {
+                val newPopped = popStack.pop()
+                newPopped.restoreState(this)
+                pushStack.push(poppedState)
+                pushStack.push(newPopped)
             } else {
-                stateHistory[index].restoreState(this)
+                pushStack.push(poppedState)
+                poppedState.restoreState(this)
             }
 
             callOnLayerChangedListeners(
@@ -510,14 +477,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun addNewLayer() {
 
-        val b = Bitmap.createBitmap(
-            bitmapWidth.roundToInt(),
-            bitmapHeight.roundToInt(),
-            Bitmap.Config.ARGB_8888
-        )
-
         selectedLayer = PaintLayer(
-            b, Matrix(), false, 1f, PorterDuff.Mode.SRC
+            Bitmap.createBitmap(
+                bitmapWidth.roundToInt(),
+                bitmapHeight.roundToInt(),
+                Bitmap.Config.ARGB_8888
+            ), Matrix(), false, 1f, PorterDuff.Mode.SRC
         )
 
         layerHolder.add(selectedLayer!!)
@@ -553,10 +518,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun changeLayerLockState(index: Int, shouldLock: Boolean) {
         checkIndex(index)
-        layerHolder[index].let { layer ->
-            layer.isLocked = shouldLock
-            saveState()
-        }
+        layerHolder[index].isLocked = shouldLock
     }
 
     fun removeLayerAt(index: Int) {
@@ -641,15 +603,22 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private class State(
-        val layers: List<PaintLayer>,
+        val ref: PaintLayer,
+        val bitmap: Bitmap,
+        val layers: MutableList<PaintLayer>,
     ) {
         fun restoreState(paintView: MananPaintView) {
+            ref.bitmap = bitmap.copy(bitmap.config, true)
+
             paintView.run {
+
                 var i = layerHolder.indexOf(selectedLayer)
                 if (i > layers.lastIndex) i = layers.lastIndex
                 selectedLayer = layers[i]
-                layerHolder = layers.toMutableList()
+
+                layerHolder = layers
             }
+
         }
     }
 
