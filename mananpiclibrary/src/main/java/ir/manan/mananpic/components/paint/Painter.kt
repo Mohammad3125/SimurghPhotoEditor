@@ -23,8 +23,6 @@ abstract class Painter {
         context: Context,
         matrix: MananMatrix,
         bounds: RectF,
-        viewWidth: Int,
-        viewHeight: Int
     )
 
     /**

@@ -87,8 +87,6 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             context,
             MananMatrix(),
             RectF(0f, 0f, width.toFloat(), height.toFloat()),
-            width,
-            height
         )
 
         brushPainter.onLayerChanged(layer)

@@ -114,11 +114,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         set(value) {
             field = value
             value?.setOnInvalidateListener(this)
-            if (isViewInitialized) {
-                initializedPainter()
-            } else {
-                requestLayout()
-            }
+            requestLayout()
+            rectAlloc.set(boundsRectangle)
+            initializedPainter()
         }
 
     init {
@@ -151,23 +149,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
 
         if (isFirstLayerCreation) {
-
             addNewLayer()
-
             isFirstLayerCreation = false
-        }
-
-        if (!isViewInitialized) {
-            rectAlloc.set(boundsRectangle)
-            initializedPainter()
-            isViewInitialized = true
         }
     }
 
     private fun initializedPainter() {
         painter?.let { p ->
-            p.initialize(context, canvasMatrix, rectAlloc, width, height)
-            p.onLayerChanged(selectedLayer!!)
+            p.initialize(context, canvasMatrix, rectAlloc)
+            p.onLayerChanged(selectedLayer)
         }
     }
 

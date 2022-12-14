@@ -6,7 +6,6 @@ import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.GestureUtils
-import java.util.concurrent.Executors
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -39,8 +38,6 @@ class BrushPaint : Painter() {
     private lateinit var alphaBlendCanvas: Canvas
 
     private var shouldBlendAlpha = false
-
-    private var executor = Executors.newSingleThreadExecutor()
 
     private var viewBounds = RectF()
 
@@ -82,8 +79,6 @@ class BrushPaint : Painter() {
         context: Context,
         matrix: MananMatrix,
         bounds: RectF,
-        viewWidth: Int,
-        viewHeight: Int
     ) {
 
         viewBounds.set(bounds)
