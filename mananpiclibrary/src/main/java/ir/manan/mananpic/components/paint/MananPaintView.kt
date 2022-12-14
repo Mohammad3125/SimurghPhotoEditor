@@ -462,7 +462,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         if (popStack.isNotEmpty()) {
             val poppedState = popStack.pop()
 
-            if (pushStack.isEmpty()) {
+            if (pushStack.isEmpty() && popStack.isNotEmpty()) {
                 val newPopped = popStack.pop()
                 newPopped.restoreState(this)
                 pushStack.push(poppedState)
