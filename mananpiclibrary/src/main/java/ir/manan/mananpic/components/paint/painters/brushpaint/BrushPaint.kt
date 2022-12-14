@@ -485,12 +485,9 @@ class BrushPaint : Painter() {
 
         val sizeJitter = brush!!.sizeJitter
 
-        if (sizeJitter > 0f) {
-
-            val jitterNumber = sizeJitter * scale
-            val finalScale = (1f + jitterNumber)
-            canvas.scale(finalScale * squish, finalScale)
-        }
+        val jitterNumber = sizeJitter * scale
+        val finalScale = (1f + jitterNumber)
+        canvas.scale(finalScale * squish, finalScale)
 
         val brushOpacity = if (brush!!.opacityJitter > 0f) {
             Random.nextInt(0, (255f * brush!!.opacityJitter).toInt())
