@@ -48,11 +48,9 @@ class BrushPaint : Painter() {
 
     private var isBrushNull = false
 
-
     private var lastVtr = 0f
 
     private var lastDegree = 0f
-
 
     private val textureRect by lazy {
         RectF()
@@ -75,6 +73,17 @@ class BrushPaint : Painter() {
 
     private var isLayerNull = true
 
+    private val rotationCache = mutableListOf<Float>()
+    private val scaleCache = mutableListOf<Float>()
+    private val scatterXCache = mutableListOf<Float>()
+    private val scatterYCache = mutableListOf<Float>()
+
+    private var cacheCounter = 0
+
+    private var cacheSizeInByte = 2000
+
+    var shouldUseCacheDrawing = false
+
     override fun initialize(
         context: Context,
         matrix: MananMatrix,
@@ -89,6 +98,18 @@ class BrushPaint : Painter() {
 //        textureRect.set(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
         textureRect.set(viewBounds)
 
+        rotationCache.clear()
+        scaleCache.clear()
+        scatterXCache.clear()
+        scatterYCache.clear()
+
+        repeat(cacheSizeInByte) {
+            rotationCache.add(Random.nextInt(0, 100) / 100f)
+            scaleCache.add(Random.nextInt(0, 100) / 100f)
+            scatterXCache.add(Random.nextInt(-100, 100) / 100f)
+            scatterYCache.add(Random.nextInt(-100, 100) / 100f)
+        }
+
     }
 
 
@@ -97,6 +118,8 @@ class BrushPaint : Painter() {
         if (isLayerNull) {
             return
         }
+
+        cacheCounter = 0
 
         areCanvasesInitialized = (this::paintCanvas.isInitialized)
 
@@ -215,13 +238,32 @@ class BrushPaint : Painter() {
 
 //                lastDegree = angleBetween
 
-                drawCircles(
-                    finalX,
-                    finalY,
-                    sizeVariance,
-                    i == (repI - 1),
-                    if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else paintCanvas
-                )
+                if (shouldUseCacheDrawing) {
+
+                    drawCachedCircles(
+                        finalX,
+                        finalY,
+                        scatterXCache[cacheCounter],
+                        scatterYCache[cacheCounter],
+                        scaleCache[cacheCounter],
+                        rotationCache[cacheCounter],
+                        if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else paintCanvas
+                    )
+
+                    if (++cacheCounter > cacheSizeInByte - 1) {
+                        cacheCounter = 0
+                    }
+
+                } else {
+                    drawCircles(
+                        finalX,
+                        finalY,
+                        sizeVariance,
+                        i == (repI - 1),
+                        if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else paintCanvas
+                    )
+                }
+
 
                 lastDrawnEx = finalX
                 lastDrawnEy = finalY
@@ -236,6 +278,7 @@ class BrushPaint : Painter() {
 
         }
     }
+
 
     private fun drawCircles(
         touchX: Float,
@@ -393,6 +436,73 @@ class BrushPaint : Painter() {
 
             invalidate()
         }
+    }
+
+    private fun drawCachedCircles(
+        ex: Float,
+        ey: Float,
+        scatterX: Float,
+        scatterY: Float,
+        scale: Float,
+        angle: Float,
+        canvas: Canvas
+    ) {
+        canvas.save()
+
+        val scatterSize = brush!!.scatter
+
+        if (scatterSize > 0f) {
+            val brushSize = brush!!.size
+
+            val rx = (brushSize * (scatterSize * scatterX)).toInt()
+            val ry = (brushSize * (scatterSize * scatterY)).toInt()
+
+            canvas.translate(
+                ex - viewBounds.left + rx,
+                ey - viewBounds.top + ry
+            )
+        } else {
+            canvas.translate(ex - viewBounds.left, ey - viewBounds.top)
+        }
+
+        val angleJitter = brush!!.angleJitter
+
+        val fixedAngle = brush!!.angle
+
+
+        if (angleJitter > 0f && fixedAngle > 0f || angleJitter > 0f && fixedAngle == 0f) {
+
+            val rot = GestureUtils.mapTo360(
+                fixedAngle + (360f * (angleJitter * angle))
+            )
+
+            canvas.rotate(rot)
+        } else if (angleJitter == 0f && fixedAngle > 0f) {
+            canvas.rotate(fixedAngle)
+        }
+
+        val squish = 1f - (brush!!.squish)
+
+        val sizeJitter = brush!!.sizeJitter
+
+        if (sizeJitter > 0f) {
+
+            val jitterNumber = sizeJitter * scale
+            val finalScale = (1f + jitterNumber)
+            canvas.scale(finalScale * squish, finalScale)
+        }
+
+        val brushOpacity = if (brush!!.opacityJitter > 0f) {
+            Random.nextInt(0, (255f * brush!!.opacityJitter).toInt())
+        } else if (brush!!.alphaBlend) {
+            255
+        } else {
+            (brush!!.opacity * 255f).toInt()
+        }
+
+        brush!!.draw(canvas, brushOpacity)
+
+        canvas.restore()
     }
 
     override fun onLayerChanged(layer: PaintLayer?) {

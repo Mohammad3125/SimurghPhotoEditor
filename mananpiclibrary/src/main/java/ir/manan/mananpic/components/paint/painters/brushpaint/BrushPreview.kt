@@ -89,6 +89,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             RectF(0f, 0f, width.toFloat(), height.toFloat()),
         )
 
+        brushPainter.shouldUseCacheDrawing = true
+
         brushPainter.onLayerChanged(layer)
 
     }
