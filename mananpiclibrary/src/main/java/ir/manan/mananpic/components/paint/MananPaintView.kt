@@ -108,14 +108,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.onSizeChanged(rectAlloc, mappingMatrix)
     }
 
-    private var isPainterChanged = false
+    private var isViewInitialized = false
+
     var painter: Painter? = null
         set(value) {
             field = value
             value?.setOnInvalidateListener(this)
-            isPainterChanged = true
-            requestLayout()
-
+            if (isViewInitialized) {
+                initializedPainter()
+            } else {
+                requestLayout()
+            }
         }
 
     init {
@@ -154,12 +157,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             isFirstLayerCreation = false
         }
 
-        if (isPainterChanged) {
-            // TODO, this method does not get invoked again, even after 'requestLayout' call.
+        if (!isViewInitialized) {
             rectAlloc.set(boundsRectangle)
-            painter?.initialize(context, canvasMatrix, rectAlloc, width, height)
-            painter?.onLayerChanged(selectedLayer!!)
-            isPainterChanged = false
+            initializedPainter()
+            isViewInitialized = true
+        }
+    }
+
+    private fun initializedPainter() {
+        painter?.let { p ->
+            p.initialize(context, canvasMatrix, rectAlloc, width, height)
+            p.onLayerChanged(selectedLayer!!)
         }
     }
 
