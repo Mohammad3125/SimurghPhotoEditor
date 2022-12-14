@@ -114,9 +114,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         set(value) {
             field = value
             value?.setOnInvalidateListener(this)
-            requestLayout()
-            rectAlloc.set(boundsRectangle)
-            initializedPainter()
+            if (isViewInitialized) {
+                initializedPainter(field)
+            } else {
+                requestLayout()
+                initializedPainter(field)
+            }
         }
 
     init {
@@ -148,14 +151,21 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             maximumScale = max(widthPixels, heightPixels) / min(bitmapWidth, bitmapHeight) * 10f
         }
 
+        rectAlloc.set(boundsRectangle)
+
+        if (!isViewInitialized) {
+            initializedPainter(painter)
+            isViewInitialized = true
+        }
+
         if (isFirstLayerCreation) {
             addNewLayer()
             isFirstLayerCreation = false
         }
     }
 
-    private fun initializedPainter() {
-        painter?.let { p ->
+    private fun initializedPainter(pp: Painter?) {
+        pp?.let { p ->
             p.initialize(context, canvasMatrix, rectAlloc)
             p.onLayerChanged(selectedLayer)
         }
@@ -507,6 +517,45 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         checkIndex(index)
         layerHolder[index].opacity = opacity
         invalidate()
+    }
+
+    fun moveSelectedLayerDown() {
+
+        if (selectedLayer == null) return
+
+        val index = layerHolder.indexOf(selectedLayer)
+
+        if (index > 0) {
+            val pervIndex = index - 1
+            val previousLayer = layerHolder[pervIndex]
+            layerHolder[pervIndex] = selectedLayer!!
+            layerHolder[index] = previousLayer
+
+            saveState()
+
+            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+
+            invalidate()
+        }
+    }
+
+    fun moveSelectedLayerUp() {
+        if (selectedLayer == null) return
+
+        val index = layerHolder.indexOf(selectedLayer)
+
+        if (index < layerHolder.lastIndex) {
+            val nextIndex = index + 1
+            val previousLayer = layerHolder[nextIndex]
+            layerHolder[nextIndex] = selectedLayer!!
+            layerHolder[index] = previousLayer
+
+            saveState()
+
+            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+
+            invalidate()
+        }
     }
 
     fun lockLayer(index: Int) {
