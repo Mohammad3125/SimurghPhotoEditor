@@ -81,7 +81,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
     private fun createLayer() {
         destBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 
-        layer = PaintLayer(destBitmap, Matrix(), false, 1f, PorterDuff.Mode.SRC)
+        layer = PaintLayer(destBitmap, Matrix(), false, 1f)
 
         brushPainter.initialize(
             context,

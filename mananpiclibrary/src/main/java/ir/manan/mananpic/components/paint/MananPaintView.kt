@@ -310,10 +310,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         saveState()
 
-                        callOnLayerChangedListeners(
-                            layerHolder.toList(),
-                            layerHolder.indexOf(selectedLayer)
-                        )
                     }
 
                     isMatrixGesture = false
@@ -403,9 +399,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             super.onDraw(this)
 
-            layerHolder.forEach {
-                layersPaint.alpha = (255 * it.opacity).toInt()
-                drawBitmap(it.bitmap, leftEdge, topEdge, layersPaint)
+            layerHolder.forEach { layer ->
+
+                layersPaint.alpha = (255 * layer.opacity).toInt()
+
+                layersPaint.xfermode = layer.blendMode
+
+                drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
             }
 
             painter?.draw(this)
@@ -444,7 +444,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         undoStack.add(
             State(
                 selectedLayer!!,
-                selectedLayer!!.bitmap.copy(Bitmap.Config.ARGB_8888, true),
+                selectedLayer!!.clone(),
                 copiedList,
             )
         )
@@ -494,7 +494,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 bitmapWidth.roundToInt(),
                 bitmapHeight.roundToInt(),
                 Bitmap.Config.ARGB_8888
-            ), Matrix(), false, 1f, PorterDuff.Mode.SRC
+            ), Matrix(), false, 1f
         )
 
         layerHolder.add(selectedLayer!!)
@@ -516,6 +516,23 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun changeLayerOpacityAt(index: Int, opacity: Float) {
         checkIndex(index)
         layerHolder[index].opacity = opacity
+        invalidate()
+    }
+
+    fun changeSelectedLayerBlendingMode(blendingMode: PorterDuff.Mode) {
+        selectedLayer?.blendMode = PorterDuffXfermode(blendingMode)
+
+        saveState()
+
+        invalidate()
+    }
+
+    fun changedLayerBlendingModeAt(index: Int, blendingMode: PorterDuff.Mode) {
+        checkIndex(index)
+
+        layerHolder[index].blendMode = PorterDuffXfermode(blendingMode)
+
+        saveState()
         invalidate()
     }
 
@@ -655,11 +672,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private class State(
         val ref: PaintLayer,
-        val bitmap: Bitmap,
+        val clonedLayer: PaintLayer,
         val layers: MutableList<PaintLayer>,
     ) {
         fun restoreState(paintView: MananPaintView) {
-            ref.bitmap = bitmap.copy(bitmap.config, true)
+            ref.bitmap = clonedLayer.bitmap.copy(clonedLayer.bitmap.config, true)
+            ref.blendMode = clonedLayer.blendMode
 
             paintView.run {
 
