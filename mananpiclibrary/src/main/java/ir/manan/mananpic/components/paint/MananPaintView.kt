@@ -144,6 +144,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
+        isAllLayersCached = true
         return true
     }
 
@@ -372,6 +373,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
         isMatrixGesture = true
+        isAllLayersCached = true
         return !matrixAnimator.isAnimationRunning()
     }
 
