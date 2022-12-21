@@ -99,6 +99,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isAllLayersCached: Boolean = false
 
+    private var wasLastOperationFromOtherStack = false
+
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
@@ -462,7 +464,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun invalidateDrawings() {
-        postInvalidateOnAnimation()
+        invalidate()
     }
 
     private fun animateCanvasBack() {
@@ -499,22 +501,23 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     fun undo() {
-        swapStacks(undoStack, redoStack)
+        swapStacks(undoStack, redoStack, true)
     }
 
     fun redo() {
-        swapStacks(redoStack, undoStack)
+        swapStacks(redoStack, undoStack, false)
     }
 
-    private fun swapStacks(popStack: Stack<State>, pushStack: Stack<State>) {
+    private fun swapStacks(popStack: Stack<State>, pushStack: Stack<State>, indicator: Boolean) {
         if (popStack.isNotEmpty()) {
             val poppedState = popStack.pop()
 
-            if (pushStack.isEmpty() && popStack.isNotEmpty()) {
+            if (pushStack.isEmpty() && popStack.isNotEmpty() || (indicator != wasLastOperationFromOtherStack)) {
                 val newPopped = popStack.pop()
                 newPopped.restoreState(this)
                 pushStack.push(poppedState)
                 pushStack.push(newPopped)
+                wasLastOperationFromOtherStack= indicator
             } else {
                 pushStack.push(poppedState)
                 poppedState.restoreState(this)
