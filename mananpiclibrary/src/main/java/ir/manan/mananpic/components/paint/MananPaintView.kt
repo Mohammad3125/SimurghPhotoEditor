@@ -380,6 +380,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     override fun onScale(p0: ScaleGestureDetector): Boolean {
         p0.run {
             val sf = scaleFactor
+            isMoved = true
             canvasMatrix.postScale(sf, sf, focusX, focusY)
             invalidate()
             return true
@@ -387,6 +388,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onScaleEnd(p0: ScaleGestureDetector) {
+        isMoved = true
         super.onScaleEnd(p0)
     }
 
