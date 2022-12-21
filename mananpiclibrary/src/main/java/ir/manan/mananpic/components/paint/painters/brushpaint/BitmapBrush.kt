@@ -58,10 +58,10 @@ class BitmapBrush(
 
     init {
         size = 80f
-        color = Color.RED
+        color = Color.GREEN
         angleJitter = 0.7f
         spacing = 0.1f
-        opacity = 0.2f
+        opacity = 0.5f
         scatter = 0.2f
 
         // TODO: size jitter can be less expansive if scaling size and down sizing size jitter
@@ -109,7 +109,7 @@ class BitmapBrush(
             scaledStamp = brushBitmap.scale(w, h, true)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                scaledStamp.copy(Bitmap.Config.HARDWARE, false)
+                scaledStamp.reconfigure(scaledStamp.width,scaledStamp.height,Bitmap.Config.HARDWARE)
             }
 
             scaledStamp.prepareToDraw()
