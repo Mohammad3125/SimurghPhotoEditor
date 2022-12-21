@@ -69,24 +69,49 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         super.onLayout(changed, left, top, right, bottom)
 
         if (changed) {
-            calculatePoints()
-
-            createLayer()
-
-            drawPoints()
+            initialize(
+                width,
+                height,
+                paddingLeft.toFloat(),
+                paddingRight.toFloat(),
+                paddingTop.toFloat(),
+                paddingBottom.toFloat()
+            )
         }
     }
 
+    private fun initialize(
+        width: Int,
+        height: Int,
+        paddingLeft: Float,
+        paddingRight: Float,
+        paddingTop: Float,
+        paddingBottom: Float
+    ) {
+        calculatePoints(
+            width.toFloat(),
+            height.toFloat(),
+            paddingLeft,
+            paddingRight,
+            paddingTop,
+            paddingBottom
+        )
 
-    private fun createLayer() {
-        destBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        createLayer(width, height)
+
+        drawPoints()
+    }
+
+
+    private fun createLayer(targetWidth: Int, targetHeight: Int) {
+        destBitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
 
         layer = PaintLayer(destBitmap, Matrix(), false, 1f)
 
         brushPainter.initialize(
             context,
             MananMatrix(),
-            RectF(0f, 0f, width.toFloat(), height.toFloat()),
+            RectF(0f, 0f, targetWidth.toFloat(), targetHeight.toFloat()),
         )
 
         brushPainter.shouldUseCacheDrawing = true
@@ -95,13 +120,20 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
     }
 
-    private fun calculatePoints() {
+    private fun calculatePoints(
+        targetWidth: Float,
+        targetHeight: Float,
+        paddingLeft: Float,
+        paddingRight: Float,
+        paddingTop: Float,
+        paddingBottom: Float
+    ) {
 
-        val widthF = width.toFloat() - paddingRight
-        val heightF = height.toFloat() - paddingBottom
+        val widthF = targetWidth - paddingRight
+        val heightF = targetHeight - paddingBottom
 
         path.rewind()
-        path.moveTo(paddingLeft.toFloat(), heightF * 0.5f + paddingTop)
+        path.moveTo(paddingLeft, heightF * 0.5f + paddingTop)
         path.cubicTo(widthF * 0.25f, heightF, widthF * 0.75f, 0f, widthF, heightF * 0.5f)
 
         pathMeasure.setPath(path, false)
@@ -145,6 +177,35 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         }
 
         brushPainter.onMoveEnded(points[points.lastIndex - 1], points[points.lastIndex])
+    }
+
+    fun createBrushSnapshot(
+        targetWidth: Int,
+        targetHeight: Int,
+        paddingHorizontal: Float,
+        paddingVertical: Float
+    ): Bitmap {
+        initialize(
+            targetWidth,
+            targetHeight,
+            paddingHorizontal,
+            paddingHorizontal,
+            paddingVertical,
+            paddingVertical
+        )
+
+        val bitmapToReturn = layer.bitmap
+
+        initialize(
+            width,
+            height,
+            paddingLeft.toFloat(),
+            paddingRight.toFloat(),
+            paddingTop.toFloat(),
+            paddingBottom.toFloat()
+        )
+
+        return bitmapToReturn
     }
 
 
