@@ -91,6 +91,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         null
     private var onLayersChangedListener: OnLayersChanged? = null
 
+    private val mergeCanvas = Canvas()
+
+    private lateinit var cachedLayer: Bitmap
+
+    private lateinit var partiallyCachedLayer: Bitmap
+
+    private var isAllLayersCached: Boolean = false
+
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
@@ -155,6 +163,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         if (!isViewInitialized) {
             initializedPainter(painter)
+
+            cachedLayer = Bitmap.createBitmap(
+                bitmapWidth.roundToInt(),
+                bitmapHeight.roundToInt(),
+                Bitmap.Config.ARGB_8888
+            )
+
+            partiallyCachedLayer = Bitmap.createBitmap(
+                bitmapWidth.roundToInt(),
+                bitmapHeight.roundToInt(),
+                Bitmap.Config.ARGB_8888
+            )
+
             isViewInitialized = true
         }
 
@@ -258,6 +279,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             val mappedPoints = mapTouchPoints(initialX, initialY)
                             painter!!.onMoveBegin(mappedPoints[0], mappedPoints[1])
                             isFirstMove = false
+                            isAllLayersCached = false
                         }
 
                         repeat(historySize) {
@@ -311,6 +333,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         saveState()
 
                     }
+
+                    mergeLayers()
 
                     isMatrixGesture = false
                     isNewGesture = true
@@ -397,24 +421,44 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             // Concat the canvas to 'canvasMatrix'.
             concat(canvasMatrix)
 
-            super.onDraw(this)
+            if (isAllLayersCached) {
+                layersPaint.xfermode = null
+                layersPaint.alpha = 255
+                drawBitmap(cachedLayer, leftEdge, topEdge, layersPaint)
+            } else {
+                super.onDraw(this)
 
-            layerHolder.forEach { layer ->
+                layersPaint.xfermode = null
+                layersPaint.alpha = 255
+                drawBitmap(partiallyCachedLayer, leftEdge, topEdge, layersPaint)
 
-                layersPaint.alpha = (255 * layer.opacity).toInt()
+                selectedLayer?.let { layer ->
 
-                layersPaint.xfermode = layer.blendMode
+                    layersPaint.alpha = (255 * layer.opacity).toInt()
+                    layersPaint.xfermode = layer.blendMode
 
-                drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
+                    drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
+                }
+
+                for (i in layerHolder.indexOf(selectedLayer) + 1..layerHolder.lastIndex) {
+
+                    val layer = layerHolder[i]
+
+                    layersPaint.alpha = (255 * layer.opacity).toInt()
+
+                    layersPaint.xfermode = layer.blendMode
+
+                    drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
+                }
+
+                painter?.draw(this)
             }
-
-            painter?.draw(this)
 
         }
     }
 
     override fun invalidateDrawings() {
-        invalidate()
+        postInvalidateOnAnimation()
     }
 
     private fun animateCanvasBack() {
@@ -472,6 +516,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 poppedState.restoreState(this)
             }
 
+            mergeLayers()
+
             callOnLayerChangedListeners(
                 layerHolder.toList(),
                 layerHolder.indexOf(selectedLayer)
@@ -499,6 +545,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         layerHolder.add(selectedLayer!!)
 
+        mergeLayers()
+
         saveState()
 
         callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
@@ -506,6 +554,56 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.onLayerChanged(selectedLayer!!)
 
         invalidate()
+    }
+
+    private fun mergeLayers() {
+
+        mergeCanvas.setBitmap(partiallyCachedLayer)
+
+        val mainBitmap = toBitmap()
+
+        val s = cachedLayer.width / mainBitmap.width.toFloat()
+
+        mergeCanvas.save()
+
+        mergeCanvas.scale(s, s)
+
+        mergeCanvas.drawBitmap(mainBitmap, 0f, 0f, layersPaint)
+
+        mergeCanvas.restore()
+
+        val selectedLayerIndex = layerHolder.indexOf(selectedLayer)
+
+        mergeLayersAtIndex(0, selectedLayerIndex - 1)
+
+        cachedLayer.eraseColor(Color.TRANSPARENT)
+
+        mergeCanvas.setBitmap(cachedLayer)
+
+        mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+
+        mergeLayersAtIndex(selectedLayerIndex, layerHolder.lastIndex)
+
+        isAllLayersCached = true
+
+    }
+
+    private fun mergeLayersAtIndex(from: Int, to: Int) {
+        for (i in from..to) {
+
+            val layer = layerHolder[i]
+
+            layersPaint.alpha = (255 * layer.opacity).toInt()
+
+            layersPaint.xfermode = layer.blendMode
+
+            mergeCanvas.drawBitmap(
+                layer.bitmap,
+                0f,
+                0f,
+                layersPaint
+            )
+        }
     }
 
     fun changeSelectedLayerOpacity(opacity: Float) {
@@ -516,6 +614,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun changeLayerOpacityAt(index: Int, opacity: Float) {
         checkIndex(index)
         layerHolder[index].opacity = opacity
+        mergeLayers()
         invalidate()
     }
 
@@ -532,6 +631,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         layerHolder[index].blendMode = PorterDuffXfermode(blendingMode)
 
+        mergeLayers()
+
         saveState()
         invalidate()
     }
@@ -547,6 +648,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             val previousLayer = layerHolder[pervIndex]
             layerHolder[pervIndex] = selectedLayer!!
             layerHolder[index] = previousLayer
+
+            mergeLayers()
 
             saveState()
 
@@ -566,6 +669,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             val previousLayer = layerHolder[nextIndex]
             layerHolder[nextIndex] = selectedLayer!!
             layerHolder[index] = previousLayer
+
+            mergeLayers()
 
             saveState()
 
@@ -587,6 +692,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun changeLayerLockState(index: Int, shouldLock: Boolean) {
         checkIndex(index)
         layerHolder[index].isLocked = shouldLock
+        mergeLayers()
     }
 
     fun removeLayerAt(index: Int) {
@@ -599,11 +705,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 null
             }
 
+
             painter?.onLayerChanged(selectedLayer)
 
         }
 
         layerHolder.removeAt(index)
+
+        mergeLayers()
 
         saveState()
 
@@ -621,6 +730,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         selectedLayer = layerHolder[index]
         painter?.onLayerChanged(selectedLayer)
         callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+        mergeLayers()
+        invalidate()
     }
 
     fun getIndexOfSelectedLayer(): Int {
