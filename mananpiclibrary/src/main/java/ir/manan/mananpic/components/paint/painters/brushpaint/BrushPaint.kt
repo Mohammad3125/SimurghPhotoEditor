@@ -6,16 +6,18 @@ import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.GestureUtils
-import kotlin.math.pow
-import kotlin.math.sqrt
+import kotlin.math.floor
 import kotlin.random.Random
 
 class BrushPaint : Painter() {
 
-    private var bitmapPaint = Paint().apply {
-        isFilterBitmap = true
+//    private var bitmapPaint = Paint().apply {
+//        isFilterBitmap = true
+//    }
+    private var texturePaint = Paint().apply {
+        style = Paint.Style.FILL
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
     }
-    private var texturePaint = Paint()
     private var alphaBlendPaint = Paint().apply {
         isFilterBitmap = true
     }
@@ -24,6 +26,9 @@ class BrushPaint : Painter() {
 
     private var spacedWidth = 0f
 
+    private val path = Path()
+
+    private val pathMeasure = PathMeasure()
 
     private lateinit var ccBitmap: Bitmap
 
@@ -41,14 +46,9 @@ class BrushPaint : Painter() {
 
     private var viewBounds = RectF()
 
-    private var lastDrawnEx = 0f
-    private var lastDrawnEy = 0f
-
     private var sizeVariance = 1f
 
     private var isBrushNull = false
-
-    private var lastVtr = 0f
 
     private var lastDegree = 0f
 
@@ -84,6 +84,30 @@ class BrushPaint : Painter() {
 
     var shouldUseCacheDrawing = false
 
+    private var perv1x = 0f
+    private var perv1y = 0f
+
+    private var mid1x = 0f
+    private var mid1y = 0f
+
+    private var mid2x = 0f
+    private var mid2y = 0f
+
+    private var perv2x = 0f
+    private var perv2y = 0f
+
+    private var curX = 0f
+    private var curY = 0f
+
+    private var distance = 0f
+
+    private var isFirstThreeCreated = false
+
+    private var counter = 0
+
+    private val pointHolder = floatArrayOf(0f, 0f)
+
+
     override fun initialize(
         context: Context,
         matrix: MananMatrix,
@@ -95,7 +119,6 @@ class BrushPaint : Painter() {
         val options = BitmapFactory.Options()
         options.inScaled = false
 
-//        textureRect.set(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
         textureRect.set(viewBounds)
 
         rotationCache.clear()
@@ -125,14 +148,22 @@ class BrushPaint : Painter() {
 
         brush?.let {
 
-            lastDrawnEx = initialX
-            lastDrawnEy = initialY
+            isFirstThreeCreated = false
+            counter = 0
+
+            perv2x = initialX
+            perv2y = initialY
+
+            counter++
 
             isBrushNull = false
 
-            spacedWidth = (it.size * it.spacing) / it.smoothness
+            spacedWidth = (it.size * it.spacing)
+
             alphaBlendPaint.alpha = (it.opacity * 255f).toInt()
+
             shouldBlendAlpha = it.alphaBlend
+
             sizeVariance = 1f
 
             val ts = brush!!.textureScale
@@ -166,119 +197,144 @@ class BrushPaint : Painter() {
 
         if (!isBrushNull && areCanvasesInitialized && !isLayerNull) {
 
-            // TODO: soft clipping:  applying texture to the paint and using the drawn image and removing background
+            if (!isFirstThreeCreated) {
 
-            var diffX = (ex - lastDrawnEx)
-            var diffY = (ey - lastDrawnEy)
-
-            var vtr = sqrt(diffX.pow(2) + diffY.pow(2))
-
-            val repI = (vtr / spacedWidth).toInt()
-
-            val brushVariance = brush!!.sizeVariance
-
-            if (brushVariance > 0f) {
-
-                sizeVariance *= (1f - (1f - (vtr / lastVtr) / (repI.toFloat() / brush!!.spacing)))
-
-                lastVtr = vtr
-
-                if (sizeVariance > 1f) {
-                    sizeVariance = 1f
-                } else if (sizeVariance < brushVariance) {
-                    sizeVariance = brushVariance
-                }
-
-                spacedWidth = (brush!!.size * brush!!.spacing) * sizeVariance
-            }
-
-
-            val smoothness = brush!!.smoothness
-            val aR = 1f - smoothness
-
-            repeat(repI) { i ->
-                val diffFac = ((vtr - spacedWidth) / vtr)
-
-                val currentX = (ex - (diffX * diffFac))
-                val currentY = (ey - (diffY * diffFac))
-
-//                val angleBetween = GestureUtils.calculateAngle(
-//                    (currentX - lastDrawnEx).toDouble(),
-//                    (lastDrawnEy - currentY).toDouble()
-//
-//                )
-//
-//                val diffAngle = angleBetween - lastDegree
-
-
-                val finalX = currentX * smoothness + (lastDrawnEx * aR)
-                val finalY = currentY * smoothness + (lastDrawnEy * aR)
-
-//                if (abs(diffAngle) > 1f) {
-//
-//                    val matrix = Matrix()
-//
-//                    if (diffAngle > 0f) {
-//                        matrix.setRotate(diffAngle - 1f, lastDrawnEx, lastDrawnEy)
-//                    } else {
-//                        matrix.setRotate(diffAngle + 1f, lastDrawnEx, lastDrawnEy)
-//                    }
-//
-//                    val points = floatArrayOf(currentX, currentY)
-//
-//                    matrix.mapPoints(points)
-//
-//                    println("angle between $diffAngle")
-//                    println("x bf $finalX   x af ${points[0]}     y bf $finalY   y af ${points[1]}")
-//
-//                    finalX = points[0]
-//                    finalY = points[1]
-//                }
-
-
-//                lastDegree = angleBetween
-
-                if (shouldUseCacheDrawing) {
-
-                    drawCachedCircles(
-                        finalX,
-                        finalY,
-                        scatterXCache[cacheCounter],
-                        scatterYCache[cacheCounter],
-                        scaleCache[cacheCounter],
-                        rotationCache[cacheCounter],
-                        if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else paintCanvas
-                    )
-
-                    if (++cacheCounter > cacheSizeInByte - 1) {
-                        cacheCounter = 0
+                when (counter) {
+                    0 -> {
+                        perv2x = ex
+                        perv2y = ey
                     }
+                    1 -> {
+                        perv1x = ex
+                        perv1y = ey
+                    }
+                    2 -> {
+                        curX = ex
+                        curY = ey
 
-                } else {
-                    drawCircles(
-                        finalX,
-                        finalY,
-                        sizeVariance,
-                        i == (repI - 1),
-                        if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else paintCanvas
-                    )
+                        calculateQuadAndDraw()
+
+                        counter = 0
+
+                        isFirstThreeCreated = true
+
+                        return
+                    }
                 }
 
+                counter++
+            } else {
+                perv2x = perv1x
+                perv2y = perv1y
 
-                lastDrawnEx = finalX
-                lastDrawnEy = finalY
+                perv1x = curX
+                perv1y = curY
 
-                if (repI > 1) {
-                    diffX = (ex - lastDrawnEx)
-                    diffY = (ey - lastDrawnEy)
+                curX = ex
+                curY = ey
 
-                    vtr = sqrt(diffX.pow(2) + diffY.pow(2))
-                }
+                calculateQuadAndDraw()
+
             }
-
         }
     }
 
+    override fun onMoveEnded(lastX: Float, lastY: Float) {
+
+        distance = 0f
+//        if (!isBrushNull && !isLayerNull) {
+//
+//            if (textureBitmap != null) {
+//
+//                bufferCanvas.save()
+//
+//                bufferCanvas.translate(-viewBounds.left, -viewBounds.top)
+//
+//                bufferCanvas.drawRect(
+//                    0f, 0f, textureRect.right, textureRect.bottom,
+//                    texturePaint.apply {
+//                        xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP)
+//                    }
+//                )
+//
+//                texturePaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
+//
+//                bufferCanvas.restore()
+//
+//                paintCanvas.drawBitmap(bufferBitmap, 0f, 0f, bitmapPaint)
+//
+//                bufferBitmap.eraseColor(Color.TRANSPARENT)
+//            }
+//
+//            if (shouldBlendAlpha) {
+//                paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
+//                alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
+//            }
+//
+//            invalidate()
+//        }
+    }
+
+    private fun calculateQuadAndDraw() {
+        path.rewind()
+
+        mid1x = (perv1x + perv2x) * 0.5f
+        mid1y = (perv1y + perv2y) * 0.5f
+
+        mid2x = (curX + perv1x) * 0.5f
+        mid2y = (curY + perv1y) * 0.5f
+
+        path.moveTo(mid1x, mid1y)
+
+        path.quadTo(perv1x, perv1y, mid2x, mid2y)
+
+        pathMeasure.setPath(path, false)
+
+        val extra = distance
+
+        distance += (pathMeasure.length)
+
+        val total = floor(distance / spacedWidth).toInt()
+
+        val totalToShiftBack = (distance - (spacedWidth * total)) + extra
+
+        repeat(total) {
+
+            pathMeasure.getPosTan(
+                distance - totalToShiftBack,
+                pointHolder,
+                null
+            )
+
+            distance -= spacedWidth
+
+            if (shouldUseCacheDrawing) {
+
+                drawCachedCircles(
+                    pointHolder[0],
+                    pointHolder[1],
+                    scatterXCache[cacheCounter],
+                    scatterYCache[cacheCounter],
+                    scaleCache[cacheCounter],
+                    rotationCache[cacheCounter],
+                    if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else paintCanvas
+                )
+
+                if (++cacheCounter > cacheSizeInByte - 1) {
+                    cacheCounter = 0
+                }
+
+            } else {
+                drawCircles(
+                    pointHolder[0],
+                    pointHolder[1],
+                    1f,
+                    (it + 1) == total,
+                    if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else if (textureBitmap != null) bufferCanvas else paintCanvas
+                )
+            }
+        }
+    }
 
     private fun drawCircles(
         touchX: Float,
@@ -403,40 +459,6 @@ class BrushPaint : Painter() {
         }
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-
-//        bufferCanvas.drawColor(Color.WHITE)
-
-        if (!isBrushNull && !isLayerNull) {
-
-//            if (textureBitmap != null) {
-//
-//                bufferCanvas.save()
-//
-//                bufferCanvas.translate(-viewBounds.left, -viewBounds.top)
-//
-//                bufferCanvas.drawRect(
-//                    0f, 0f, textureRect.right, textureRect.bottom,
-//                    texturePaint
-//                )
-//
-//                bufferCanvas.restore()
-//
-//                bufferCanvas.drawBitmap(ccBitmap, 0f, 0f, bitmapPaint)
-//
-//                paintCanvas.drawBitmap(bufferBitmap, 0f, 0f, bitmapPaint)
-//
-//                bufferCanvas.drawColor(Color.TRANSPARENT)
-//            }
-
-            if (shouldBlendAlpha) {
-                paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
-                alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
-            }
-
-            invalidate()
-        }
-    }
 
     private fun drawCachedCircles(
         ex: Float,
@@ -548,9 +570,14 @@ class BrushPaint : Painter() {
 //
 //        texturePaint.alpha = 255
 //
+
 //        if (textureBitmap != null) {
-//            canvas.drawColor(Color.WHITE)
+//
+//            canvas.drawBitmap(bufferBitmap, textureRect.left, textureRect.top, bitmapPaint)
+//
 //            canvas.drawRect(textureRect, texturePaint)
+//
+//            canvas.drawBitmap(ccBitmap, textureRect.left, textureRect.top, bitmapPaint)
 //        }
 
         if (!isBrushNull && shouldBlendAlpha) {
