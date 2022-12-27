@@ -1,6 +1,5 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint
 
-import android.content.Context
 import android.graphics.*
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
@@ -11,7 +10,7 @@ import kotlin.random.Random
 
 class BrushPaint : Painter() {
 
-//    private var bitmapPaint = Paint().apply {
+    //    private var bitmapPaint = Paint().apply {
 //        isFilterBitmap = true
 //    }
     private var texturePaint = Paint().apply {
@@ -105,11 +104,12 @@ class BrushPaint : Painter() {
 
     private var counter = 0
 
+    private var cc = 0
+
     private val pointHolder = floatArrayOf(0f, 0f)
 
 
     override fun initialize(
-        context: Context,
         matrix: MananMatrix,
         bounds: RectF,
     ) {
@@ -334,6 +334,28 @@ class BrushPaint : Painter() {
                 )
             }
         }
+
+//        paintCanvas.save()
+//
+//        paintCanvas.translate(-viewBounds.left, -viewBounds.top)
+//
+//        paintCanvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+//            color = Color.RED
+//            style = Paint.Style.STROKE
+//            strokeWidth = 4f
+//        })
+//
+//        paintCanvas.drawPoint(mid1x, mid1y, Paint().apply {
+//            strokeWidth = 5f
+//            color = Color.BLUE
+//        })
+//
+//        paintCanvas.drawPoint(mid2x, mid2y, Paint().apply {
+//            strokeWidth = 5f
+//            color = Color.BLUE
+//        })
+//
+//        paintCanvas.restore()
     }
 
     private fun drawCircles(
