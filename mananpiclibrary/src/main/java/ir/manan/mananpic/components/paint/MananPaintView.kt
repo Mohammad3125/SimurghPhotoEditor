@@ -270,11 +270,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         isMatrixGesture = true
 
-                        println("ismoved $isMoved")
-//                        if (isMoved) {
                         canvasMatrix.postTranslate(dx, dy)
                         invalidate()
-//                        }
 
                         return true
                     }
@@ -523,7 +520,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         if (popStack.isNotEmpty()) {
             val poppedState = popStack.pop()
 
-            if (pushStack.isEmpty() && popStack.isNotEmpty() || (indicator != wasLastOperationFromOtherStack)) {
+            if (pushStack.isEmpty() && popStack.isNotEmpty() ||
+                (indicator != wasLastOperationFromOtherStack && popStack.isNotEmpty())
+                || (pushStack.isNotEmpty() && layerHolder.indexOf(poppedState.ref) > layerHolder.indexOf(
+                    pushStack.peek().ref
+                ))
+            ) {
                 val newPopped = popStack.pop()
                 newPopped.restoreState(this)
                 pushStack.push(poppedState)
