@@ -37,7 +37,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isMatrixGesture = false
 
-    private var isNewGesture = false
+    private var isNewGesture = true
 
     private var maximumScale = 0f
 
@@ -101,6 +101,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var wasLastOperationFromOtherStack = false
 
+    private var tot = 0f
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
@@ -152,9 +153,18 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
         canvasMatrix.postRotate(degree - rotHolder, px, py)
+        tot += abs(degree - rotHolder)
         rotHolder = degree
         invalidate()
         return true
+    }
+
+    override fun onRotateEnded() {
+        if (tot > 0.5f) {
+            isMoved = true
+        }
+
+        tot = 0f
     }
 
     override fun onImageLaidOut() {
@@ -190,7 +200,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun initializedPainter(pp: Painter?) {
         pp?.let { p ->
-            p.initialize(context, canvasMatrix, rectAlloc)
+            p.initialize(canvasMatrix, rectAlloc)
             p.onLayerChanged(selectedLayer)
         }
     }
@@ -241,9 +251,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         if (!isMoved) {
                             dxSum += abs(secondPointerDx)
                             dySum += abs(secondPointerDy)
+                            isMoved = isMoved.or(dxSum >= finalSlope || dySum >= finalSlope)
                         }
-
-                        isMoved = dxSum >= finalSlope || dySum >= finalSlope
 
 
                         // Calculate total difference by taking difference of first and second pointer
@@ -261,10 +270,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         isMatrixGesture = true
 
-                        if (isMoved) {
-                            canvasMatrix.postTranslate(dx, dy)
-                            invalidate()
-                        }
+                        println("ismoved $isMoved")
+//                        if (isMoved) {
+                        canvasMatrix.postTranslate(dx, dy)
+                        invalidate()
+//                        }
 
                         return true
                     }
@@ -444,6 +454,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     layersPaint.xfermode = layer.blendMode
 
                     drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
+
+                    painter?.draw(this)
                 }
 
                 for (i in layerHolder.indexOf(selectedLayer) + 1..layerHolder.lastIndex) {
@@ -457,7 +469,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
                 }
 
-                painter?.draw(this)
             }
 
         }
@@ -517,7 +528,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 newPopped.restoreState(this)
                 pushStack.push(poppedState)
                 pushStack.push(newPopped)
-                wasLastOperationFromOtherStack= indicator
+                wasLastOperationFromOtherStack = indicator
             } else {
                 pushStack.push(poppedState)
                 poppedState.restoreState(this)
