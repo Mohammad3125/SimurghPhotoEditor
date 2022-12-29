@@ -441,9 +441,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             } else {
                 super.onDraw(this)
 
-                layersPaint.xfermode = null
-                layersPaint.alpha = 255
-                drawBitmap(partiallyCachedLayer, leftEdge, topEdge, layersPaint)
+                if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
+                    layersPaint.xfermode = null
+                    layersPaint.alpha = 255
+                    drawBitmap(partiallyCachedLayer, leftEdge, topEdge, layersPaint)
+                }
 
                 selectedLayer?.let { layer ->
 
