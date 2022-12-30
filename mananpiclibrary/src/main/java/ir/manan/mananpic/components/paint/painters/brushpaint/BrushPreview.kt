@@ -26,6 +26,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                     paddingBottom.toFloat()
                 )
             }
+
+            requestRender()
         }
 
     private val bitmapPaint = Paint().apply {
@@ -114,6 +116,11 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
+
+        if (!this::layer.isInitialized) {
+            return
+        }
+
         canvas?.run {
             drawBitmap(layer.bitmap, 0f, 0f, bitmapPaint)
         }
