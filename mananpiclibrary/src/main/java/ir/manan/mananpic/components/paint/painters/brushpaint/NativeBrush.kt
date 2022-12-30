@@ -37,21 +37,14 @@ class NativeBrush : Brush() {
     override var texture: Bitmap? = null
         set(value) {
             field = value
-            if (value == null) {
-                paint.xfermode = null
-            } else {
-                paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
-            }
         }
 
     private fun createHardnessShader() {
-        val sizeHalf = size * 0.5f
-
         colorsHolder[0] = color
         colorsHolder[1] = Color.TRANSPARENT
 
-        stopsHolder[0] = hardness
-        stopsHolder[1] = 1f - hardness
+        stopsHolder[0] = 1f - hardness
+        stopsHolder[1] = 1f
 
         hardnessShader = RadialGradient(
             0f,
@@ -65,28 +58,6 @@ class NativeBrush : Brush() {
         paint.shader = hardnessShader
     }
 
-    init {
-        color = Color.BLACK
-        size = 30f
-        hardness = 0.8f
-        spacing = 0.05f
-        opacity = 0.4f
-
-//        sizeVariance = 0.4f
-//        angleJitter = 1f
-//        sizeJitter = 1f
-//        squish = 0.4f
-//        angle = 45f
-//        alphaBlend = true
-
-//        hueJitter = 50
-//        hueFlow = 12f
-//        hueDistance = 30
-
-        smoothness = 0.30f
-
-    }
-
     override fun draw(canvas: Canvas, opacity: Int) {
         if (lastSize != size) {
             lastSize = size
@@ -94,7 +65,6 @@ class NativeBrush : Brush() {
         }
 
         paint.alpha = opacity
-
 
         // easy size jitter here
         canvas.drawCircle(0f, 0f, sizeHalf, paint)

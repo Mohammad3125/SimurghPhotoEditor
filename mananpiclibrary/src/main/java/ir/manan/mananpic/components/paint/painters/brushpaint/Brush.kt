@@ -11,7 +11,7 @@ abstract class Brush {
     @ColorInt
     open var color: Int = Color.BLACK
 
-    open var opacity: Float = 0.2f
+    open var opacity: Float = 1f
 
     open var opacityJitter: Float = 0f
 
