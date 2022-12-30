@@ -100,11 +100,11 @@ class BrushPaint : Painter() {
 
     private var distance = 0f
 
+    private var extra = 0f
+
     private var isFirstThreeCreated = false
 
     private var counter = 0
-
-    private var cc = 0
 
     private val pointHolder = floatArrayOf(0f, 0f)
 
@@ -159,6 +159,8 @@ class BrushPaint : Painter() {
             isBrushNull = false
 
             spacedWidth = (it.size * it.spacing)
+
+            distance = spacedWidth
 
             alphaBlendPaint.alpha = (it.opacity * 255f).toInt()
 
@@ -290,8 +292,6 @@ class BrushPaint : Painter() {
 
         pathMeasure.setPath(path, false)
 
-        val extra = distance
-
         distance += (pathMeasure.length)
 
         val total = floor(distance / spacedWidth).toInt()
@@ -334,6 +334,8 @@ class BrushPaint : Painter() {
                 )
             }
         }
+
+        extra = distance
 
 //        paintCanvas.save()
 //
