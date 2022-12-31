@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.paint.painters.brushpaint
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.PorterDuff
 import androidx.annotation.ColorInt
 
 abstract class Brush {
@@ -44,6 +45,8 @@ abstract class Brush {
     open var hueFlow : Float = 0f
 
     open var hueDistance : Int = 0
+
+    internal abstract var brushBlending : PorterDuff.Mode
 
 
     abstract fun draw(canvas: Canvas,opacity: Int)

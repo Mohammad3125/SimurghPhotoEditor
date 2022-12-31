@@ -108,6 +108,8 @@ class BrushPaint : Painter() {
 
     private val pointHolder = floatArrayOf(0f, 0f)
 
+    var isInEraserMode = false
+
 
     override fun initialize(
         matrix: MananMatrix,
@@ -189,6 +191,12 @@ class BrushPaint : Painter() {
             }
 
             lastDegree = 0f
+
+            if (isInEraserMode) {
+                brush!!.brushBlending = PorterDuff.Mode.DST_OUT
+            } else {
+                brush!!.brushBlending = PorterDuff.Mode.SRC
+            }
 
             return
         }
