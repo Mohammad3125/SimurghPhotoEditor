@@ -83,6 +83,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isFirstLayerCreation = true
 
+
     private var onTapUp: ((Unit) -> Unit)? = null
 
     private var onDoubleTapUpInterface: OnDoubleTapUp? = null
@@ -102,6 +103,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private var wasLastOperationFromOtherStack = false
 
     private var tot = 0f
+
+    private var isFirstTimeToCallListener = false
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
@@ -797,10 +800,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun setOnLayersChangedListener(onLayersChanged: OnLayersChanged) {
         onLayersChangedListener = onLayersChanged
+        callListenerForFirstTime()
     }
 
     fun setOnLayersChangedListener(callback: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)) {
         onLayersChanged = callback
+        callListenerForFirstTime()
+    }
+
+    private fun callListenerForFirstTime() {
+        if (isViewInitialized && !isFirstLayerCreation && isFirstTimeToCallListener) {
+            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+            isFirstTimeToCallListener = false
+        }
     }
 
     private fun callOnDoubleTapListeners() {
