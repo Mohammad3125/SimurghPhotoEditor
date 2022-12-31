@@ -756,6 +756,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
+    fun selectLayer(paintLayer: PaintLayer) {
+        if (layerHolder.contains(paintLayer) && selectedLayer !== paintLayer) {
+            selectedLayer = paintLayer
+            painter?.onLayerChanged(selectedLayer)
+            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+            mergeLayers()
+            invalidate()
+        }
+    }
+
     fun getIndexOfSelectedLayer(): Int {
 
         if (selectedLayer == null) {
