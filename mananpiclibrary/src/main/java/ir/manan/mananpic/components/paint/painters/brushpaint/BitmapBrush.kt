@@ -24,6 +24,16 @@ class BitmapBrush(
 
     private var stampScale = 0f
 
+    override var brushBlending: PorterDuff.Mode = PorterDuff.Mode.DST
+        set(value) {
+            field = value
+            if (field == PorterDuff.Mode.SRC) {
+                paint.xfermode = null
+            } else {
+                paint.xfermode = PorterDuffXfermode(value)
+            }
+        }
+
     override var size: Float = 14f
         set(value) {
             field = value

@@ -39,6 +39,17 @@ class NativeBrush : Brush() {
             field = value
         }
 
+    override var brushBlending: PorterDuff.Mode = PorterDuff.Mode.DST
+        set(value) {
+            field = value
+
+            if (field == PorterDuff.Mode.SRC) {
+                paint.xfermode = null
+            } else {
+                paint.xfermode = PorterDuffXfermode(value)
+            }
+        }
+
     private fun createHardnessShader() {
         colorsHolder[0] = color
         colorsHolder[1] = Color.TRANSPARENT
