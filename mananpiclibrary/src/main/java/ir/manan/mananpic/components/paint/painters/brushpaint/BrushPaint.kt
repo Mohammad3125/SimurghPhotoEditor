@@ -110,6 +110,8 @@ class BrushPaint : Painter() {
 
     var isInEraserMode = false
 
+    private var cachePointHolder = mutableListOf<Float>()
+
 
     override fun initialize(
         matrix: MananMatrix,
@@ -117,9 +119,6 @@ class BrushPaint : Painter() {
     ) {
 
         viewBounds.set(bounds)
-
-        val options = BitmapFactory.Options()
-        options.inScaled = false
 
         textureRect.set(viewBounds)
 
@@ -140,7 +139,7 @@ class BrushPaint : Painter() {
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
 
-        if (isLayerNull) {
+        if (isLayerNull && !shouldUseCacheDrawing) {
             return
         }
 
@@ -149,6 +148,8 @@ class BrushPaint : Painter() {
         areCanvasesInitialized = (this::paintCanvas.isInitialized)
 
         brush?.let {
+
+            cachePointHolder.clear()
 
             isFirstThreeCreated = false
             counter = 0
@@ -205,7 +206,7 @@ class BrushPaint : Painter() {
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
 
-        if (!isBrushNull && areCanvasesInitialized && !isLayerNull) {
+        if ((!isBrushNull && areCanvasesInitialized && !isLayerNull) || shouldUseCacheDrawing) {
 
             if (!isFirstThreeCreated) {
 
@@ -317,21 +318,8 @@ class BrushPaint : Painter() {
             distance -= spacedWidth
 
             if (shouldUseCacheDrawing) {
-
-                drawCachedCircles(
-                    pointHolder[0],
-                    pointHolder[1],
-                    scatterXCache[cacheCounter],
-                    scatterYCache[cacheCounter],
-                    scaleCache[cacheCounter],
-                    rotationCache[cacheCounter],
-                    if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else paintCanvas
-                )
-
-                if (++cacheCounter > cacheSizeInByte - 1) {
-                    cacheCounter = 0
-                }
-
+                cachePointHolder.add(pointHolder[0])
+                cachePointHolder.add(pointHolder[1])
             } else {
                 drawCircles(
                     pointHolder[0],
@@ -595,6 +583,25 @@ class BrushPaint : Painter() {
 
     override fun draw(canvas: Canvas) {
 
+        if (shouldUseCacheDrawing) {
+
+            for(i in cachePointHolder.indices step 2) {
+
+                drawCachedCircles(
+                    cachePointHolder[i],
+                    cachePointHolder[i + 1],
+                    scatterXCache[cacheCounter],
+                    scatterYCache[cacheCounter],
+                    scaleCache[cacheCounter],
+                    rotationCache[cacheCounter],
+                    canvas
+                )
+
+                if (++cacheCounter > cacheSizeInByte - 1) {
+                    cacheCounter = 0
+                }
+            }
+        }
 
 //        if(shouldBlendAlpha && !isBrushNull) {
 //            texturePaint.alpha = (brush!!.opacity * 255f).toInt()

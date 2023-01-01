@@ -5,7 +5,6 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.view.doOnLayout
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 
@@ -29,12 +28,6 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
             requestRender()
         }
-
-    private val bitmapPaint = Paint().apply {
-        isFilterBitmap = true
-    }
-
-    private lateinit var layer: PaintLayer
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -109,20 +102,13 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             paddingBottom
         )
 
-        layer = createLayer(width, height)
-
         drawPoints(brush!!)
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-
-        if (!this::layer.isInitialized) {
-            return
-        }
-
-        canvas?.run {
-            drawBitmap(layer.bitmap, 0f, 0f, bitmapPaint)
+        canvas?.let {
+            brushPainter.draw(it)
         }
     }
 
@@ -136,8 +122,13 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
     companion object {
 
         private val path = Path()
+        private val canvasBitmap by lazy {
+            Canvas()
+        }
         private val pathMeasure = PathMeasure()
-        private val brushPainter = BrushPaint()
+        private val brushPainter = BrushPaint().apply {
+            shouldUseCacheDrawing = true
+        }
         private val points = FloatArray(80)
         fun createBrushSnapshot(
             targetWidth: Int,
@@ -156,11 +147,24 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 paddingVertical
             )
 
-            val layer = createLayer(targetWidth, targetHeight)
+            brushPainter.initialize(
+                MananMatrix(),
+                RectF(0f, 0f, targetWidth.toFloat(), targetHeight.toFloat()),
+            )
 
             drawPoints(brush)
 
-            return layer.bitmap
+            val snapshot = Bitmap.createBitmap(
+                targetWidth,
+                targetHeight,
+                Bitmap.Config.ARGB_8888
+            )
+
+            canvasBitmap.setBitmap(snapshot)
+
+            brushPainter.draw(canvasBitmap)
+
+            return snapshot
         }
 
         private fun calculatePoints(
@@ -199,30 +203,9 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             }
         }
 
-        private fun createLayer(targetWidth: Int, targetHeight: Int): PaintLayer {
-            val createdLayer = PaintLayer(
-                Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888),
-                Matrix(),
-                false,
-                1f
-            )
-
-            brushPainter.initialize(
-                MananMatrix(),
-                RectF(0f, 0f, targetWidth.toFloat(), targetHeight.toFloat()),
-            )
-
-            brushPainter.shouldUseCacheDrawing = true
-
-            brushPainter.onLayerChanged(createdLayer)
-
-            return createdLayer
-        }
-
         private fun drawPoints(brush: Brush) {
 
             brushPainter.brush = brush
-            brushPainter.resetPaint()
 
             var lastX = points[0]
             var lastY = points[1]
