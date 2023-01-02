@@ -163,7 +163,7 @@ class BrushPaint : Painter() {
 
             spacedWidth = (it.size * it.spacing)
 
-            distance = spacedWidth
+            extra = 0f
 
             alphaBlendPaint.alpha = (it.opacity * 255f).toInt()
 
@@ -584,6 +584,8 @@ class BrushPaint : Painter() {
     override fun draw(canvas: Canvas) {
 
         if (shouldUseCacheDrawing) {
+
+            cacheCounter = 0
 
             for(i in cachePointHolder.indices step 2) {
 
