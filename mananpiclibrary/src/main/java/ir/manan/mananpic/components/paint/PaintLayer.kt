@@ -21,4 +21,21 @@ data class PaintLayer(
             blendMode
         )
     }
+
+    override fun equals(other: Any?): Boolean {
+        other as PaintLayer
+        return (bitmap.sameAs(other.bitmap)) &&
+                (isLocked == other.isLocked) &&
+                (opacity == other.opacity) &&
+                (blendMode == other.blendMode)
+    }
+
+    override fun hashCode(): Int {
+        var result = bitmap.hashCode()
+        result = 31 * result + layerMatrix.hashCode()
+        result = 31 * result + isLocked.hashCode()
+        result = 31 * result + opacity.hashCode()
+        result = 31 * result + blendMode.hashCode()
+        return result
+    }
 }
