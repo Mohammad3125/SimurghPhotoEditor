@@ -634,7 +634,8 @@ class BrushPaint : Painter() {
     }
 
     override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
-
+        viewBounds.set(newBounds)
+        textureRect.set(viewBounds)
     }
 
     override fun undo() {
