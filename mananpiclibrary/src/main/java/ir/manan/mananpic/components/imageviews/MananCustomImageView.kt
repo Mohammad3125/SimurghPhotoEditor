@@ -150,11 +150,8 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
         }
     }
 
-    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap {
-
-        if (bitmap == null) throw IllegalStateException("bitmap of current image view is null")
-
-        return bitmap!!
+    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap? {
+        return bitmap
     }
 
     override fun toBitmap(
@@ -162,7 +159,7 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
         height: Int,
         config: Bitmap.Config,
         ignoreAxisScale: Boolean
-    ): Bitmap {
+    ): Bitmap? {
 
         if (bitmap == null) throw IllegalStateException("bitmap of current image view is null")
 

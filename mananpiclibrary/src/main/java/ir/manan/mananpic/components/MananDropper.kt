@@ -2,7 +2,6 @@ package ir.manan.mananpic.components
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -433,15 +432,7 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
      * @return resized [Bitmap] that user is going to pick color from.
      */
     private fun getImageViewBitmap(): Bitmap? {
-        val mDrawable = drawable
-        return if (mDrawable != null && mDrawable is BitmapDrawable) {
-            Bitmap.createScaledBitmap(
-                mDrawable.bitmap,
-                (bitmapWidth).toInt(),
-                (bitmapHeight).toInt(),
-                true
-            )
-        } else null
+        return bitmap
     }
 
     /**

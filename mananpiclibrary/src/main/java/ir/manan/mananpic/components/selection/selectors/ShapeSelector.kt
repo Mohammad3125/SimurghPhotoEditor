@@ -2,7 +2,6 @@ package ir.manan.mananpic.components.selection.selectors
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.Drawable
 import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.utils.MananMatrix
 
@@ -122,12 +121,12 @@ class ShapeSelector : PathBasedSelector() {
         }
     }
 
-    override fun select(drawable: Drawable): Bitmap? {
+    override fun select(bitmap: Bitmap): Bitmap? {
         getClipPath()?.let { clip ->
             path.rewind()
             path.set(clip)
         }
-        return super.select(drawable)
+        return super.select(bitmap)
     }
 
     override fun draw(canvas: Canvas?) {

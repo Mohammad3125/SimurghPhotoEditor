@@ -248,15 +248,15 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
 
     fun select(): Bitmap? {
         var b: Bitmap? = null
-        if (drawable != null && selector != null) {
-            b = selector!!.select(drawable)
+        if (bitmap != null && selector != null) {
+            b = selector!!.select(bitmap!!)
             callOnStateChangeListeners(selector!!.isClosed())
         }
         return b
     }
 
-    override fun setImageBitmap(bm: Bitmap?) {
-        super.setImageBitmap(bm)
+    override fun setImageBitmap(bitmap: Bitmap?) {
+        super.setImageBitmap(bitmap)
         canvasMatrix.reset()
     }
 
@@ -342,9 +342,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     fun getPathData(): Path? {
         selector?.getClipPath()?.run {
 
-
+            if(bitmap == null) {
+                return null
+            }
             // Get how much the current bitmap displayed is scaled comparing to original drawable size.
-            val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
+            val totalScaled = bitmap!!.width / (rightEdge - leftEdge)
 
             return Path(this).apply {
                 transform(mappingMatrix.apply {

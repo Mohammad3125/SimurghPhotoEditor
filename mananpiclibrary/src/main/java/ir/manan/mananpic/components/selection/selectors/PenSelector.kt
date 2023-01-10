@@ -3,7 +3,6 @@ package ir.manan.mananpic.components.selection.selectors
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.Drawable
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.selection.selectors.PenSelector.Handle.*
@@ -470,10 +469,9 @@ class PenSelector : PathBasedSelector() {
         }
     }
 
-    override fun select(drawable: Drawable): Bitmap? {
+    override fun select(bitmap: Bitmap): Bitmap? {
         makePathReadyForSelection()
-
-        return super.select(drawable)
+        return super.select(bitmap)
     }
 
     private fun makePathReadyForSelection() {

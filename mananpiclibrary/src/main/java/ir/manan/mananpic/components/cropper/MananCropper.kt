@@ -238,8 +238,8 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
 
         // Initialize drawing objects after the width and height has been determined.
         val pair = aspectRatio.normalizeAspectRatio(
-            bitmapWidth,
-            bitmapHeight
+            finalWidth,
+            finalHeight
         )
         initializeDrawingObjects(leftEdge, topEdge, pair.first + leftEdge, pair.second + topEdge)
     }
@@ -617,7 +617,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
 
         aspectRatio = newAspectRatio
 
-        val pair = aspectRatio.normalizeAspectRatio(bitmapWidth, bitmapHeight)
+        val pair = aspectRatio.normalizeAspectRatio(finalWidth, finalHeight)
 
         // Animate the change of drawing objects.
         rectAnimator.run {
@@ -640,21 +640,21 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     fun cropImage(): Bitmap {
         frameRect.run {
 
-            val mDrawable = drawable ?: throw IllegalStateException("Cannot crop a null drawable")
+            if(bitmap == null) throw IllegalStateException("cannot crop a null bitmap")
 
             // Calculate bounds of drawable by dividing it by initial scale of current image.
             val le = (left - leftEdge)
             val te = (top - topEdge)
-            val l = (le / initialScale)
-            val t = (te / initialScale)
-            var r = ((right - le - leftEdge) / initialScale)
-            var b = ((bottom - te - topEdge) / initialScale)
+            val l = (le / matrixScale)
+            val t = (te / matrixScale)
+            var r = ((right - le - leftEdge) / matrixScale)
+            var b = ((bottom - te - topEdge) / matrixScale)
 
-            if (r > mDrawable.intrinsicWidth) r = mDrawable.intrinsicWidth.toFloat()
-            if (b > mDrawable.intrinsicHeight) b = mDrawable.intrinsicHeight.toFloat()
+            if (r > rightEdge) r = rightEdge
+            if (b > bottomEdge) b = bottomEdge
 
             return Bitmap.createBitmap(
-                toBitmap(),
+                bitmap!!,
                 l.roundToInt(), t.roundToInt(), r.roundToInt(), b.roundToInt()
             )
         }

@@ -19,7 +19,6 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 class MananPaintView(context: Context, attrSet: AttributeSet?) :
     MananGestureImageView(context, attrSet), Selector.OnDispatchToInvalidate {
@@ -181,14 +180,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             initializedPainter(painter)
 
             cachedLayer = Bitmap.createBitmap(
-                bitmapWidth.roundToInt(),
-                bitmapHeight.roundToInt(),
+                bitmapWidth,
+                bitmapHeight,
                 Bitmap.Config.ARGB_8888
             )
 
             partiallyCachedLayer = Bitmap.createBitmap(
-                bitmapWidth.roundToInt(),
-                bitmapHeight.roundToInt(),
+                bitmapWidth,
+                bitmapHeight,
                 Bitmap.Config.ARGB_8888
             )
 
@@ -415,16 +414,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         canvasMatrix.invert(mappingMatrix)
         mappingMatrix.mapPoints(touchPointMappedArray)
 
+        mappingMatrix.reset()
+
+        imageviewMatrix.invert(mappingMatrix)
+        mappingMatrix.postTranslate(leftEdge, topEdge)
+        mappingMatrix.mapPoints(touchPointMappedArray)
+
         return touchPointMappedArray
-    }
-
-    override fun setImageBitmap(bm: Bitmap?) {
-        super.setImageBitmap(bm)
-        canvasMatrix.reset()
-    }
-
-    fun setImageBitmapWithoutMatrixReset(bm: Bitmap?) {
-        super.setImageBitmap(bm)
     }
 
     fun resetPaint() {
@@ -440,14 +436,25 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             if (isAllLayersCached) {
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
-                drawBitmap(cachedLayer, leftEdge, topEdge, layersPaint)
+
+                save()
+
+                concat(imageviewMatrix)
+
+                drawBitmap(cachedLayer, 0f, 0f, layersPaint)
+
+                restore()
             } else {
                 super.onDraw(this)
+
+                save()
+
+                concat(imageviewMatrix)
 
                 if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
                     layersPaint.xfermode = null
                     layersPaint.alpha = 255
-                    drawBitmap(partiallyCachedLayer, leftEdge, topEdge, layersPaint)
+                    drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
                 }
 
                 selectedLayer?.let { layer ->
@@ -455,7 +462,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     layersPaint.alpha = (255 * layer.opacity).toInt()
                     layersPaint.xfermode = layer.blendMode
 
-                    drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
+                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
 
                     painter?.draw(this)
                 }
@@ -468,8 +475,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     layersPaint.xfermode = layer.blendMode
 
-                    drawBitmap(layer.bitmap, leftEdge, topEdge, layersPaint)
+                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
                 }
+
+                restore()
 
             }
 
@@ -562,8 +571,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         selectedLayer = PaintLayer(
             Bitmap.createBitmap(
-                bitmapWidth.roundToInt(),
-                bitmapHeight.roundToInt(),
+                bitmapWidth,
+                bitmapHeight,
                 Bitmap.Config.ARGB_8888
             ), Matrix(), false, 1f
         )
@@ -583,33 +592,33 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun mergeLayers() {
 
-        mergeCanvas.setBitmap(partiallyCachedLayer)
+        bitmap?.let { mainBitmap ->
+            mergeCanvas.setBitmap(partiallyCachedLayer)
 
-        val mainBitmap = toBitmap()
+            val s = cachedLayer.width / bitmapWidth.toFloat()
 
-        val s = cachedLayer.width / mainBitmap.width.toFloat()
+            mergeCanvas.save()
 
-        mergeCanvas.save()
+            mergeCanvas.scale(s, s)
 
-        mergeCanvas.scale(s, s)
+            mergeCanvas.drawBitmap(mainBitmap, 0f, 0f, layersPaint)
 
-        mergeCanvas.drawBitmap(mainBitmap, 0f, 0f, layersPaint)
+            mergeCanvas.restore()
 
-        mergeCanvas.restore()
+            val selectedLayerIndex = layerHolder.indexOf(selectedLayer)
 
-        val selectedLayerIndex = layerHolder.indexOf(selectedLayer)
+            mergeLayersAtIndex(0, selectedLayerIndex - 1)
 
-        mergeLayersAtIndex(0, selectedLayerIndex - 1)
+            cachedLayer.eraseColor(Color.TRANSPARENT)
 
-        cachedLayer.eraseColor(Color.TRANSPARENT)
+            mergeCanvas.setBitmap(cachedLayer)
 
-        mergeCanvas.setBitmap(cachedLayer)
+            mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
 
-        mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+            mergeLayersAtIndex(selectedLayerIndex, layerHolder.lastIndex)
 
-        mergeLayersAtIndex(selectedLayerIndex, layerHolder.lastIndex)
-
-        isAllLayersCached = true
+            isAllLayersCached = true
+        }
 
     }
 
