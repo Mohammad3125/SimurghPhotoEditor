@@ -284,8 +284,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         if (isFirstMove) {
 
-                            if (redoStack.isNotEmpty() || selectedLayer !== undoStack.peek().ref) {
-                                saveState()
+                            if ((undoStack.isNotEmpty()) && selectedLayer !== undoStack.peek().ref) {
+                                saveState(true)
+                            } else if (redoStack.isNotEmpty()) {
+                                saveState(false)
                             }
 
                             val mappedPoints = mapTouchPoints(initialX, initialY)
@@ -498,28 +500,26 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun saveState() {
+    private fun saveState(isSpecial: Boolean = false) {
 
         if (redoStack.isNotEmpty()) {
             redoStack.clear()
         }
 
-        selectedLayer?.run {
-            addToHistory()
-        }
-    }
-
-    private fun addToHistory() {
-        val copiedList = MutableList(layerHolder.size) {
-            layerHolder[it]
-        }
-        undoStack.add(
-            State(
-                selectedLayer!!,
-                selectedLayer!!.clone(),
-                copiedList,
+        selectedLayer?.let { sl ->
+            val copiedList = MutableList(layerHolder.size) {
+                layerHolder[it]
+            }
+            undoStack.add(
+                State(
+                    sl,
+                    sl.clone(),
+                    copiedList,
+                    isSpecial
+                )
             )
-        )
+        }
+
     }
 
     fun undo() {
@@ -533,21 +533,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun swapStacks(popStack: Stack<State>, pushStack: Stack<State>, indicator: Boolean) {
         if (popStack.isNotEmpty()) {
             val poppedState = popStack.pop()
+            pushStack.push(poppedState)
+            poppedState.restoreState(this)
 
-            if (pushStack.isEmpty() && popStack.isNotEmpty() ||
-                (indicator != wasLastOperationFromOtherStack && popStack.isNotEmpty())
-                || (pushStack.isNotEmpty() && layerHolder.indexOf(poppedState.ref) > layerHolder.indexOf(
-                    pushStack.peek().ref
-                ))
-            ) {
+            if (popStack.isNotEmpty() && (pushStack.isEmpty() || indicator != wasLastOperationFromOtherStack || poppedState.isSpecial)) {
                 val newPopped = popStack.pop()
                 newPopped.restoreState(this)
-                pushStack.push(poppedState)
                 pushStack.push(newPopped)
                 wasLastOperationFromOtherStack = indicator
-            } else {
-                pushStack.push(poppedState)
-                poppedState.restoreState(this)
             }
 
             mergeLayers()
@@ -565,8 +558,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun addNewLayer() {
 
-        if (redoStack.isNotEmpty() || (undoStack.isNotEmpty() && selectedLayer !== undoStack.peek().ref)) {
-            saveState()
+        if ((undoStack.isNotEmpty()) && selectedLayer !== undoStack.peek().ref) {
+            saveState(true)
+        } else if (redoStack.isNotEmpty()) {
+            saveState(false)
         }
 
         selectedLayer = PaintLayer(
@@ -585,39 +580,42 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
 
-        painter?.onLayerChanged(selectedLayer!!)
+        painter?.onLayerChanged(selectedLayer)
 
         invalidate()
+
     }
 
     private fun mergeLayers() {
 
         bitmap?.let { mainBitmap ->
-            mergeCanvas.setBitmap(partiallyCachedLayer)
+            selectedLayer?.let { sv ->
+                mergeCanvas.setBitmap(partiallyCachedLayer)
 
-            val s = cachedLayer.width / bitmapWidth.toFloat()
+                val s = cachedLayer.width / bitmapWidth.toFloat()
 
-            mergeCanvas.save()
+                mergeCanvas.save()
 
-            mergeCanvas.scale(s, s)
+                mergeCanvas.scale(s, s)
 
-            mergeCanvas.drawBitmap(mainBitmap, 0f, 0f, layersPaint)
+                mergeCanvas.drawBitmap(mainBitmap, 0f, 0f, layersPaint)
 
-            mergeCanvas.restore()
+                mergeCanvas.restore()
 
-            val selectedLayerIndex = layerHolder.indexOf(selectedLayer)
+                val selectedLayerIndex = layerHolder.indexOf(sv)
 
-            mergeLayersAtIndex(0, selectedLayerIndex - 1)
+                mergeLayersAtIndex(0, selectedLayerIndex - 1)
 
-            cachedLayer.eraseColor(Color.TRANSPARENT)
+                cachedLayer.eraseColor(Color.TRANSPARENT)
 
-            mergeCanvas.setBitmap(cachedLayer)
+                mergeCanvas.setBitmap(cachedLayer)
 
-            mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+                mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
 
-            mergeLayersAtIndex(selectedLayerIndex, layerHolder.lastIndex)
+                mergeLayersAtIndex(selectedLayerIndex, layerHolder.lastIndex)
 
-            isAllLayersCached = true
+                isAllLayersCached = true
+            }
         }
 
     }
@@ -673,44 +671,50 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun moveSelectedLayerDown() {
 
-        if (selectedLayer == null) return
+        selectedLayer?.let { sv ->
+            val index = layerHolder.indexOf(selectedLayer)
 
-        val index = layerHolder.indexOf(selectedLayer)
+            if (index > 0) {
+                val pervIndex = index - 1
+                val previousLayer = layerHolder[pervIndex]
+                layerHolder[pervIndex] = sv
+                layerHolder[index] = previousLayer
 
-        if (index > 0) {
-            val pervIndex = index - 1
-            val previousLayer = layerHolder[pervIndex]
-            layerHolder[pervIndex] = selectedLayer!!
-            layerHolder[index] = previousLayer
+                mergeLayers()
 
-            mergeLayers()
+                saveState()
 
-            saveState()
+                callOnLayerChangedListeners(
+                    layerHolder.toList(),
+                    layerHolder.indexOf(selectedLayer)
+                )
 
-            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
-
-            invalidate()
+                invalidate()
+            }
         }
     }
 
     fun moveSelectedLayerUp() {
-        if (selectedLayer == null) return
+        selectedLayer?.let { sv ->
+            val index = layerHolder.indexOf(selectedLayer)
 
-        val index = layerHolder.indexOf(selectedLayer)
+            if (index < layerHolder.lastIndex) {
+                val nextIndex = index + 1
+                val previousLayer = layerHolder[nextIndex]
+                layerHolder[nextIndex] = sv
+                layerHolder[index] = previousLayer
 
-        if (index < layerHolder.lastIndex) {
-            val nextIndex = index + 1
-            val previousLayer = layerHolder[nextIndex]
-            layerHolder[nextIndex] = selectedLayer!!
-            layerHolder[index] = previousLayer
+                mergeLayers()
 
-            mergeLayers()
+                saveState()
 
-            saveState()
+                callOnLayerChangedListeners(
+                    layerHolder.toList(),
+                    layerHolder.indexOf(selectedLayer)
+                )
 
-            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
-
-            invalidate()
+                invalidate()
+            }
         }
     }
 
@@ -772,18 +776,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         if (layerHolder.contains(paintLayer) && selectedLayer !== paintLayer) {
             selectedLayer = paintLayer
             painter?.onLayerChanged(selectedLayer)
-            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+            callOnLayerChangedListeners(
+                layerHolder.toList(),
+                layerHolder.indexOf(selectedLayer)
+            )
             mergeLayers()
             invalidate()
         }
     }
 
     fun getIndexOfSelectedLayer(): Int {
-
-        if (selectedLayer == null) {
-            return -1
-        }
-
         return layerHolder.indexOf(selectedLayer)
     }
 
@@ -819,7 +821,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun callListenerForFirstTime() {
         if (isViewInitialized && !isFirstLayerCreation && isFirstTimeToCallListener) {
-            callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+            callOnLayerChangedListeners(
+                layerHolder.toList(),
+                layerHolder.indexOf(selectedLayer)
+            )
             isFirstTimeToCallListener = false
         }
     }
@@ -838,6 +843,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         val ref: PaintLayer,
         val clonedLayer: PaintLayer,
         val layers: MutableList<PaintLayer>,
+        val isSpecial: Boolean = false
     ) {
         fun restoreState(paintView: MananPaintView) {
             ref.bitmap = clonedLayer.bitmap.copy(clonedLayer.bitmap.config, true)
