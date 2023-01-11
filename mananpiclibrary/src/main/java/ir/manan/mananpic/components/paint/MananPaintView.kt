@@ -533,14 +533,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun swapStacks(popStack: Stack<State>, pushStack: Stack<State>, indicator: Boolean) {
         if (popStack.isNotEmpty()) {
             val poppedState = popStack.pop()
-            pushStack.push(poppedState)
-            poppedState.restoreState(this)
 
             if (popStack.isNotEmpty() && (pushStack.isEmpty() || indicator != wasLastOperationFromOtherStack || poppedState.isSpecial)) {
+                poppedState.restoreState(this)
                 val newPopped = popStack.pop()
                 newPopped.restoreState(this)
+                pushStack.push(poppedState)
                 pushStack.push(newPopped)
                 wasLastOperationFromOtherStack = indicator
+            } else {
+                pushStack.push(poppedState)
+                poppedState.restoreState(this)
             }
 
             mergeLayers()
