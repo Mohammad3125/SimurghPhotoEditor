@@ -587,7 +587,7 @@ class BrushPaint : Painter() {
 
             cacheCounter = 0
 
-            for(i in cachePointHolder.indices step 2) {
+            for (i in cachePointHolder.indices step 2) {
 
                 drawCachedCircles(
                     cachePointHolder[i],

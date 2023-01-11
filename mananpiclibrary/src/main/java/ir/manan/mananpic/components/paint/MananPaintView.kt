@@ -439,24 +439,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
 
-                save()
+                drawBitmap(cachedLayer, imageviewMatrix, layersPaint)
 
-                concat(imageviewMatrix)
-
-                drawBitmap(cachedLayer, 0f, 0f, layersPaint)
-
-                restore()
             } else {
                 super.onDraw(this)
-
-                save()
-
-                concat(imageviewMatrix)
 
                 if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
                     layersPaint.xfermode = null
                     layersPaint.alpha = 255
-                    drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+                    drawBitmap(partiallyCachedLayer, imageviewMatrix, layersPaint)
                 }
 
                 selectedLayer?.let { layer ->
@@ -464,7 +455,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     layersPaint.alpha = (255 * layer.opacity).toInt()
                     layersPaint.xfermode = layer.blendMode
 
-                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
+                    drawBitmap(layer.bitmap, imageviewMatrix, layersPaint)
 
                     painter?.draw(this)
                 }
@@ -477,10 +468,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     layersPaint.xfermode = layer.blendMode
 
-                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
+                    drawBitmap(layer.bitmap, imageviewMatrix, layersPaint)
                 }
-
-                restore()
 
             }
 
