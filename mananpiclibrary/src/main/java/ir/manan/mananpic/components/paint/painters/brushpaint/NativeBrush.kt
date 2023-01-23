@@ -16,13 +16,8 @@ class NativeBrush : Brush() {
     private val colorsHolder = IntArray(2)
     private val stopsHolder = FloatArray(2)
 
-    override var color: Int = Color.BLACK
-        set(value) {
-            field = value
-            createHardnessShader()
-        }
-
     private var lastSize = 0
+    private var lastColor = Color.TRANSPARENT
 
     private var sizeHalf = 0f
 
@@ -70,8 +65,9 @@ class NativeBrush : Brush() {
     }
 
     override fun draw(canvas: Canvas, opacity: Int) {
-        if (lastSize != size) {
+        if (lastSize != size || lastColor != color) {
             lastSize = size
+            lastColor = color
             createHardnessShader()
         }
 

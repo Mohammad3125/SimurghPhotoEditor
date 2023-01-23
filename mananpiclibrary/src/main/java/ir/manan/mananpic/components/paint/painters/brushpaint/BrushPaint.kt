@@ -304,6 +304,10 @@ class BrushPaint : Painter() {
 
         pathMeasure.setPath(path, false)
 
+        if (brush!!.startTaperSpeed > 0 && brush!!.startTaperSize > 0) {
+            spacedWidth = (taperSizeHolder * brush!!.spacing)
+        }
+
         distance += (pathMeasure.length)
 
         val total = floor(distance / spacedWidth).toInt()
@@ -460,7 +464,6 @@ class BrushPaint : Painter() {
                     color = Color.HSVToColor(hsvHolder)
                 }
             }
-
 
 
             val brushOpacity = if (opacityJitter > 0f) {
