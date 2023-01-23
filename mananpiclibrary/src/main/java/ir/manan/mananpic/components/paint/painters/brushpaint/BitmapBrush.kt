@@ -24,10 +24,10 @@ class BitmapBrush(
 
     private var stampScale = 0f
 
-    override var brushBlending: PorterDuff.Mode = PorterDuff.Mode.DST
+    override var brushBlending: PorterDuff.Mode = PorterDuff.Mode.SRC_OVER
         set(value) {
             field = value
-            if (field == PorterDuff.Mode.SRC) {
+            if (field == PorterDuff.Mode.SRC_OVER) {
                 paint.xfermode = null
             } else {
                 paint.xfermode = PorterDuffXfermode(value)

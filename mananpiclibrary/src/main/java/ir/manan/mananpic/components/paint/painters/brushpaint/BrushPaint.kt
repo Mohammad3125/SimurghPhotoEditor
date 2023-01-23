@@ -196,7 +196,7 @@ class BrushPaint : Painter() {
             if (isInEraserMode) {
                 brush!!.brushBlending = PorterDuff.Mode.DST_OUT
             } else {
-                brush!!.brushBlending = PorterDuff.Mode.SRC
+                brush!!.brushBlending = PorterDuff.Mode.SRC_OVER
             }
 
             return
