@@ -305,17 +305,20 @@ class BrushPaint : Painter() {
 
         val total = floor(distance / spacedWidth).toInt()
 
-        val totalToShiftBack = (distance - (spacedWidth * total)) + extra
+        val totalToShiftBack = extra
+
+        var ff = spacedWidth
 
         repeat(total) {
 
             pathMeasure.getPosTan(
-                distance - totalToShiftBack,
+                ff - totalToShiftBack,
                 pointHolder,
                 null
             )
 
             distance -= spacedWidth
+            ff += spacedWidth
 
             if (shouldUseCacheDrawing) {
                 cachePointHolder.add(pointHolder[0])
@@ -324,7 +327,6 @@ class BrushPaint : Painter() {
                 drawCircles(
                     pointHolder[0],
                     pointHolder[1],
-                    1f,
                     (it + 1) == total,
                     if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else if (textureBitmap != null) bufferCanvas else paintCanvas
                 )
@@ -359,7 +361,6 @@ class BrushPaint : Painter() {
     private fun drawCircles(
         touchX: Float,
         touchY: Float,
-        sv: Float,
         shouldInvalidate: Boolean = true,
         canvas: Canvas = paintCanvas,
     ) {
@@ -411,10 +412,10 @@ class BrushPaint : Painter() {
 
         if (sizeJitter > 0f) {
             val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
-            val finalScale = (1f + randomJitterNumber) * sv
+            val finalScale = (1f + randomJitterNumber)
             canvas.scale(finalScale * squish, finalScale)
-        } else if (sv != 0f) {
-            canvas.scale(sv * squish, sv)
+        } else if (squish != 1f) {
+            canvas.scale(squish, 1f)
         }
 
         brush!!.apply {

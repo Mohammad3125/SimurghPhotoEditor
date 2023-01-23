@@ -7,7 +7,7 @@ import android.graphics.PorterDuff
 import androidx.annotation.ColorInt
 
 abstract class Brush {
-    open var size: Float = 1f
+    open var size: Int = 1
 
     @ColorInt
     open var color: Int = Color.BLACK
@@ -42,14 +42,15 @@ abstract class Brush {
 
     open var textureScale = 1f
 
-    open var hueFlow : Float = 0f
+    open var hueFlow: Float = 0f
 
-    open var hueDistance : Int = 0
+    open var hueDistance: Int = 0
 
-    internal abstract var brushBlending : PorterDuff.Mode
+    open var startTaperSpeed = 0
 
+    open var startTaperSize = 0
 
-    abstract fun draw(canvas: Canvas,opacity: Int)
-
+    internal abstract var brushBlending: PorterDuff.Mode
+    abstract fun draw(canvas: Canvas, opacity: Int)
 
 }

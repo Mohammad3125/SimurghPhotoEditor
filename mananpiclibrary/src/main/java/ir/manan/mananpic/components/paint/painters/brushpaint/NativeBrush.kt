@@ -22,11 +22,11 @@ class NativeBrush : Brush() {
             createHardnessShader()
         }
 
-    private var lastSize = 0f
+    private var lastSize = 0
 
     private var sizeHalf = 0f
 
-    override var size: Float = 1f
+    override var size: Int = 1
         set(value) {
             field = value
             sizeHalf = value * 0.5f

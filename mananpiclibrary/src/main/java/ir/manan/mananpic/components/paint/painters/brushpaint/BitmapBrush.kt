@@ -34,7 +34,7 @@ class BitmapBrush(
             }
         }
 
-    override var size: Float = 14f
+    override var size: Int = 14
         set(value) {
             field = value
             calculateSize(field)
@@ -64,7 +64,7 @@ class BitmapBrush(
 
     private lateinit var scaledStamp: Bitmap
 
-    private var lastSize = 0f
+    private var lastSize = 0
 
     fun changeBrushBitmap(newBitmap: Bitmap?,recycleCurrentBitmap: Boolean) {
         if (recycleCurrentBitmap) {
@@ -75,7 +75,7 @@ class BitmapBrush(
         calculateSize(size)
     }
 
-    private fun calculateSize(size: Float) {
+    private fun calculateSize(size: Int) {
         brushBitmap?.let { bitmap ->
             stampWidth = bitmap.width.toFloat()
             stampHeight = bitmap.height.toFloat()

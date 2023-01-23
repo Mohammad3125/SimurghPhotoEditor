@@ -7,7 +7,7 @@ android {
     compileSdk 33
 
     defaultConfig {
-        minSdk 14
+        minSdk 18
         targetSdk 33
         versionCode 5
         versionName "0.5.0"
