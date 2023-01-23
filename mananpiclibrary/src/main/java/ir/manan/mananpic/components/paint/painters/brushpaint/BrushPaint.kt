@@ -112,6 +112,7 @@ class BrushPaint : Painter() {
 
     private var cachePointHolder = mutableListOf<Float>()
 
+    private var taperSizeHolder = 0
 
     override fun initialize(
         matrix: MananMatrix,
@@ -164,6 +165,8 @@ class BrushPaint : Painter() {
             spacedWidth = (it.size * it.spacing)
 
             extra = 0f
+
+            taperSizeHolder = if (it.startTaperSize == 0) it.size else it.startTaperSize
 
             alphaBlendPaint.alpha = (it.opacity * 255f).toInt()
 
@@ -458,6 +461,8 @@ class BrushPaint : Painter() {
                 }
             }
 
+
+
             val brushOpacity = if (opacityJitter > 0f) {
                 Random.nextInt(0, (255f * opacityJitter).toInt())
             } else if (alphaBlend) {
@@ -466,10 +471,23 @@ class BrushPaint : Painter() {
                 (opacity * 255f).toInt()
             }
 
+            val lastSize = size
+
+            if (startTaperSpeed > 0 && startTaperSize != size) {
+                taperSizeHolder += startTaperSpeed
+                taperSizeHolder = taperSizeHolder.coerceAtMost(size)
+                size = taperSizeHolder
+            }
+
+
             draw(canvas, brushOpacity)
 
             if (color != lastColor) {
                 color = lastColor
+            }
+
+            if (size != lastSize) {
+                size = lastSize
             }
         }
 
