@@ -126,13 +126,13 @@ class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
             alphaBlendPaint.alpha = (b.opacity * 255f).toInt()
             shouldBlendAlpha = b.alphaBlend
 
-            val ts = brush!!.textureScale
+            val ts = b.textureScale
 
             textureMat.setScale(ts, ts)
 
-            if (brush!!.texture != null) {
+            if (b.texture != null) {
 
-                textureBitmap = brush!!.texture
+                textureBitmap = b.texture
 
                 textureShader =
                     BitmapShader(textureBitmap!!, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
@@ -140,16 +140,18 @@ class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
                 textureShader!!.setLocalMatrix(textureMat)
 
                 texturePaint.shader = textureShader
-            } else if (textureBitmap != null && brush!!.texture == null) {
+            } else if (textureBitmap != null) {
                 textureBitmap = null
                 textureShader = null
                 texturePaint.shader = null
             }
 
-            if (isInEraserMode && b.brushBlending != PorterDuff.Mode.DST_OUT) {
-                brush!!.brushBlending = PorterDuff.Mode.DST_OUT
+            if (isInEraserMode) {
+                if (b.brushBlending != PorterDuff.Mode.DST_OUT) {
+                    b.brushBlending = PorterDuff.Mode.DST_OUT
+                }
             } else {
-                brush!!.brushBlending = PorterDuff.Mode.SRC_OVER
+                b.brushBlending = PorterDuff.Mode.SRC_OVER
             }
 
             finalBrush = b
