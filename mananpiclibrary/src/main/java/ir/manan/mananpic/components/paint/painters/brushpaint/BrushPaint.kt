@@ -22,55 +22,36 @@ class BrushPaint : Painter() {
     }
 
     var brush: Brush? = null
+    private lateinit var finalBrush: Brush
+
 
     private var spacedWidth = 0f
 
     private val path = Path()
-
     private val pathMeasure = PathMeasure()
 
     private lateinit var ccBitmap: Bitmap
-
     private lateinit var paintCanvas: Canvas
-
     private lateinit var bufferCanvas: Canvas
-
     private lateinit var bufferBitmap: Bitmap
-
     private lateinit var alphaBlendBitmap: Bitmap
-
     private lateinit var alphaBlendCanvas: Canvas
-
     private var shouldBlendAlpha = false
 
     private var viewBounds = RectF()
 
-    private var sizeVariance = 1f
-
-    private var isBrushNull = false
-
-    private var lastDegree = 0f
-
-    private val textureRect by lazy {
-        RectF()
-    }
+    private val textureRect by lazy { RectF() }
     private var textureBitmap: Bitmap? = null
-
     private var textureShader: BitmapShader? = null
-
-    private val textureMat by lazy {
-        Matrix()
-    }
+    private val textureMat by lazy { Matrix() }
 
     private val hsvHolder = FloatArray(3)
-
     private var hueDegreeHolder = 0f
-
     private var hueFlip = true
 
     private var areCanvasesInitialized = false
-
     private var isLayerNull = true
+    private var isBrushNull = false
 
     private val rotationCache = mutableListOf<Float>()
     private val scaleCache = mutableListOf<Float>()
@@ -78,8 +59,8 @@ class BrushPaint : Painter() {
     private val scatterYCache = mutableListOf<Float>()
 
     private var cacheCounter = 0
-
     private var cacheSizeInByte = 2000
+    private var cachePointHolder = mutableListOf<Float>()
 
     var shouldUseCacheDrawing = false
 
@@ -99,7 +80,6 @@ class BrushPaint : Painter() {
     private var curY = 0f
 
     private var distance = 0f
-
     private var extra = 0f
 
     private var isFirstThreeCreated = false
@@ -109,8 +89,6 @@ class BrushPaint : Painter() {
     private val pointHolder = floatArrayOf(0f, 0f)
 
     var isInEraserMode = false
-
-    private var cachePointHolder = mutableListOf<Float>()
 
     private var taperSizeHolder = 0
 
@@ -123,6 +101,11 @@ class BrushPaint : Painter() {
 
         textureRect.set(viewBounds)
 
+        initializeCachedProperties()
+
+    }
+
+    private fun initializeCachedProperties() {
         rotationCache.clear()
         scaleCache.clear()
         scatterXCache.clear()
@@ -134,7 +117,6 @@ class BrushPaint : Painter() {
             scatterXCache.add(Random.nextInt(-100, 100) / 100f)
             scatterYCache.add(Random.nextInt(-100, 100) / 100f)
         }
-
     }
 
 
@@ -148,7 +130,7 @@ class BrushPaint : Painter() {
 
         areCanvasesInitialized = (this::paintCanvas.isInitialized)
 
-        brush?.let {
+        brush?.let { b ->
 
             cachePointHolder.clear()
 
@@ -162,17 +144,14 @@ class BrushPaint : Painter() {
 
             isBrushNull = false
 
-            spacedWidth = (it.size * it.spacing)
+            spacedWidth = (b.size * b.spacing)
 
             extra = 0f
 
-            taperSizeHolder = if (it.startTaperSize == 0) it.size else it.startTaperSize
+            taperSizeHolder = if (b.startTaperSize == 0) b.size else b.startTaperSize
 
-            alphaBlendPaint.alpha = (it.opacity * 255f).toInt()
-
-            shouldBlendAlpha = it.alphaBlend
-
-            sizeVariance = 1f
+            alphaBlendPaint.alpha = (b.opacity * 255f).toInt()
+            shouldBlendAlpha = b.alphaBlend
 
             val ts = brush!!.textureScale
 
@@ -194,13 +173,13 @@ class BrushPaint : Painter() {
                 texturePaint.shader = null
             }
 
-            lastDegree = 0f
-
-            if (isInEraserMode) {
+            if (isInEraserMode && b.brushBlending != PorterDuff.Mode.DST_OUT) {
                 brush!!.brushBlending = PorterDuff.Mode.DST_OUT
             } else {
                 brush!!.brushBlending = PorterDuff.Mode.SRC_OVER
             }
+
+            finalBrush = b
 
             return
         }
@@ -209,7 +188,7 @@ class BrushPaint : Painter() {
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
 
-        if ((!isBrushNull && areCanvasesInitialized && !isLayerNull) || shouldUseCacheDrawing) {
+        if (shouldDraw()) {
 
             if (!isFirstThreeCreated) {
 
@@ -304,8 +283,8 @@ class BrushPaint : Painter() {
 
         pathMeasure.setPath(path, false)
 
-        if (brush!!.startTaperSpeed > 0 && brush!!.startTaperSize > 0) {
-            spacedWidth = (taperSizeHolder * brush!!.spacing)
+        if (finalBrush.startTaperSpeed > 0 && finalBrush.startTaperSize > 0) {
+            spacedWidth = (taperSizeHolder * finalBrush.spacing)
         }
 
         distance += (pathMeasure.length)
@@ -372,61 +351,53 @@ class BrushPaint : Painter() {
         canvas: Canvas = paintCanvas,
     ) {
 
-        canvas.save()
+        finalBrush.apply {
+            canvas.save()
 
-        val scatterSize = brush!!.scatter
+            if (scatter > 0f) {
 
-        if (scatterSize > 0f) {
+                val r = (size * scatter).toInt()
 
-            val r = ((brush!!.size) * scatterSize).toInt()
+                if (r != 0) {
+                    val randomScatterX =
+                        Random.nextInt(-r, r).toFloat()
 
-            if (r != 0) {
-                val randomScatterX =
-                    Random.nextInt(-r, r).toFloat()
+                    val randomScatterY =
+                        Random.nextInt(-r, r).toFloat()
 
-                val randomScatterY =
-                    Random.nextInt(-r, r).toFloat()
-
-                canvas.translate(
-                    touchX - viewBounds.left + randomScatterX,
-                    touchY - viewBounds.top + randomScatterY
-                )
+                    canvas.translate(
+                        touchX - viewBounds.left + randomScatterX,
+                        touchY - viewBounds.top + randomScatterY
+                    )
+                }
+            } else {
+                canvas.translate(touchX - viewBounds.left, touchY - viewBounds.top)
             }
-        } else {
-            canvas.translate(touchX - viewBounds.left, touchY - viewBounds.top)
-        }
-        val angleJitter = brush!!.angleJitter
 
-        val fixedAngle = brush!!.angle
+            if (angleJitter > 0f && angle > 0f || angleJitter > 0f && angle == 0f) {
+                val rot = GestureUtils.mapTo360(
+                    angle + Random.nextInt(
+                        0,
+                        (360f * angleJitter).toInt()
+                    ).toFloat()
+                )
+                canvas.rotate(rot)
+            } else if (angleJitter == 0f && angle > 0f) {
+                canvas.rotate(angle)
+            }
 
-        if (angleJitter > 0f && fixedAngle > 0f || angleJitter > 0f && fixedAngle == 0f) {
-            val rot = GestureUtils.mapTo360(
-                fixedAngle + Random.nextInt(
-                    0,
-                    (360f * angleJitter).toInt()
-                ).toFloat()
-            )
-            canvas.rotate(
-                rot
-            )
-        } else if (angleJitter == 0f && fixedAngle > 0f) {
-            canvas.rotate(fixedAngle)
-        }
+            val squish = 1f - squish
 
-        val sizeJitter = brush!!.sizeJitter
+            if (sizeJitter > 0f) {
+                val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
+                val finalScale = (1f + randomJitterNumber)
+                canvas.scale(finalScale * squish, finalScale)
+            } else if (squish != 1f) {
+                canvas.scale(squish, 1f)
+            }
 
-        val squish = 1f - (brush!!.squish)
-
-        if (sizeJitter > 0f) {
-            val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
-            val finalScale = (1f + randomJitterNumber)
-            canvas.scale(finalScale * squish, finalScale)
-        } else if (squish != 1f) {
-            canvas.scale(squish, 1f)
-        }
-
-        brush!!.apply {
             val lastColor = color
+
             if (textureBitmap == null) {
                 if (hueJitter > 0) {
                     Color.colorToHSV(color, hsvHolder)
@@ -481,7 +452,6 @@ class BrushPaint : Painter() {
                 taperSizeHolder = taperSizeHolder.coerceAtMost(size)
                 size = taperSizeHolder
             }
-
 
             draw(canvas, brushOpacity)
 
@@ -647,6 +617,9 @@ class BrushPaint : Painter() {
             canvas.drawBitmap(alphaBlendBitmap, viewBounds.left, viewBounds.top, alphaBlendPaint)
         }
     }
+
+    private fun shouldDraw(): Boolean =
+        (!isBrushNull && areCanvasesInitialized && !isLayerNull) || shouldUseCacheDrawing
 
 
     override fun resetPaint() {
