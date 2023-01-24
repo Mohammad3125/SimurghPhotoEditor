@@ -34,7 +34,7 @@ abstract class Brush {
 
     open var hueJitter = 0
 
-    open var smoothness: Float = 0.5f
+    open var smoothness: Float = 0f
 
     open var alphaBlend: Boolean = false
 

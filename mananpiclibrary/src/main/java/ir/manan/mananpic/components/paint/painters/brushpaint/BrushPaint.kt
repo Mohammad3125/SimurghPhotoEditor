@@ -274,6 +274,12 @@ class BrushPaint : Painter() {
         mid1x = (perv1x + perv2x) * 0.5f
         mid1y = (perv1y + perv2y) * 0.5f
 
+        val smoothness = 1f - finalBrush.smoothness
+        val aR = 1f - smoothness
+
+        curX = curX * smoothness + (perv1x * aR)
+        curY = curY * smoothness + (perv1y * aR)
+
         mid2x = (curX + perv1x) * 0.5f
         mid2y = (curY + perv1y) * 0.5f
 
