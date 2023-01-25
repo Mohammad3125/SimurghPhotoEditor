@@ -207,6 +207,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     if (totalPoints == 2) {
                         secondPointerInitialX = getX(1)
                         secondPointerInitialY = getY(1)
+
+                        isMatrixGesture = true
                     }
                 }
                 MotionEvent.ACTION_MOVE -> {
