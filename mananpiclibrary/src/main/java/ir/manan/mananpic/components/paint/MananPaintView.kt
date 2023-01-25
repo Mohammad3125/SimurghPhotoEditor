@@ -148,27 +148,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     }
 
-    override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
-        isAllLayersCached = true
-        return true
-    }
-
-    override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
-        canvasMatrix.postRotate(degree - rotHolder, px, py)
-        tot += abs(degree - rotHolder)
-        rotHolder = degree
-        invalidate()
-        return true
-    }
-
-    override fun onRotateEnded() {
-        if (tot > 0.5f) {
-            isMoved = true
-        }
-
-        tot = 0f
-    }
-
     override fun onImageLaidOut() {
         context.resources.displayMetrics.run {
             maximumScale = max(widthPixels, heightPixels) / min(bitmapWidth, bitmapHeight) * 10f
@@ -228,8 +207,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     if (totalPoints == 2) {
                         secondPointerInitialX = getX(1)
                         secondPointerInitialY = getY(1)
-
-                        isMatrixGesture = true
                     }
                 }
                 MotionEvent.ACTION_MOVE -> {
@@ -330,25 +307,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     }
                     return false
                 }
-                MotionEvent.ACTION_POINTER_UP -> {
-                    isNewGesture = false
-                    return false
-                }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (isMatrixGesture && !isMoved) {
+
+                    if (shouldCallDoubleTapListener()) {
                         callOnDoubleTapListeners()
-                    } else if (painter != null && selectedLayer != null && !isMatrixGesture && !isFirstMove && !selectedLayer!!.isLocked) {
-
-
-                        val mappedPoints = mapTouchPoints(x, y)
-
-                        painter!!.onMoveEnded(mappedPoints[0], mappedPoints[1])
-
-                        saveState()
-
+                    } else if (shouldEndMoveOnPainter()) {
+                        callSelectorOnMoveEnded(x, y)
                     }
 
-                    mergeLayers()
+                    cacheLayers()
 
                     isMatrixGesture = false
                     isNewGesture = true
@@ -365,6 +332,18 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             }
         }
         return false
+    }
+
+    private fun shouldCallDoubleTapListener(): Boolean = isMatrixGesture && !isMoved
+
+    private fun shouldEndMoveOnPainter(): Boolean =
+        painter != null && selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
+
+    private fun callSelectorOnMoveEnded(ex: Float, ey: Float) {
+        mapTouchPoints(ex, ey).let { points ->
+            painter!!.onMoveEnded(points[0], points[1])
+            saveState()
+        }
     }
 
     private fun callSelectorOnMove(ex: Float, ey: Float, dx: Float, dy: Float) {
@@ -384,9 +363,29 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         initialY = ey
     }
 
+    override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
+        isAllLayersCached = isFirstMove
+        return true
+    }
+
+    override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
+        canvasMatrix.postRotate(degree - rotHolder, px, py)
+        tot += abs(degree - rotHolder)
+        rotHolder = degree
+        invalidate()
+        return true
+    }
+
+    override fun onRotateEnded() {
+        if (tot > 0.5f) {
+            isMoved = true
+        }
+
+        tot = 0f
+    }
+
     override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
-        isMatrixGesture = true
-        isAllLayersCached = true
+        isAllLayersCached = isFirstMove
         return !matrixAnimator.isAnimationRunning()
     }
 
@@ -535,7 +534,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 poppedState.restoreState(this)
             }
 
-            mergeLayers()
+            cacheLayers()
 
             callOnLayerChangedListeners(
                 layerHolder.toList(),
@@ -566,7 +565,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         layerHolder.add(selectedLayer!!)
 
-        mergeLayers()
+        cacheLayers()
 
         saveState()
 
@@ -578,7 +577,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     }
 
-    private fun mergeLayers() {
+    private fun cacheLayers() {
 
         bitmap?.let { mainBitmap ->
             selectedLayer?.let { sv ->
@@ -638,7 +637,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun changeLayerOpacityAt(index: Int, opacity: Float) {
         checkIndex(index)
         layerHolder[index].opacity = opacity
-        mergeLayers()
+        cacheLayers()
         invalidate()
     }
 
@@ -655,7 +654,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         layerHolder[index].blendMode = PorterDuffXfermode(blendingMode)
 
-        mergeLayers()
+        cacheLayers()
 
         saveState()
         invalidate()
@@ -672,7 +671,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layerHolder[pervIndex] = sv
                 layerHolder[index] = previousLayer
 
-                mergeLayers()
+                cacheLayers()
 
                 saveState()
 
@@ -696,7 +695,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layerHolder[nextIndex] = sv
                 layerHolder[index] = previousLayer
 
-                mergeLayers()
+                cacheLayers()
 
                 saveState()
 
@@ -722,7 +721,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun changeLayerLockState(index: Int, shouldLock: Boolean) {
         checkIndex(index)
         layerHolder[index].isLocked = shouldLock
-        mergeLayers()
+        cacheLayers()
     }
 
     fun removeLayerAt(index: Int) {
@@ -742,7 +741,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         layerHolder.removeAt(index)
 
-        mergeLayers()
+        cacheLayers()
 
         saveState()
 
@@ -760,7 +759,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         selectedLayer = layerHolder[index]
         painter?.onLayerChanged(selectedLayer)
         callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
-        mergeLayers()
+        cacheLayers()
         invalidate()
     }
 
@@ -772,7 +771,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layerHolder.toList(),
                 layerHolder.indexOf(selectedLayer)
             )
-            mergeLayers()
+            cacheLayers()
             invalidate()
         }
     }
