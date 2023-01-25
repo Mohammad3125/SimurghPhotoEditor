@@ -33,6 +33,8 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
     private var dx = 0f
     private var dy = 0f
 
+    private var shouldProgress = false
+
     private var wasTouchedWithTwoPointers = false
 
     override fun setRotationStep(rotationStep: Float) {
@@ -48,17 +50,18 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
                     calculatePoints(event)
 
                     initialRotation -= calculateAngle(dx.toDouble(), dy.toDouble())
-                    listener.onRotateBegin(
+
+                    shouldProgress = listener.onRotateBegin(
                         initialRotation,
                         x0 + ((x1 - x0) * 0.5f),
                         y0 + ((y1 - y0) * 0.5f)
                     )
+                    shouldProgress
                 }
-                true
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (event.pointerCount == 2) {
+                if (event.pointerCount == 2 && shouldProgress) {
 
                     calculatePoints(event)
 
@@ -75,13 +78,13 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
                         // round(3 / 8.5f ~= 0.3529) -> 0f = 8.5 * 0 = 0.
                         // Now imagine we had rotation of 8 and step of 8.5f, the result would be:
                         // round(8 / 8.5f ~= 0.9411) -> 1f = 8.5 * 1f = 8.5.
-                        listener.onRotate(
+                        shouldProgress = listener.onRotate(
                             mapTo360(step * (round(validatedRotation / step))),
                             px,
                             py
                         )
                     } else {
-                        listener.onRotate(validatedRotation, px, py)
+                        shouldProgress = listener.onRotate(validatedRotation, px, py)
                     }
 
                     wasTouchedWithTwoPointers = true
@@ -99,11 +102,12 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
 
             MotionEvent.ACTION_UP -> {
                 // Only call 'onRotateEnded' method when we was rotating with two pointers.
-                if (wasTouchedWithTwoPointers) {
+                if (wasTouchedWithTwoPointers && shouldProgress) {
                     listener.onRotateEnded()
                 }
 
                 wasTouchedWithTwoPointers = false
+                shouldProgress = false
                 false
             }
 
