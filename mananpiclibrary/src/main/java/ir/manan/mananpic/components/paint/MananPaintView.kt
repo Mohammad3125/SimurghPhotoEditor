@@ -269,10 +269,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                                 saveState(false)
                             }
 
-                            val mappedPoints = mapTouchPoints(initialX, initialY)
-                            painter!!.onMoveBegin(mappedPoints[0], mappedPoints[1])
-                            isFirstMove = false
-                            isAllLayersCached = false
+                            callPainterOnMoveBegin()
                         }
 
                         repeat(historySize) {
@@ -280,7 +277,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             val historicX = getHistoricalX(0, it)
                             val historicY = getHistoricalY(0, it)
 
-                            callSelectorOnMove(
+                            callPainterOnMove(
                                 historicX,
                                 historicY,
                                 historicX - initialX,
@@ -293,7 +290,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         }
 
-                        callSelectorOnMove(
+                        callPainterOnMove(
                             x,
                             y,
                             x - initialX,
@@ -314,7 +311,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     if (shouldCallDoubleTapListener()) {
                         callOnDoubleTapListeners()
                     } else if (shouldEndMoveOnPainter()) {
-                        callSelectorOnMoveEnded(x, y)
+                        callPainterOnMoveEnd(x, y)
                     }
 
                     cacheLayers()
@@ -336,33 +333,44 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return false
     }
 
+    private fun callPainterOnMoveBegin() {
+        mapTouchPoints(initialX, initialY).let { points ->
+            painter!!.onMoveBegin(points[0], points[1])
+            isFirstMove = false
+            isAllLayersCached = false
+        }
+    }
+
     private fun shouldCallDoubleTapListener(): Boolean = isMatrixGesture && !isMoved
 
     private fun shouldEndMoveOnPainter(): Boolean =
         painter != null && selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
 
-    private fun callSelectorOnMoveEnded(ex: Float, ey: Float) {
+    private fun callPainterOnMoveEnd(ex: Float, ey: Float) {
         mapTouchPoints(ex, ey).let { points ->
             painter!!.onMoveEnded(points[0], points[1])
             saveState()
         }
     }
 
-    private fun callSelectorOnMove(ex: Float, ey: Float, dx: Float, dy: Float) {
+    private fun callPainterOnMove(ex: Float, ey: Float, dx: Float, dy: Float) {
         if (dx == 0f && dy == 0f) return
 
         // Calculate how much the canvas is scaled then use
         // that to slow down the translation by that factor.
         val s = canvasMatrix.getOppositeScale()
-        val exactMapPoints = mapTouchPoints(ex, ey)
 
-        painter!!.onMove(
-            dx * s, dy * s, exactMapPoints[0], exactMapPoints[1]
-        )
+        mapTouchPoints(ex, ey).let { points ->
 
-        // Reset initial positions.
-        initialX = ex
-        initialY = ey
+            painter!!.onMove(
+                dx * s, dy * s, points[0], points[1]
+            )
+
+            // Reset initial positions.
+            initialX = ex
+            initialY = ey
+        }
+
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
@@ -420,7 +428,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         mappingMatrix.reset()
 
         imageviewMatrix.invert(mappingMatrix)
-        mappingMatrix.postTranslate(leftEdge, topEdge)
         mappingMatrix.mapPoints(touchPointMappedArray)
 
         return touchPointMappedArray
@@ -440,15 +447,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
 
-                drawBitmap(cachedLayer, imageviewMatrix, layersPaint)
+                concat(imageviewMatrix)
+
+                drawBitmap(cachedLayer, 0f, 0f, layersPaint)
 
             } else {
                 super.onDraw(this)
 
+                concat(imageviewMatrix)
+
                 if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
                     layersPaint.xfermode = null
                     layersPaint.alpha = 255
-                    drawBitmap(partiallyCachedLayer, imageviewMatrix, layersPaint)
+                    drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
                 }
 
                 selectedLayer?.let { layer ->
@@ -456,7 +467,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     layersPaint.alpha = (255 * layer.opacity).toInt()
                     layersPaint.xfermode = layer.blendMode
 
-                    drawBitmap(layer.bitmap, imageviewMatrix, layersPaint)
+                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
 
                     painter?.draw(this)
                 }
@@ -469,7 +480,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     layersPaint.xfermode = layer.blendMode
 
-                    drawBitmap(layer.bitmap, imageviewMatrix, layersPaint)
+                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
                 }
 
             }

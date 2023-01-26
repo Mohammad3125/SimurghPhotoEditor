@@ -3,13 +3,14 @@ package ir.manan.mananpic.components.paint.painters.brushpaint
 import android.graphics.*
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.engines.DrawingEngine
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import kotlin.random.Random
 
-class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
+class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint {
 
     //    private var bitmapPaint = Paint().apply {
 //        isFilterBitmap = true
@@ -42,10 +43,6 @@ class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
     private var textureBitmap: Bitmap? = null
     private var textureShader: BitmapShader? = null
     private val textureMat by lazy { Matrix() }
-
-    private val hsvHolder = FloatArray(3)
-    private var hueDegreeHolder = 0f
-    private var hueFlip = true
 
     private var areCanvasesInitialized = false
     private var isLayerNull = true
@@ -165,10 +162,6 @@ class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
 
         if (shouldDraw()) {
 
-            if (finalBrush.startTaperSpeed > 0 && finalBrush.startTaperSize > 0) {
-                spacedWidth = (taperSizeHolder * finalBrush.spacing)
-            }
-
             lineSmoother.addPoints(ex, ey, 1f - finalBrush.smoothness, spacedWidth)
 
 //        paintCanvas.save()
@@ -197,21 +190,33 @@ class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
     }
 
     override fun onDrawPoint(ex: Float, ey: Float) {
+
+        if (finalBrush.startTaperSpeed > 0 && finalBrush.startTaperSize > 0) {
+            spacedWidth = (taperSizeHolder * finalBrush.spacing)
+        }
+
+        val lastSize = finalBrush.size
+
+        if (finalBrush.startTaperSpeed > 0 && finalBrush.startTaperSize != finalBrush.size) {
+            taperSizeHolder += finalBrush.startTaperSpeed
+            taperSizeHolder = taperSizeHolder.coerceAtMost(finalBrush.size)
+            finalBrush.size = taperSizeHolder
+        }
+
         if (shouldUseCacheDrawing) {
             cachePointHolder.add(ex)
             cachePointHolder.add(ey)
         } else {
-            drawCircles(
-                ex,
-                ey,
-                if (shouldBlendAlpha && textureBitmap == null) alphaBlendCanvas else if (textureBitmap != null) bufferCanvas else paintCanvas
-            )
+            engine.draw(ex, ey, if (shouldBlendAlpha) alphaBlendCanvas else paintCanvas, finalBrush)
+            invalidate()
         }
+
+        finalBrush.size = lastSize
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         lineSmoother.setLastPoint(lastX, lastY, 1f - finalBrush.smoothness, spacedWidth)
-//        if (!isBrushNull && !isLayerNull) {
+        if (!isBrushNull && !isLayerNull) {
 //
 //            if (textureBitmap != null) {
 //
@@ -235,140 +240,14 @@ class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
 //                bufferBitmap.eraseColor(Color.TRANSPARENT)
 //            }
 //
-//            if (shouldBlendAlpha) {
-//                paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
-//                alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
-//            }
+            if (shouldBlendAlpha) {
+                paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
+                alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
+            }
 //
-//            invalidate()
-//        }
-    }
-
-
-    private fun drawCircles(
-        touchX: Float,
-        touchY: Float,
-        canvas: Canvas = paintCanvas,
-    ) {
-
-        finalBrush.apply {
-            canvas.save()
-
-            if (scatter > 0f) {
-
-                val r = (size * scatter).toInt()
-
-                if (r != 0) {
-                    val randomScatterX =
-                        Random.nextInt(-r, r).toFloat()
-
-                    val randomScatterY =
-                        Random.nextInt(-r, r).toFloat()
-
-                    canvas.translate(
-                        touchX - viewBounds.left + randomScatterX,
-                        touchY - viewBounds.top + randomScatterY
-                    )
-                }
-            } else {
-                canvas.translate(touchX - viewBounds.left, touchY - viewBounds.top)
-            }
-
-            if (angleJitter > 0f && angle > 0f || angleJitter > 0f && angle == 0f) {
-                val rot = GestureUtils.mapTo360(
-                    angle + Random.nextInt(
-                        0,
-                        (360f * angleJitter).toInt()
-                    ).toFloat()
-                )
-                canvas.rotate(rot)
-            } else if (angleJitter == 0f && angle > 0f) {
-                canvas.rotate(angle)
-            }
-
-            val squish = 1f - squish
-
-            if (sizeJitter > 0f) {
-                val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
-                val finalScale = (1f + randomJitterNumber)
-                canvas.scale(finalScale * squish, finalScale)
-            } else if (squish != 1f) {
-                canvas.scale(squish, 1f)
-            }
-
-            val lastColor = color
-
-            if (textureBitmap == null) {
-                if (hueJitter > 0) {
-                    Color.colorToHSV(color, hsvHolder)
-                    var hue = hsvHolder[0]
-                    hue += Random.nextInt(0, hueJitter)
-                    hue = GestureUtils.mapTo360(hue)
-                    hsvHolder[0] = hue
-                    color = Color.HSVToColor(hsvHolder)
-                } else if (hueFlow > 0f && hueDistance > 0f) {
-                    Color.colorToHSV(color, hsvHolder)
-
-                    var hue = hsvHolder[0]
-
-                    if (hueFlip) {
-                        hueDegreeHolder += (1f / hueFlow)
-                    } else {
-                        hueDegreeHolder -= (1f / hueFlow)
-                    }
-
-                    if (hueDegreeHolder >= hueDistance) {
-                        hueDegreeHolder = hueDistance.toFloat()
-                        hueFlip = false
-                    }
-                    if (hueDegreeHolder <= 0f) {
-                        hueDegreeHolder = 0f
-                        hueFlip = true
-                    }
-
-                    hue += hueDegreeHolder
-
-                    hue = GestureUtils.mapTo360(hue)
-
-                    hsvHolder[0] = hue
-
-                    color = Color.HSVToColor(hsvHolder)
-                }
-            }
-
-
-            val brushOpacity = if (opacityJitter > 0f) {
-                Random.nextInt(0, (255f * opacityJitter).toInt())
-            } else if (alphaBlend) {
-                255
-            } else {
-                (opacity * 255f).toInt()
-            }
-
-            val lastSize = size
-
-            if (startTaperSpeed > 0 && startTaperSize != size) {
-                taperSizeHolder += startTaperSpeed
-                taperSizeHolder = taperSizeHolder.coerceAtMost(size)
-                size = taperSizeHolder
-            }
-
-            draw(canvas, brushOpacity)
-
-            if (color != lastColor) {
-                color = lastColor
-            }
-
-            if (size != lastSize) {
-                size = lastSize
-            }
+            invalidate()
         }
-
-        canvas.restore()
-
-        invalidate()
     }
-
 
     private fun drawCachedCircles(
         ex: Float,
@@ -511,8 +390,8 @@ class BrushPaint : Painter(), LineSmoother.OnDrawPoint {
 //            canvas.drawBitmap(ccBitmap, textureRect.left, textureRect.top, bitmapPaint)
 //        }
 
-        if (!isBrushNull && shouldBlendAlpha) {
-            canvas.drawBitmap(alphaBlendBitmap, viewBounds.left, viewBounds.top, alphaBlendPaint)
+        if (!isBrushNull && shouldBlendAlpha && !shouldUseCacheDrawing) {
+            canvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
         }
     }
 

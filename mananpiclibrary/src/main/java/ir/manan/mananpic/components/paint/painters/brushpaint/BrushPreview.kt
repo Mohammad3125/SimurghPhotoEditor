@@ -5,6 +5,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.view.doOnLayout
+import ir.manan.mananpic.components.paint.engines.CanvasDrawingEngine
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 
@@ -136,7 +137,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             Canvas()
         }
         private val pathMeasure = PathMeasure()
-        private val brushPainter = BrushPaint().apply {
+        private val brushPainter = BrushPaint(CanvasDrawingEngine()).apply {
             shouldUseCacheDrawing = true
         }
         private val points = FloatArray(80)
