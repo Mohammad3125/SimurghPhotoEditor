@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.view.View
 import androidx.core.view.doOnLayout
 import ir.manan.mananpic.components.paint.engines.CanvasDrawingEngine
+import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 

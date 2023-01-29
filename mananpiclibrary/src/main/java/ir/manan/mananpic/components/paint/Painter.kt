@@ -65,11 +65,4 @@ abstract class Painter {
 
     abstract fun onLayerChanged(layer: PaintLayer?)
 
-
-    /**
-     * Undoes the state of selector.
-     */
-    abstract fun undo()
-
-
 }

@@ -1,4 +1,4 @@
-package ir.manan.mananpic.components.paint.painters.brushpaint
+package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

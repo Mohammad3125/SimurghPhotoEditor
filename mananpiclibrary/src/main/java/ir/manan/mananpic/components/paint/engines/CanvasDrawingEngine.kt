@@ -2,7 +2,7 @@ package ir.manan.mananpic.components.paint.engines
 
 import android.graphics.Canvas
 import android.graphics.Color
-import ir.manan.mananpic.components.paint.painters.brushpaint.Brush
+import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import kotlin.random.Random
 

@@ -4,6 +4,7 @@ import android.graphics.*
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
+import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
@@ -408,8 +409,5 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
         viewBounds.set(newBounds)
         textureRect.set(viewBounds)
-    }
-
-    override fun undo() {
     }
 }
