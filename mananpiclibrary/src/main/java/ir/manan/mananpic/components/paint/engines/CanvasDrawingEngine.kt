@@ -2,6 +2,7 @@ package ir.manan.mananpic.components.paint.engines
 
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.PorterDuff
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import kotlin.random.Random
@@ -11,6 +12,28 @@ class CanvasDrawingEngine : DrawingEngine {
     private val hsvHolder = FloatArray(3)
     private var hueDegreeHolder = 0f
     private var hueFlip = true
+
+    var isInEraserMode = false
+    private var taperSizeHolder = 0
+    override fun onMoveBegin(ex: Float, ey: Float, brush: Brush) {
+        taperSizeHolder = if (brush.startTaperSize == 0) brush.size else brush.startTaperSize
+
+        if (isInEraserMode) {
+            if (brush.brushBlending != PorterDuff.Mode.DST_OUT) {
+                brush.brushBlending = PorterDuff.Mode.DST_OUT
+            }
+        } else {
+            brush.brushBlending = PorterDuff.Mode.SRC_OVER
+        }
+
+    }
+
+    override fun onMove(ex: Float, ey: Float, brush: Brush) {
+    }
+
+    override fun onMoveEnded(ex: Float, ey: Float, brush: Brush) {
+
+    }
 
     override fun draw(ex: Float, ey: Float, canvas: Canvas, brush: Brush) {
         brush.apply {
@@ -98,6 +121,13 @@ class CanvasDrawingEngine : DrawingEngine {
                 }
             }
 
+            val llSize = brush.size
+
+            if (brush.startTaperSpeed > 0 && brush.startTaperSize != brush.size) {
+                taperSizeHolder += brush.startTaperSpeed
+                taperSizeHolder = taperSizeHolder.coerceAtMost(brush.size)
+                brush.size = taperSizeHolder
+            }
 
             val brushOpacity = if (opacityJitter > 0f) {
                 Random.nextInt(0, (255f * opacityJitter).toInt())
@@ -112,6 +142,10 @@ class CanvasDrawingEngine : DrawingEngine {
 
             if (color != lastColor) {
                 color = lastColor
+            }
+
+            if (size != llSize) {
+                size = llSize
             }
 
             canvas.restore()

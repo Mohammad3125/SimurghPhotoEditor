@@ -50,6 +50,11 @@ abstract class Brush {
 
     open var startTaperSize = 0
 
+    var spacedWidth: Float = 0.0f
+        get() = size * spacing
+    private set
+
+
     internal abstract var brushBlending: PorterDuff.Mode
     abstract fun draw(canvas: Canvas, opacity: Int)
 
