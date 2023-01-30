@@ -121,11 +121,16 @@ class CanvasDrawingEngine : DrawingEngine {
                 }
             }
 
-            val llSize = brush.size
+            val llSize = size
 
-            if (brush.startTaperSpeed > 0 && brush.startTaperSize != brush.size) {
-                taperSizeHolder += brush.startTaperSpeed
-                taperSizeHolder = taperSizeHolder.coerceAtMost(brush.size)
+            if (startTaperSpeed > 0 && taperSizeHolder != size) {
+                if (startTaperSize < size) {
+                    taperSizeHolder += startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtMost(size)
+                } else {
+                    taperSizeHolder -= startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtLeast(size)
+                }
                 brush.size = taperSizeHolder
             }
 

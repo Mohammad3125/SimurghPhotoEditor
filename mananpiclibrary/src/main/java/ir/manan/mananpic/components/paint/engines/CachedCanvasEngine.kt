@@ -12,7 +12,10 @@ class CachedCanvasEngine : DrawingEngine {
     var cachedScale = 0f
     var cachedRotation = 0f
 
+    private var taperSizeHolder = 0
+
     override fun onMoveBegin(ex: Float, ey: Float, brush: Brush) {
+        taperSizeHolder = if (brush.startTaperSize == 0) brush.size else brush.startTaperSize
     }
 
     override fun onMove(ex: Float, ey: Float, brush: Brush) {
@@ -70,7 +73,24 @@ class CachedCanvasEngine : DrawingEngine {
                 (opacity * 255).toInt()
             }
 
+            val llSize = size
+
+            if (startTaperSpeed > 0 && startTaperSize != size) {
+                if (startTaperSize < size) {
+                    taperSizeHolder += startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtMost(size)
+                } else {
+                    taperSizeHolder -= startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtLeast(size)
+                }
+                size = taperSizeHolder
+            }
+
             draw(canvas, brushOpacity)
+
+            if(size != llSize) {
+                size = llSize
+            }
 
             canvas.restore()
         }

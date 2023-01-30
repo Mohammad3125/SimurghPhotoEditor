@@ -236,27 +236,50 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             cacheCounter = 0
             cachePointHolder.clear()
 
+            var ex = points[0]
+            var ey = points[1]
+
             lineSmoother.setFirstPoint(
-                points[0],
-                points[1],
+                ex,
+                ey,
                 1f,
                 brush.spacedWidth
             )
 
+            engine.onMoveBegin(
+                ex,
+                ey, brush
+            )
+
             for (i in 2..points.size - 2 step 2) {
+                ex = points[i]
+                ey = points[i + 1]
+
                 lineSmoother.addPoints(
-                    points[i],
-                    points[i + 1],
+                    ex,
+                    ey,
                     1f,
                     brush.spacedWidth
                 )
+
+                engine.onMove(
+                    ex,
+                    ey, brush
+                )
             }
 
+            ex = points[points.lastIndex - 1]
+            ey = points[points.lastIndex]
+
             lineSmoother.setLastPoint(
-                points[points.lastIndex - 1],
-                points[points.lastIndex],
+                ex,
+                ey,
                 1f,
                 brush.spacedWidth
+            )
+
+            engine.onMoveEnded(
+                ex, ey, brush
             )
         }
 
