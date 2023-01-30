@@ -89,6 +89,24 @@ class BezierLineSmoother : LineSmoother() {
 
     override fun setLastPoint(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
         distance = 0f
+
+        if (isFirstThreeCreated) {
+
+            perv2x = perv1x
+            perv2y = perv1y
+
+            perv1x = curX
+            perv1y = curY
+
+            curX = ex
+            curY = ey
+
+            calculateQuadAndDraw(smoothness, stampWidth)
+
+            isFirstThreeCreated = false
+        } else {
+            onDrawPoint?.onDrawPoint(ex,ey)
+        }
     }
 
     private fun calculateQuadAndDraw(smoothness: Float, stampWidth: Float) {

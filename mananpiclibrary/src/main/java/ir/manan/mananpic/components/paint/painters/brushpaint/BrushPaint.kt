@@ -23,6 +23,12 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     var brush: Brush? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                finalBrush = value
+            }
+        }
     private lateinit var finalBrush: Brush
 
     private lateinit var ccBitmap: Bitmap
@@ -63,50 +69,52 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
+        if (!this::finalBrush.isInitialized) {
+            isBrushNull = true
+            return
+        }
 
         if (isLayerNull) {
             return
         }
 
-        areCanvasesInitialized = (this::paintCanvas.isInitialized)
 
-        brush?.let { b ->
+        isBrushNull = false
 
-            isBrushNull = false
+        engine.onMoveBegin(initialX, initialY, finalBrush)
 
-            engine.onMoveBegin(initialX, initialY, b)
+        lineSmoother.setFirstPoint(
+            initialX,
+            initialY,
+            1f - finalBrush.smoothness,
+            finalBrush.spacedWidth
+        )
 
-            lineSmoother.setFirstPoint(initialX, initialY, 1f - b.smoothness, b.spacedWidth)
+        alphaBlendPaint.alpha = (finalBrush.opacity * 255f).toInt()
 
-            alphaBlendPaint.alpha = (b.opacity * 255f).toInt()
+        shouldBlendAlpha = finalBrush.alphaBlend
 
-            shouldBlendAlpha = b.alphaBlend
+        val ts = finalBrush.textureScale
 
-            val ts = b.textureScale
+        textureMat.setScale(ts, ts)
 
-            textureMat.setScale(ts, ts)
+        if (finalBrush.texture != null) {
 
-            if (b.texture != null) {
+            textureBitmap = finalBrush.texture
 
-                textureBitmap = b.texture
+            textureShader =
+                BitmapShader(textureBitmap!!, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
 
-                textureShader =
-                    BitmapShader(textureBitmap!!, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
+            textureShader!!.setLocalMatrix(textureMat)
 
-                textureShader!!.setLocalMatrix(textureMat)
-
-                texturePaint.shader = textureShader
-            } else if (textureBitmap != null) {
-                textureBitmap = null
-                textureShader = null
-                texturePaint.shader = null
-            }
-
-            finalBrush = b
-
-            return
+            texturePaint.shader = textureShader
+        } else if (textureBitmap != null) {
+            textureBitmap = null
+            textureShader = null
+            texturePaint.shader = null
         }
-        isBrushNull = true
+
+        return
     }
 
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
@@ -153,7 +161,12 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
             engine.onMoveEnded(lastX, lastX, finalBrush)
 
-            lineSmoother.setLastPoint(lastX, lastY, 1f - finalBrush.smoothness, finalBrush.spacedWidth)
+            lineSmoother.setLastPoint(
+                lastX,
+                lastY,
+                1f - finalBrush.smoothness,
+                finalBrush.spacedWidth
+            )
 //
 //            if (textureBitmap != null) {
 //
@@ -247,7 +260,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     private fun shouldDraw(): Boolean =
-        (!isBrushNull && areCanvasesInitialized && !isLayerNull)
+        !isBrushNull && !isLayerNull
 
 
     override fun resetPaint() {

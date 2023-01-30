@@ -123,7 +123,7 @@ class CanvasDrawingEngine : DrawingEngine {
 
             val llSize = size
 
-            if (startTaperSpeed > 0 && taperSizeHolder != size) {
+            if (startTaperSpeed > 0 && startTaperSize > 0 && taperSizeHolder != size) {
                 if (startTaperSize < size) {
                     taperSizeHolder += startTaperSpeed
                     taperSizeHolder = taperSizeHolder.coerceAtMost(size)
@@ -131,7 +131,7 @@ class CanvasDrawingEngine : DrawingEngine {
                     taperSizeHolder -= startTaperSpeed
                     taperSizeHolder = taperSizeHolder.coerceAtLeast(size)
                 }
-                brush.size = taperSizeHolder
+                size = taperSizeHolder
             }
 
             val brushOpacity = if (opacityJitter > 0f) {

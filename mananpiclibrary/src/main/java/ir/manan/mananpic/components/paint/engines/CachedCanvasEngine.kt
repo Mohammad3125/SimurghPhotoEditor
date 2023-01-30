@@ -75,7 +75,7 @@ class CachedCanvasEngine : DrawingEngine {
 
             val llSize = size
 
-            if (startTaperSpeed > 0 && startTaperSize != size) {
+            if (startTaperSpeed > 0 && startTaperSize > 0 && taperSizeHolder != size) {
                 if (startTaperSize < size) {
                     taperSizeHolder += startTaperSpeed
                     taperSizeHolder = taperSizeHolder.coerceAtMost(size)
