@@ -280,27 +280,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             callPainterOnMove(
                                 historicX,
                                 historicY,
-                                historicX - initialX,
-                                historicY - initialY
                             )
 
                             initialX = x
                             initialY = y
 
-
                         }
 
                         callPainterOnMove(
                             x,
-                            y,
-                            x - initialX,
-                            y - initialY
+                            y
                         )
-
-                        initialX = x
-                        initialY = y
-
-
 
                         return true
                     }
@@ -353,22 +343,23 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun callPainterOnMove(ex: Float, ey: Float, dx: Float, dy: Float) {
-        if (dx == 0f && dy == 0f) return
-
-        // Calculate how much the canvas is scaled then use
-        // that to slow down the translation by that factor.
-        val s = canvasMatrix.getOppositeScale()
-
+    private fun callPainterOnMove(ex: Float, ey: Float) {
         mapTouchPoints(ex, ey).let { points ->
 
+            val dx = points[0] - initialX
+            val dy = points[1] - initialY
+
+            if (dx == 0f && dy == 0f) {
+                return
+            }
+
             painter!!.onMove(
-                dx * s, dy * s, points[0], points[1]
+                points[0], points[1]
             )
 
             // Reset initial positions.
-            initialX = ex
-            initialY = ey
+            initialX = points[0]
+            initialY = points[1]
         }
 
     }
@@ -639,6 +630,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 0f,
                 layersPaint
             )
+
+            if (layer === selectedLayer) {
+                painter?.draw(mergeCanvas)
+            }
         }
     }
 

@@ -117,7 +117,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         return
     }
 
-    override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
+    override fun onMove(ex: Float, ey: Float) {
 
         if (shouldDraw()) {
 
