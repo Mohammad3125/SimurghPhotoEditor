@@ -12,10 +12,10 @@ class CachedCanvasEngine : DrawingEngine {
     var cachedScale = 0f
     var cachedRotation = 0f
 
-    private var taperSizeHolder = 0
+    private var taperSizeHolder = 0f
 
     override fun onMoveBegin(ex: Float, ey: Float, brush: Brush) {
-        taperSizeHolder = if (brush.startTaperSize == 0) brush.size else brush.startTaperSize
+        taperSizeHolder = brush.startTaperSize
     }
 
     override fun onMove(ex: Float, ey: Float, brush: Brush) {
@@ -59,38 +59,37 @@ class CachedCanvasEngine : DrawingEngine {
                 canvas.rotate(fixedAngle)
             }
 
+            if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
+                if (startTaperSize < 1f) {
+                    taperSizeHolder += startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtMost(1f)
+                } else {
+                    taperSizeHolder -= startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtLeast(1f)
+                }
+            }
+
+
             val squish = 1f - squish
 
             val sizeJitter = sizeJitter
 
             val jitterNumber = sizeJitter * cachedScale
-            val finalScale = (1f + jitterNumber)
+
+            val finalTaperSize = if(taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
+
+            val finalScale = (1f + jitterNumber) * finalTaperSize
+
             canvas.scale(finalScale * squish, finalScale)
 
             val brushOpacity = if (opacityJitter > 0f) {
                 Random.nextInt(0, (255f * opacityJitter).toInt())
-            } else  {
+            } else {
                 (opacity * 255).toInt()
             }
 
-            val llSize = size
-
-            if (startTaperSpeed > 0 && startTaperSize > 0 && taperSizeHolder != size) {
-                if (startTaperSize < size) {
-                    taperSizeHolder += startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtMost(size)
-                } else {
-                    taperSizeHolder -= startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtLeast(size)
-                }
-                size = taperSizeHolder
-            }
 
             draw(canvas, brushOpacity)
-
-            if(size != llSize) {
-                size = llSize
-            }
 
             canvas.restore()
         }

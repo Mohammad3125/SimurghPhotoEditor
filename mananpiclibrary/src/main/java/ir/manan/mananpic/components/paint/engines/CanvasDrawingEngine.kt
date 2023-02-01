@@ -14,9 +14,9 @@ class CanvasDrawingEngine : DrawingEngine {
     private var hueFlip = true
 
     var isInEraserMode = false
-    private var taperSizeHolder = 0
+    private var taperSizeHolder = 0f
     override fun onMoveBegin(ex: Float, ey: Float, brush: Brush) {
-        taperSizeHolder = if (brush.startTaperSize == 0) brush.size else brush.startTaperSize
+        taperSizeHolder = brush.startTaperSize
 
         if (isInEraserMode) {
             if (brush.brushBlending != PorterDuff.Mode.DST_OUT) {
@@ -71,14 +71,26 @@ class CanvasDrawingEngine : DrawingEngine {
                 canvas.rotate(angle)
             }
 
+            if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
+                if (startTaperSize < 1f) {
+                    taperSizeHolder += startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtMost(1f)
+                } else {
+                    taperSizeHolder -= startTaperSpeed
+                    taperSizeHolder = taperSizeHolder.coerceAtLeast(1f)
+                }
+            }
+
             val squish = 1f - squish
 
             if (sizeJitter > 0f) {
                 val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
-                val finalScale = (1f + randomJitterNumber)
+                val finalScale = (1f + randomJitterNumber) * taperSizeHolder
                 canvas.scale(finalScale * squish, finalScale)
             } else if (squish != 1f) {
-                canvas.scale(squish, 1f)
+                canvas.scale(squish * taperSizeHolder, taperSizeHolder)
+            } else if (taperSizeHolder != 1f && startTaperSpeed > 0) {
+                canvas.scale(taperSizeHolder, taperSizeHolder)
             }
 
             val lastColor = color
@@ -87,7 +99,7 @@ class CanvasDrawingEngine : DrawingEngine {
                 if (hueJitter > 0) {
                     Color.colorToHSV(color, hsvHolder)
                     var hue = hsvHolder[0]
-                    hue += kotlin.random.Random.nextInt(0, hueJitter)
+                    hue += Random.nextInt(0, hueJitter)
                     hue = GestureUtils.mapTo360(hue)
                     hsvHolder[0] = hue
                     color = Color.HSVToColor(hsvHolder)
@@ -121,19 +133,6 @@ class CanvasDrawingEngine : DrawingEngine {
                 }
             }
 
-            val llSize = size
-
-            if (startTaperSpeed > 0 && startTaperSize > 0 && taperSizeHolder != size) {
-                if (startTaperSize < size) {
-                    taperSizeHolder += startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtMost(size)
-                } else {
-                    taperSizeHolder -= startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtLeast(size)
-                }
-                size = taperSizeHolder
-            }
-
             val brushOpacity = if (opacityJitter > 0f) {
                 Random.nextInt(0, (255f * opacityJitter).toInt())
             } else if (alphaBlend) {
@@ -147,10 +146,6 @@ class CanvasDrawingEngine : DrawingEngine {
 
             if (color != lastColor) {
                 color = lastColor
-            }
-
-            if (size != llSize) {
-                size = llSize
             }
 
             canvas.restore()

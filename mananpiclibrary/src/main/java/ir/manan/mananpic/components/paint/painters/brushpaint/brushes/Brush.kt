@@ -46,9 +46,9 @@ abstract class Brush {
 
     open var hueDistance: Int = 0
 
-    open var startTaperSpeed = 0
+    open var startTaperSpeed = 0f
 
-    open var startTaperSize = 0
+    open var startTaperSize = 1f
 
     var spacedWidth: Float = 0.0f
         get() = size * spacing
