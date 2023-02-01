@@ -83,14 +83,16 @@ class CanvasDrawingEngine : DrawingEngine {
 
             val squish = 1f - squish
 
+            val finalTaperSize = if(taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
+
             if (sizeJitter > 0f) {
                 val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
-                val finalScale = (1f + randomJitterNumber) * taperSizeHolder
+                val finalScale = (1f + randomJitterNumber) * finalTaperSize
                 canvas.scale(finalScale * squish, finalScale)
             } else if (squish != 1f) {
-                canvas.scale(squish * taperSizeHolder, taperSizeHolder)
+                canvas.scale(squish * finalTaperSize, finalTaperSize)
             } else if (taperSizeHolder != 1f && startTaperSpeed > 0) {
-                canvas.scale(taperSizeHolder, taperSizeHolder)
+                canvas.scale(finalTaperSize, finalTaperSize)
             }
 
             val lastColor = color
