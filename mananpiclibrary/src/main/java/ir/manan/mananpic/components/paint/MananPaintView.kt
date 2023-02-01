@@ -460,7 +460,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
 
+                    save()
+                    clipRect(0, 0, layer.bitmap.width, layer.bitmap.height)
+
                     painter?.draw(this)
+
+                    restore()
+
                 }
 
                 for (i in layerHolder.indexOf(selectedLayer) + 1..layerHolder.lastIndex) {
