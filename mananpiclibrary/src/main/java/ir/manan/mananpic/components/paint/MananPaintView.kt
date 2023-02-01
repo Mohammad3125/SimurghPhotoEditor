@@ -105,6 +105,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isFirstTimeToCallListener = false
 
+    var isTouchEventHistoryEnabled = false
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
         rectAlloc.set(boundsRectangle)
@@ -272,19 +274,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             callPainterOnMoveBegin()
                         }
 
-                        repeat(historySize) {
+                        if (isTouchEventHistoryEnabled) {
+                            repeat(historySize) {
 
-                            val historicX = getHistoricalX(0, it)
-                            val historicY = getHistoricalY(0, it)
+                                val historicX = getHistoricalX(0, it)
+                                val historicY = getHistoricalY(0, it)
 
-                            callPainterOnMove(
-                                historicX,
-                                historicY,
-                            )
-
-                            initialX = x
-                            initialY = y
-
+                                callPainterOnMove(
+                                    historicX,
+                                    historicY,
+                                )
+                            }
                         }
 
                         callPainterOnMove(
