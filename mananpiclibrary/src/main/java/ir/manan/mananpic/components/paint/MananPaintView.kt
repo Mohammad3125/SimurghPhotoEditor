@@ -129,12 +129,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         set(value) {
             field = value
             value?.setOnInvalidateListener(this)
-            if (isViewInitialized) {
-                initializedPainter(field)
-            } else {
+
+            if (!isViewInitialized) {
                 requestLayout()
-                initializedPainter(field)
             }
+
+            initializedPainter(field)
         }
 
     init {
@@ -152,7 +152,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     override fun onImageLaidOut() {
         context.resources.displayMetrics.run {
-            maximumScale = max(widthPixels, heightPixels) / min(bitmapWidth, bitmapHeight) * 10f
+            maximumScale =
+                max(widthPixels, heightPixels) / min(bitmapWidth, bitmapHeight) * 10f
         }
 
         rectAlloc.set(boundsRectangle)
@@ -755,7 +756,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         saveState()
 
-        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+        callOnLayerChangedListeners(
+            layerHolder.toList(),
+            layerHolder.indexOf(selectedLayer)
+        )
 
         invalidate()
     }
@@ -768,7 +772,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         checkIndex(index)
         selectedLayer = layerHolder[index]
         painter?.onLayerChanged(selectedLayer)
-        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+        callOnLayerChangedListeners(
+            layerHolder.toList(),
+            layerHolder.indexOf(selectedLayer)
+        )
         cacheLayers()
         invalidate()
     }
@@ -835,7 +842,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         onDoubleTapUpInterface?.onDoubleTapUp()
     }
 
-    private fun callOnLayerChangedListeners(layers: List<PaintLayer>, selectedLayerIndex: Int) {
+    private fun callOnLayerChangedListeners(
+        layers: List<PaintLayer>,
+        selectedLayerIndex: Int
+    ) {
         onLayersChangedListener?.onLayersChanged(layers, selectedLayerIndex)
         onLayersChanged?.invoke(layers, selectedLayerIndex)
     }
