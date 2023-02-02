@@ -276,13 +276,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         if (isTouchEventHistoryEnabled) {
                             repeat(historySize) {
-
-                                val historicX = getHistoricalX(0, it)
-                                val historicY = getHistoricalY(0, it)
-
                                 callPainterOnMove(
-                                    historicX,
-                                    historicY,
+                                    getHistoricalX(0, it),
+                                    getHistoricalY(0, it),
                                 )
                             }
                         }
@@ -358,8 +354,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             )
 
             // Reset initial positions.
-            initialX = points[0]
-            initialY = points[1]
+            initialX = ex
+            initialY = ey
         }
 
     }
