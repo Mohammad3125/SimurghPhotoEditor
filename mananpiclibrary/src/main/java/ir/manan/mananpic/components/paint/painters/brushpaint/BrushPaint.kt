@@ -11,13 +11,6 @@ import ir.manan.mananpic.utils.MananMatrix
 
 class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint {
 
-    //    private var bitmapPaint = Paint().apply {
-//        isFilterBitmap = true
-//    }
-    private var texturePaint = Paint().apply {
-        style = Paint.Style.FILL
-        xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
-    }
     private var alphaBlendPaint = Paint().apply {
         isFilterBitmap = true
     }
@@ -33,20 +26,12 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
     private lateinit var ccBitmap: Bitmap
     private lateinit var paintCanvas: Canvas
-    private lateinit var bufferCanvas: Canvas
-    private lateinit var bufferBitmap: Bitmap
     private lateinit var alphaBlendBitmap: Bitmap
     private lateinit var alphaBlendCanvas: Canvas
     private var shouldBlendAlpha = false
 
     private var viewBounds = RectF()
 
-    private val textureRect by lazy { RectF() }
-    private var textureBitmap: Bitmap? = null
-    private var textureShader: BitmapShader? = null
-    private val textureMat by lazy { Matrix() }
-
-    private var areCanvasesInitialized = false
     private var isLayerNull = true
     private var isBrushNull = false
 
@@ -63,21 +48,14 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
         viewBounds.set(bounds)
 
-        textureRect.set(viewBounds)
-
         lineSmoother.onDrawPoint = this
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        if (!this::finalBrush.isInitialized) {
+        if (!this::finalBrush.isInitialized || isLayerNull) {
             isBrushNull = true
             return
         }
-
-        if (isLayerNull) {
-            return
-        }
-
 
         isBrushNull = false
 
@@ -93,26 +71,6 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         alphaBlendPaint.alpha = (finalBrush.opacity * 255f).toInt()
 
         shouldBlendAlpha = finalBrush.alphaBlend
-
-        val ts = finalBrush.textureScale
-
-        textureMat.setScale(ts, ts)
-
-        if (finalBrush.texture != null) {
-
-            textureBitmap = finalBrush.texture
-
-            textureShader =
-                BitmapShader(textureBitmap!!, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
-
-            textureShader!!.setLocalMatrix(textureMat)
-
-            texturePaint.shader = textureShader
-        } else if (textureBitmap != null) {
-            textureBitmap = null
-            textureShader = null
-            texturePaint.shader = null
-        }
 
         return
     }
@@ -167,34 +125,12 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
                 1f - finalBrush.smoothness,
                 finalBrush.spacedWidth
             )
-//
-//            if (textureBitmap != null) {
-//
-//                bufferCanvas.save()
-//
-//                bufferCanvas.translate(-viewBounds.left, -viewBounds.top)
-//
-//                bufferCanvas.drawRect(
-//                    0f, 0f, textureRect.right, textureRect.bottom,
-//                    texturePaint.apply {
-//                        xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP)
-//                    }
-//                )
-//
-//                texturePaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
-//
-//                bufferCanvas.restore()
-//
-//                paintCanvas.drawBitmap(bufferBitmap, 0f, 0f, bitmapPaint)
-//
-//                bufferBitmap.eraseColor(Color.TRANSPARENT)
-//            }
-//
+
             if (shouldBlendAlpha) {
                 paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
                 alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
             }
-//
+
             invalidate()
         }
     }
@@ -217,17 +153,11 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
             alphaBlendBitmap = ccBitmap.copy(Bitmap.Config.ARGB_8888, true)
 
-            bufferBitmap = ccBitmap.copy(Bitmap.Config.ARGB_8888, true)
-
             if (this::paintCanvas.isInitialized) {
                 paintCanvas.setBitmap(ccBitmap)
-                bufferCanvas.setBitmap(bufferBitmap)
                 alphaBlendCanvas.setBitmap(alphaBlendBitmap)
             } else {
                 paintCanvas = Canvas(ccBitmap)
-
-                bufferCanvas = Canvas(bufferBitmap)
-
                 alphaBlendCanvas = Canvas(alphaBlendBitmap)
             }
         } else {
@@ -237,23 +167,6 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     override fun draw(canvas: Canvas) {
-
-//        if(shouldBlendAlpha && !isBrushNull) {
-//            texturePaint.alpha = (brush!!.opacity * 255f).toInt()
-//        }
-//
-//        texturePaint.alpha = 255
-//
-
-//        if (textureBitmap != null) {
-//
-//            canvas.drawBitmap(bufferBitmap, textureRect.left, textureRect.top, bitmapPaint)
-//
-//            canvas.drawRect(textureRect, texturePaint)
-//
-//            canvas.drawBitmap(ccBitmap, textureRect.left, textureRect.top, bitmapPaint)
-//        }
-
         if (!isBrushNull && shouldBlendAlpha) {
             canvas.drawBitmap(alphaBlendBitmap, 0f, 0f, alphaBlendPaint)
         }
@@ -271,6 +184,5 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
     override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
         viewBounds.set(newBounds)
-        textureRect.set(viewBounds)
     }
 }

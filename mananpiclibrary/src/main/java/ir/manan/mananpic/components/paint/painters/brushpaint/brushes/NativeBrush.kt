@@ -29,15 +29,9 @@ class NativeBrush : Brush() {
 
     private var hardnessShader: RadialGradient? = null
 
-    override var texture: Bitmap? = null
-        set(value) {
-            field = value
-        }
-
     override var brushBlending: PorterDuff.Mode = PorterDuff.Mode.SRC_OVER
         set(value) {
             field = value
-
             if (field == PorterDuff.Mode.SRC_OVER) {
                 paint.xfermode = null
             } else {

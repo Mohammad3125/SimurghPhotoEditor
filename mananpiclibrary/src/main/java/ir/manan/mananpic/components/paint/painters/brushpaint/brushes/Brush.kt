@@ -1,6 +1,5 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
@@ -37,10 +36,6 @@ abstract class Brush {
     open var smoothness: Float = 0f
 
     open var alphaBlend: Boolean = false
-
-    open var texture: Bitmap? = null
-
-    open var textureScale = 1f
 
     open var hueFlow: Float = 0f
 

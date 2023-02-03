@@ -83,7 +83,8 @@ class CanvasDrawingEngine : DrawingEngine {
 
             val squish = 1f - squish
 
-            val finalTaperSize = if(taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
+            val finalTaperSize =
+                if (taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
 
             if (sizeJitter > 0f) {
                 val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
@@ -97,42 +98,40 @@ class CanvasDrawingEngine : DrawingEngine {
 
             val lastColor = color
 
-            if (texture == null) {
-                if (hueJitter > 0) {
-                    Color.colorToHSV(color, hsvHolder)
-                    var hue = hsvHolder[0]
-                    hue += Random.nextInt(0, hueJitter)
-                    hue = GestureUtils.mapTo360(hue)
-                    hsvHolder[0] = hue
-                    color = Color.HSVToColor(hsvHolder)
-                } else if (hueFlow > 0f && hueDistance > 0f) {
-                    Color.colorToHSV(color, hsvHolder)
+            if (hueJitter > 0) {
+                Color.colorToHSV(color, hsvHolder)
+                var hue = hsvHolder[0]
+                hue += Random.nextInt(0, hueJitter)
+                hue = GestureUtils.mapTo360(hue)
+                hsvHolder[0] = hue
+                color = Color.HSVToColor(hsvHolder)
+            } else if (hueFlow > 0f && hueDistance > 0f) {
+                Color.colorToHSV(color, hsvHolder)
 
-                    var hue = hsvHolder[0]
+                var hue = hsvHolder[0]
 
-                    if (hueFlip) {
-                        hueDegreeHolder += (1f / hueFlow)
-                    } else {
-                        hueDegreeHolder -= (1f / hueFlow)
-                    }
-
-                    if (hueDegreeHolder >= hueDistance) {
-                        hueDegreeHolder = hueDistance.toFloat()
-                        hueFlip = false
-                    }
-                    if (hueDegreeHolder <= 0f) {
-                        hueDegreeHolder = 0f
-                        hueFlip = true
-                    }
-
-                    hue += hueDegreeHolder
-
-                    hue = GestureUtils.mapTo360(hue)
-
-                    hsvHolder[0] = hue
-
-                    color = Color.HSVToColor(hsvHolder)
+                if (hueFlip) {
+                    hueDegreeHolder += (1f / hueFlow)
+                } else {
+                    hueDegreeHolder -= (1f / hueFlow)
                 }
+
+                if (hueDegreeHolder >= hueDistance) {
+                    hueDegreeHolder = hueDistance.toFloat()
+                    hueFlip = false
+                }
+                if (hueDegreeHolder <= 0f) {
+                    hueDegreeHolder = 0f
+                    hueFlip = true
+                }
+
+                hue += hueDegreeHolder
+
+                hue = GestureUtils.mapTo360(hue)
+
+                hsvHolder[0] = hue
+
+                color = Color.HSVToColor(hsvHolder)
             }
 
             val brushOpacity = if (opacityJitter > 0f) {

@@ -52,16 +52,6 @@ class BitmapBrush(
             calculateSize(size)
         }
 
-    override var texture: Bitmap? = null
-        set(value) {
-            field = value
-            if (value == null) {
-                paint.xfermode = null
-            } else {
-//                paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
-            }
-        }
-
     private lateinit var scaledStamp: Bitmap
 
     private var lastSize = 0
