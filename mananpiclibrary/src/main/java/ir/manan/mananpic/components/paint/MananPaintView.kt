@@ -44,8 +44,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isFirstMove = true
 
-    private var dxSum = 0f
-    private var dySum = 0f
+    private var secondDxSum = 0f
+    private var secondDySum = 0f
+
+    private var firstDxSum = 0f
+    private var firstDySum = 0f
+
 
     private var isMoved = false
 
@@ -102,6 +106,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private var wasLastOperationFromOtherStack = false
 
     private var tot = 0f
+
+    private var isFirstFingerMoved = false
 
     private var isFirstTimeToCallListener = false
 
@@ -216,10 +222,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 }
                 MotionEvent.ACTION_MOVE -> {
 
+                    val finalSlope = abs(scaledTouchSlope * canvasMatrix.getOppositeScale())
 
-                    // Determine total amount that user moved his/her finger on screen.
-                    val dx: Float
-                    val dy: Float
+                    val firstFingerDx = (x - initialX)
+                    val firstFingerDy = (y - initialY)
+
+                    if (!isFirstFingerMoved) {
+                        firstDxSum += abs(firstFingerDx)
+                        firstDySum += abs(firstFingerDy)
+                        isFirstFingerMoved =
+                            isFirstFingerMoved.or(firstDxSum >= finalSlope || firstDySum >= finalSlope)
+                    }
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
@@ -230,24 +243,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         val secondPointerDx = secondPointerX - secondPointerInitialX
                         val secondPointerDy = secondPointerY - secondPointerInitialY
 
-                        val finalSlope = abs(scaledTouchSlope * canvasMatrix.getOppositeScale())
 
                         if (!isMoved) {
-                            dxSum += abs(secondPointerDx)
-                            dySum += abs(secondPointerDy)
-                            isMoved = isMoved.or(dxSum >= finalSlope || dySum >= finalSlope)
+                            secondDxSum += abs(secondPointerDx)
+                            secondDySum += abs(secondPointerDy)
+                            isMoved =
+                                isMoved.or(secondDxSum >= finalSlope || secondDySum >= finalSlope)
                         }
 
-
-                        // Calculate total difference by taking difference of first and second pointer
-                        // and their initial point then append them and finally divide by two because
-                        // we have two pointers that add up and it makes the gesture double as fast.
-                        dx = ((secondPointerDx) + (x - initialX)) / 2
-                        dy = ((secondPointerDy) + (y - initialY)) / 2
-
-                        // Reset initial positions.
-                        initialX = x
-                        initialY = y
+                        val dx = (secondPointerDx + firstFingerDx) / 2
+                        val dy = (secondPointerDy + firstFingerDy) / 2
 
                         secondPointerInitialX = secondPointerX
                         secondPointerInitialY = secondPointerY
@@ -255,14 +260,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         isMatrixGesture = true
 
                         canvasMatrix.postTranslate(dx, dy)
-                        invalidate()
 
-                        return true
+                        invalidate()
                     }
+
+                    initialX = x
+                    initialY = y
                     // Else if selector is not null and there is currently 1 pointer on
                     // screen and user is not performing any other gesture like moving or
                     // scaling, then call 'onMove' method of selector.
-                    if (painter != null && selectedLayer != null && totalPoints == 1 && !isMatrixGesture && !selectedLayer!!.isLocked) {
+                    if (painter != null && selectedLayer != null && totalPoints == 1 && !isMatrixGesture && !selectedLayer!!.isLocked && isFirstFingerMoved) {
 
                         if (isFirstMove) {
 
@@ -306,9 +313,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     isMatrixGesture = false
                     isNewGesture = true
 
-                    dxSum = 0f
-                    dySum = 0f
+                    secondDxSum = 0f
+                    secondDySum = 0f
                     isMoved = false
+
+                    firstDxSum = 0f
+                    firstDySum = 0f
+                    isFirstFingerMoved = false
 
                     return false
                 }
