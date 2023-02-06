@@ -4,18 +4,17 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
 import ir.manan.mananpic.components.selection.selectors.BrushSelector
-import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
 
 abstract class Painter {
-    private var invalidateListener: Selector.OnDispatchToInvalidate? = null
+    private var messageListener: MessageChannel? = null
 
-    fun setOnInvalidateListener(listener: Selector.OnDispatchToInvalidate) {
-        invalidateListener = listener
+    fun setOnMessageListener(listener: MessageChannel) {
+        messageListener = listener
     }
 
-    fun invalidate() {
-        invalidateListener?.invalidateDrawings()
+    fun sendMessage(message: PainterMessage) {
+        messageListener?.onSendMessage(message)
     }
 
     abstract fun initialize(
@@ -64,5 +63,27 @@ abstract class Painter {
 
 
     abstract fun onLayerChanged(layer: PaintLayer?)
+
+    open fun doesHandleHistory(): Boolean {
+        return false
+    }
+
+    open fun undo() {
+
+    }
+
+    open fun redo() {
+
+    }
+
+    interface MessageChannel {
+        fun onSendMessage(message: PainterMessage)
+    }
+
+    enum class PainterMessage {
+        INVALIDATE,
+        SAVE_HISTORY,
+        CACHE_LAYERS
+    }
 
 }

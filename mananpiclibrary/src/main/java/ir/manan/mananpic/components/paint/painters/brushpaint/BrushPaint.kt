@@ -110,7 +110,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
     override fun onDrawPoint(ex: Float, ey: Float) {
         engine.draw(ex, ey, if (shouldBlendAlpha) alphaBlendCanvas else paintCanvas, finalBrush)
-        invalidate()
+        sendMessage(PainterMessage.INVALIDATE)
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
@@ -131,7 +131,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
                 alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
             }
 
-            invalidate()
+            sendMessage(PainterMessage.INVALIDATE)
         }
     }
 
@@ -179,7 +179,13 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     override fun resetPaint() {
         ccBitmap.eraseColor(Color.TRANSPARENT)
         alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
-        invalidate()
+        sendMessage(PainterMessage.INVALIDATE)
+    }
+
+    override fun undo() {
+    }
+
+    override fun redo() {
     }
 
     override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {

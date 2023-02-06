@@ -10,7 +10,6 @@ import android.view.ScaleGestureDetector
 import android.view.ViewConfiguration
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
-import ir.manan.mananpic.components.selection.selectors.Selector
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
@@ -21,7 +20,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class MananPaintView(context: Context, attrSet: AttributeSet?) :
-    MananGestureImageView(context, attrSet), Selector.OnDispatchToInvalidate {
+    MananGestureImageView(context, attrSet), Painter.MessageChannel {
 
     constructor(context: Context) : this(context, null)
 
@@ -134,7 +133,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     var painter: Painter? = null
         set(value) {
             field = value
-            value?.setOnInvalidateListener(this)
+            value?.setOnMessageListener(this)
 
             if (!isViewInitialized) {
                 requestLayout()
@@ -493,8 +492,18 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    override fun invalidateDrawings() {
-        invalidate()
+    override fun onSendMessage(message: Painter.PainterMessage) {
+        when (message) {
+            Painter.PainterMessage.INVALIDATE -> {
+                invalidate()
+            }
+            Painter.PainterMessage.SAVE_HISTORY -> {
+                saveState(isMessage = true)
+            }
+            Painter.PainterMessage.CACHE_LAYERS -> {
+                cacheLayers()
+            }
+        }
     }
 
     private fun animateCanvasBack() {
@@ -506,11 +515,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun saveState(isSpecial: Boolean = false) {
+    private fun saveState(isSpecial: Boolean = false, isMessage: Boolean = false) {
 
-        if (redoStack.isNotEmpty()) {
-            redoStack.clear()
+        if (painter?.doesHandleHistory() == true && !isMessage) {
+            return
         }
+
+        redoStack.clear()
 
         selectedLayer?.let { sl ->
             val copiedList = MutableList(layerHolder.size) {
@@ -529,10 +540,22 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     fun undo() {
+        painter?.let { p ->
+            if (p.doesHandleHistory()) {
+                p.undo()
+                return
+            }
+        }
         swapStacks(undoStack, redoStack, true)
     }
 
     fun redo() {
+        painter?.let { p ->
+            if (p.doesHandleHistory()) {
+                p.redo()
+                return
+            }
+        }
         swapStacks(redoStack, undoStack, false)
     }
 
