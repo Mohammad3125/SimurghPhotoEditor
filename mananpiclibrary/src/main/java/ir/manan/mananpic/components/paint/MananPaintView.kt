@@ -102,8 +102,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isAllLayersCached: Boolean = false
 
-    private var wasLastOperationFromOtherStack = false
-
     private var tot = 0f
 
     private var isFirstFingerMoved = false
@@ -272,11 +270,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         if (isFirstMove) {
 
-                            if ((undoStack.isNotEmpty()) && selectedLayer !== undoStack.peek().ref) {
-                                saveState(true)
-                            } else if (redoStack.isNotEmpty()) {
-                                saveState(false)
-                            }
+                            checkForStateSave()
 
                             callPainterOnMoveBegin()
                         }
@@ -304,6 +298,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     if (shouldCallDoubleTapListener()) {
                         callOnDoubleTapListeners()
                     } else if (shouldEndMoveOnPainter()) {
+                        checkForStateSave()
                         callPainterOnMoveEnd(x, y)
                     }
 
@@ -328,6 +323,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             }
         }
         return false
+    }
+
+    private fun checkForStateSave() {
+        if (undoStack.isNotEmpty() && (selectedLayer !== undoStack.peek().ref)) {
+            saveState(true)
+        } else if (redoStack.isNotEmpty()) {
+            saveState(false)
+        }
     }
 
     private fun callPainterOnMoveBegin() {
@@ -556,22 +559,31 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 return
             }
         }
-        swapStacks(redoStack, undoStack, false)
+        swapStacks(redoStack, undoStack)
     }
 
-    private fun swapStacks(popStack: Stack<State>, pushStack: Stack<State>, indicator: Boolean) {
+    private fun swapStacks(
+        popStack: Stack<State>,
+        pushStack: Stack<State>,
+        isUndo: Boolean = false
+    ) {
         if (popStack.isNotEmpty()) {
-            val poppedState = popStack.pop()
 
-            if (popStack.isNotEmpty() && (pushStack.isEmpty() || indicator != wasLastOperationFromOtherStack || poppedState.isSpecial)) {
+            val isFirstSnapshot = isUndo && popStack.size == 1
+
+            val poppedState = if (isFirstSnapshot) popStack.peek() else popStack.pop()
+
+            if ((popStack.isNotEmpty() && !isFirstSnapshot) && (pushStack.isEmpty() || poppedState.clonedLayer == layerHolder.last() || poppedState.isSpecial)
+            ) {
                 poppedState.restoreState(this)
                 val newPopped = popStack.pop()
                 newPopped.restoreState(this)
                 pushStack.push(poppedState)
                 pushStack.push(newPopped)
-                wasLastOperationFromOtherStack = indicator
             } else {
-                pushStack.push(poppedState)
+                if (!isFirstSnapshot) {
+                    pushStack.push(poppedState)
+                }
                 poppedState.restoreState(this)
             }
 
@@ -590,11 +602,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun addNewLayer() {
 
-        if ((undoStack.isNotEmpty()) && selectedLayer !== undoStack.peek().ref) {
-            saveState(true)
-        } else if (redoStack.isNotEmpty()) {
-            saveState(false)
-        }
+        checkForStateSave()
 
         selectedLayer = PaintLayer(
             Bitmap.createBitmap(
@@ -891,8 +899,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         val isSpecial: Boolean = false
     ) {
         fun restoreState(paintView: MananPaintView) {
-            ref.bitmap = clonedLayer.bitmap.copy(clonedLayer.bitmap.config, true)
-            ref.blendMode = clonedLayer.blendMode
+            ref.set(clonedLayer.clone())
 
             paintView.run {
 
@@ -900,7 +907,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 if (i > layers.lastIndex) i = layers.lastIndex
                 selectedLayer = layers[i]
 
-                layerHolder = layers
+                layerHolder = MutableList(layers.size) {
+                    layers[it]
+                }
             }
 
         }

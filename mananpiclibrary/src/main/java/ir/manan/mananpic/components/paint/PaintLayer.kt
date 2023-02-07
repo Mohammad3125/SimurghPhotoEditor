@@ -22,6 +22,14 @@ data class PaintLayer(
         )
     }
 
+    fun set(otherLayer: PaintLayer) {
+        bitmap = otherLayer.bitmap
+        layerMatrix.set(otherLayer.layerMatrix)
+        isLocked = otherLayer.isLocked
+        opacity = otherLayer.opacity
+        blendMode = otherLayer.blendMode
+    }
+
     override fun equals(other: Any?): Boolean {
         other as PaintLayer
         return (bitmap.sameAs(other.bitmap)) &&
