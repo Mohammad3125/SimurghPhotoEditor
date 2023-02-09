@@ -518,7 +518,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun saveState(isSpecial: Boolean = false, isMessage: Boolean = false) {
+    private fun saveState(
+        isSpecial: Boolean = false,
+        isMessage: Boolean = false,
+        shouldClone: Boolean = true,
+        isLayerChange: Boolean = false
+    ) {
 
         if (painter?.doesHandleHistory() == true && !isMessage) {
             return
@@ -533,9 +538,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             undoStack.add(
                 State(
                     sl,
-                    sl.clone(),
+                    sl.clone(shouldClone),
                     copiedList,
-                    isSpecial
+                    isSpecial,
+                    isLayerChange
                 )
             )
         }
@@ -573,7 +579,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             val poppedState = if (isFirstSnapshot) popStack.peek() else popStack.pop()
 
-            if ((popStack.isNotEmpty() && !isFirstSnapshot) && (pushStack.isEmpty() || poppedState.clonedLayer == layerHolder.last() || poppedState.isSpecial)
+            if ((popStack.isNotEmpty() && !isFirstSnapshot) && (pushStack.isEmpty() || (poppedState.clonedLayer == layerHolder.last() && !poppedState.isLayerChangeState) || poppedState.isSpecial)
             ) {
                 poppedState.restoreState(this)
                 val newPopped = popStack.pop()
@@ -697,7 +703,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun changeSelectedLayerBlendingMode(blendingMode: PorterDuff.Mode) {
         selectedLayer?.blendMode = PorterDuffXfermode(blendingMode)
 
-        saveState()
+        saveState(shouldClone = false)
 
         invalidate()
     }
@@ -709,12 +715,37 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         cacheLayers()
 
-        saveState()
+        saveState(shouldClone = false)
+
         invalidate()
     }
 
-    fun moveSelectedLayerDown() {
+    fun moveLayer(from: Int, to: Int) {
+        if (cantMoveLayers(from, to)) {
+            return
+        }
 
+        val layerFrom = layerHolder[from]
+        layerHolder[from] = layerHolder[to]
+        layerHolder[to] = layerFrom
+
+        cacheLayers()
+
+        saveState(shouldClone = false, isLayerChange = true)
+
+        callOnLayerChangedListeners(
+            layerHolder.toList(),
+            layerHolder.indexOf(selectedLayer)
+        )
+
+        invalidate()
+    }
+
+    private fun cantMoveLayers(from: Int, to: Int): Boolean {
+        return from == to || from < 0 || to < 0 || from > layerHolder.lastIndex || to > layerHolder.lastIndex
+    }
+
+    fun moveSelectedLayerDown() {
         selectedLayer?.let { sv ->
             val index = layerHolder.indexOf(selectedLayer)
 
@@ -726,7 +757,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                 cacheLayers()
 
-                saveState()
+                saveState(shouldClone = false, isLayerChange = true)
 
                 callOnLayerChangedListeners(
                     layerHolder.toList(),
@@ -750,7 +781,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                 cacheLayers()
 
-                saveState()
+                saveState(shouldClone = false, isLayerChange = true)
 
                 callOnLayerChangedListeners(
                     layerHolder.toList(),
@@ -896,10 +927,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         val ref: PaintLayer,
         val clonedLayer: PaintLayer,
         val layers: MutableList<PaintLayer>,
-        val isSpecial: Boolean = false
+        val isSpecial: Boolean = false,
+        val isLayerChangeState: Boolean
     ) {
         fun restoreState(paintView: MananPaintView) {
-            ref.set(clonedLayer.clone())
+            if (!isLayerChangeState) {
+                ref.set(clonedLayer.clone(true))
+            }
 
             paintView.run {
 
@@ -912,6 +946,36 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 }
             }
 
+        }
+
+        override fun equals(other: Any?): Boolean {
+            other as State
+            return clonedLayer == other.clonedLayer &&
+                    layers.size == other.layers.size &&
+                    layers.containsAll(other.layers) &&
+                    isOrderOfLayersMatched(layers, other.layers)
+        }
+
+        private fun isOrderOfLayersMatched(
+            firstLayers: List<PaintLayer>,
+            secondLayers: List<PaintLayer>
+        ): Boolean {
+
+            repeat(firstLayers.size) { index ->
+                if (firstLayers[index] !== secondLayers[index]) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = ref.hashCode()
+            result = 31 * result + clonedLayer.hashCode()
+            result = 31 * result + layers.hashCode()
+            result = 31 * result + isSpecial.hashCode()
+            result = 31 * result + isLayerChangeState.hashCode()
+            return result
         }
     }
 

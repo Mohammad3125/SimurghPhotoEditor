@@ -12,9 +12,9 @@ data class PaintLayer(
     var opacity: Float,
     var blendMode: PorterDuffXfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_OVER)
 ) {
-    fun clone(): PaintLayer {
+    fun clone(shouldCloneBitmap: Boolean): PaintLayer {
         return PaintLayer(
-            bitmap.copy(bitmap.config, true),
+            if (shouldCloneBitmap) bitmap.copy(bitmap.config, true) else bitmap,
             Matrix(layerMatrix),
             isLocked,
             opacity,
