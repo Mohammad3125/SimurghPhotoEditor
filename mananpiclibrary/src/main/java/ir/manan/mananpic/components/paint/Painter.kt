@@ -13,7 +13,7 @@ abstract class Painter {
         messageListener = listener
     }
 
-    fun sendMessage(message: PainterMessage) {
+    protected fun sendMessage(message: PainterMessage) {
         messageListener?.onSendMessage(message)
     }
 

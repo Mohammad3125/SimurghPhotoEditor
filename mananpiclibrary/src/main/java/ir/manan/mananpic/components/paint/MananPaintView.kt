@@ -326,7 +326,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun checkForStateSave() {
-        if (undoStack.isNotEmpty() && (selectedLayer !== undoStack.peek().ref)) {
+        if (undoStack.isNotEmpty() && (selectedLayer !== undoStack.peek().ref || undoStack.peek().isLayerChangeState)) {
             saveState(true)
         } else if (redoStack.isNotEmpty()) {
             saveState(false)
