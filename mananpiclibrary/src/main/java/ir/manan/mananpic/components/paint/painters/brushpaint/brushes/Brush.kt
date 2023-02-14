@@ -27,7 +27,9 @@ abstract class Brush {
 
     open var sizeJitter: Float = 0f
 
-    open var sizeVariance: Float = 0f
+    open var sizeVariance: Float = 0.5f
+
+    open var sizeVarianceSpeed : Float = 0.1f
 
     open var squish = 0f
 

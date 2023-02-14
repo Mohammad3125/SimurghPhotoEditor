@@ -18,7 +18,7 @@ class CachedCanvasEngine : DrawingEngine {
         taperSizeHolder = brush.startTaperSize
     }
 
-    override fun onMove(ex: Float, ey: Float, brush: Brush) {
+    override fun onMove(ex: Float, ey: Float, velocityX: Float, velocityY: Float, brush: Brush) {
     }
 
     override fun onMoveEnded(ex: Float, ey: Float, brush: Brush) {

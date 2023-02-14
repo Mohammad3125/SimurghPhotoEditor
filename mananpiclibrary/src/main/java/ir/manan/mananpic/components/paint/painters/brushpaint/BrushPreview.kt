@@ -264,7 +264,9 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
                 engine.onMove(
                     ex,
-                    ey, brush
+                    ey,
+                    0f, 0f,
+                    brush
                 )
             }
 

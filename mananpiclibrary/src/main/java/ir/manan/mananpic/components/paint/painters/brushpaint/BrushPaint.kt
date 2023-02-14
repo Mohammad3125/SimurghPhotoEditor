@@ -75,11 +75,11 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         return
     }
 
-    override fun onMove(ex: Float, ey: Float) {
+    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
 
         if (shouldDraw()) {
 
-            engine.onMove(ex, ey, finalBrush)
+            engine.onMove(ex, ey, dx, dy, finalBrush)
 
             lineSmoother.addPoints(ex, ey, 1f - finalBrush.smoothness, finalBrush.spacedWidth)
 

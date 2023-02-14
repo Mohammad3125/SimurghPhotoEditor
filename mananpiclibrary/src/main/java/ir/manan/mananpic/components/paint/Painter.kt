@@ -38,7 +38,7 @@ abstract class Painter {
      * @param ex Exact location of current x.
      * @param ey Exact location of current y.
      */
-    abstract fun onMove(ex: Float, ey: Float)
+    abstract fun onMove(ex: Float, ey: Float, dx: Float, dy: Float)
 
     /**
      * Called when user raises his/her finger on screen.

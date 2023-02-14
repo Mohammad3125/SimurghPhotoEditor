@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import kotlin.math.pow
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 class CanvasDrawingEngine : DrawingEngine {
@@ -15,8 +17,28 @@ class CanvasDrawingEngine : DrawingEngine {
 
     var isInEraserMode = false
     private var taperSizeHolder = 0f
+
+    private var sizeVarianceEasingStep = 0.005f
+    private var targetSizeVarianceHolder = 0f
+    private var sizeVarianceHolder = 0f
+
+    private var initialX = 0f
+    private var initialY = 0f
+
+    private var lastVtr = 0f
+
+    private var currentDiff = 0f
+
+    private var lastSizeVariance = 1f
+
+    private var currentSpacing = 0f
     override fun onMoveBegin(ex: Float, ey: Float, brush: Brush) {
         taperSizeHolder = brush.startTaperSize
+
+        sizeVarianceHolder = brush.sizeVariance
+        targetSizeVarianceHolder = sizeVarianceHolder
+
+        currentSpacing = brush.spacing
 
         if (isInEraserMode) {
             if (brush.brushBlending != PorterDuff.Mode.DST_OUT) {
@@ -26,13 +48,49 @@ class CanvasDrawingEngine : DrawingEngine {
             brush.brushBlending = PorterDuff.Mode.SRC_OVER
         }
 
+        initialX = ex
+        initialY = ey
+
+
     }
 
-    override fun onMove(ex: Float, ey: Float, brush: Brush) {
+    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float, brush: Brush) {
+        val vtr =
+            sqrt(
+                (dx).pow(2) + (dy).pow(2)
+            ) * 0.1f + lastVtr * 0.9f
+
+        initialX = ex
+        initialY = ey
+
+        currentDiff = vtr - lastVtr
+
+        lastVtr = vtr
+
+        if (brush.sizeVariance != 1f) {
+            val diff = (currentDiff * brush.sizeVarianceSpeed)
+
+            if (brush.sizeVariance < 1f) {
+                sizeVarianceHolder = brush.sizeVariance + diff
+                sizeVarianceHolder = sizeVarianceHolder.coerceIn(brush.sizeVariance, 1f)
+            } else {
+                sizeVarianceHolder = brush.sizeVariance - diff
+                sizeVarianceHolder = sizeVarianceHolder.coerceIn(1f, brush.sizeVariance)
+            }
+        }
+
+        brush.spacing = currentSpacing
+        brush.spacing *= targetSizeVarianceHolder
+
+        sizeVarianceEasingStep = 0.1f * brush.spacing
+
+        lastSizeVariance = sizeVarianceHolder
     }
 
     override fun onMoveEnded(ex: Float, ey: Float, brush: Brush) {
-
+        lastVtr = 0f
+        currentDiff = 0f
+        brush.spacing = currentSpacing
     }
 
     override fun draw(ex: Float, ey: Float, canvas: Canvas, brush: Brush) {
@@ -81,19 +139,33 @@ class CanvasDrawingEngine : DrawingEngine {
                 }
             }
 
+            if (targetSizeVarianceHolder < sizeVarianceHolder) {
+                targetSizeVarianceHolder += sizeVarianceEasingStep
+            } else {
+                targetSizeVarianceHolder -= sizeVarianceEasingStep
+            }
+
             val squish = 1f - squish
 
             val finalTaperSize =
                 if (taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
 
+            val finalSizeVariance =
+                if (sizeVariance != 1f) targetSizeVarianceHolder else 1f
+
             if (sizeJitter > 0f) {
                 val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
-                val finalScale = (1f + randomJitterNumber) * finalTaperSize
+                val finalScale = (1f + randomJitterNumber) * finalTaperSize * finalSizeVariance
                 canvas.scale(finalScale * squish, finalScale)
             } else if (squish != 1f) {
-                canvas.scale(squish * finalTaperSize, finalTaperSize)
+                canvas.scale(
+                    squish * finalTaperSize * finalSizeVariance,
+                    finalTaperSize * finalSizeVariance
+                )
             } else if (taperSizeHolder != 1f && startTaperSpeed > 0) {
-                canvas.scale(finalTaperSize, finalTaperSize)
+                canvas.scale(finalTaperSize * finalSizeVariance, finalTaperSize * finalSizeVariance)
+            } else if (sizeVariance != 1f) {
+                canvas.scale(finalSizeVariance, finalSizeVariance)
             }
 
             val lastColor = color

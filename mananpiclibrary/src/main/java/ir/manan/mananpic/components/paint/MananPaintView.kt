@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.VelocityTracker
 import android.view.ViewConfiguration
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
@@ -42,6 +43,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private var rotHolder = 0f
 
     private var isFirstMove = true
+
+    private var velocityTracker: VelocityTracker? = null
 
     private var secondDxSum = 0f
     private var secondDySum = 0f
@@ -207,6 +210,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     isFirstMove = true
 
+                    velocityTracker?.clear()
+                    velocityTracker = velocityTracker ?: VelocityTracker.obtain()
+
                     return true
                 }
                 MotionEvent.ACTION_POINTER_DOWN -> {
@@ -261,8 +267,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         invalidate()
                     }
 
-                    initialX = x
-                    initialY = y
                     // Else if selector is not null and there is currently 1 pointer on
                     // screen and user is not performing any other gesture like moving or
                     // scaling, then call 'onMove' method of selector.
@@ -272,7 +276,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                             checkForStateSave()
 
-                            callPainterOnMoveBegin()
+                            callPainterOnMoveBegin(this)
                         }
 
                         if (isTouchEventHistoryEnabled) {
@@ -286,12 +290,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         callPainterOnMove(
                             x,
-                            y
+                            y,
                         )
 
-                        return true
                     }
-                    return false
+
+                    initialX = x
+                    initialY = y
+
+                    return true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
 
@@ -315,6 +322,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     firstDySum = 0f
                     isFirstFingerMoved = false
 
+                    velocityTracker?.recycle()
+                    velocityTracker = null
+
                     return false
                 }
                 else -> {
@@ -333,8 +343,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun callPainterOnMoveBegin() {
+    private fun callPainterOnMoveBegin(event: MotionEvent) {
         mapTouchPoints(initialX, initialY).let { points ->
+            velocityTracker?.addMovement(event)
             painter!!.onMoveBegin(points[0], points[1])
             isFirstMove = false
             isAllLayersCached = false
@@ -359,19 +370,22 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             val dx = points[0] - initialX
             val dy = points[1] - initialY
 
+            val gdx = ex - initialX
+            val gdy = ey - initialY
+
+            // Reset initial positions.
+            initialX = ex
+            initialY = ey
+
             if (dx == 0f && dy == 0f) {
                 return
             }
 
             painter!!.onMove(
-                points[0], points[1]
+                points[0], points[1], gdx, gdy
             )
 
-            // Reset initial positions.
-            initialX = ex
-            initialY = ey
         }
-
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {

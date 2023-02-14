@@ -51,7 +51,7 @@ class LassoColorPainter(val context: Context) : Painter() {
     override fun onMoveBegin(initialX: Float, initialY: Float) {
     }
 
-    override fun onMove(ex: Float, ey: Float) {
+    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
         drawLine(ex, ey)
     }
 
