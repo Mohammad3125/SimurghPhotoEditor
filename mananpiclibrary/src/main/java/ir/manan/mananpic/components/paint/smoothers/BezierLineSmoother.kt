@@ -22,7 +22,6 @@ class BezierLineSmoother : LineSmoother() {
     private var curY = 0f
 
     private var distance = 0f
-    private var extra = 0f
 
     private var isFirstThreeCreated = false
 
@@ -41,8 +40,6 @@ class BezierLineSmoother : LineSmoother() {
 
         counter = 0
         counter++
-
-        extra = 0f
     }
 
     override fun addPoints(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
@@ -88,7 +85,6 @@ class BezierLineSmoother : LineSmoother() {
     }
 
     override fun setLastPoint(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
-        distance = 0f
 
         if (isFirstThreeCreated) {
 
@@ -105,54 +101,50 @@ class BezierLineSmoother : LineSmoother() {
 
             isFirstThreeCreated = false
         } else {
-            onDrawPoint?.onDrawPoint(ex,ey)
+            onDrawPoint?.onDrawPoint(ex, ey)
         }
+
+        distance = 0f
+        path.rewind()
     }
 
     private fun calculateQuadAndDraw(smoothness: Float, stampWidth: Float) {
-        path.rewind()
 
         mid1x = (perv1x + perv2x) * 0.5f
         mid1y = (perv1y + perv2y) * 0.5f
 
-        val ar = 1f - smoothness
+        val smoothnessInverse = 1f - smoothness
 
-        curX = curX * smoothness + (perv1x * ar)
-        curY = curY * smoothness + (perv1y * ar)
+        curX = curX * smoothness + (perv1x * smoothnessInverse)
+        curY = curY * smoothness + (perv1y * smoothnessInverse)
 
         mid2x = (curX + perv1x) * 0.5f
         mid2y = (curY + perv1y) * 0.5f
 
-        path.moveTo(mid1x, mid1y)
+        if (path.isEmpty) {
+            path.moveTo(mid1x, mid1y)
+        }
 
         path.quadTo(perv1x, perv1y, mid2x, mid2y)
 
         pathMeasure.setPath(path, false)
 
-        distance += (pathMeasure.length)
+        val width = (pathMeasure.length)
 
-        val total = floor(distance / stampWidth).toInt()
-
-        val totalToShiftBack = extra
-
-        var ff = stampWidth
+        val total = floor((width - distance) / stampWidth).toInt()
 
         repeat(total) {
 
+            distance += stampWidth
+
+
             pathMeasure.getPosTan(
-                ff - totalToShiftBack,
+                distance,
                 pointHolder,
                 null
             )
 
             onDrawPoint?.onDrawPoint(pointHolder[0], pointHolder[1])
-
-            distance -= stampWidth
-            ff += stampWidth
-
         }
-
-        extra = distance
-
     }
 }

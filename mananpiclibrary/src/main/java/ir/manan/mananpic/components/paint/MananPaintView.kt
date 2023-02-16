@@ -7,7 +7,6 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
-import android.view.VelocityTracker
 import android.view.ViewConfiguration
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
@@ -43,8 +42,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private var rotHolder = 0f
 
     private var isFirstMove = true
-
-    private var velocityTracker: VelocityTracker? = null
 
     private var secondDxSum = 0f
     private var secondDySum = 0f
@@ -210,9 +207,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     isFirstMove = true
 
-                    velocityTracker?.clear()
-                    velocityTracker = velocityTracker ?: VelocityTracker.obtain()
-
                     return true
                 }
                 MotionEvent.ACTION_POINTER_DOWN -> {
@@ -322,9 +316,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     firstDySum = 0f
                     isFirstFingerMoved = false
 
-                    velocityTracker?.recycle()
-                    velocityTracker = null
-
                     return false
                 }
                 else -> {
@@ -345,7 +336,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun callPainterOnMoveBegin(event: MotionEvent) {
         mapTouchPoints(initialX, initialY).let { points ->
-            velocityTracker?.addMovement(event)
             painter!!.onMoveBegin(points[0], points[1])
             isFirstMove = false
             isAllLayersCached = false
