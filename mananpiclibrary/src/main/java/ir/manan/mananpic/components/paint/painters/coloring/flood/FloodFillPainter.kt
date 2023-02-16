@@ -1,9 +1,8 @@
-package ir.manan.mananpic.components.paint.painters.floodfill
+package ir.manan.mananpic.components.paint.painters.coloring.flood
 
 import android.graphics.*
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
-import ir.manan.mananpic.components.paint.painters.floodfill.fillers.FloodFill
 import ir.manan.mananpic.utils.MananMatrix
 
 class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
@@ -21,14 +20,14 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
     }
 
-    override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float) {
+    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
 
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         layerBitmap?.let { bitmap ->
             floodFiller.fill(bitmap, lastX.toInt(), lastY.toInt(), fillColor, 0.5f)
-            invalidate()
+            sendMessage(PainterMessage.INVALIDATE)
         }
     }
 

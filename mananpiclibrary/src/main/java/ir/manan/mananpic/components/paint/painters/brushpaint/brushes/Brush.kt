@@ -17,6 +17,10 @@ abstract class Brush {
 
     open var opacityVariance: Float = 0f
 
+    open var opacityVarianceSpeed = 0.6f
+
+    open var opacityVarianceEasing = 0.1f
+
     open var spacing: Float = 0.1f
 
     open var scatter: Float = 0f
@@ -27,9 +31,11 @@ abstract class Brush {
 
     open var sizeJitter: Float = 0f
 
-    open var sizeVariance: Float = 0.5f
+    open var sizeVariance: Float = 1f
 
-    open var sizeVarianceSpeed : Float = 0.1f
+    open var sizeVarianceSensitivity : Float = 0.1f
+
+    open var sizeVarianceEasing : Float = 0.05f
 
     open var squish = 0f
 

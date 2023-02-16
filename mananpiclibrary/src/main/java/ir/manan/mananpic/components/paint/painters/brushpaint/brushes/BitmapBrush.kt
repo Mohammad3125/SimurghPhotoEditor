@@ -1,12 +1,11 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
 import android.graphics.*
-import android.os.Build
 import androidx.core.graphics.scale
 import kotlin.math.max
 
 class BitmapBrush(
-    private var brushBitmap: Bitmap? = null
+    var brushBitmap: Bitmap? = null
 ) : Brush() {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -56,7 +55,7 @@ class BitmapBrush(
 
     private var lastSize = 0
 
-    fun changeBrushBitmap(newBitmap: Bitmap?,recycleCurrentBitmap: Boolean) {
+    fun changeBrushBitmap(newBitmap: Bitmap?, recycleCurrentBitmap: Boolean) {
         if (recycleCurrentBitmap) {
             brushBitmap?.recycle()
         }
@@ -96,14 +95,6 @@ class BitmapBrush(
             if (h < 1) h = 1
 
             scaledStamp = brushBitmap!!.scale(w, h, true)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                scaledStamp.reconfigure(
-                    scaledStamp.width,
-                    scaledStamp.height,
-                    Bitmap.Config.HARDWARE
-                )
-            }
 
             scaledStamp.prepareToDraw()
         }

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -22,12 +23,13 @@ class CanvasDrawingEngine : DrawingEngine {
     private var targetSizeVarianceHolder = 0f
     private var sizeVarianceHolder = 0f
 
-    private var initialX = 0f
-    private var initialY = 0f
 
-    private var lastVtr = 0f
+    private var opacityVarianceEasingStep = 0.1f
+    private var targetOpacityVariance = 0f
+    private var opacityVarianceHolder = 0
 
-    private var currentDiff = 0f
+    private var lastVtrSizeVariance = 0f
+    private var lastVtrOpacityVariance = 0f
 
     private var lastSizeVariance = 1f
 
@@ -40,6 +42,9 @@ class CanvasDrawingEngine : DrawingEngine {
 
         currentSpacing = brush.spacing
 
+        targetOpacityVariance =
+            abs(brush.opacityVariance * 255f)
+
         if (isInEraserMode) {
             if (brush.brushBlending != PorterDuff.Mode.DST_OUT) {
                 brush.brushBlending = PorterDuff.Mode.DST_OUT
@@ -48,49 +53,78 @@ class CanvasDrawingEngine : DrawingEngine {
             brush.brushBlending = PorterDuff.Mode.SRC_OVER
         }
 
-        initialX = ex
-        initialY = ey
-
-
     }
 
     override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float, brush: Brush) {
-        val vtr =
-            sqrt(
-                (dx).pow(2) + (dy).pow(2)
-            ) * 0.1f + lastVtr * 0.9f
 
-        initialX = ex
-        initialY = ey
+        calculateSizeVariance(dx, dy, brush)
 
-        currentDiff = vtr - lastVtr
+        calculateOpacityVariance(dx, dy, brush)
 
-        lastVtr = vtr
 
-        if (brush.sizeVariance != 1f) {
-            val diff = (currentDiff * brush.sizeVarianceSpeed)
-
-            if (brush.sizeVariance < 1f) {
-                sizeVarianceHolder = brush.sizeVariance + diff
-                sizeVarianceHolder = sizeVarianceHolder.coerceIn(brush.sizeVariance, 1f)
-            } else {
-                sizeVarianceHolder = brush.sizeVariance - diff
-                sizeVarianceHolder = sizeVarianceHolder.coerceIn(1f, brush.sizeVariance)
-            }
-        }
-
-        brush.spacing = currentSpacing
-        brush.spacing *= targetSizeVarianceHolder
-
-        sizeVarianceEasingStep = 0.1f * brush.spacing
-
-        lastSizeVariance = sizeVarianceHolder
     }
 
     override fun onMoveEnded(ex: Float, ey: Float, brush: Brush) {
-        lastVtr = 0f
-        currentDiff = 0f
+        lastVtrSizeVariance = 0f
         brush.spacing = currentSpacing
+    }
+
+
+    private fun calculateSizeVariance(dx: Float, dy: Float, brush: Brush) {
+        if (brush.sizeVariance == 1f) {
+            return
+        }
+
+        val speed = calculateSpeed(dx, dy, lastSizeVariance, brush.sizeVarianceSensitivity)
+
+        lastVtrSizeVariance = speed
+
+        val diff = speed * 0.1f
+
+        if (brush.sizeVariance < 1f) {
+            sizeVarianceHolder = brush.sizeVariance + diff
+            sizeVarianceHolder = sizeVarianceHolder.coerceIn(brush.sizeVariance, 1f)
+        } else {
+            sizeVarianceHolder = brush.sizeVariance - diff
+            sizeVarianceHolder = sizeVarianceHolder.coerceIn(1f, brush.sizeVariance)
+        }
+
+        lastSizeVariance = sizeVarianceHolder
+
+        sizeVarianceEasingStep = brush.sizeVarianceEasing * brush.spacing
+
+    }
+
+    private fun calculateSpeed(dx: Float, dy: Float, lastSpeed: Float, sensitivity: Float): Float {
+        val sensitivityInverse = 1f - sensitivity
+
+        val vtr =
+            sqrt(
+                (dx).pow(2) + (dy).pow(2)
+            ) * sensitivity + lastSpeed * sensitivityInverse
+
+        return abs(vtr - lastSpeed)
+    }
+
+    private fun calculateOpacityVariance(dx: Float, dy: Float, brush: Brush) {
+        if (brush.opacityVariance == 0f) {
+            return
+        }
+
+        val speed = calculateSpeed(dx, dy, lastVtrOpacityVariance, brush.opacityVarianceSpeed)
+
+        val base = abs(brush.opacityVariance * 255f).toInt()
+
+        if (brush.opacityVariance > 0f) {
+            opacityVarianceHolder = (base + (speed * brush.opacityVarianceSpeed)).toInt()
+            opacityVarianceHolder = opacityVarianceHolder.coerceIn(base, 255)
+        } else {
+            opacityVarianceHolder = (base - (speed * brush.opacityVarianceSpeed)).toInt()
+            opacityVarianceHolder = opacityVarianceHolder.coerceIn(0, base)
+        }
+
+        opacityVarianceEasingStep = brush.opacityVarianceEasing / brush.spacing
+
     }
 
     override fun draw(ex: Float, ey: Float, canvas: Canvas, brush: Brush) {
@@ -206,14 +240,21 @@ class CanvasDrawingEngine : DrawingEngine {
                 color = Color.HSVToColor(hsvHolder)
             }
 
-            val brushOpacity = if (opacityJitter > 0f) {
+            if (targetOpacityVariance < opacityVarianceHolder) {
+                targetOpacityVariance += opacityVarianceEasingStep
+            } else {
+                targetOpacityVariance -= opacityVarianceEasingStep
+            }
+
+            val brushOpacity = if (opacityVariance != 0f) {
+                targetOpacityVariance.toInt()
+            } else if (opacityJitter > 0f) {
                 Random.nextInt(0, (255f * opacityJitter).toInt())
             } else if (alphaBlend) {
                 255
             } else {
                 (opacity * 255f).toInt()
             }
-
 
             draw(canvas, brushOpacity)
 
