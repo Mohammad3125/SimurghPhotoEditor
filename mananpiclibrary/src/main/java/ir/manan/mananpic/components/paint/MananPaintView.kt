@@ -110,6 +110,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     var isTouchEventHistoryEnabled = false
 
+    var maximumHistorySize = 15
+        set(value) {
+            field = value
+            while (isHistorySizeExceeded()) {
+                removeFirstState()
+            }
+        }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
         rectAlloc.set(boundsRectangle)
@@ -550,7 +558,18 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             )
         }
 
+        if (isHistorySizeExceeded()) {
+            removeFirstState()
+        }
+
     }
+
+    private fun isHistorySizeExceeded() = undoStack.size > maximumHistorySize
+
+    private fun removeFirstState() {
+        undoStack.removeFirst().release()
+    }
+
 
     fun undo() {
         painter?.let { p ->
@@ -950,6 +969,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 }
             }
 
+        }
+
+        fun release() {
+            clonedLayer.bitmap.recycle()
         }
 
         override fun equals(other: Any?): Boolean {
