@@ -25,9 +25,14 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     private lateinit var finalBrush: Brush
 
     private lateinit var ccBitmap: Bitmap
-    private lateinit var paintCanvas: Canvas
+    private val paintCanvas by lazy {
+        Canvas()
+    }
     private lateinit var alphaBlendBitmap: Bitmap
-    private lateinit var alphaBlendCanvas: Canvas
+
+    private val alphaBlendCanvas by lazy {
+        Canvas()
+    }
     private var shouldBlendAlpha = false
 
     private var viewBounds = RectF()
@@ -72,7 +77,15 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
         shouldBlendAlpha = finalBrush.alphaBlend
 
-        return
+        if (shouldCreateAlphaBitmap()) {
+            alphaBlendBitmap = ccBitmap.copy(Bitmap.Config.ARGB_8888, true)
+            alphaBlendCanvas.setBitmap(alphaBlendBitmap)
+        }
+
+    }
+
+    private fun shouldCreateAlphaBitmap(): Boolean {
+        return shouldBlendAlpha && (!this::alphaBlendBitmap.isInitialized || (alphaBlendBitmap.width != ccBitmap.width || alphaBlendBitmap.height != ccBitmap.height))
     }
 
     override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
@@ -82,28 +95,6 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
             engine.onMove(ex, ey, dx, dy, finalBrush)
 
             lineSmoother.addPoints(ex, ey, 1f - finalBrush.smoothness, finalBrush.spacedWidth)
-
-//        paintCanvas.save()
-//
-//        paintCanvas.translate(-viewBounds.left, -viewBounds.top)
-//
-//        paintCanvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-//            color = Color.RED
-//            style = Paint.Style.STROKE
-//            strokeWidth = 4f
-//        })
-//
-//        paintCanvas.drawPoint(mid1x, mid1y, Paint().apply {
-//            strokeWidth = 5f
-//            color = Color.BLUE
-//        })
-//
-//        paintCanvas.drawPoint(mid2x, mid2y, Paint().apply {
-//            strokeWidth = 5f
-//            color = Color.BLUE
-//        })
-//
-//        paintCanvas.restore()
 
         }
     }
@@ -144,26 +135,8 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
         isLayerNull = false
 
-        val layerBitmap = layer.bitmap
-
-
-        if (!this::ccBitmap.isInitialized || (this::ccBitmap.isInitialized && (layerBitmap.width != ccBitmap.width || layerBitmap.height != ccBitmap.height))) {
-
-            ccBitmap = layer.bitmap
-
-            alphaBlendBitmap = ccBitmap.copy(Bitmap.Config.ARGB_8888, true)
-
-            if (this::paintCanvas.isInitialized) {
-                paintCanvas.setBitmap(ccBitmap)
-                alphaBlendCanvas.setBitmap(alphaBlendBitmap)
-            } else {
-                paintCanvas = Canvas(ccBitmap)
-                alphaBlendCanvas = Canvas(alphaBlendBitmap)
-            }
-        } else {
-            ccBitmap = layer.bitmap
-            paintCanvas.setBitmap(ccBitmap)
-        }
+        ccBitmap = layer.bitmap
+        paintCanvas.setBitmap(ccBitmap)
     }
 
     override fun draw(canvas: Canvas) {
