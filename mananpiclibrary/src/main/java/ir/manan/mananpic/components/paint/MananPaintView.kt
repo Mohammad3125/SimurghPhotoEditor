@@ -559,7 +559,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun isHistorySizeExceeded() = undoStack.size > maximumHistorySize
 
     private fun removeFirstState() {
-        undoStack.removeFirst().release()
+        undoStack.removeFirst()
     }
 
 
@@ -960,10 +960,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 }
             }
 
-        }
-
-        fun release() {
-            clonedLayer.bitmap.recycle()
         }
 
         override fun equals(other: Any?): Boolean {
