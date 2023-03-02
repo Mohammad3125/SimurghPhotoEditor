@@ -11,9 +11,14 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
     var fillColor = Color.BLACK
 
+    var threshold = 0.6f
+
+    var thresholdStep = 0.1f
+
+    private var currentThreshold = 0f
 
     override fun initialize(matrix: MananMatrix, bounds: RectF) {
-
+        currentThreshold = threshold
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
@@ -26,9 +31,27 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
         layerBitmap?.let { bitmap ->
-            floodFiller.fill(bitmap, lastX.toInt(), lastY.toInt(), fillColor, 0.5f)
+            val xI = lastX.toInt()
+            val xY = lastY.toInt()
+
+            if (!isValid(bitmap, xI, xY)) {
+                return
+            }
+
+            if (bitmap.getPixel(xI, xY) == fillColor) {
+                currentThreshold += thresholdStep
+                currentThreshold = currentThreshold.coerceIn(0f, 1f)
+            } else {
+                currentThreshold = threshold
+            }
+
+            floodFiller.fill(bitmap, xI, xY, fillColor, currentThreshold)
             sendMessage(PainterMessage.INVALIDATE)
         }
+    }
+
+    private fun isValid(bitmap: Bitmap, ex: Int, ey: Int): Boolean {
+        return (ex.coerceIn(0, bitmap.width - 1) == ex) && (ey.coerceIn(0, bitmap.height - 1) == ey)
     }
 
     override fun draw(canvas: Canvas) {
