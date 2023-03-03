@@ -129,13 +129,13 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
 
 
     // List of rectangles representing shadows around frame.
-    private lateinit var frameShadows: List<RectF>
+    private var frameShadows: List<RectF> = listOf(RectF(), RectF(), RectF(), RectF())
 
     // Handle bar dimensions for drawing.
-    private lateinit var frameHandleBar: FloatArray
+    private var frameHandleBar = FloatArray(0)
 
     // Dimension of guidelines.
-    private lateinit var guideLineDimension: FloatArray
+    private var guideLineDimension = FloatArray(0)
 
     // Map of points on frame that represents each handle bar like LEFT, TOP-LEFT and etc...
     private lateinit var mapOfHandleBars: MutableMap<Pair<PointF, PointF>, HandleBar>
@@ -261,8 +261,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         mapOfHandleBars =
             createHandleBarPointMap(frameRect)
 
-        frameShadows =
-            createFrameShadows(frameRect)
+        createFrameShadows(frameRect)
 
         guideLineDimension =
             createGuideLines(frameRect)
@@ -312,18 +311,12 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
      * @param frame The rectangle the represents the overlay window.
      * @return List of rectangles that surround the overlay window.
      */
-    private fun createFrameShadows(frame: RectF): List<RectF> {
-        return frame.run {
-            listOf(
-                // Top shadow.
-                RectF(leftEdge, topEdge, rightEdge, top),
-                // Left shadow.
-                RectF(leftEdge, top, left, bottom),
-                // Right shadow.
-                RectF(right, top, rightEdge, bottom),
-                // Bottom shadow.
-                RectF(leftEdge, bottom, rightEdge, bottomEdge)
-            )
+    private fun createFrameShadows(frame: RectF) {
+        frame.run {
+            frameShadows[0].set(leftEdge, topEdge, rightEdge, top)
+            frameShadows[1].set(leftEdge, top, left, bottom)
+            frameShadows[2].set(right, top, rightEdge, bottom)
+            frameShadows[3].set(leftEdge, bottom, rightEdge, bottomEdge)
         }
     }
 
@@ -640,7 +633,7 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
     fun cropImage(): Bitmap {
         frameRect.run {
 
-            if(bitmap == null) throw IllegalStateException("cannot crop a null bitmap")
+            if (bitmap == null) throw IllegalStateException("cannot crop a null bitmap")
 
             // Calculate bounds of drawable by dividing it by initial scale of current image.
             val le = (left - leftEdge)
