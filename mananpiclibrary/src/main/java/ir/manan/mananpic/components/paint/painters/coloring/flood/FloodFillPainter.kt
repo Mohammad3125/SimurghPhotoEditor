@@ -1,5 +1,6 @@
 package ir.manan.mananpic.components.paint.painters.coloring.flood
 
+import android.content.Context
 import android.graphics.*
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
@@ -17,7 +18,7 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
     private var currentThreshold = 0f
 
-    override fun initialize(matrix: MananMatrix, bounds: RectF) {
+    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         currentThreshold = threshold
     }
 

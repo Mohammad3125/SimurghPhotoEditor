@@ -187,7 +187,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun initializedPainter(pp: Painter?) {
         pp?.let { p ->
-            p.initialize(canvasMatrix, rectAlloc)
+            rectAlloc.set(boundsRectangle)
+            p.initialize(context, canvasMatrix, rectAlloc)
             p.onLayerChanged(selectedLayer)
         }
     }

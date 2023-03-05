@@ -1,5 +1,6 @@
 package ir.manan.mananpic.components.paint
 
+import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
@@ -18,6 +19,7 @@ abstract class Painter {
     }
 
     abstract fun initialize(
+        context: Context,
         matrix: MananMatrix,
         bounds: RectF,
     )

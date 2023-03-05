@@ -1,5 +1,6 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint
 
+import android.content.Context
 import android.graphics.*
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
@@ -46,10 +47,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
             field.onDrawPoint = this
         }
 
-    override fun initialize(
-        matrix: MananMatrix,
-        bounds: RectF,
-    ) {
+    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
 
         viewBounds.set(bounds)
 

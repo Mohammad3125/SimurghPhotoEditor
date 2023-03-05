@@ -44,7 +44,7 @@ class LassoColorPainter(val context: Context) : Painter() {
         Canvas()
     }
 
-    override fun initialize(matrix: MananMatrix, bounds: RectF) {
+    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
 
     }
 
