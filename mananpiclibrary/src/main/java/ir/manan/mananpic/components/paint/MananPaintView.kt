@@ -541,7 +541,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         isLayerChange: Boolean = false
     ) {
 
-        if (painter?.doesHandleHistory() == true && !isMessage) {
+        if (painter?.doesHandleHistory() == true && !isMessage && undoStack.isNotEmpty()) {
             return
         }
 
