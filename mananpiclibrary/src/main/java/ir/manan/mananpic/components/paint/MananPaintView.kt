@@ -454,6 +454,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                 concat(imageviewMatrix)
 
+                drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+
+                drawLayer(canvas)
+
                 drawBitmap(cachedLayer, 0f, 0f, layersPaint)
 
             } else {
@@ -467,21 +471,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
                 }
 
-                selectedLayer?.let { layer ->
-
-                    layersPaint.alpha = (255 * layer.opacity).toInt()
-                    layersPaint.xfermode = layer.blendMode
-
-                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
-
-                    save()
-                    clipRect(0, 0, layer.bitmap.width, layer.bitmap.height)
-
-                    painter?.draw(this)
-
-                    restore()
-
-                }
+                drawLayer(canvas)
 
                 for (i in layerHolder.indexOf(selectedLayer) + 1..layerHolder.lastIndex) {
 
@@ -497,6 +487,27 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             }
 
         }
+    }
+
+    private fun drawLayer(canvas: Canvas) {
+        canvas.apply {
+            selectedLayer?.let { layer ->
+
+                layersPaint.alpha = (255 * layer.opacity).toInt()
+                layersPaint.xfermode = layer.blendMode
+
+                drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
+
+                save()
+                clipRect(0, 0, layer.bitmap.width, layer.bitmap.height)
+
+                painter?.draw(this)
+
+                restore()
+
+            }
+        }
+
     }
 
     override fun onSendMessage(message: Painter.PainterMessage) {
@@ -670,9 +681,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                 mergeCanvas.setBitmap(cachedLayer)
 
-                mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
-
-                mergeLayersAtIndex(selectedLayerIndex, layerHolder.lastIndex)
+                mergeLayersAtIndex(selectedLayerIndex + 1, layerHolder.lastIndex)
 
                 isAllLayersCached = true
             }
