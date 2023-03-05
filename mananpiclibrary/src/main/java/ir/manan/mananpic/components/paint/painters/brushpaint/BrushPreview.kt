@@ -166,7 +166,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             targetHeight: Int,
             paddingHorizontal: Float,
             paddingVertical: Float,
-            brush: Brush
+            brush: Brush,
+            customPath: Path? = null
         ): Bitmap {
 
             calculatePoints(
@@ -175,7 +176,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 paddingHorizontal,
                 paddingHorizontal,
                 paddingVertical,
-                paddingVertical
+                paddingVertical,
+                customPath
             )
 
             initializeCachedProperties()
@@ -201,15 +203,20 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             paddingLeft: Float,
             paddingRight: Float,
             paddingTop: Float,
-            paddingBottom: Float
+            paddingBottom: Float,
+            customPath: Path? = null,
         ) {
 
             val widthF = targetWidth - paddingRight
             val heightF = targetHeight - paddingBottom
 
-            path.rewind()
-            path.moveTo(paddingLeft, heightF * 0.5f + paddingTop)
-            path.cubicTo(widthF * 0.25f, heightF, widthF * 0.75f, 0f, widthF, heightF * 0.5f)
+            if (customPath != null) {
+                path.set(customPath)
+            } else {
+                path.rewind()
+                path.moveTo(paddingLeft, heightF * 0.5f + paddingTop)
+                path.cubicTo(widthF * 0.25f, heightF, widthF * 0.75f, 0f, widthF, heightF * 0.5f)
+            }
 
             pathMeasure.setPath(path, false)
             val length = pathMeasure.length

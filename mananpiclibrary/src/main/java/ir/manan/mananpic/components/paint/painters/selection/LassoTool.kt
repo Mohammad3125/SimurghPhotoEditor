@@ -33,7 +33,7 @@ class LassoTool : Painter() {
 
     private val lassoPath by lazy {
         Path().apply {
-            fillType = Path.FillType.INVERSE_WINDING
+            fillType = Path.FillType.WINDING
         }
     }
 
