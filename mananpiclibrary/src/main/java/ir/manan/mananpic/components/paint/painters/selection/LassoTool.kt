@@ -6,21 +6,18 @@ import android.graphics.*
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.painters.selection.clippers.PathClipper
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import java.util.*
 
-class LassoTool : Painter() {
+class LassoTool(var clipper: PathClipper) : Painter() {
 
     private val lassoPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 10f
         }
-    }
-
-    private val bitmapPaint by lazy {
-        Paint()
     }
 
     var lassoStrokeWidth = 0f
@@ -39,14 +36,6 @@ class LassoTool : Painter() {
 
     private val lassoCopy by lazy {
         Path()
-    }
-
-    private val canvas by lazy {
-        Canvas()
-    }
-
-    private val bitmapRectangle by lazy {
-        RectF()
     }
 
     private val viewBounds = RectF()
@@ -79,8 +68,6 @@ class LassoTool : Painter() {
     private var selectedLayer: PaintLayer? = null
 
     private var isFirstPoint = true
-
-    private var copiedBitmap: Bitmap? = null
 
     var isInverse = false
         set(value) {
@@ -153,86 +140,38 @@ class LassoTool : Painter() {
 
     fun copy(): Bitmap? {
         doIfLayerNotNullAndPathIsNotEmpty { layer ->
-
-            copiedBitmap =
-                createBitmap(layer)
-
-            drawBitmapOnPath(layer.bitmap)
-
-            return copiedBitmap
+            setClipper(layer)
+            return clipper.copy()
         }
 
         return null
+    }
+
+    private fun setClipper(layer: PaintLayer) {
+        clipper.path = lassoPath
+        clipper.bitmap = layer.bitmap
+        clipper.isInverse = isInverse
     }
 
     fun cut(): Bitmap? {
         doIfLayerNotNullAndPathIsNotEmpty { layer ->
-            copiedBitmap = createBitmap(layer)
-
-            drawBitmapOnPath(layer.bitmap)
-            clip()
-
-            return copiedBitmap
+            setClipper(layer)
+            val finalBitmap = clipper.cut()
+            sendMessage(PainterMessage.SAVE_HISTORY)
+            return finalBitmap
         }
 
         return null
     }
 
-    private fun drawBitmapOnPath(layerBitmap: Bitmap) {
-        val fillType = lassoPath.fillType
-
-        lassoPath.fillType =
-            if (isInverse) Path.FillType.INVERSE_WINDING else Path.FillType.WINDING
-
-        canvas.apply {
-            setBitmap(copiedBitmap)
-            save()
-            translate(-bitmapRectangle.left, -bitmapRectangle.top)
-            clip(canvas, layerBitmap)
-            restore()
-        }
-
-        lassoPath.fillType = fillType
-    }
-
-    private fun createBitmap(layer: PaintLayer): Bitmap {
-        if (isInverse) {
-            bitmapRectangle.set(
-                0f,
-                0f,
-                layer.bitmap.width.toFloat(),
-                layer.bitmap.height.toFloat()
-            )
-        } else {
-            lassoPath.computeBounds(bitmapRectangle, true)
-        }
-        return Bitmap.createBitmap(
-            bitmapRectangle.width().toInt(),
-            bitmapRectangle.height().toInt(),
-            Bitmap.Config.ARGB_8888
-        )
-    }
-
     fun clip() {
         doIfLayerNotNullAndPathIsNotEmpty { layer ->
-            val layerCopy = layer.bitmap.copy(Bitmap.Config.ARGB_8888, true)
-
-            layer.bitmap.eraseColor(Color.TRANSPARENT)
-
-            canvas.setBitmap(layer.bitmap)
-
-            val fillType = lassoPath.fillType
-
-            lassoPath.fillType =
-                if (isInverse) Path.FillType.WINDING else Path.FillType.INVERSE_WINDING
-
-            clip(canvas, layerCopy)
-
-            lassoPath.fillType = fillType
-
+            setClipper(layer)
+            clipper.clip()
             sendMessage(PainterMessage.SAVE_HISTORY)
         }
     }
+
 
     private inline fun doIfLayerNotNullAndPathIsNotEmpty(function: (layer: PaintLayer) -> Unit) {
         if (!isFirstPoint && !lassoPath.isEmpty) {
@@ -240,15 +179,6 @@ class LassoTool : Painter() {
                 function(layer)
                 resetPaint()
             }
-        }
-    }
-
-    private fun clip(canvas: Canvas, bitmap: Bitmap) {
-        canvas.apply {
-            save()
-            clipPath(lassoPath)
-            drawBitmap(bitmap, 0f, 0f, bitmapPaint)
-            restore()
         }
     }
 

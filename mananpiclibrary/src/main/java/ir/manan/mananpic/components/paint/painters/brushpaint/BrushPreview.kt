@@ -135,18 +135,11 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         private val canvasBitmap by lazy {
             Canvas()
         }
-        private val pathMeasure = PathMeasure()
-        private val engine by lazy { CachedCanvasEngine() }
-        private val lineSmoother by lazy {
-            BezierLineSmoother().apply {
-                onDrawPoint = object : LineSmoother.OnDrawPoint {
-                    override fun onDrawPoint(ex: Float, ey: Float) {
-                        cachePointHolder.add(ex)
-                        cachePointHolder.add(ey)
-                    }
-                }
-            }
+        private val pathMeasure by lazy {
+            PathMeasure()
         }
+        private val engine by lazy { CachedCanvasEngine() }
+        private lateinit var lineSmoother: LineSmoother
 
         private val rotationCache = mutableListOf<Float>()
         private val scaleCache = mutableListOf<Float>()
@@ -158,7 +151,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
         private var cachePointHolder = mutableListOf<Float>()
 
-        private val points = FloatArray(80)
+        private lateinit var points: FloatArray
 
 
         fun createBrushSnapshot(
@@ -167,8 +160,35 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             paddingHorizontal: Float,
             paddingVertical: Float,
             brush: Brush,
+            resolution: Int = 320,
+            lineSmoother: LineSmoother = BezierLineSmoother(),
             customPath: Path? = null
         ): Bitmap {
+
+            if (resolution % 2 != 0) {
+                throw IllegalArgumentException("resolution should be divisible by 2")
+            }
+
+            if (resolution < 2) {
+                throw IllegalArgumentException("resolution should be more than 2")
+            }
+
+            if (!(this::points.isInitialized && points.size == resolution)) {
+                points = FloatArray(resolution)
+            }
+
+            this.lineSmoother = lineSmoother
+
+            this.lineSmoother.apply {
+                onDrawPoint = object : LineSmoother.OnDrawPoint {
+                    override fun onDrawPoint(ex: Float, ey: Float) {
+                        cachePointHolder.add(ex)
+                        cachePointHolder.add(ey)
+                    }
+                }
+            }
+
+
 
             calculatePoints(
                 targetWidth.toFloat(),
@@ -221,12 +241,13 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             pathMeasure.setPath(path, false)
             val length = pathMeasure.length
 
-            val speed = length / 40
+            val pointsHalf = (points.size / 2)
+            val speed = length / pointsHalf
             var distance = 0f
 
             val p = floatArrayOf(0f, 0f)
 
-            repeat(40) {
+            repeat(pointsHalf) {
                 pathMeasure.getPosTan(distance, p, null)
 
                 val ind = it * 2
@@ -236,6 +257,11 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 points[ind] = p[0]
                 points[ind + 1] = p[1]
             }
+
+            pathMeasure.getPosTan(length, p, null)
+
+            points[points.lastIndex - 1] = p[0]
+            points[points.lastIndex] = p[1]
         }
 
         private fun callPoints(brush: Brush) {

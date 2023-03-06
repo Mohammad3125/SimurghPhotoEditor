@@ -8,7 +8,7 @@ class NativeBrush : Brush() {
         style = Paint.Style.FILL
     }
 
-    var hardness = 0.2f
+    var softness = 0.2f
         set(value) {
             field = value
             createHardnessShader()
@@ -43,7 +43,7 @@ class NativeBrush : Brush() {
         colorsHolder[0] = color
         colorsHolder[1] = Color.argb(0, Color.red(color), Color.green(color), Color.blue(color))
 
-        stopsHolder[0] = 1f - hardness
+        stopsHolder[0] = 1f - softness
         stopsHolder[1] = 1f
 
         hardnessShader = RadialGradient(
