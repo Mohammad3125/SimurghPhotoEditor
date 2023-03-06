@@ -18,13 +18,13 @@ class CachedCanvasEngine : DrawingEngine {
         taperSizeHolder = brush.startTaperSize
     }
 
-    override fun onMove(ex: Float, ey: Float, velocityX: Float, velocityY: Float, brush: Brush) {
+    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float, brush: Brush) {
     }
 
     override fun onMoveEnded(ex: Float, ey: Float, brush: Brush) {
     }
 
-    override fun draw(ex: Float, ey: Float, canvas: Canvas, brush: Brush) {
+    override fun draw(ex: Float, ey: Float, directionalAngle: Float, canvas: Canvas, brush: Brush) {
         brush.apply {
             canvas.save()
 
@@ -48,15 +48,15 @@ class CachedCanvasEngine : DrawingEngine {
 
             val fixedAngle = angle
 
-            if (angleJitter > 0f && fixedAngle > 0f || angleJitter > 0f && fixedAngle == 0f) {
+            if (angleJitter > 0f && (fixedAngle > 0f || directionalAngle > 0f) || angleJitter > 0f && fixedAngle == 0f) {
 
                 val rot = GestureUtils.mapTo360(
-                    fixedAngle + (360f * (angleJitter * cachedRotation))
+                    fixedAngle + (360f * (angleJitter * cachedRotation)) + directionalAngle
                 )
 
                 canvas.rotate(rot)
-            } else if (angleJitter == 0f && fixedAngle > 0f) {
-                canvas.rotate(fixedAngle)
+            } else if (angleJitter == 0f && (fixedAngle > 0f || directionalAngle > 0f)) {
+                canvas.rotate(fixedAngle + directionalAngle)
             }
 
             if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
@@ -76,7 +76,8 @@ class CachedCanvasEngine : DrawingEngine {
 
             val jitterNumber = sizeJitter * cachedScale
 
-            val finalTaperSize = if(taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
+            val finalTaperSize =
+                if (taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
 
             val finalScale = (1f + jitterNumber) * finalTaperSize
 

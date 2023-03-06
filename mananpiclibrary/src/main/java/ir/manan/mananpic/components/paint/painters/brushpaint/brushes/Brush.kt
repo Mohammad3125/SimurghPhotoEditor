@@ -33,9 +33,9 @@ abstract class Brush {
 
     open var sizeVariance: Float = 1f
 
-    open var sizeVarianceSensitivity : Float = 0.1f
+    open var sizeVarianceSensitivity: Float = 0.1f
 
-    open var sizeVarianceEasing : Float = 0.05f
+    open var sizeVarianceEasing: Float = 0.05f
 
     open var squish = 0f
 
@@ -44,6 +44,8 @@ abstract class Brush {
     open var smoothness: Float = 0f
 
     open var alphaBlend: Boolean = false
+
+    open var autoRotate = false
 
     open var hueFlow: Float = 0f
 
@@ -55,7 +57,7 @@ abstract class Brush {
 
     var spacedWidth: Float = 0.0f
         get() = size * spacing
-    private set
+        private set
 
 
     internal abstract var brushBlending: PorterDuff.Mode

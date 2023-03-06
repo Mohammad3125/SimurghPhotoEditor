@@ -67,8 +67,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         lineSmoother.setFirstPoint(
             initialX,
             initialY,
-            1f - finalBrush.smoothness,
-            finalBrush.spacedWidth
+            finalBrush
         )
 
         alphaBlendPaint.alpha = (finalBrush.opacity * 255f).toInt()
@@ -92,13 +91,19 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
             engine.onMove(ex, ey, dx, dy, finalBrush)
 
-            lineSmoother.addPoints(ex, ey, 1f - finalBrush.smoothness, finalBrush.spacedWidth)
+            lineSmoother.addPoints(ex, ey, finalBrush)
 
         }
     }
 
-    override fun onDrawPoint(ex: Float, ey: Float) {
-        engine.draw(ex, ey, if (shouldBlendAlpha) alphaBlendCanvas else paintCanvas, finalBrush)
+    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float) {
+        engine.draw(
+            ex,
+            ey,
+            angleDirection,
+            if (shouldBlendAlpha) alphaBlendCanvas else paintCanvas,
+            finalBrush
+        )
         sendMessage(PainterMessage.INVALIDATE)
     }
 
@@ -111,8 +116,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
             lineSmoother.setLastPoint(
                 lastX,
                 lastY,
-                1f - finalBrush.smoothness,
-                finalBrush.spacedWidth
+                finalBrush
             )
 
             if (shouldBlendAlpha) {

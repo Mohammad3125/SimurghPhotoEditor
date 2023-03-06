@@ -2,6 +2,9 @@ package ir.manan.mananpic.components.paint.smoothers
 
 import android.graphics.Path
 import android.graphics.PathMeasure
+import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
+import ir.manan.mananpic.utils.gesture.GestureUtils
+import kotlin.math.atan2
 import kotlin.math.floor
 
 class BezierLineSmoother : LineSmoother() {
@@ -28,11 +31,12 @@ class BezierLineSmoother : LineSmoother() {
     private var counter = 0
 
     private val pointHolder = floatArrayOf(0f, 0f)
+    private val tanHolder = floatArrayOf(0f, 0f)
 
     private val path = Path()
     private val pathMeasure = PathMeasure()
 
-    override fun setFirstPoint(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
+    override fun setFirstPoint(ex: Float, ey: Float, brush: Brush) {
         isFirstThreeCreated = false
 
         perv2x = ex
@@ -42,7 +46,7 @@ class BezierLineSmoother : LineSmoother() {
         counter++
     }
 
-    override fun addPoints(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
+    override fun addPoints(ex: Float, ey: Float, brush: Brush) {
         if (!isFirstThreeCreated) {
 
             when (counter) {
@@ -58,7 +62,7 @@ class BezierLineSmoother : LineSmoother() {
                     curX = ex
                     curY = ey
 
-                    calculateQuadAndDraw(smoothness, stampWidth)
+                    calculateQuadAndDraw(brush)
 
                     counter = 0
 
@@ -79,12 +83,12 @@ class BezierLineSmoother : LineSmoother() {
             curX = ex
             curY = ey
 
-            calculateQuadAndDraw(smoothness, stampWidth)
+            calculateQuadAndDraw(brush)
 
         }
     }
 
-    override fun setLastPoint(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
+    override fun setLastPoint(ex: Float, ey: Float, brush: Brush) {
 
         if (isFirstThreeCreated) {
 
@@ -97,26 +101,29 @@ class BezierLineSmoother : LineSmoother() {
             curX = ex
             curY = ey
 
-            calculateQuadAndDraw(smoothness, stampWidth)
+            calculateQuadAndDraw(brush)
 
             isFirstThreeCreated = false
         } else {
-            onDrawPoint?.onDrawPoint(ex, ey)
+            onDrawPoint?.onDrawPoint(ex, ey, 0f)
         }
 
         distance = 0f
         path.rewind()
     }
 
-    private fun calculateQuadAndDraw(smoothness: Float, stampWidth: Float) {
+    private fun calculateQuadAndDraw(brush: Brush) {
+
+        val spacedWidth = brush.spacedWidth
+        val smoothness = brush.smoothness
 
         mid1x = (perv1x + perv2x) * 0.5f
         mid1y = (perv1y + perv2y) * 0.5f
 
         val smoothnessInverse = 1f - smoothness
 
-        curX = curX * smoothness + (perv1x * smoothnessInverse)
-        curY = curY * smoothness + (perv1y * smoothnessInverse)
+        curX = curX * smoothnessInverse + (perv1x * smoothness)
+        curY = curY * smoothnessInverse + (perv1y * smoothness)
 
         mid2x = (curX + perv1x) * 0.5f
         mid2y = (curY + perv1y) * 0.5f
@@ -131,20 +138,33 @@ class BezierLineSmoother : LineSmoother() {
 
         val width = (pathMeasure.length)
 
-        val total = floor((width - distance) / stampWidth).toInt()
+        val total = floor((width - distance) / spacedWidth).toInt()
 
         repeat(total) {
 
-            distance += stampWidth
+            distance += spacedWidth
 
 
             pathMeasure.getPosTan(
                 distance,
                 pointHolder,
-                null
+                tanHolder
             )
 
-            onDrawPoint?.onDrawPoint(pointHolder[0], pointHolder[1])
+            val degree = if (brush.autoRotate) {
+                GestureUtils.mapTo360(
+                    -(Math.toDegrees(
+                        (atan2(
+                            tanHolder[0].toDouble(),
+                            tanHolder[1].toDouble()
+                        ))
+                    ).toFloat() - 180f) - 90f
+                )
+            } else {
+                0f
+            }
+
+            onDrawPoint?.onDrawPoint(pointHolder[0], pointHolder[1], degree)
         }
     }
 }

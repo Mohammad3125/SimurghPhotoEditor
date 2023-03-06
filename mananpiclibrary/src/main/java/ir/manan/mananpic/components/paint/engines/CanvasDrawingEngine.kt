@@ -127,7 +127,7 @@ class CanvasDrawingEngine : DrawingEngine {
 
     }
 
-    override fun draw(ex: Float, ey: Float, canvas: Canvas, brush: Brush) {
+    override fun draw(ex: Float, ey: Float, directionalAngle: Float, canvas: Canvas, brush: Brush) {
         brush.apply {
             canvas.save()
 
@@ -151,16 +151,16 @@ class CanvasDrawingEngine : DrawingEngine {
                 canvas.translate(ex, ey)
             }
 
-            if (angleJitter > 0f && angle > 0f || angleJitter > 0f && angle == 0f) {
+            if (angleJitter > 0f && (angle > 0f || directionalAngle > 0f) || angleJitter > 0f && angle == 0f) {
                 val rot = GestureUtils.mapTo360(
                     angle + Random.nextInt(
                         0,
                         (360f * angleJitter).toInt()
-                    ).toFloat()
+                    ).toFloat() + directionalAngle
                 )
                 canvas.rotate(rot)
-            } else if (angleJitter == 0f && angle > 0f) {
-                canvas.rotate(angle)
+            } else if (angleJitter == 0f && (angle > 0f || directionalAngle > 0f)) {
+                canvas.rotate(angle + directionalAngle)
             }
 
             if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {

@@ -150,8 +150,12 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         private var cacheSizeInByte = 2000
 
         private var cachePointHolder = mutableListOf<Float>()
+        private var cacheDirectionAngleHolder = mutableListOf<Float>()
 
         private lateinit var points: FloatArray
+
+        private val pathPointHolder = FloatArray(2)
+        private val pathTanHolder = FloatArray(2)
 
 
         fun createBrushSnapshot(
@@ -181,9 +185,10 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
             this.lineSmoother.apply {
                 onDrawPoint = object : LineSmoother.OnDrawPoint {
-                    override fun onDrawPoint(ex: Float, ey: Float) {
+                    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float) {
                         cachePointHolder.add(ex)
                         cachePointHolder.add(ey)
+                        cacheDirectionAngleHolder.add(angleDirection)
                     }
                 }
             }
@@ -245,29 +250,29 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             val speed = length / pointsHalf
             var distance = 0f
 
-            val p = floatArrayOf(0f, 0f)
 
             repeat(pointsHalf) {
-                pathMeasure.getPosTan(distance, p, null)
+                pathMeasure.getPosTan(distance, pathPointHolder, pathTanHolder)
 
                 val ind = it * 2
 
                 distance += speed
 
-                points[ind] = p[0]
-                points[ind + 1] = p[1]
+                points[ind] = pathPointHolder[0]
+                points[ind + 1] = pathPointHolder[1]
             }
 
-            pathMeasure.getPosTan(length, p, null)
+            pathMeasure.getPosTan(length, pathPointHolder, pathTanHolder)
 
-            points[points.lastIndex - 1] = p[0]
-            points[points.lastIndex] = p[1]
+            points[points.lastIndex - 1] = pathPointHolder[0]
+            points[points.lastIndex] = pathPointHolder[1]
         }
 
         private fun callPoints(brush: Brush) {
 
             cacheCounter = 0
             cachePointHolder.clear()
+            cacheDirectionAngleHolder.clear()
 
             var ex = points[0]
             var ey = points[1]
@@ -275,8 +280,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             lineSmoother.setFirstPoint(
                 ex,
                 ey,
-                1f,
-                brush.spacedWidth
+                brush
             )
 
             engine.onMoveBegin(
@@ -291,8 +295,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 lineSmoother.addPoints(
                     ex,
                     ey,
-                    1f,
-                    brush.spacedWidth
+                    brush
                 )
 
                 engine.onMove(
@@ -309,8 +312,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             lineSmoother.setLastPoint(
                 ex,
                 ey,
-                1f,
-                brush.spacedWidth
+                brush
             )
 
             engine.onMoveEnded(
@@ -328,7 +330,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 engine.cachedScale = scaleCache[cacheCounter]
                 engine.cachedRotation = rotationCache[cacheCounter]
 
-                engine.draw(cachePointHolder[i], cachePointHolder[i + 1], canvas, brush)
+                engine.draw(cachePointHolder[i], cachePointHolder[i + 1], cacheDirectionAngleHolder[i / 2], canvas, brush)
 
                 if (++cacheCounter > cacheSizeInByte - 1) {
                     cacheCounter = 0

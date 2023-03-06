@@ -2,6 +2,7 @@ package ir.manan.mananpic.components.paint.smoothers
 
 import android.graphics.Path
 import android.graphics.PathMeasure
+import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import kotlin.math.floor
 
 class BasicSmoother : LineSmoother() {
@@ -18,32 +19,35 @@ class BasicSmoother : LineSmoother() {
 
     private val pointHolder = FloatArray(2)
 
-    override fun setFirstPoint(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
+    override fun setFirstPoint(ex: Float, ey: Float, brush: Brush) {
         path.rewind()
         path.moveTo(ex,ey)
     }
 
-    override fun addPoints(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
+    override fun addPoints(ex: Float, ey: Float, brush: Brush) {
         path.lineTo(ex,ey)
-        drawPoints(stampWidth)
+        drawPoints(brush)
     }
 
-    override fun setLastPoint(ex: Float, ey: Float, smoothness: Float, stampWidth: Float) {
+    override fun setLastPoint(ex: Float, ey: Float, brush: Brush) {
         path.lineTo(ex,ey)
-        drawPoints(stampWidth)
+        drawPoints(brush)
         distance = 0f
     }
 
-    private fun drawPoints(stampWidth: Float) {
+    private fun drawPoints(brush: Brush) {
+
+        val spacedWidth = brush.spacedWidth
+
         pathMeasure.setPath(path, false)
 
         val width = (pathMeasure.length)
 
-        val total = floor((width - distance) / stampWidth).toInt()
+        val total = floor((width - distance) / spacedWidth).toInt()
 
         repeat(total) {
 
-            distance += stampWidth
+            distance += spacedWidth
 
 
             pathMeasure.getPosTan(
@@ -52,7 +56,7 @@ class BasicSmoother : LineSmoother() {
                 null
             )
 
-            onDrawPoint?.onDrawPoint(pointHolder[0], pointHolder[1])
+            onDrawPoint?.onDrawPoint(pointHolder[0], pointHolder[1],0f)
         }
     }
 }
