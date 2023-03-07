@@ -8,7 +8,7 @@ import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import java.util.*
 
-class LassoColorPainter(val context: Context) : Painter() {
+class LassoColorPainter : Painter() {
 
     private val lassoPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
