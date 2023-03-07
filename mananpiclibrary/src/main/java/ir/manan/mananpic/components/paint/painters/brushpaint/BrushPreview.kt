@@ -155,8 +155,6 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         private lateinit var points: FloatArray
 
         private val pathPointHolder = FloatArray(2)
-        private val pathTanHolder = FloatArray(2)
-
 
         fun createBrushSnapshot(
             targetWidth: Int,
@@ -252,7 +250,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
 
             repeat(pointsHalf) {
-                pathMeasure.getPosTan(distance, pathPointHolder, pathTanHolder)
+                pathMeasure.getPosTan(distance, pathPointHolder,null)
 
                 val ind = it * 2
 
@@ -262,7 +260,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 points[ind + 1] = pathPointHolder[1]
             }
 
-            pathMeasure.getPosTan(length, pathPointHolder, pathTanHolder)
+            pathMeasure.getPosTan(length, pathPointHolder,null)
 
             points[points.lastIndex - 1] = pathPointHolder[0]
             points[points.lastIndex] = pathPointHolder[1]
