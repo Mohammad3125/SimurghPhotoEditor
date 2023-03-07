@@ -123,6 +123,11 @@ class PathBitmapClipper(
             )
         } else {
             path!!.computeBounds(bitmapRectangle, true)
+
+            bitmapRectangle.left = bitmapRectangle.left.coerceAtLeast(0f)
+            bitmapRectangle.top = bitmapRectangle.top.coerceAtLeast(0f)
+            bitmapRectangle.right = bitmapRectangle.right.coerceAtMost(bitmap.width.toFloat())
+            bitmapRectangle.bottom = bitmapRectangle.bottom.coerceAtMost(bitmap.height.toFloat())
         }
     }
 
