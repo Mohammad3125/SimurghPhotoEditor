@@ -277,6 +277,9 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             var ex = points[0]
             var ey = points[1]
 
+            val brushSmoothness = brush.smoothness
+            brush.smoothness = 0f
+
             lineSmoother.setFirstPoint(
                 ex,
                 ey,
@@ -318,6 +321,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             engine.onMoveEnded(
                 ex, ey, brush
             )
+
+            brush.smoothness = brushSmoothness
         }
 
         private fun drawPoints(canvas: Canvas, brush: Brush) {
@@ -330,7 +335,13 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 engine.cachedScale = scaleCache[cacheCounter]
                 engine.cachedRotation = rotationCache[cacheCounter]
 
-                engine.draw(cachePointHolder[i], cachePointHolder[i + 1], cacheDirectionAngleHolder[i / 2], canvas, brush)
+                engine.draw(
+                    cachePointHolder[i],
+                    cachePointHolder[i + 1],
+                    cacheDirectionAngleHolder[i / 2],
+                    canvas,
+                    brush
+                )
 
                 if (++cacheCounter > cacheSizeInByte - 1) {
                     cacheCounter = 0
