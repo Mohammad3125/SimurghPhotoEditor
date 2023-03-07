@@ -133,6 +133,10 @@ class LassoTool(var clipper: PathClipper) : Painter() {
     override fun resetPaint() {
         lassoPath.rewind()
         lassoCopy.rewind()
+
+        undoStack.clear()
+        redoStack.clear()
+
         isFirstPoint = true
         sendMessage(PainterMessage.CACHE_LAYERS)
         sendMessage(PainterMessage.INVALIDATE)
@@ -140,8 +144,9 @@ class LassoTool(var clipper: PathClipper) : Painter() {
 
     fun copy(): Bitmap? {
         doIfLayerNotNullAndPathIsNotEmpty { layer ->
-            setClipper(layer)
-            return clipper.copy()
+            val finalBitmap = clipper.copy()
+            resetPaint()
+            return finalBitmap
         }
 
         return null
@@ -155,9 +160,9 @@ class LassoTool(var clipper: PathClipper) : Painter() {
 
     fun cut(): Bitmap? {
         doIfLayerNotNullAndPathIsNotEmpty { layer ->
-            setClipper(layer)
             val finalBitmap = clipper.cut()
             sendMessage(PainterMessage.SAVE_HISTORY)
+            resetPaint()
             return finalBitmap
         }
 
@@ -166,9 +171,9 @@ class LassoTool(var clipper: PathClipper) : Painter() {
 
     fun clip() {
         doIfLayerNotNullAndPathIsNotEmpty { layer ->
-            setClipper(layer)
             clipper.clip()
             sendMessage(PainterMessage.SAVE_HISTORY)
+            resetPaint()
         }
     }
 
@@ -176,8 +181,8 @@ class LassoTool(var clipper: PathClipper) : Painter() {
     private inline fun doIfLayerNotNullAndPathIsNotEmpty(function: (layer: PaintLayer) -> Unit) {
         if (!isFirstPoint && !lassoPath.isEmpty) {
             selectedLayer?.let { layer ->
+                setClipper(layer)
                 function(layer)
-                resetPaint()
             }
         }
     }
