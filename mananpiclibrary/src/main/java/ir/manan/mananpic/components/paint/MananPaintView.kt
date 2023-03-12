@@ -75,6 +75,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         MananMatrix()
     }
 
+    private val painterTransformationMatrix by lazy {
+        MananMatrix()
+    }
+
     private val matrixAnimator by lazy {
         MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
@@ -257,9 +261,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                         isMatrixGesture = true
 
-                        canvasMatrix.postTranslate(dx, dy)
-
-                        invalidate()
+                        if (painter?.doesTakeGestures() == true) {
+                            painterTransformationMatrix.setTranslate(dx, dy)
+                            painter?.onTransformed(painterTransformationMatrix)
+                        } else {
+                            canvasMatrix.postTranslate(dx, dy)
+                            invalidate()
+                        }
                     }
 
                     // Else if selector is not null and there is currently 1 pointer on
@@ -385,10 +393,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
-        canvasMatrix.postRotate(degree - rotHolder, px, py)
+        if (painter?.doesTakeGestures() == true) {
+            painterTransformationMatrix.setRotate(degree - rotHolder, px, py)
+            painter?.onTransformed(painterTransformationMatrix)
+        } else {
+            canvasMatrix.postRotate(degree - rotHolder, px, py)
+            invalidate()
+        }
         tot += abs(degree - rotHolder)
         rotHolder = degree
-        invalidate()
         return true
     }
 
@@ -409,8 +422,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         p0.run {
             val sf = scaleFactor
             isMoved = true
-            canvasMatrix.postScale(sf, sf, focusX, focusY)
-            invalidate()
+            if (painter?.doesTakeGestures() == true) {
+                painterTransformationMatrix.setScale(sf, sf, focusX, focusY)
+                painter?.onTransformed(painterTransformationMatrix)
+            } else {
+                canvasMatrix.postScale(sf, sf, focusX, focusY)
+                invalidate()
+            }
             return true
         }
     }
@@ -645,7 +663,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         cacheLayers()
 
-        saveState()
+        // State of layer should be saved no matter if another painter handles history or not.
+        saveState(isMessage = true)
 
         callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
 

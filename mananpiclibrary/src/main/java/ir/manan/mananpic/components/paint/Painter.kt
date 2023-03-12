@@ -70,6 +70,13 @@ abstract class Painter {
         return false
     }
 
+    open fun doesTakeGestures(): Boolean {
+        return false
+    }
+
+    open fun onTransformed(transformMatrix: MananMatrix) {
+    }
+
     open fun undo() {
 
     }
