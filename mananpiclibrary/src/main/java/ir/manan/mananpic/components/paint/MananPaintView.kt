@@ -145,11 +145,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             field = value
             value?.setOnMessageListener(this)
 
+            initializedPainter(field)
+
             if (!isViewInitialized) {
                 requestLayout()
             }
-
-            initializedPainter(field)
         }
 
     init {
@@ -262,8 +262,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         isMatrixGesture = true
 
                         if (painter?.doesTakeGestures() == true) {
-                            painterTransformationMatrix.setTranslate(dx, dy)
-                            painter?.onTransformed(painterTransformationMatrix)
+                            mapTouchPoints(dx, dy, true).let { mappedArray ->
+                                painterTransformationMatrix.setTranslate(
+                                    mappedArray[0],
+                                    mappedArray[1]
+                                )
+                                painter?.onTransformed(painterTransformationMatrix)
+                            }
                         } else {
                             canvasMatrix.postTranslate(dx, dy)
                             invalidate()
@@ -442,17 +447,29 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
      * This function maps the touch location provided with canvas matrix to provide
      * correct coordinates of touch if canvas is scaled and or translated.
      */
-    private fun mapTouchPoints(touchX: Float, touchY: Float): FloatArray {
+    private fun mapTouchPoints(
+        touchX: Float,
+        touchY: Float,
+        shouldMapVector: Boolean = false
+    ): FloatArray {
         touchPointMappedArray[0] = touchX
         touchPointMappedArray[1] = touchY
 
         canvasMatrix.invert(mappingMatrix)
-        mappingMatrix.mapPoints(touchPointMappedArray)
+        if (shouldMapVector) {
+            mappingMatrix.mapVectors(touchPointMappedArray)
+        } else {
+            mappingMatrix.mapPoints(touchPointMappedArray)
+        }
 
         mappingMatrix.reset()
 
         imageviewMatrix.invert(mappingMatrix)
-        mappingMatrix.mapPoints(touchPointMappedArray)
+        if (shouldMapVector) {
+            mappingMatrix.mapVectors(touchPointMappedArray)
+        } else {
+            mappingMatrix.mapPoints(touchPointMappedArray)
+        }
 
         return touchPointMappedArray
     }
