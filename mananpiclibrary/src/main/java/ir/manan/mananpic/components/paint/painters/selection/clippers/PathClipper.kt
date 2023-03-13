@@ -2,6 +2,7 @@ package ir.manan.mananpic.components.paint.painters.selection.clippers
 
 import android.graphics.Bitmap
 import android.graphics.Path
+import android.graphics.RectF
 
 abstract class PathClipper(
     var path: Path? = null,
@@ -16,4 +17,6 @@ abstract class PathClipper(
     abstract fun copy(): Bitmap?
 
     abstract fun cut(): Bitmap?
+
+    abstract fun getClippingBounds(rect: RectF)
 }

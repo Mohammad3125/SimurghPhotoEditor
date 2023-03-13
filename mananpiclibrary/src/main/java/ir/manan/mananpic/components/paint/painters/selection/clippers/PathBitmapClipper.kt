@@ -131,6 +131,15 @@ class PathBitmapClipper(
         }
     }
 
+    override fun getClippingBounds(rect: RectF) {
+        doIfPathAndBitmapNotNull { bitmap, path ->
+            setRectangleBounds(bitmap)
+            rect.set(bitmapRectangle)
+            return
+        }
+        throw IllegalStateException("path and/or bitmap is null; cannot get the clipping bounds")
+    }
+
     private fun createMaskedBitmap(bitmap: Bitmap): Bitmap {
         return bitmap.copy(bitmap.config, true)
     }

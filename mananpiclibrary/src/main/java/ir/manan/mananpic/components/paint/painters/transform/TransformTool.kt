@@ -8,9 +8,17 @@ import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
 
-class TransformTool() : Painter(), Transformable.OnInvalidate {
+class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private var selectedLayer: PaintLayer? = null
+
+    var targetRect = RectF()
+        set(value) {
+            field.set(value)
+            if (this::bounds.isInitialized) {
+                changeMatrixToMatchRect(field)
+            }
+        }
 
     var boundPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -123,8 +131,11 @@ class TransformTool() : Painter(), Transformable.OnInvalidate {
 
     private lateinit var bounds: RectF
 
+    private val matrix = Matrix()
+
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
         circlesRadius = context.dp(10)
+        this.matrix.set(matrix)
         this.bounds = bounds
         initializeComponent(bounds)
     }
@@ -136,7 +147,13 @@ class TransformTool() : Painter(), Transformable.OnInvalidate {
             transformationMatrix.reset()
             polyMatrix.reset()
 
-            centerMatrix.setRectToRect(targetComponentBounds, bounds, Matrix.ScaleToFit.CENTER)
+            if (targetRect.isEmpty) {
+                centerMatrix.setRectToRect(targetComponentBounds, bounds, Matrix.ScaleToFit.CENTER)
+            } else {
+                targetComponent?.let { t ->
+                    changeMatrixToMatchRect(targetRect)
+                }
+            }
 
             val w = targetComponentBounds.width()
             val h = targetComponentBounds.height()
@@ -166,6 +183,20 @@ class TransformTool() : Painter(), Transformable.OnInvalidate {
 
             mergeMatrices()
         }
+    }
+
+    private fun changeMatrixToMatchRect(rect: RectF) {
+        targetComponent!!.getBounds(targetComponentBounds)
+
+        centerMatrix.setRectToRect(
+            targetComponentBounds,
+            rect,
+            Matrix.ScaleToFit.CENTER
+        )
+
+        mergeMatrices()
+
+        invalidate()
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {

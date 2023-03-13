@@ -177,6 +177,11 @@ class LassoTool(var clipper: PathClipper) : Painter() {
         }
     }
 
+    fun getClippingBounds(rect: RectF) {
+        doIfLayerNotNullAndPathIsNotEmpty {
+            clipper.getClippingBounds(rect)
+        }
+    }
 
     private inline fun doIfLayerNotNullAndPathIsNotEmpty(function: (layer: PaintLayer) -> Unit) {
         if (!isFirstPoint && !lassoPath.isEmpty) {
