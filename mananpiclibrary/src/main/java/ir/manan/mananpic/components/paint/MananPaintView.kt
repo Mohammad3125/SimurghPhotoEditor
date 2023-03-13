@@ -199,8 +199,18 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
+        val copyEvent = MotionEvent.obtain(event)
+
+        if (painter?.doesTakeGestures() == true) {
+            mappingMatrix.setConcat(canvasMatrix, imageviewMatrix)
+            mappingMatrix.invert(mappingMatrix)
+            event?.transform(mappingMatrix)
+        }
+
         super.onTouchEvent(event)
-        event?.run {
+
+        copyEvent?.run {
+
             val totalPoints = pointerCount
             when (actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
@@ -212,6 +222,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     isFirstMove = true
 
+                    recycle()
                     return true
                 }
                 MotionEvent.ACTION_POINTER_DOWN -> {
@@ -262,10 +273,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         isMatrixGesture = true
 
                         if (painter?.doesTakeGestures() == true) {
-                            mapTouchPoints(dx, dy, true).let { mappedArray ->
+                            mapTouchPoints(dx, dy, true).let {
                                 painterTransformationMatrix.setTranslate(
-                                    mappedArray[0],
-                                    mappedArray[1]
+                                    it[0],
+                                    it[1]
                                 )
                                 painter?.onTransformed(painterTransformationMatrix)
                             }
@@ -306,6 +317,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     initialX = x
                     initialY = y
 
+                    recycle()
                     return true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -330,9 +342,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     firstDySum = 0f
                     isFirstFingerMoved = false
 
+                    recycle()
                     return false
                 }
                 else -> {
+                    recycle()
                     return false
                 }
             }

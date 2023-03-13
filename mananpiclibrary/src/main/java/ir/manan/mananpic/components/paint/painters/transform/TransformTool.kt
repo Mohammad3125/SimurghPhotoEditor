@@ -7,6 +7,7 @@ import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import kotlin.math.abs
 
 class TransformTool : Painter(), Transformable.OnInvalidate {
 
@@ -24,7 +25,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             color = Color.BLACK
-            strokeWidth = 15f
+            strokeWidth = 10f
         }
         set(value) {
             field = value
@@ -57,6 +58,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 invalidate()
             }
         }
+
+    var touchRange = 0f
 
     private val transformationMatrix by lazy {
         Matrix()
@@ -131,10 +134,15 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private lateinit var bounds: RectF
 
-    private val matrix = Matrix()
+    private val matrix = MananMatrix()
 
     override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
-        circlesRadius = context.dp(10)
+        if (circlesRadius == 0f) {
+            circlesRadius = context.dp(10)
+        }
+        if (touchRange == 0f) {
+            touchRange = context.dp(24)
+        }
         this.matrix.set(matrix)
         this.bounds = bounds
         initializeComponent(bounds)
@@ -254,9 +262,119 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private fun selectIndexes(ex: Float, ey: Float) {
 
-        val range = 120f
+        val range = touchRange / matrix.getRealScaleX()
 
         baseSizeChangePoint.copyInto(cc)
+        mapMeshPoints(cc)
+
+        var nearest = range
+
+        firstSelectedIndex = -1
+        secondSelectedIndex = -1
+        thirdSelectedIndex = -1
+        forthSelectedIndex = -1
+        firstSizeChangeIndex = -1
+        secondSizeChangeIndex = -1
+
+        if (GestureUtils.isNearTargetPoint(
+                ex,
+                ey,
+                cc[0],
+                cc[1],
+                range
+            )
+        ) {
+            (abs(ex - cc[0]) + abs(ey - cc[1])).let {
+                if (it < nearest) {
+                    nearest = it
+                    firstSelectedIndex = 0
+                    secondSelectedIndex = 1
+                    thirdSelectedIndex = 2
+                    forthSelectedIndex = 3
+                    firstSizeChangeIndex = 0
+                    secondSizeChangeIndex = 1
+                    isOnlyMoveX = false
+                }
+            }
+
+        }
+        if (GestureUtils.isNearTargetPoint(
+                ex,
+                ey,
+                cc[2],
+                cc[3],
+                range
+            )
+        ) {
+            (abs(ex - cc[2]) + abs(ey - cc[3])).let {
+                if (it < nearest) {
+                    nearest = it
+                    firstSelectedIndex = 2
+                    secondSelectedIndex = 3
+                    thirdSelectedIndex = 6
+                    forthSelectedIndex = 7
+                    firstSizeChangeIndex = 2
+                    secondSizeChangeIndex = 3
+                    isOnlyMoveX = true
+                }
+            }
+
+        }
+        if (GestureUtils.isNearTargetPoint(
+                ex,
+                ey,
+                cc[4],
+                cc[5],
+                range
+            )
+        ) {
+            (abs(ex - cc[4]) + abs(ey - cc[5])).let {
+                if (it < nearest) {
+                    nearest = it
+                    firstSelectedIndex = 6
+                    secondSelectedIndex = 7
+                    thirdSelectedIndex = 4
+                    forthSelectedIndex = 5
+                    firstSizeChangeIndex = 4
+                    secondSizeChangeIndex = 5
+                    isOnlyMoveX = false
+                }
+            }
+
+        }
+        if (GestureUtils.isNearTargetPoint(
+                ex,
+                ey,
+                cc[6],
+                cc[7],
+                range
+            )
+        ) {
+            (abs(ex - cc[6]) + abs(ey - cc[7])).let {
+                if (it < nearest) {
+                    nearest = it
+                    firstSelectedIndex = 4
+                    secondSelectedIndex = 5
+                    thirdSelectedIndex = 0
+                    forthSelectedIndex = 1
+                    firstSizeChangeIndex = 6
+                    secondSizeChangeIndex = 7
+                    isOnlyMoveX = true
+                }
+            }
+        }
+
+        if (firstSizeChangeIndex > -1 && secondSizeChangeIndex > -1) {
+            map(cc)
+            lastX = cc[firstSizeChangeIndex]
+            lastY = cc[secondSizeChangeIndex]
+        }
+
+        if (!isFreeTransform) {
+            return
+        }
+
+        basePoints.copyInto(cc)
         mapMeshPoints(cc)
 
         if (GestureUtils.isNearTargetPoint(
@@ -267,17 +385,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 range
             )
         ) {
-            firstSelectedIndex = 0
-            secondSelectedIndex = 1
-            thirdSelectedIndex = 2
-            forthSelectedIndex = 3
-            firstSizeChangeIndex = 0
-            secondSizeChangeIndex = 1
-            map(cc)
-            lastX = cc[0]
-            lastY = cc[1]
-            isOnlyMoveX = false
-        } else if (GestureUtils.isNearTargetPoint(
+            (abs(ex - cc[0]) + abs(ey - cc[1])).let {
+                if (it < nearest) {
+                    firstSelectedIndex = 0
+                    secondSelectedIndex = 1
+                }
+            }
+        }
+        if (GestureUtils.isNearTargetPoint(
                 ex,
                 ey,
                 cc[2],
@@ -285,17 +400,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 range
             )
         ) {
-            firstSelectedIndex = 2
-            secondSelectedIndex = 3
-            thirdSelectedIndex = 6
-            forthSelectedIndex = 7
-            firstSizeChangeIndex = 2
-            secondSizeChangeIndex = 3
-            map(cc)
-            lastX = cc[2]
-            lastY = cc[3]
-            isOnlyMoveX = true
-        } else if (GestureUtils.isNearTargetPoint(
+            (abs(ex - cc[2]) + abs(ey - cc[3])).let {
+                if (it < nearest) {
+                    firstSelectedIndex = 2
+                    secondSelectedIndex = 3
+                }
+            }
+        }
+        if (GestureUtils.isNearTargetPoint(
                 ex,
                 ey,
                 cc[4],
@@ -303,17 +415,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 range
             )
         ) {
-            firstSelectedIndex = 6
-            secondSelectedIndex = 7
-            thirdSelectedIndex = 4
-            forthSelectedIndex = 5
-            firstSizeChangeIndex = 4
-            secondSizeChangeIndex = 5
-            map(cc)
-            lastX = cc[4]
-            lastY = cc[5]
-            isOnlyMoveX = false
-        } else if (GestureUtils.isNearTargetPoint(
+            (abs(ex - cc[4]) + abs(ey - cc[5])).let {
+                if (it < nearest) {
+                    firstSelectedIndex = 4
+                    secondSelectedIndex = 5
+                }
+            }
+        }
+        if (GestureUtils.isNearTargetPoint(
                 ex,
                 ey,
                 cc[6],
@@ -321,74 +430,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 range
             )
         ) {
-            firstSelectedIndex = 4
-            secondSelectedIndex = 5
-            thirdSelectedIndex = 0
-            forthSelectedIndex = 1
-            firstSizeChangeIndex = 6
-            secondSizeChangeIndex = 7
-            map(cc)
-            lastX = cc[6]
-            lastY = cc[7]
-            isOnlyMoveX = true
-        } else {
-            firstSelectedIndex = -1
-            secondSelectedIndex = -1
-            thirdSelectedIndex = -1
-            forthSelectedIndex = -1
-            firstSizeChangeIndex = -1
-            secondSizeChangeIndex = -1
-
-            if (!isFreeTransform) {
-                return
-            }
-
-            basePoints.copyInto(cc)
-            mapMeshPoints(cc)
-
-            if (GestureUtils.isNearTargetPoint(
-                    ex,
-                    ey,
-                    cc[0],
-                    cc[1],
-                    range
-                )
-            ) {
-                firstSelectedIndex = 0
-                secondSelectedIndex = 1
-            } else if (GestureUtils.isNearTargetPoint(
-                    ex,
-                    ey,
-                    cc[2],
-                    cc[3],
-                    range
-                )
-            ) {
-                firstSelectedIndex = 2
-                secondSelectedIndex = 3
-            } else if (GestureUtils.isNearTargetPoint(
-                    ex,
-                    ey,
-                    cc[4],
-                    cc[5],
-                    range
-                )
-            ) {
-                firstSelectedIndex = 4
-                secondSelectedIndex = 5
-            } else if (GestureUtils.isNearTargetPoint(
-                    ex,
-                    ey,
-                    cc[6],
-                    cc[7],
-                    range
-                )
-            ) {
-                firstSelectedIndex = 6
-                secondSelectedIndex = 7
-            } else {
-                firstSelectedIndex = -1
-                secondSelectedIndex = -1
+            (abs(ex - cc[6]) + abs(ey - cc[7])).let {
+                if (it < nearest) {
+                    firstSelectedIndex = 6
+                    secondSelectedIndex = 7
+                }
             }
         }
     }
