@@ -150,34 +150,18 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
         }
     }
 
-    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap? {
+    override fun toBitmap(config: Bitmap.Config): Bitmap? {
         return bitmap
     }
 
-    override fun toBitmap(
-        width: Int,
-        height: Int,
-        config: Bitmap.Config,
-        ignoreAxisScale: Boolean
-    ): Bitmap? {
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap? {
 
         if (bitmap == null) throw IllegalStateException("bitmap of current image view is null")
 
-        val wStroke = this.width
-        val hStroke = this.height
+        val scale = min(width.toFloat() / bitmapWidth , height.toFloat() / bitmapHeight)
 
-        var w = if (ignoreAxisScale) wStroke.toFloat() else wStroke * scaleX
-        var h = if (ignoreAxisScale) hStroke.toFloat() else hStroke * scaleY
-
-        val s = max(wStroke, hStroke) / max(w, h)
-
-        w *= s
-        h *= s
-
-        val scale = min(width.toFloat() / w, height.toFloat() / h)
-
-        val ws = (w * scale)
-        val hs = (h * scale)
+        val ws = (bitmapWidth * scale)
+        val hs = (bitmapHeight * scale)
 
         val outputBitmap = Bitmap.createBitmap(width, height, config)
 
@@ -187,7 +171,7 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
         Canvas(outputBitmap).run {
             translate(extraWidth * 0.5f, extraHeight * 0.5f)
 
-            scale(ws / wStroke, hs / hStroke)
+            scale(ws / bitmapWidth, hs / bitmapHeight)
 
             draw(this)
         }

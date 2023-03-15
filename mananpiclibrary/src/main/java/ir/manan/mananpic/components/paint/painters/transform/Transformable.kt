@@ -18,4 +18,6 @@ abstract class Transformable {
     fun invalidate() {
         onInvalidateListener?.invalidate()
     }
+
+    abstract fun clone() : Transformable
 }

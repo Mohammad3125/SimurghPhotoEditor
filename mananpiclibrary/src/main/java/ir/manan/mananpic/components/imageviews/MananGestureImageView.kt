@@ -15,7 +15,6 @@ import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
 import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
-import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -258,7 +257,7 @@ abstract class MananGestureImageView(
         }
     }
 
-    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap? {
+    override fun toBitmap(config: Bitmap.Config): Bitmap? {
         return bitmap
     }
 
@@ -266,26 +265,14 @@ abstract class MananGestureImageView(
         width: Int,
         height: Int,
         config: Bitmap.Config,
-        ignoreAxisScale: Boolean
     ): Bitmap? {
 
         if (bitmap == null) throw IllegalStateException("bitmap is null")
 
-        val wStroke = bitmapWidth
-        val hStroke = bitmapHeight
+        val scale = min(width.toFloat() / bitmapWidth, height.toFloat() / bitmapHeight)
 
-        var w = if (ignoreAxisScale) wStroke.toFloat() else wStroke * scaleX
-        var h = if (ignoreAxisScale) hStroke.toFloat() else hStroke * scaleY
-
-        val s = max(wStroke, hStroke) / max(w, h)
-
-        w *= s
-        h *= s
-
-        val scale = min(width.toFloat() / w, height.toFloat() / h)
-
-        val ws = (w * scale)
-        val hs = (h * scale)
+        val ws = (bitmapWidth * scale)
+        val hs = (bitmapHeight * scale)
 
         val outputBitmap = Bitmap.createBitmap(width, height, config)
 
@@ -295,7 +282,7 @@ abstract class MananGestureImageView(
         Canvas(outputBitmap).run {
             translate(extraWidth * 0.5f, extraHeight * 0.5f)
 
-            scale(ws / wStroke, hs / hStroke)
+            scale(ws / bitmapWidth, hs / bitmapHeight)
 
             draw(this)
         }

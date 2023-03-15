@@ -7,10 +7,11 @@ import androidx.annotation.RequiresApi
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.properties.*
 import ir.manan.mananpic.utils.MananMatrix
+import kotlin.math.min
 
-class TextPainter : Transformable(),  Pathable, Texturable, Gradientable, StrokeCapable,
-    Blendable,
-    Colorable, java.io.Serializable, Shadowable {
+class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
+    Blendable, Bitmapable,
+    Colorable, Shadowable {
 
     private var shadowRadius = 0f
     private var trueShadowRadius = 0f
@@ -22,7 +23,6 @@ class TextPainter : Transformable(),  Pathable, Texturable, Gradientable, Stroke
     private var rawWidth = 0f
     private var rawHeight = 0f
 
-    @Transient
     private val textPaint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
@@ -148,57 +148,51 @@ class TextPainter : Transformable(),  Pathable, Texturable, Gradientable, Stroke
     }
 
 
-//    override fun clone(): View {
-//        return MananFactory.createTextView(context, text).also { textView ->
-//            textView.setLayerType(layerType, null)
-//            textView.textPaint.textSize = textPaint.textSize
-//            textView.scaleX = scaleX
-//            textView.scaleY = scaleY
-//            textView.alignmentText = alignmentText
-//            textView.textColor = textColor
-//            textView.textPaint.typeface = textPaint.typeface
-//            textView.textPaint.style = textPaint.style
-//            textView.textPaint.strokeWidth = textPaint.strokeWidth
-//            textView.textPaint.pathEffect = textPaint.pathEffect
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//                textView.letterSpacing = letterSpacing
-//            }
-//
-//            textView.extraSpace = extraSpace
-//            textView.textBaseLineY = textBaseLineY
-//            textView.textBaseLineX = textBaseLineX
-//            textView.textStrokeColor = textStrokeColor
-//            textView.textStrokeWidth = textStrokeWidth
-//            textView.shaderRotationHolder = shaderRotationHolder
-//            textView.paintShader = paintShader
-//            doOnPreDraw {
-//                textView.shaderMatrix.set(shaderMatrix)
-//                textView.textPaint.shader = paintShader
-//                if (textView.textPaint.shader != null) {
-//                    textView.textPaint.shader.setLocalMatrix(shaderMatrix)
-//                }
-//            }
-//            textView.textPaint.maskFilter = textPaint.maskFilter
-//            if (blendMode != PorterDuff.Mode.SRC) {
-//                textView.setBlendMode(blendMode)
-//            }
-//            textView.setShadow(
-//                trueShadowRadius,
-//                shadowDx,
-//                shadowDy,
-//                shadowLColor
-//            )
-//            textView.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom)
-//
-//            if (gradientColors != null) {
-//                textView.gradientColors = gradientColors!!.clone()
-//            }
-//            if (gradientPositions != null) {
-//                textView.gradientPositions = gradientPositions!!.clone()
-//            }
-//
-//        }
-//    }
+    override fun clone(): TextPainter {
+        return TextPainter().also { textPainter ->
+            textPainter.textPaint.textSize = textPaint.textSize
+            textPainter.alignmentText = alignmentText
+            textPainter.textColor = textColor
+            textPainter.textPaint.typeface = textPaint.typeface
+            textPainter.textPaint.style = textPaint.style
+            textPainter.textPaint.strokeWidth = textPaint.strokeWidth
+            textPainter.textPaint.pathEffect = textPaint.pathEffect
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                textPainter.letterSpacing = letterSpacing
+            }
+
+            textPainter.extraSpace = extraSpace
+            textPainter.textBaseLineY = textBaseLineY
+            textPainter.textBaseLineX = textBaseLineX
+            textPainter.textStrokeColor = textStrokeColor
+            textPainter.textStrokeWidth = textStrokeWidth
+            textPainter.shaderRotationHolder = shaderRotationHolder
+            textPainter.paintShader = paintShader
+            textPainter.shaderMatrix.set(shaderMatrix)
+            textPainter.textPaint.shader = paintShader
+            if (textPainter.textPaint.shader != null) {
+                textPainter.textPaint.shader.setLocalMatrix(shaderMatrix)
+            }
+            textPainter.textPaint.maskFilter = textPaint.maskFilter
+            if (blendMode != PorterDuff.Mode.SRC) {
+                textPainter.setBlendMode(blendMode)
+            }
+            textPainter.setShadow(
+                trueShadowRadius,
+                shadowDx,
+                shadowDy,
+                shadowLColor
+            )
+
+            if (gradientColors != null) {
+                textPainter.gradientColors = gradientColors!!.clone()
+            }
+            if (gradientPositions != null) {
+                textPainter.gradientPositions = gradientPositions!!.clone()
+            }
+
+        }
+    }
 
     private fun drawTexts(canvas: Canvas) {
 
@@ -511,6 +505,39 @@ class TextPainter : Transformable(),  Pathable, Texturable, Gradientable, Stroke
         shadowLColor = Color.YELLOW
         isShadowCleared = true
         invalidate()
+    }
+
+
+    override fun toBitmap(config: Bitmap.Config): Bitmap? {
+        return Bitmap.createBitmap(
+            rawWidth.toInt(),
+            rawHeight.toInt(),
+            config
+        ).also { bitmap ->
+            draw(Canvas(bitmap))
+        }
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap? {
+        val scale = min(width.toFloat() / rawWidth, height.toFloat() / rawHeight)
+
+        val ws = (rawWidth * scale)
+        val hs = (rawHeight * scale)
+
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        val extraWidth = width - ws
+        val extraHeight = height - hs
+
+        Canvas(outputBitmap).run {
+            translate(extraWidth * 0.5f, extraHeight * 0.5f)
+
+            scale(ws / rawWidth, hs / rawHeight)
+
+            draw(this)
+        }
+
+        return outputBitmap
     }
 
     override fun isGradientApplied(): Boolean {

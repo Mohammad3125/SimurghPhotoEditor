@@ -31,6 +31,14 @@ class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable {
         invalidate()
     }
 
+    override fun clone(): Transformable {
+        return BitmapPainter(bitmap).also {
+            if (blendMode != PorterDuff.Mode.SRC) {
+                it.setBlendMode(blendMode)
+            }
+        }
+    }
+
     override fun getBlendMode(): PorterDuff.Mode {
         return blendMode
     }
