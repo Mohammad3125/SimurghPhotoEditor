@@ -100,6 +100,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private val mergeCanvas = Canvas()
 
+    private lateinit var bitmapReference: Bitmap
+
     private lateinit var cachedLayer: Bitmap
 
     private lateinit var partiallyCachedLayer: Bitmap
@@ -180,6 +182,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             partiallyCachedLayer = createLayerBitmap()
 
+            bitmapReference = createLayerBitmap()
+
             isViewInitialized = true
         }
 
@@ -194,6 +198,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             rectAlloc.set(boundsRectangle)
             p.initialize(context, canvasMatrix, rectAlloc)
             p.onLayerChanged(selectedLayer)
+            if (this::bitmapReference.isInitialized) {
+                p.onReferenceLayerCreated(bitmapReference)
+            }
         }
     }
 
@@ -733,6 +740,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 mergeCanvas.setBitmap(cachedLayer)
 
                 mergeLayersAtIndex(selectedLayerIndex + 1, layerHolder.lastIndex)
+
+                mergeCanvas.setBitmap(bitmapReference)
+
+                mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+
+                mergeCanvas.drawBitmap(cachedLayer, 0f, 0f, layersPaint)
+
+                drawLayer(mergeCanvas)
+
+                painter?.onReferenceLayerCreated(bitmapReference)
 
                 isAllLayersCached = true
             }

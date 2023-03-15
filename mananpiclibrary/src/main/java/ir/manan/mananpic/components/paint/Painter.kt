@@ -1,6 +1,7 @@
 package ir.manan.mananpic.components.paint
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
@@ -58,13 +59,19 @@ abstract class Painter {
     abstract fun draw(canvas: Canvas)
 
 
-    abstract fun resetPaint()
+    open fun resetPaint() {
+
+    }
 
 
-    abstract fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix)
+    open fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+
+    }
 
 
-    abstract fun onLayerChanged(layer: PaintLayer?)
+    open fun onLayerChanged(layer: PaintLayer?) {
+
+    }
 
     open fun doesHandleHistory(): Boolean {
         return false
@@ -75,6 +82,10 @@ abstract class Painter {
     }
 
     open fun onTransformed(transformMatrix: MananMatrix) {
+    }
+
+    open fun onReferenceLayerCreated(reference : Bitmap) {
+
     }
 
     open fun undo() {
