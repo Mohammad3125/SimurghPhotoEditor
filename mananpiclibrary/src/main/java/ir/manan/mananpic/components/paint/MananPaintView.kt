@@ -124,6 +124,31 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             }
         }
 
+    private var isViewInitialized = false
+
+    var painter: Painter? = null
+        set(value) {
+            field = value
+            value?.setOnMessageListener(this)
+
+            initializedPainter(field)
+
+            requestLayout()
+        }
+
+    init {
+        scaleDetector = ScaleGestureDetector(context, this).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                isQuickScaleEnabled = false
+            }
+        }
+
+        rotationDetector = TwoFingerRotationDetector(this)
+
+        scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
+
+    }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 
         rectAlloc.set(boundsRectangle)
@@ -138,33 +163,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         rectAlloc.set(boundsRectangle)
 
         painter?.onSizeChanged(rectAlloc, mappingMatrix)
-    }
-
-    private var isViewInitialized = false
-
-    var painter: Painter? = null
-        set(value) {
-            field = value
-            value?.setOnMessageListener(this)
-
-            initializedPainter(field)
-
-            if (!isViewInitialized) {
-                requestLayout()
-            }
-        }
-
-    init {
-        scaleDetector = ScaleGestureDetector(context, this).apply {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                isQuickScaleEnabled = false
-            }
-        }
-
-        rotationDetector = TwoFingerRotationDetector(this)
-
-        scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
-
     }
 
     override fun onImageLaidOut() {
