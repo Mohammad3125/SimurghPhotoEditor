@@ -186,6 +186,7 @@ class ColorDropper : Painter() {
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
+        showDropper(lastX, lastY)
         // Call interfaces.
         onLastColorDetected?.invoke(lastSelectedColor)
         interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)
@@ -230,7 +231,7 @@ class ColorDropper : Painter() {
             // Finally get the color of current selected pixel (the pixel user pointing at) and set
             // The ring color to that.
             lastSelectedColor =
-                refBitmap.getPixel(dropperXPosition.toInt(),dropperYPosition.toInt())
+                refBitmap.getPixel(dropperXPosition.toInt(), dropperYPosition.toInt())
 
             // Call interfaces.
             interfaceOnColorDetected?.onColorDetected(lastSelectedColor)
@@ -261,6 +262,12 @@ class ColorDropper : Painter() {
 
             // Return true to show interest in consuming event.
         }
+    }
+
+    override fun resetPaint() {
+        dropperXPosition = 0f
+        dropperYPosition = 0f
+        offsetY = 0f
     }
 
     override fun draw(canvas: Canvas) {
@@ -371,6 +378,14 @@ class ColorDropper : Painter() {
             BitmapShader(reference, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
                 setLocalMatrix(enlargedBitmapMatrix)
             }
+
+        if (dropperXPosition == 0f && dropperYPosition == 0f) {
+            showDropper(reference.width * 0.5f, reference.height * 0.5f)
+        } else {
+            showDropper(dropperXPosition, dropperYPosition)
+        }
+
+        showCircle = true
 
         sendMessage(PainterMessage.INVALIDATE)
     }
