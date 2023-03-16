@@ -23,6 +23,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     private var rawWidth = 0f
     private var rawHeight = 0f
 
+    private val textPath by lazy {
+        Path()
+    }
+
+    private val textFillPath by lazy {
+        Path()
+    }
+
     private val textPaint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
@@ -34,7 +42,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var text = ""
         set(value) {
             field = value
-            invalidate()
+            indicateBoundsChange()
         }
 
 
@@ -46,12 +54,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         }
 
     /* Allocations --------------------------------------------------------------------------------------------  */
-
-    @Transient
-    private val finalBounds = RectF()
-
-    @Transient
-    private val mappingMatrix = Matrix()
 
     @Transient
     private val shaderMatrix = MananMatrix()
@@ -82,7 +84,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 field = value
                 textPaint.letterSpacing = field
-                invalidate()
+                indicateBoundsChange()
             } else {
                 throw IllegalStateException("letter spacing is only available after api 21")
             }
@@ -114,7 +116,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var lineSpacing = 0f
         set(value) {
             field = value
-            invalidate()
+            indicateBoundsChange()
         }
 
     /**
@@ -194,7 +196,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         }
     }
 
-    private fun drawTexts(canvas: Canvas) {
+    private fun drawTexts(canvas: Canvas, tt: Boolean = false) {
 
         var acc = 0f
         finalTexts.forEachIndexed { index, s ->
@@ -205,12 +207,40 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             acc += finalHeights[index]
 
-            canvas.drawText(
-                s,
-                ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
-                (if (!isShadowCleared) (rawHeight - rawHeight) * 0.5f else 0f) + (acc - finalYBaseLine[index]),
-                textPaint
-            )
+            if (tt && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                textPaint.getTextPath(
+                    s,
+                    0,
+                    s.length,
+                    ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
+                    (acc - finalYBaseLine[index]),
+                    textPath
+                )
+
+                textFillPath.set(textPath)
+
+                textPaint.getFillPath(textPath, textPath)
+
+                val ss = textPaint.style
+
+                textPaint.style = Paint.Style.FILL
+
+                textPaint.getFillPath(textFillPath, textFillPath)
+
+                textPath.op(textFillPath, Path.Op.DIFFERENCE)
+
+                canvas.drawPath(textPath, textPaint)
+
+                textPaint.style = ss
+            } else {
+                canvas.drawText(
+                    s,
+                    ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
+                    acc - finalYBaseLine[index],
+                    textPaint
+                )
+            }
+
 
             shiftTextureWithoutInvalidation(0f, -toTransfer)
         }
@@ -228,7 +258,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 typeface
             }
         textPaint.typeface = finalTypeface
-        invalidate()
+        indicateBoundsChange()
     }
 
     /**
@@ -236,7 +266,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
      */
     fun setTypeface(typeface: Typeface) {
         textPaint.typeface = typeface
-        invalidate()
+        indicateBoundsChange()
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
@@ -439,9 +469,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         shiftTextureWithAlignment(strokeRadiusPx)
 
         extraSpace = strokeRadiusPx
-        invalidate()
         shadowRadius -= 0.00001f
-        invalidate()
+        indicateBoundsChange()
     }
 
     override fun getStrokeColor(): Int {
@@ -722,13 +751,15 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 val currentStyle = textPaint.style
                 val currentPath = textPaint.pathEffect
                 val currentShader = textPaint.shader
-                textPaint.style = Paint.Style.STROKE
+                textPaint.style =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) Paint.Style.FILL_AND_STROKE else Paint.Style.STROKE
+
                 textPaint.strokeWidth = textStrokeWidth
                 textPaint.shader = null
                 textPaint.pathEffect = null
                 textPaint.color = textStrokeColor
 
-                drawTexts(this)
+                drawTexts(this, true)
 
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
