@@ -6,6 +6,8 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import ir.manan.mananpic.components.MananDropper
+import ir.manan.mananpic.components.MananDropper.OnColorDetected
+import ir.manan.mananpic.components.MananDropper.OnLastColorDetected
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
@@ -393,4 +395,39 @@ class ColorDropper : Painter() {
     override fun doesHandleHistory(): Boolean {
         return true
     }
+
+    /**
+     * Set listener that get invoked everytime that color by color dropper get changed.
+     */
+    fun setOnColorDetected(listener: (Int) -> Unit) {
+        onColorDetected = listener
+    }
+
+    /**
+     * Set listener that get invoked everytime that color by color dropper get changed.
+     * @param listener Interface [OnColorDetected]
+     */
+    fun setOnColorDetected(listener: OnColorDetected) {
+        interfaceOnColorDetected = listener
+    }
+
+    /**
+     * Set listener that get invoked before user lifts his/her finger from screen.
+     * This listener returns the last color that was selected before user lifts his/her finger
+     * up from screen.
+     */
+    fun setOnLastColorDetected(listener: (Int) -> Unit) {
+        onLastColorDetected = listener
+    }
+
+    /**
+     * Set listener that get invoked before user lifts his/her finger from screen.
+     * This listener returns the last color that was selected before user lifts his/her finger
+     * up from screen.
+     * @param listener Interface [OnLastColorDetected]
+     */
+    fun setOnLastColorDetected(listener: OnLastColorDetected) {
+        interfaceOnLastColorDetected = listener
+    }
+
 }
