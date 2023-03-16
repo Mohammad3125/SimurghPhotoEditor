@@ -113,6 +113,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         RectF()
     }
 
+    private val tempRect by lazy {
+        RectF()
+    }
+
     private val finalCanvas by lazy {
         Canvas()
     }
@@ -609,6 +613,34 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 sendMessage(PainterMessage.SAVE_HISTORY)
                 invalidate()
             }
+        }
+    }
+
+    override fun indicateBoundsChange() {
+        targetComponent?.let { component ->
+            tempRect.set(targetComponentBounds)
+            component.getBounds(targetComponentBounds)
+
+            val tw = targetComponentBounds.width()
+            val th = targetComponentBounds.height()
+
+            val lw = tempRect.width()
+            val lh = tempRect.height()
+
+            mappingMatrix.apply {
+                setScale(tw / lw, th / lh)
+
+                mapPoints(basePoints)
+                mapPoints(baseSizeChangePoint)
+                mapPoints(meshPoints)
+            }
+
+            transformationMatrix.postTranslate(-(tw - lw) * 0.5f, -(th - lh) * 0.5f)
+
+            makePolyToPoly()
+            mergeMatrices()
+
+            invalidate()
         }
     }
 

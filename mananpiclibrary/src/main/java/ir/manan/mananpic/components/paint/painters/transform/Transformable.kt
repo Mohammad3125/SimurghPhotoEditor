@@ -13,10 +13,16 @@ abstract class Transformable {
 
     interface OnInvalidate {
         fun invalidate()
+
+        fun indicateBoundsChange()
     }
 
     fun invalidate() {
         onInvalidateListener?.invalidate()
+    }
+
+    fun indicateBoundsChange() {
+        onInvalidateListener?.indicateBoundsChange()
     }
 
     abstract fun clone() : Transformable
