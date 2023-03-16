@@ -25,7 +25,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     private var shadowLColor = Color.YELLOW
     private var isShadowCleared = true
 
-    private var strokeShape = shape
+    private var strokeShape = shape.clone()
 
     private var rawWidth = 0f
     private var rawHeight = 0f
@@ -109,7 +109,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
         strokeSize = strokeRadiusPx
         this.strokeColor = strokeColor
-        invalidate()
+        indicateBoundsChange()
     }
 
     override fun getStrokeColor(): Int {
