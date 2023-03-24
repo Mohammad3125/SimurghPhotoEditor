@@ -21,7 +21,8 @@ abstract class Painter {
 
     abstract fun initialize(
         context: Context,
-        matrix: MananMatrix,
+        transformationMatrix: MananMatrix,
+        fitInsideMatrix: MananMatrix,
         bounds: RectF,
     )
 
@@ -84,7 +85,7 @@ abstract class Painter {
     open fun onTransformed(transformMatrix: MananMatrix) {
     }
 
-    open fun onReferenceLayerCreated(reference : Bitmap) {
+    open fun onReferenceLayerCreated(reference: Bitmap) {
 
     }
 

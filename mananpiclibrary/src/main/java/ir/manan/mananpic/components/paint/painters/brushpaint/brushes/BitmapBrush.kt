@@ -101,10 +101,6 @@ class BitmapBrush(
 
         paint.alpha = opacity
 
-        if (paint.shader != null) {
-            paint.colorFilter = null
-        }
-
         canvas.drawBitmap(
             scaledStamp,
             -stampScaledWidthHalf,

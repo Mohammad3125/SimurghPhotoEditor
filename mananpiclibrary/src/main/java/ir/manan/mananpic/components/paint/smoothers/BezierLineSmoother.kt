@@ -117,6 +117,8 @@ class BezierLineSmoother : LineSmoother() {
         val spacedWidth = brush.spacedWidth
         val smoothness = brush.smoothness
 
+        val isListenerNull = onDrawPoint == null
+
         mid1x = (perv1x + perv2x) * 0.5f
         mid1y = (perv1y + perv2y) * 0.5f
 
@@ -164,7 +166,9 @@ class BezierLineSmoother : LineSmoother() {
                 0f
             }
 
-            onDrawPoint?.onDrawPoint(pointHolder[0], pointHolder[1], degree)
+            if (!isListenerNull) {
+                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], degree)
+            }
         }
     }
 }

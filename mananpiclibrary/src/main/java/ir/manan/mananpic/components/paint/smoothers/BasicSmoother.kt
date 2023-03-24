@@ -21,16 +21,16 @@ class BasicSmoother : LineSmoother() {
 
     override fun setFirstPoint(ex: Float, ey: Float, brush: Brush) {
         path.rewind()
-        path.moveTo(ex,ey)
+        path.moveTo(ex, ey)
     }
 
     override fun addPoints(ex: Float, ey: Float, brush: Brush) {
-        path.lineTo(ex,ey)
+        path.lineTo(ex, ey)
         drawPoints(brush)
     }
 
     override fun setLastPoint(ex: Float, ey: Float, brush: Brush) {
-        path.lineTo(ex,ey)
+        path.lineTo(ex, ey)
         drawPoints(brush)
         distance = 0f
     }
@@ -38,6 +38,8 @@ class BasicSmoother : LineSmoother() {
     private fun drawPoints(brush: Brush) {
 
         val spacedWidth = brush.spacedWidth
+
+        val isListenerNull = onDrawPoint == null
 
         pathMeasure.setPath(path, false)
 
@@ -56,7 +58,9 @@ class BasicSmoother : LineSmoother() {
                 null
             )
 
-            onDrawPoint?.onDrawPoint(pointHolder[0], pointHolder[1],0f)
+            if (!isListenerNull) {
+                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], 0f)
+            }
         }
     }
 }

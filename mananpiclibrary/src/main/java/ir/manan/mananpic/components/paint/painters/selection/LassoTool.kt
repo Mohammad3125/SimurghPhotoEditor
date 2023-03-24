@@ -77,8 +77,13 @@ class LassoTool(var clipper: PathClipper) : Painter() {
 
     private lateinit var canvasMatrix: MananMatrix
 
-    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
-        canvasMatrix = matrix
+    override fun initialize(
+        context: Context,
+        transformationMatrix: MananMatrix,
+        fitInsideMatrix: MananMatrix,
+        bounds: RectF
+    ) {
+        canvasMatrix = transformationMatrix
         context.apply {
             cornerPathEffect = CornerPathEffect(dp(2))
             lassoStrokeWidth = dp(4)

@@ -193,8 +193,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun initializedPainter(pp: Painter?) {
         pp?.let { p ->
-            rectAlloc.set(boundsRectangle)
-            p.initialize(context, canvasMatrix, rectAlloc)
+            rectAlloc.set(layerBounds)
+            p.initialize(context, canvasMatrix, imageviewMatrix, rectAlloc)
             p.onLayerChanged(selectedLayer)
             if (this::bitmapReference.isInitialized) {
                 p.onReferenceLayerCreated(bitmapReference)

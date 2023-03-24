@@ -18,7 +18,12 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
     private var currentThreshold = 0f
 
-    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
+    override fun initialize(
+        context: Context,
+        transformationMatrix: MananMatrix,
+        fitInsideMatrix: MananMatrix,
+        bounds: RectF
+    ) {
         currentThreshold = threshold
     }
 

@@ -138,16 +138,21 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private lateinit var bounds: RectF
 
-    private val matrix = MananMatrix()
+    private lateinit var matrix : MananMatrix
 
-    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
+    override fun initialize(
+        context: Context,
+        transformationMatrix: MananMatrix,
+        fitInsideMatrix: MananMatrix,
+        bounds: RectF
+    ) {
         if (circlesRadius == 0f) {
             circlesRadius = context.dp(10)
         }
         if (touchRange == 0f) {
             touchRange = context.dp(24)
         }
-        this.matrix.set(matrix)
+        matrix = transformationMatrix
         this.bounds = bounds
         initializeComponent(bounds)
     }

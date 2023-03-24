@@ -1,8 +1,6 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.PorterDuff
+import android.graphics.*
 import androidx.annotation.ColorInt
 
 abstract class Brush {
@@ -59,6 +57,9 @@ abstract class Brush {
         get() = size * spacing
         private set
 
+    var texture : Bitmap? = null
+
+    var textureTransformation : Matrix? = null
 
     internal abstract var brushBlending: PorterDuff.Mode
     abstract fun draw(canvas: Canvas, opacity: Int)

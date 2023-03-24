@@ -93,6 +93,9 @@ abstract class MananGestureImageView(
     protected val boundsRectangle = RectF()
 
 
+    protected val layerBounds = RectF()
+
+
     /**
      * Real width of current image's bitmap.
      * This value is available after [onImageLaidOut] has ben called.
@@ -335,6 +338,8 @@ abstract class MananGestureImageView(
             bottomEdge = finalHeight + topEdge
 
             boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
+
+            layerBounds.set(0f, 0f, bitmapWidth.toFloat(), bitmapHeight.toFloat())
 
         }
     }

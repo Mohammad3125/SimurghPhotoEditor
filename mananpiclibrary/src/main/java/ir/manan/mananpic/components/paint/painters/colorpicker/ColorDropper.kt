@@ -137,7 +137,12 @@ class ColorDropper : Painter() {
     private var interfaceOnColorDetected: MananDropper.OnColorDetected? = null
 
 
-    override fun initialize(context: Context, matrix: MananMatrix, bounds: RectF) {
+    override fun initialize(
+        context: Context,
+        transformationMatrix: MananMatrix,
+        fitInsideMatrix: MananMatrix,
+        bounds: RectF
+    ) {
 
         // Get display matrix to use width and height of device to pick a size for circle.
         val displayMetrics = context.resources.displayMetrics
