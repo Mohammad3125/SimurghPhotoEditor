@@ -195,7 +195,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     private fun drawTextureOnBrush(canvas: Canvas) {
-        canvas.saveLayer(null, layerPaint)
+        canvas.saveLayer(viewBounds, layerPaint)
         canvas.drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
         canvas.drawRect(viewBounds, texturePaint)
         canvas.restore()
