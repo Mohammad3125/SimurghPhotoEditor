@@ -6,10 +6,12 @@ import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
+import ir.manan.mananpic.components.paint.painters.masking.MaskTool
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
 
+@MaskTool
 class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint {
 
     private var layerPaint = Paint().apply {
@@ -21,7 +23,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     private var texturePaint = Paint().apply {
-        xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
         isFilterBitmap = true
     }
 

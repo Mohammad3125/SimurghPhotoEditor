@@ -40,6 +40,10 @@ class NativeBrush : Brush() {
         }
 
     private fun createHardnessShader() {
+        if (sizeHalf == 0f) {
+            return
+        }
+
         colorsHolder[0] = color
         colorsHolder[1] = Color.argb(0, Color.red(color), Color.green(color), Color.blue(color))
 

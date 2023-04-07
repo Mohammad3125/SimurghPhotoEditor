@@ -131,8 +131,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             field = value
             value?.setOnMessageListener(this)
 
-            initializedPainter(field)
-
+            if (isViewInitialized) {
+                initializedPainter(field)
+            }
             requestLayout()
         }
 

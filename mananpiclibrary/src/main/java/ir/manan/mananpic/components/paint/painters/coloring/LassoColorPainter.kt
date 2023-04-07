@@ -1,34 +1,18 @@
 package ir.manan.mananpic.components.paint.painters.coloring
 
-import android.content.Context
 import android.graphics.*
 import androidx.annotation.ColorInt
-import ir.manan.mananpic.components.paint.PaintLayer
-import ir.manan.mananpic.components.paint.Painter
-import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.components.paint.painters.masking.LassoMaskPainterTool
 import java.util.*
 
-class LassoColorPainter : Painter() {
+open class LassoColorPainter : LassoMaskPainterTool() {
 
-    private val lassoPaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-        }
-    }
 
-    private val lassoPath by lazy {
-        Path().apply {
-            fillType = Path.FillType.WINDING
-        }
-    }
+    protected val undoStack = Stack<State>()
 
-    private val undoStack = Stack<Pair<Path, Boolean>>()
+    protected val redoStack = Stack<State>()
 
-    private val redoStack = Stack<Pair<Path, Boolean>>()
-
-    private val pathMeasure = PathMeasure()
-
-    private var selectedLayer: PaintLayer? = null
+    protected val pathMeasure = PathMeasure()
 
     @ColorInt
     var fillingColor = Color.BLACK
@@ -38,35 +22,18 @@ class LassoColorPainter : Painter() {
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    private var isFirstPoint = true
 
-    private val canvasColorApply by lazy {
-        Canvas()
-    }
-
-    override fun initialize(
-        context: Context,
-        transformationMatrix: MananMatrix,
-        fitInsideMatrix: MananMatrix,
-        bounds: RectF
-    ) {
-
-    }
-
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
-    }
-
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
-        drawLine(ex, ey)
+    init {
+        lassoPaint.style = Paint.Style.FILL
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
-        drawLine(lastX, lastY)
+        super.onMoveEnded(lastX, lastY)
         saveState()
     }
 
-    private fun drawLine(ex: Float, ey: Float) {
-        if (isFirstPoint) {
+    override fun drawLine(ex: Float, ey: Float) {
+        if (isFirstPoint || lassoPath.isEmpty) {
             lassoPath.moveTo(ex, ey)
             saveState()
             isFirstPoint = false
@@ -78,7 +45,7 @@ class LassoColorPainter : Painter() {
 
     private fun saveState() {
         redoStack.clear()
-        undoStack.push(Path(lassoPath) to isFirstPoint)
+        undoStack.push(State(Path(lassoPath), isFirstPoint))
     }
 
     override fun draw(canvas: Canvas) {
@@ -89,14 +56,6 @@ class LassoColorPainter : Painter() {
         lassoPath.rewind()
         isFirstPoint = true
         sendMessage(PainterMessage.INVALIDATE)
-    }
-
-    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
-
-    }
-
-    override fun onLayerChanged(layer: PaintLayer?) {
-        selectedLayer = layer
     }
 
     fun applyColoring() {
@@ -119,27 +78,33 @@ class LassoColorPainter : Painter() {
     }
 
     private fun swapStacks(
-        popStack: Stack<Pair<Path, Boolean>>,
-        pushStack: Stack<Pair<Path, Boolean>>
+        popStack: Stack<State>,
+        pushStack: Stack<State>
     ) {
         if (popStack.isNotEmpty()) {
             val poppedState = popStack.pop()
 
-            pathMeasure.setPath(poppedState.first, false)
+            pathMeasure.setPath(poppedState.pathCopy, false)
             val poppedPathLength = pathMeasure.length
             pathMeasure.setPath(lassoPath, false)
             val currentPathLength = pathMeasure.length
 
             if (popStack.isNotEmpty() && (pushStack.isEmpty() || currentPathLength == poppedPathLength)) {
                 val newPopped = popStack.pop()
-                lassoPath.set(newPopped.first)
-                isFirstPoint = newPopped.second
+                lassoPath.set(newPopped.pathCopy)
+                isFirstPoint = newPopped.isFirstPoint
+                if (isFirstPoint) {
+                    lassoPath.rewind()
+                }
                 pushStack.push(poppedState)
                 pushStack.push(newPopped)
             } else {
                 pushStack.push(poppedState)
-                lassoPath.set(poppedState.first)
-                isFirstPoint = poppedState.second
+                lassoPath.set(poppedState.pathCopy)
+                isFirstPoint = poppedState.isFirstPoint
+                if (isFirstPoint) {
+                    lassoPath.rewind()
+                }
             }
 
             // State of layer cache only changes after gestures get applied, since this method isn't
@@ -148,8 +113,9 @@ class LassoColorPainter : Painter() {
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
-
     override fun doesHandleHistory(): Boolean {
         return true
     }
+
+    protected data class State(val pathCopy: Path, val isFirstPoint: Boolean)
 }

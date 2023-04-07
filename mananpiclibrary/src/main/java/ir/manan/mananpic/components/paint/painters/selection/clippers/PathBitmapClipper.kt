@@ -7,11 +7,11 @@ import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.components.paint.smoothers.BasicSmoother
 
 class PathBitmapClipper(
-    path: Path? = null,
+    var path: Path? = null,
     bitmap: Bitmap? = null,
-    isInverse: Boolean = false,
+    var isInverse: Boolean = false,
     var edgeBrush: Brush,
-) : PathClipper(path, bitmap, isInverse) {
+) : Clipper(bitmap) {
 
     constructor(edgeBrush: Brush) : this(null, null, false, edgeBrush)
 
