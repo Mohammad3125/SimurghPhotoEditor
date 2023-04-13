@@ -24,7 +24,7 @@ class PathBitmapClipper(
     }
 
     private val lassoFillPaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        Paint().apply {
             style = Paint.Style.FILL
         }
     }
