@@ -113,9 +113,9 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
     }
 
     override fun onDraw(canvas: Canvas?) {
-        super.onDraw(canvas)
-
-        if (canvas == null) return
+        if (canvas == null) {
+            return
+        }
 
         brush?.let {
             drawPoints(canvas, it)
@@ -123,9 +123,11 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
     }
 
     fun requestRender() {
-        doOnLayout {
-            callPoints(brush!!)
-            invalidate()
+        brush?.let { b ->
+            doOnLayout {
+                callPoints(b)
+                invalidate()
+            }
         }
     }
 
@@ -255,7 +257,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
 
             repeat(pointsHalf) {
-                pathMeasure.getPosTan(distance, pathPointHolder,null)
+                pathMeasure.getPosTan(distance, pathPointHolder, null)
 
                 val ind = it * 2
 
@@ -265,7 +267,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 points[ind + 1] = pathPointHolder[1]
             }
 
-            pathMeasure.getPosTan(length, pathPointHolder,null)
+            pathMeasure.getPosTan(length, pathPointHolder, null)
 
             points[points.lastIndex - 1] = pathPointHolder[0]
             points[points.lastIndex] = pathPointHolder[1]
