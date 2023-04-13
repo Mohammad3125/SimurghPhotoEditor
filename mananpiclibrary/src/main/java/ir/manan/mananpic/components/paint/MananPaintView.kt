@@ -5,22 +5,24 @@ import android.content.Context
 import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
-import android.view.ViewConfiguration
+import android.view.*
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
-import ir.manan.mananpic.components.imageviews.MananGestureImageView
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
+import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
+import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 class MananPaintView(context: Context, attrSet: AttributeSet?) :
-    MananGestureImageView(context, attrSet), Painter.MessageChannel {
+    View(context, attrSet), Painter.MessageChannel,
+    ScaleGestureDetector.OnScaleGestureListener,
+    OnRotateListener, GestureDetector.OnDoubleTapListener,
+    GestureDetector.OnGestureListener {
 
     constructor(context: Context) : this(context, null)
 
@@ -89,7 +91,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isFirstLayerCreation = true
 
-
     private var onTapUp: ((Unit) -> Unit)? = null
 
     private var onDoubleTapUpInterface: OnDoubleTapUp? = null
@@ -137,6 +138,50 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             requestLayout()
         }
 
+    /**
+     * Matrix that we later modify and assign to image matrix.
+     */
+    private val imageviewMatrix = MananMatrix()
+
+    /**
+     * Scale detector that is used to detect if user scaled matrix.
+     * It is nullable; meaning a derived class could use scale gesture or not.
+     */
+    private var scaleDetector: ScaleGestureDetector? = null
+
+    /**
+     * Rotation detector that is used to detect if user performed rotation gesture.
+     * It is nullable; meaning a derived class could use rotating gesture or not.
+     */
+    private var rotationDetector: RotationDetectorGesture? = null
+
+
+    @Transient
+    private val boundsRectangle = RectF()
+
+
+    private val layerBounds = RectF()
+
+    /**
+     * Real width of current image's bitmap.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    private var bitmapWidth = 0
+
+    /**
+     * Real height of current image's bitmap.
+     * This value is available after [onImageLaidOut] has ben called.
+     */
+    protected var bitmapHeight = 0
+
+    /**
+     * Later will be used to notify if imageview's bitmap has been changed.
+     */
+    private var isNewBitmap = true
+
+    var bitmap: Bitmap? = null
+        private set
+
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -150,11 +195,60 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+    override fun onSingleTapUp(p0: MotionEvent): Boolean {
+        return true
+    }
 
+    override fun onSingleTapConfirmed(p0: MotionEvent): Boolean {
+        return false
+    }
+
+    override fun onDoubleTap(p0: MotionEvent): Boolean {
+        return true
+    }
+
+    override fun onDoubleTapEvent(p0: MotionEvent): Boolean {
+        return false
+    }
+
+    override fun onDown(p0: MotionEvent): Boolean {
+        return false
+    }
+
+    override fun onShowPress(p0: MotionEvent) {
+    }
+
+    override fun onScroll(
+        p0: MotionEvent,
+        p1: MotionEvent,
+        distanceX: Float,
+        distanceY: Float
+    ): Boolean {
+        return false
+    }
+
+    override fun onLongPress(p0: MotionEvent) {
+
+    }
+
+    override fun onFling(
+        p0: MotionEvent,
+        p1: MotionEvent,
+        velocityX: Float,
+        velocityY: Float
+    ): Boolean {
+        return false
+    }
+
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         rectAlloc.set(boundsRectangle)
 
         super.onSizeChanged(w, h, oldw, oldh)
+
+        resizeDrawable(w.toFloat() - paddingRight, h.toFloat() - paddingBottom)
+
+        calculateBounds()
 
         mappingMatrix.setRectToRect(
             rectAlloc,
@@ -166,7 +260,79 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.onSizeChanged(rectAlloc, mappingMatrix)
     }
 
-    override fun onImageLaidOut() {
+    /**
+     * Called when drawable is about to be resized to fit the view's dimensions.
+     * @return Modified matrix.
+     */
+    private fun resizeDrawable(targetWidth: Float, targetHeight: Float) {
+        imageviewMatrix.setRectToRect(
+            RectF(
+                0f,
+                0f,
+                bitmapWidth.toFloat(),
+                bitmapHeight.toFloat()
+            ),
+            RectF(
+                paddingLeft.toFloat(),
+                paddingTop.toFloat(),
+                targetWidth,
+                targetHeight
+            ),
+            Matrix.ScaleToFit.CENTER
+        )
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        if (isNewBitmap && bitmap != null) {
+
+            resizeDrawable(width.toFloat() - paddingRight, height.toFloat() - paddingBottom)
+
+            calculateBounds()
+
+            onImageLaidOut()
+
+            isNewBitmap = false
+        }
+    }
+    fun setImageBitmap(bitmap: Bitmap?) {
+        if (bitmap != null) {
+            this.bitmap = bitmap
+            isNewBitmap = true
+            bitmapWidth = bitmap.width
+            bitmapHeight = bitmap.height
+
+            addNewLayerWithoutSavingHistory(bitmap)
+
+            requestLayout()
+            invalidate()
+        }
+    }
+
+    /**
+     * Calculates bounds of image with matrix values.
+     */
+    private fun calculateBounds() {
+        imageviewMatrix.run {
+
+            val matrixScale = imageviewMatrix.getScaleX(true)
+
+            val leftEdge = getTranslationX()
+            val topEdge = getTranslationY()
+
+            val finalWidth = (bitmapWidth * matrixScale)
+            val finalHeight = (bitmapHeight * matrixScale)
+
+            val rightEdge = finalWidth + leftEdge
+            val bottomEdge = finalHeight + topEdge
+
+            boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
+
+            layerBounds.set(0f, 0f, bitmapWidth.toFloat(), bitmapHeight.toFloat())
+
+        }
+    }
+
+    private fun onImageLaidOut() {
         context.resources.displayMetrics.run {
             maximumScale =
                 max(widthPixels, heightPixels) / min(bitmapWidth, bitmapHeight) * 10f
@@ -183,12 +349,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             bitmapReference = createLayerBitmap()
 
-            isViewInitialized = true
-        }
+            cacheLayers()
 
-        if (isFirstLayerCreation) {
-            addNewLayer()
-            isFirstLayerCreation = false
+            isViewInitialized = true
         }
     }
 
@@ -205,17 +368,23 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event == null) {
+            return false
+        }
+
         val copyEvent = MotionEvent.obtain(event)
+
+        scaleDetector?.onTouchEvent(event)
 
         if (painter?.doesTakeGestures() == true) {
             mappingMatrix.setConcat(canvasMatrix, imageviewMatrix)
             mappingMatrix.invert(mappingMatrix)
-            event?.transform(mappingMatrix)
+            event.transform(mappingMatrix)
         }
 
-        super.onTouchEvent(event)
+        rotationDetector?.onTouchEvent(event)
 
-        copyEvent?.run {
+        copyEvent.run {
 
             val totalPoints = pointerCount
             when (actionMasked) {
@@ -363,7 +532,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun checkForStateSave() {
         if (undoStack.isNotEmpty() && (selectedLayer !== undoStack.peek().ref || undoStack.peek().isLayerChangeState)) {
             saveState(true, isMessage = true)
-        } else if (redoStack.isNotEmpty()) {
+        } else if (redoStack.isNotEmpty() || undoStack.size == 0) {
             saveState(false, isMessage = true)
         }
     }
@@ -418,12 +587,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
-        if (painter?.doesTakeGestures() == true) {
-            painterTransformationMatrix.setRotate(degree - rotHolder, px, py)
-            painter?.onTransformed(painterTransformationMatrix)
-        } else {
-            canvasMatrix.postRotate(degree - rotHolder, px, py)
-            invalidate()
+        painter?.apply {
+            if (doesTakeGestures()) {
+                painterTransformationMatrix.setRotate(degree - rotHolder, px, py)
+                onTransformed(painterTransformationMatrix)
+            } else {
+                canvasMatrix.postRotate(degree - rotHolder, px, py)
+                invalidate()
+            }
         }
         tot += abs(degree - rotHolder)
         rotHolder = degree
@@ -447,12 +618,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         p0.run {
             val sf = scaleFactor
             isMoved = true
-            if (painter?.doesTakeGestures() == true) {
-                painterTransformationMatrix.setScale(sf, sf, focusX, focusY)
-                painter?.onTransformed(painterTransformationMatrix)
-            } else {
-                canvasMatrix.postScale(sf, sf, focusX, focusY)
-                invalidate()
+
+            painter?.apply {
+                if (doesTakeGestures()) {
+                    painterTransformationMatrix.setScale(sf, sf, focusX, focusY)
+                    onTransformed(painterTransformationMatrix)
+                } else {
+                    canvasMatrix.postScale(sf, sf, focusX, focusY)
+                    invalidate()
+                }
             }
             return true
         }
@@ -460,7 +634,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     override fun onScaleEnd(p0: ScaleGestureDetector) {
         isMoved = true
-        super.onScaleEnd(p0)
     }
 
     /**
@@ -517,8 +690,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 drawBitmap(cachedLayer, 0f, 0f, layersPaint)
 
             } else {
-                super.onDraw(this)
-
                 concat(imageviewMatrix)
 
                 if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
@@ -690,6 +861,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun addNewLayer() {
 
+        if (isFirstLayerCreation) {
+            saveState(isMessage = false)
+            isFirstLayerCreation = false
+        }
+
         checkForStateSave()
 
         selectedLayer = PaintLayer(
@@ -709,6 +885,26 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         invalidate()
 
+    }
+
+    fun addNewLayerWithoutSavingHistory() {
+        addNewLayerWithoutSavingHistory(createLayerBitmap())
+
+        if (isViewInitialized) {
+            cacheLayers()
+        }
+
+        invalidate()
+    }
+
+    private fun addNewLayerWithoutSavingHistory(bitmap: Bitmap) {
+        selectedLayer = PaintLayer(
+            bitmap, Matrix(), false, 1f
+        )
+
+        layerHolder.add(selectedLayer!!)
+
+        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
     }
 
     private fun createLayerBitmap(): Bitmap {
