@@ -23,18 +23,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     private var rawWidth = 0f
     private var rawHeight = 0f
 
-    private val textPath by lazy {
-        Path()
-    }
-
-    private val textFillPath by lazy {
-        Path()
-    }
-
     private val textPaint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
         }
+
+    private val dstOutMode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+
+    private val textBounds = RectF()
 
     /**
      * Text of current text view.
@@ -144,7 +140,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     private var gradientPositions: FloatArray? = null
 
     init {
-//        setLayerType(LAYER_TYPE_HARDWARE, textPaint)
+//        setLayerType(LAYER_TYPE_H ARDWARE, textPaint)
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
         textPaint.textSize = 256f
     }
@@ -207,43 +203,16 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             acc += finalHeights[index]
 
-            if (tt && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                textPaint.getTextPath(
-                    s,
-                    0,
-                    s.length,
-                    ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
-                    (acc - finalYBaseLine[index]),
-                    textPath
-                )
-
-                textFillPath.set(textPath)
-
-                textPaint.getFillPath(textPath, textPath)
-
-                val ss = textPaint.style
-
-                textPaint.style = Paint.Style.FILL
-
-                textPaint.getFillPath(textFillPath, textFillPath)
-
-                textPath.op(textFillPath, Path.Op.DIFFERENCE)
-
-                canvas.drawPath(textPath, textPaint)
-
-                textPaint.style = ss
-            } else {
-                canvas.drawText(
-                    s,
-                    ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
-                    acc - finalYBaseLine[index],
-                    textPaint
-                )
-            }
-
+            canvas.drawText(
+                s,
+                ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
+                acc - finalYBaseLine[index],
+                textPaint
+            )
 
             shiftTextureWithoutInvalidation(0f, -toTransfer)
         }
+
     }
 
     /**
@@ -681,11 +650,12 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             finalXBaseLine.add(textBoundsRect.left)
             finalYBaseLine.add(textBoundsRect.bottom)
 
-            var finalExtra = extraSpace
+            var finalExtra = 0f
 
             if (!isOneLine && !isFirstPass) {
-                finalExtra += lineSpacing
+                finalExtra = lineSpacing
             }
+
             finalHeights.add(h + finalExtra)
 
             isFirstPass = false
@@ -694,13 +664,16 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
         rawWidth = maxWidth + extraSpace
 
-        rawHeight = finalHeights.sum()
+        rawHeight = finalHeights.sum() + extraSpace
 
+        textBounds.set(0f, 0f, rawWidth, rawHeight)
         bounds.set(0f, 0f, rawWidth, rawHeight)
     }
 
     override fun draw(canvas: Canvas) {
         canvas.run {
+
+            saveLayer(textBounds, null)
 
             var finalTranslateX = 0f
             var finalTranslateY = 0f
@@ -722,8 +695,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             translate(
                 finalTranslateX,
-                -finalTranslateY
+                finalTranslateY
             )
+
 
 
             if (shadowRadius > 0) {
@@ -751,15 +725,21 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 val currentStyle = textPaint.style
                 val currentPath = textPaint.pathEffect
                 val currentShader = textPaint.shader
-                textPaint.style =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) Paint.Style.FILL_AND_STROKE else Paint.Style.STROKE
+                textPaint.style = Paint.Style.STROKE
 
                 textPaint.strokeWidth = textStrokeWidth
                 textPaint.shader = null
                 textPaint.pathEffect = null
                 textPaint.color = textStrokeColor
 
+                drawTexts(this, false)
+
+                textPaint.xfermode = dstOutMode
+                textPaint.color = Color.BLACK
+                textPaint.style = Paint.Style.FILL
+
                 drawTexts(this, true)
+                textPaint.xfermode = null
 
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
@@ -770,6 +750,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             }
 
             drawTexts(this)
+
+            restore()
         }
     }
 }
