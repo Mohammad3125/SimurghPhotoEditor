@@ -182,6 +182,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     var bitmap: Bitmap? = null
         private set
 
+    var isRotatingEnabled = true
+    var isScalingEnabled = true
+    var isTranslationEnabled = true
+
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -294,6 +298,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             isNewBitmap = false
         }
     }
+
     fun setImageBitmap(bitmap: Bitmap?) {
         if (bitmap != null) {
             this.bitmap = bitmap
@@ -374,7 +379,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         val copyEvent = MotionEvent.obtain(event)
 
-        scaleDetector?.onTouchEvent(event)
+        if (isScalingEnabled) {
+            scaleDetector?.onTouchEvent(event)
+        }
 
         if (painter?.doesTakeGestures() == true) {
             mappingMatrix.setConcat(canvasMatrix, imageviewMatrix)
@@ -382,7 +389,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             event.transform(mappingMatrix)
         }
 
-        rotationDetector?.onTouchEvent(event)
+        if (isRotatingEnabled) {
+            rotationDetector?.onTouchEvent(event)
+        }
 
         copyEvent.run {
 
@@ -446,18 +455,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         secondPointerInitialY = secondPointerY
 
                         isMatrixGesture = true
-
-                        if (painter?.doesTakeGestures() == true) {
-                            mapTouchPoints(dx, dy, true).let {
-                                painterTransformationMatrix.setTranslate(
-                                    it[0],
-                                    it[1]
-                                )
-                                painter?.onTransformed(painterTransformationMatrix)
+                        if (isTranslationEnabled) {
+                            if (painter?.doesTakeGestures() == true) {
+                                mapTouchPoints(dx, dy, true).let {
+                                    painterTransformationMatrix.setTranslate(
+                                        it[0],
+                                        it[1]
+                                    )
+                                    painter?.onTransformed(painterTransformationMatrix)
+                                }
+                            } else {
+                                canvasMatrix.postTranslate(dx, dy)
+                                invalidate()
                             }
-                        } else {
-                            canvasMatrix.postTranslate(dx, dy)
-                            invalidate()
                         }
                     }
 
