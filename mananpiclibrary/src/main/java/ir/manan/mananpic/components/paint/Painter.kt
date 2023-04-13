@@ -97,6 +97,10 @@ abstract class Painter {
 
     }
 
+    open fun release() {
+
+    }
+
     interface MessageChannel {
         fun onSendMessage(message: PainterMessage)
     }

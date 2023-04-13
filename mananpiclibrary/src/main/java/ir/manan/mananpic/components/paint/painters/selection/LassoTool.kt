@@ -134,6 +134,10 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
         }
     }
 
+    override fun release() {
+        pathEffectAnimator.cancel()
+    }
+
     private inline fun doIfLayerNotNullAndPathIsNotEmpty(function: (layer: PaintLayer) -> Unit) {
         if (!isFirstPoint && !lassoPath.isEmpty) {
             selectedLayer?.let { layer ->

@@ -129,6 +129,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     var painter: Painter? = null
         set(value) {
+
+            painter?.release()
+
             field = value
             value?.setOnMessageListener(this)
 
