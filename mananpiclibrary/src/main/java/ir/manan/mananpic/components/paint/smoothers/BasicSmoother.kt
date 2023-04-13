@@ -59,7 +59,7 @@ class BasicSmoother : LineSmoother() {
             )
 
             if (!isListenerNull) {
-                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], 0f)
+                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], 0f, it == (total - 1))
             }
         }
     }

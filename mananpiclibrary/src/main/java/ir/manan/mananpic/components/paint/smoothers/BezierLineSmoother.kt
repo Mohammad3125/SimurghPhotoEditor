@@ -105,7 +105,7 @@ class BezierLineSmoother : LineSmoother() {
 
             isFirstThreeCreated = false
         } else {
-            onDrawPoint?.onDrawPoint(ex, ey, 0f)
+            onDrawPoint?.onDrawPoint(ex, ey, 0f, true)
         }
 
         distance = 0f
@@ -167,7 +167,7 @@ class BezierLineSmoother : LineSmoother() {
             }
 
             if (!isListenerNull) {
-                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], degree)
+                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], degree, it == (total - 1))
             }
         }
     }

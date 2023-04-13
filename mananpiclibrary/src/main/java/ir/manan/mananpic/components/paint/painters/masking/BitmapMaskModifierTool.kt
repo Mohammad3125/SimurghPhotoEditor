@@ -9,7 +9,8 @@ import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
 
-class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: DrawingEngine) : Painter(),
+class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: DrawingEngine) :
+    Painter(),
     LineSmoother.OnDrawPoint {
 
     var bitmap: Bitmap = bitmap
@@ -118,7 +119,7 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
     override fun resetPaint() {
     }
 
-    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float) {
+    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float, isLastPoint: Boolean) {
         engine.draw(
             ex,
             ey,

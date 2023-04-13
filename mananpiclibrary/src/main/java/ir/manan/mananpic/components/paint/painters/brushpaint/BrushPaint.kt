@@ -82,6 +82,8 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
         isBrushNull = false
 
+        chooseCanvasToDraw()
+
         engine.onMoveBegin(initialX, initialY, finalBrush)
 
         lineSmoother.setFirstPoint(
@@ -89,13 +91,6 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
             initialY,
             finalBrush
         )
-
-        shouldBlend = finalBrush.alphaBlend
-
-        shouldBlendTexture = finalBrush.texture != null
-
-        finalCanvasToDraw =
-            if (shouldBlend || shouldBlendTexture) alphaBlendCanvas else paintCanvas
 
         createAlphaBitmapIfNeeded()
 
@@ -136,7 +131,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         }
     }
 
-    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float) {
+    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float, isLastPoint: Boolean) {
         engine.draw(
             ex,
             ey,
@@ -148,6 +143,8 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
+
+        chooseCanvasToDraw()
 
         if (shouldDraw()) {
 
@@ -169,6 +166,16 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
             sendMessage(PainterMessage.INVALIDATE)
         }
+    }
+
+    private fun chooseCanvasToDraw() {
+        shouldBlend = finalBrush.alphaBlend
+
+        shouldBlendTexture = finalBrush.texture != null
+
+        finalCanvasToDraw =
+            if (shouldBlend || shouldBlendTexture) alphaBlendCanvas else paintCanvas
+
     }
 
     override fun onLayerChanged(layer: PaintLayer?) {
@@ -213,8 +220,8 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    fun changeBrushTextureBlending(xfermode: PorterDuff.Mode) {
-        texturePaint.xfermode = PorterDuffXfermode(xfermode)
+    fun changeBrushTextureBlending(blendMode: PorterDuff.Mode) {
+        texturePaint.xfermode = PorterDuffXfermode(blendMode)
         sendMessage(PainterMessage.INVALIDATE)
     }
 }

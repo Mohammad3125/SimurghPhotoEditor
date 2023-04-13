@@ -373,168 +373,172 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event == null) {
-            return false
-        }
+        painter?.let { painter ->
+            if (event == null) {
+                return false
+            }
 
-        val copyEvent = MotionEvent.obtain(event)
+            val copyEvent = MotionEvent.obtain(event)
 
-        if (isScalingEnabled) {
-            scaleDetector?.onTouchEvent(event)
-        }
+            if (isScalingEnabled) {
+                scaleDetector?.onTouchEvent(event)
+            }
 
-        if (painter?.doesTakeGestures() == true) {
-            mappingMatrix.setConcat(canvasMatrix, imageviewMatrix)
-            mappingMatrix.invert(mappingMatrix)
-            event.transform(mappingMatrix)
-        }
 
-        if (isRotatingEnabled) {
-            rotationDetector?.onTouchEvent(event)
-        }
+            if (painter.doesTakeGestures()) {
+                mappingMatrix.setConcat(canvasMatrix, imageviewMatrix)
+                mappingMatrix.invert(mappingMatrix)
+                event.transform(mappingMatrix)
+            }
 
-        copyEvent.run {
+            if (isRotatingEnabled) {
+                rotationDetector?.onTouchEvent(event)
+            }
 
-            val totalPoints = pointerCount
-            when (actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
+            copyEvent.run {
 
-                    // Save the initial points to later determine how much user has moved
-                    // His/her finger across screen.
-                    initialX = x
-                    initialY = y
+                val totalPoints = pointerCount
+                when (actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
 
-                    isFirstMove = true
+                        // Save the initial points to later determine how much user has moved
+                        // His/her finger across screen.
+                        initialX = x
+                        initialY = y
 
-                    recycle()
-                    return true
-                }
-                MotionEvent.ACTION_POINTER_DOWN -> {
-                    if (totalPoints == 2) {
-                        secondPointerInitialX = getX(1)
-                        secondPointerInitialY = getY(1)
+                        isFirstMove = true
 
-                        isMatrixGesture = true
+                        recycle()
+                        return true
                     }
-                }
-                MotionEvent.ACTION_MOVE -> {
+                    MotionEvent.ACTION_POINTER_DOWN -> {
+                        if (totalPoints == 2) {
+                            secondPointerInitialX = getX(1)
+                            secondPointerInitialY = getY(1)
 
-                    val finalSlope = abs(scaledTouchSlope / canvasMatrix.getRealScaleX())
-
-                    val firstFingerDx = (x - initialX)
-                    val firstFingerDy = (y - initialY)
-
-                    if (!isFirstFingerMoved) {
-                        firstDxSum += abs(firstFingerDx)
-                        firstDySum += abs(firstFingerDy)
-                        isFirstFingerMoved =
-                            isFirstFingerMoved.or(firstDxSum >= finalSlope || firstDySum >= finalSlope)
+                            isMatrixGesture = true
+                        }
                     }
+                    MotionEvent.ACTION_MOVE -> {
 
-                    // If there are currently 2 pointers on screen and user is not scaling then
-                    // translate the canvas matrix.
-                    if (totalPoints == 2 && isNewGesture) {
-                        val secondPointerX = getX(1)
-                        val secondPointerY = getY(1)
+                        val finalSlope = abs(scaledTouchSlope / canvasMatrix.getRealScaleX())
 
-                        val secondPointerDx = secondPointerX - secondPointerInitialX
-                        val secondPointerDy = secondPointerY - secondPointerInitialY
+                        val firstFingerDx = (x - initialX)
+                        val firstFingerDy = (y - initialY)
 
-
-                        if (!isMoved) {
-                            secondDxSum += abs(secondPointerDx)
-                            secondDySum += abs(secondPointerDy)
-                            isMoved =
-                                isMoved.or(secondDxSum >= finalSlope || secondDySum >= finalSlope)
+                        if (!isFirstFingerMoved) {
+                            firstDxSum += abs(firstFingerDx)
+                            firstDySum += abs(firstFingerDy)
+                            isFirstFingerMoved =
+                                isFirstFingerMoved.or(firstDxSum >= finalSlope || firstDySum >= finalSlope)
                         }
 
-                        val dx = (secondPointerDx + firstFingerDx) / 2
-                        val dy = (secondPointerDy + firstFingerDy) / 2
+                        // If there are currently 2 pointers on screen and user is not scaling then
+                        // translate the canvas matrix.
+                        if (totalPoints == 2 && isNewGesture) {
+                            val secondPointerX = getX(1)
+                            val secondPointerY = getY(1)
 
-                        secondPointerInitialX = secondPointerX
-                        secondPointerInitialY = secondPointerY
+                            val secondPointerDx = secondPointerX - secondPointerInitialX
+                            val secondPointerDy = secondPointerY - secondPointerInitialY
 
-                        isMatrixGesture = true
-                        if (isTranslationEnabled) {
-                            if (painter?.doesTakeGestures() == true) {
-                                mapTouchPoints(dx, dy, true).let {
-                                    painterTransformationMatrix.setTranslate(
-                                        it[0],
-                                        it[1]
-                                    )
-                                    painter?.onTransformed(painterTransformationMatrix)
+
+                            if (!isMoved) {
+                                secondDxSum += abs(secondPointerDx)
+                                secondDySum += abs(secondPointerDy)
+                                isMoved =
+                                    isMoved.or(secondDxSum >= finalSlope || secondDySum >= finalSlope)
+                            }
+
+                            val dx = (secondPointerDx + firstFingerDx) / 2
+                            val dy = (secondPointerDy + firstFingerDy) / 2
+
+                            secondPointerInitialX = secondPointerX
+                            secondPointerInitialY = secondPointerY
+
+                            isMatrixGesture = true
+                            if (isTranslationEnabled) {
+                                if (painter.doesTakeGestures()) {
+                                    mapTouchPoints(dx, dy, true).let {
+                                        painterTransformationMatrix.setTranslate(
+                                            it[0],
+                                            it[1]
+                                        )
+                                        painter.onTransformed(painterTransformationMatrix)
+                                    }
+                                } else {
+                                    canvasMatrix.postTranslate(dx, dy)
+                                    invalidate()
                                 }
-                            } else {
-                                canvasMatrix.postTranslate(dx, dy)
-                                invalidate()
                             }
                         }
+
+                        // Else if selector is not null and there is currently 1 pointer on
+                        // screen and user is not performing any other gesture like moving or
+                        // scaling, then call 'onMove' method of selector.
+                        if (selectedLayer != null && totalPoints == 1 && !isMatrixGesture && !selectedLayer!!.isLocked && isFirstFingerMoved) {
+
+                            if (isFirstMove) {
+
+                                checkForStateSave()
+
+                                callPainterOnMoveBegin(initialX, initialY)
+                            }
+
+                            if (isTouchEventHistoryEnabled) {
+                                repeat(historySize) {
+                                    callPainterOnMove(
+                                        getHistoricalX(0, it),
+                                        getHistoricalY(0, it),
+                                    )
+                                }
+                            }
+
+                            callPainterOnMove(
+                                x,
+                                y,
+                            )
+
+                        }
+
+                        initialX = x
+                        initialY = y
+
+                        recycle()
+                        return true
                     }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
 
-                    // Else if selector is not null and there is currently 1 pointer on
-                    // screen and user is not performing any other gesture like moving or
-                    // scaling, then call 'onMove' method of selector.
-                    if (painter != null && selectedLayer != null && totalPoints == 1 && !isMatrixGesture && !selectedLayer!!.isLocked && isFirstFingerMoved) {
-
-                        if (isFirstMove) {
-
+                        if (shouldCallDoubleTapListener()) {
+                            callOnDoubleTapListeners()
+                        } else if (shouldEndMoveOnPainter()) {
                             checkForStateSave()
-
-                            callPainterOnMoveBegin(this)
+                            callPainterOnMoveEnd(x, y)
                         }
 
-                        if (isTouchEventHistoryEnabled) {
-                            repeat(historySize) {
-                                callPainterOnMove(
-                                    getHistoricalX(0, it),
-                                    getHistoricalY(0, it),
-                                )
-                            }
-                        }
+                        cacheLayers()
 
-                        callPainterOnMove(
-                            x,
-                            y,
-                        )
+                        isMatrixGesture = false
+                        isNewGesture = true
 
+                        secondDxSum = 0f
+                        secondDySum = 0f
+                        isMoved = false
+
+                        firstDxSum = 0f
+                        firstDySum = 0f
+                        isFirstFingerMoved = false
+
+                        recycle()
+                        return false
                     }
-
-                    initialX = x
-                    initialY = y
-
-                    recycle()
-                    return true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-
-                    if (shouldCallDoubleTapListener()) {
-                        callOnDoubleTapListeners()
-                    } else if (shouldEndMoveOnPainter()) {
-                        checkForStateSave()
-                        callPainterOnMoveEnd(x, y)
+                    else -> {
+                        recycle()
+                        return false
                     }
-
-                    cacheLayers()
-
-                    isMatrixGesture = false
-                    isNewGesture = true
-
-                    secondDxSum = 0f
-                    secondDySum = 0f
-                    isMoved = false
-
-                    firstDxSum = 0f
-                    firstDySum = 0f
-                    isFirstFingerMoved = false
-
-                    recycle()
-                    return false
-                }
-                else -> {
-                    recycle()
-                    return false
                 }
             }
+            return false
         }
         return false
     }
@@ -547,8 +551,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun callPainterOnMoveBegin(event: MotionEvent) {
-        mapTouchPoints(initialX, initialY).let { points ->
+    private fun callPainterOnMoveBegin(x: Float, y: Float) {
+        mapTouchPoints(x, y).let { points ->
             painter!!.onMoveBegin(points[0], points[1])
             isFirstMove = false
             isAllLayersCached = false
@@ -558,7 +562,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun shouldCallDoubleTapListener(): Boolean = isMatrixGesture && !isMoved
 
     private fun shouldEndMoveOnPainter(): Boolean =
-        painter != null && selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
+        selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
 
     private fun callPainterOnMoveEnd(ex: Float, ey: Float) {
         mapTouchPoints(ex, ey).let { points ->

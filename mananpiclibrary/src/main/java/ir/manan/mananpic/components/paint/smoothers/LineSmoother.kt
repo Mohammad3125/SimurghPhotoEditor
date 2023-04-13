@@ -10,7 +10,7 @@ abstract class LineSmoother {
     abstract fun setLastPoint(ex: Float, ey: Float, brush: Brush)
 
     interface OnDrawPoint {
-        fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float)
+        fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float, isLastPoint: Boolean)
     }
 
 }

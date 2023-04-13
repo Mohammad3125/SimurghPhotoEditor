@@ -183,7 +183,12 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
             this.lineSmoother.apply {
                 onDrawPoint = object : LineSmoother.OnDrawPoint {
-                    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float) {
+                    override fun onDrawPoint(
+                        ex: Float,
+                        ey: Float,
+                        angleDirection: Float,
+                        isLastPoint: Boolean
+                    ) {
                         cachePointHolder.add(ex)
                         cachePointHolder.add(ey)
                         cacheDirectionAngleHolder.add(angleDirection)

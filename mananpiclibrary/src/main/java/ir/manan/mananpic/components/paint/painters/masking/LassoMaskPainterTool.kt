@@ -116,7 +116,7 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
         applyOnLayer()
     }
 
-    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float) {
+    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float, isLastPoint: Boolean) {
         drawLine(ex, ey)
     }
 
