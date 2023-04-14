@@ -75,6 +75,8 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
 
     private lateinit var transformationMatrix: MananMatrix
 
+    private var isMoveBeginCalled = false
+
 
     override fun initialize(
         context: Context,
@@ -97,6 +99,7 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
     override fun onMoveBegin(initialX: Float, initialY: Float) {
         shapeBounds.left = initialX
         shapeBounds.top = initialY
+        isMoveBeginCalled = true
     }
 
     override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
@@ -105,6 +108,10 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
+        if (!isMoveBeginCalled) {
+            return
+        }
+        isMoveBeginCalled = false
         resizeShape(lastX, lastY)
         shapePaint.style = Paint.Style.FILL
         drawOnLayer()
