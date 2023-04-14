@@ -5,15 +5,14 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
 import ir.manan.mananpic.R
+import ir.manan.mananpic.components.MananFrame.Guidelines
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import java.util.*
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.*
 
 class TransformTool : Painter(), Transformable.OnInvalidate {
 
@@ -35,7 +34,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     var touchRange = 0f
 
     private val mappingMatrix by lazy {
-        Matrix()
+        MananMatrix()
     }
 
     override fun invalidate() {
@@ -110,12 +109,46 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private var isToolInitialized = false
 
+    val smartGuidePaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            strokeWidth = 5f
+            color = Color.MAGENTA
+        }
+    }
+
+    /**
+     * Holds lines for smart guidelines.
+     */
+    private val smartGuidelineHolder = arrayListOf<Float>()
+    private val smartGuidelineDashedLine = arrayListOf<Boolean>()
+
+    private var smartGuidelineFlags: Int = 0
+
+    private var smartRotationDegreeHolder: FloatArray? = null
+
+    private var smartRotationLineHolder = FloatArray(4)
+
+    var acceptableDistanceForSmartGuideline = 0f
+
+    var rangeForSmartRotationGuideline = 2f
+        set(value) {
+            if (value < 0f || value > 360) throw IllegalStateException("this value should not be less than 0 or greater than 360")
+            field = value
+        }
+
+    private val smartGuideLineDashedPathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+
     override fun initialize(
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
+
+        if (acceptableDistanceForSmartGuideline == 0f) {
+            acceptableDistanceForSmartGuideline = context.dp(2)
+        }
+
         if (!this::handleDrawable.isInitialized) {
             handleDrawable = ResourcesCompat.getDrawable(
                 context.resources,
@@ -466,25 +499,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 child.apply {
 
-                    val minX =
-                        min(min(meshPoints[0], meshPoints[2]), min(meshPoints[4], meshPoints[6]))
-
-                    val minY =
-                        min(min(meshPoints[1], meshPoints[3]), min(meshPoints[5], meshPoints[7]))
-
-                    val maxX =
-                        max(max(meshPoints[0], meshPoints[2]), max(meshPoints[4], meshPoints[6]))
-
-                    val maxY =
-                        max(max(meshPoints[1], meshPoints[3]), max(meshPoints[5], meshPoints[7]))
-
+                    calculateMaximumRect(child, tempRect, meshPoints)
 
                     if (x.coerceIn(
-                            minX,
-                            maxX
+                            tempRect.left,
+                            tempRect.right
                         ) == x && y.coerceIn(
-                            minY,
-                            maxY
+                            tempRect.top,
+                            tempRect.bottom
                         ) == y
                     ) {
                         _selectedChild = child
@@ -499,6 +521,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             invalidate()
 
         }
+
+        findSmartGuideLines()
 
         firstSelectedIndex = -1
         secondSelectedIndex = -1
@@ -627,6 +651,32 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                         canvas
                     )
                 }
+
+                canvas.save()
+                canvas.concat(child.transformationMatrix)
+                val strokeWidth = smartGuidePaint.strokeWidth
+                smartGuidePaint.strokeWidth /= child.transformationMatrix.getRealScaleX()
+                canvas.drawLines(smartRotationLineHolder, smartGuidePaint)
+                smartGuidePaint.strokeWidth = strokeWidth
+                canvas.restore()
+            }
+
+
+            for (i in smartGuidelineHolder.indices step 4) {
+
+                if (smartGuidelineDashedLine[i]) {
+                    smartGuidePaint.pathEffect = smartGuideLineDashedPathEffect
+                }
+
+                canvas.drawLine(
+                    smartGuidelineHolder[i],
+                    smartGuidelineHolder[i + 1],
+                    smartGuidelineHolder[i + 2],
+                    smartGuidelineHolder[i + 3],
+                    smartGuidePaint
+                )
+
+                smartGuidePaint.pathEffect = null
             }
         }
     }
@@ -678,10 +728,294 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     override fun onTransformed(transformMatrix: MananMatrix) {
         _selectedChild?.let {
             it.transformationMatrix.postConcat(transformMatrix)
+            findSmartGuideLines()
+            findRotationSmartGuidelines()
             mergeMatrices(it)
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
+
+    /**
+     * Finds possible guide lines on selected component and other components and populates the line holder if there is
+     * any line that could help user.
+     * This method detects guide lines on sides of selected component.
+     * Sides that are calculated for guide lines include:
+     * - Left-Left
+     * - Left,Right
+     * - Right,Left
+     * - Right,Right
+     * - Top,Top
+     * - Top,Bottom
+     * - Bottom,Top
+     * - Bottom,Bottom
+     * - CenterX
+     * - CenterY
+     */
+    private fun findSmartGuideLines() {
+
+        smartGuidelineDashedLine.clear()
+
+        smartGuidelineHolder.clear()
+
+        if (smartGuidelineFlags == 0) {
+            return
+        }
+
+        _selectedChild?.let { child ->
+            val finalDistanceValue =
+                acceptableDistanceForSmartGuideline / child.transformationMatrix.getRealScaleX()
+
+            // Get flags to determine if we should use corresponding guideline or not.
+            val isLeftLeftEnabled = smartGuidelineFlags.and(Guidelines.LEFT_LEFT) != 0
+            val isLeftRightEnabled = smartGuidelineFlags.and(Guidelines.LEFT_RIGHT) != 0
+            val isRightLeftEnabled = smartGuidelineFlags.and(Guidelines.RIGHT_LEFT) != 0
+            val isRightRightEnabled =
+                smartGuidelineFlags.and(Guidelines.RIGHT_RIGHT) != 0
+            val isTopTopEnabled = smartGuidelineFlags.and(Guidelines.TOP_TOP) != 0
+            val isTopBottomEnabled = smartGuidelineFlags.and(Guidelines.TOP_BOTTOM) != 0
+            val isBottomTopEnabled = smartGuidelineFlags.and(Guidelines.BOTTOM_TOP) != 0
+            val isBottomBottomEnabled =
+                smartGuidelineFlags.and(Guidelines.BOTTOM_BOTTOM) != 0
+            val isCenterXEnabled = smartGuidelineFlags.and(Guidelines.CENTER_X) != 0
+            val isCenterYEnabled = smartGuidelineFlags.and(Guidelines.CENTER_Y) != 0
+
+            mergeMatrices(child, true)
+            calculateMaximumRect(child, tempRect, mappedMeshPoints)
+
+            // Remove selected component from list of children (because we don't need to find smart guideline for
+            // selected component which is a undefined behaviour) and then map each bounds of children to get exact
+            // location of points and then add page's bounds to get smart guidelines for page too.
+            _children.minus(child).map { c ->
+                val r = RectF()
+                mergeMatrices(c, true)
+                calculateMaximumRect(c, r, mappedMeshPoints)
+                r
+            }.plus(bounds).forEach { childBounds ->
+
+                // Stores total value that selected component should shift in each axis
+                var totalToShiftX = 0f
+                var totalToShiftY = 0f
+
+                // Calculate distance between two centers in x axis.
+                val centerXDiff = childBounds.centerX() - tempRect.centerX()
+                val centerXDiffAbs = abs(centerXDiff)
+
+                // Calculate distance between two centers in y axis.
+                val centerYDiff = childBounds.centerY() - tempRect.centerY()
+                val centerYDiffAbs = abs(centerYDiff)
+
+                // If absolute value of difference two center x was in range of acceptable distance,
+                // then store total difference to later shift the component.
+                if (centerXDiffAbs <= finalDistanceValue && isCenterXEnabled) {
+                    totalToShiftX = centerXDiff
+                }
+                if (centerYDiffAbs <= finalDistanceValue && isCenterYEnabled) {
+                    totalToShiftY = centerYDiff
+                }
+
+                // Calculate distance between two lefts.
+                val leftToLeft = childBounds.left - tempRect.left
+                val leftToLeftAbs = abs(leftToLeft)
+
+                // Calculate distance between two other component left and selected component right.
+                val leftToRight = childBounds.left - tempRect.right
+                val leftToRightAbs = abs(leftToRight)
+
+                // Calculate distance between two rights.
+                val rightToRight = childBounds.right - tempRect.right
+                val rightToRightAbs = abs(rightToRight)
+
+                // Calculate distance between other component right and selected component left.
+                val rightToLeft = childBounds.right - tempRect.left
+                val rightToLeftAbs = abs(rightToLeft)
+
+                // If left to left of two components was less than left two right and
+                // if the lesser value was in acceptable range then set total shift amount
+                // in x axis to that value.
+                // If we are currently centering in x direction then any of these
+                // side should not be calculated or be smart guided.
+                if (totalToShiftX != centerXDiff) {
+                    if (leftToLeftAbs < leftToRightAbs) {
+                        if (leftToLeftAbs <= finalDistanceValue && isLeftLeftEnabled) {
+                            totalToShiftX = leftToLeft
+                        }
+                    } else if (leftToRightAbs < leftToLeftAbs) {
+                        if (leftToRightAbs <= finalDistanceValue && isLeftRightEnabled) {
+                            totalToShiftX = leftToRight
+                        }
+                    }
+                    // If right to right of two components was less than right to left of them,
+                    // Then check if we haven't set the total shift amount so far, if either we didn't
+                    // set any value to shift so far or current difference is less than current
+                    // total shift amount, then set total shift amount to the right to right difference.
+                    if (rightToRightAbs < rightToLeftAbs) {
+                        if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
+                            if (totalToShiftX == 0f) {
+                                totalToShiftX = rightToRight
+                            } else if (rightToRightAbs < abs(totalToShiftX)) {
+                                totalToShiftX = rightToRight
+                            }
+                        }
+                    } else if (rightToLeftAbs < rightToRightAbs) {
+                        if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
+                            if (totalToShiftX == 0f) {
+                                totalToShiftX = rightToLeft
+                            } else if (rightToLeftAbs < abs(totalToShiftX)) {
+                                totalToShiftX = rightToLeft
+                            }
+                        }
+                    }
+                }
+
+                val topToTop = childBounds.top - tempRect.top
+                val topToTopAbs = abs(topToTop)
+                val topToBottom = childBounds.top - tempRect.bottom
+                val topToBottomAbs = abs(topToBottom)
+
+                val bottomToBottom = childBounds.bottom - tempRect.bottom
+                val bottomToBottomAbs = abs(bottomToBottom)
+                val bottomToTop = childBounds.bottom - tempRect.top
+                val bottomToTopAbs = abs(bottomToTop)
+
+                if (totalToShiftY != centerYDiff) {
+                    if (topToTopAbs < topToBottomAbs) {
+                        if (topToTopAbs <= finalDistanceValue && isTopTopEnabled) {
+                            totalToShiftY = topToTop
+                        }
+                    } else if (topToBottomAbs < topToTopAbs && isTopBottomEnabled) {
+                        if (topToBottomAbs <= finalDistanceValue) {
+                            totalToShiftY = topToBottom
+                        }
+                    }
+
+                    if (bottomToBottomAbs < bottomToTopAbs) {
+                        if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
+                            if (totalToShiftY == 0f) {
+                                totalToShiftY = bottomToBottom
+                            } else if (bottomToBottomAbs < abs(totalToShiftY)) {
+                                totalToShiftY = bottomToBottom
+                            }
+                        }
+                    } else if (bottomToTopAbs < bottomToBottomAbs) {
+                        if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
+                            if (totalToShiftY == 0f) {
+                                totalToShiftY = bottomToTop
+                            } else if (bottomToTopAbs < abs(totalToShiftY)) {
+                                totalToShiftY = bottomToTop
+                            }
+                        }
+                    }
+                }
+
+                child.transformationMatrix.postTranslate(totalToShiftX, totalToShiftY)
+                mergeMatrices(child)
+                calculateMaximumRect(child, tempRect, mappedMeshPoints)
+
+                // Calculate the minimum and maximum amount of two axes
+                // because we want to draw a line from leftmost to rightmost
+                // and topmost to bottommost component.
+                val minTop = min(tempRect.top, childBounds.top)
+                val maxBottom = max(tempRect.bottom, childBounds.bottom)
+
+                val minLeft = min(tempRect.left, childBounds.left)
+                val maxRight = max(tempRect.right, childBounds.right)
+
+                smartGuidelineHolder.run {
+
+                    val isNotPage = childBounds !== bounds
+
+                    // Draw a line on left side of selected component if two lefts are the same
+                    // or right of other component is same to left of selected component
+                    if (totalToShiftX == leftToLeft || totalToShiftX == rightToLeft) {
+                        add(tempRect.left)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(minTop)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(tempRect.left)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(maxBottom)
+                        smartGuidelineDashedLine.add(isNotPage)
+                    }
+                    // Draw a line on right side of selected component if left side of other
+                    // component is right side of selected component or two rights are the same.
+                    if (totalToShiftX == leftToRight || totalToShiftX == rightToRight) {
+                        add(tempRect.right)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(minTop)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(tempRect.right)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(maxBottom)
+                        smartGuidelineDashedLine.add(isNotPage)
+                    }
+
+                    // Draw a line on other component top if it's top is same as
+                    // selected component top or bottom of selected component is same as
+                    // top of other component.
+                    if (totalToShiftY == topToTop || totalToShiftY == topToBottom) {
+                        add(minLeft)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(childBounds.top)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(maxRight)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(childBounds.top)
+                        smartGuidelineDashedLine.add(isNotPage)
+                    }
+                    // Draw a line on other component bottom if bottom of it is same as
+                    // selected component's top or two bottoms are the same.
+                    if (totalToShiftY == bottomToTop || totalToShiftY == bottomToBottom) {
+                        add(minLeft)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(childBounds.bottom)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(maxRight)
+                        smartGuidelineDashedLine.add(isNotPage)
+                        add(childBounds.bottom)
+                        smartGuidelineDashedLine.add(isNotPage)
+                    }
+
+                    // Finally draw a line from center of each component to another.
+                    if (totalToShiftX == centerXDiff || totalToShiftY == centerYDiff) {
+                        if (isNotPage) {
+                            add(tempRect.centerX())
+                            smartGuidelineDashedLine.add(isNotPage)
+                            add(tempRect.centerY())
+                            smartGuidelineDashedLine.add(isNotPage)
+                            add(childBounds.centerX())
+                            smartGuidelineDashedLine.add(isNotPage)
+                            add(childBounds.centerY())
+                            smartGuidelineDashedLine.add(isNotPage)
+                        } else {
+                            if (totalToShiftX == centerXDiff) {
+                                add(tempRect.centerX())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(bounds.top)
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(tempRect.centerX())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(bounds.bottom)
+                                smartGuidelineDashedLine.add(isNotPage)
+                            }
+
+                            if (totalToShiftY == centerYDiff) {
+                                add(bounds.left)
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(tempRect.centerY())
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(bounds.right)
+                                smartGuidelineDashedLine.add(isNotPage)
+                                add(tempRect.centerY())
+                                smartGuidelineDashedLine.add(isNotPage)
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
     private fun calculateMaximumRect(child: Child, rect: RectF, array: FloatArray) {
         child.apply {
             val minX =
@@ -769,7 +1103,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     fun addChild(transformable: Transformable, targetRect: RectF?) {
         _selectedChild = Child(
-            transformable, Matrix(), Matrix(), Matrix(), FloatArray(8),
+            transformable, MananMatrix(), MananMatrix(), MananMatrix(), FloatArray(8),
             FloatArray(8), targetRect
         )
 
@@ -855,11 +1189,152 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private fun selectChild(child: Child, shouldCalculateBounds: Boolean = false) {
         initializeChild(child, true, shouldCalculateBounds)
     }
+
+    /**
+     * Sets flags of smart guideline to customize needed smart guidelines,
+     * for example if user sets [Guidelines.CENTER_X] and [Guidelines.BOTTOM_BOTTOM], only these
+     * guidelines would be detected.
+     * If [Guidelines.ALL] is set then all flags would bet set to 1 indicating they are all enabled.
+     * ### NOTE: Flags should OR each other to create desired output:
+     *      setFlags(LEFT_LEFT.or(RIGHT_LEFT).or(CENTER_X)))
+     *      setFlags(LEFT_LEFT | RIGHT_LEFT | CENTER_X)
+     * @see Guidelines
+     */
+    fun setSmartGuidelineFlags(flags: Int) {
+        // If flag has the ALL in it then store the maximum int value in flag holder to indicate
+        // that all of flags has been set, otherwise set it to provided flags.
+        smartGuidelineFlags = if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
+    }
+
+    fun clearSmartGuidelines() {
+        smartGuidelineDashedLine.clear()
+        smartGuidelineHolder.clear()
+        invalidate()
+    }
+
+    fun clearSmartGuidelineFlags() {
+        smartGuidelineFlags = 0
+    }
+
+    fun eraseSmartGuidelines() {
+        smartGuidelineDashedLine.clear()
+        smartGuidelineHolder.clear()
+        invalidate()
+    }
+
+    fun eraseRotationSmartGuidelines() {
+        clearSmartRotationArray()
+        invalidate()
+    }
+
+    private fun clearSmartRotationArray() {
+        smartRotationLineHolder[0] = 0f
+        smartRotationLineHolder[1] = 0f
+        smartRotationLineHolder[2] = 0f
+        smartRotationLineHolder[3] = 0f
+    }
+
+    /**
+     * Returns smart guidelines flags.
+     * @see setSmartGuidelineFlags
+     * @see clearSmartGuidelineFlags
+     */
+    fun getSmartGuidelineFlags(): Int = smartGuidelineFlags
+
+
+    /**
+     * Finds smart guidelines for rotation if [smartRotationDegreeHolder] does have target rotations.
+     * @return True if it found smart guideline, false otherwise.
+     */
+    private fun findRotationSmartGuidelines(): Boolean {
+        _selectedChild?.let { child ->
+
+            clearSmartRotationArray()
+
+            smartRotationDegreeHolder?.forEach { snapDegree ->
+
+                mapFinalPointsForDraw(child)
+
+                mappingMatrix.set(child.transformationMatrix)
+                mappingMatrix.preConcat(child.centerMatrix)
+
+                val imageRotation =
+                    mappingMatrix.run {
+                        GestureUtils.mapTo360(
+                            -atan2(
+                                getSkewX(true),
+                                (getScaleX())
+                            ) * (180f / PI)
+                        ).toFloat()
+                    }
+
+                if (imageRotation in (snapDegree - rangeForSmartRotationGuideline)..(snapDegree + rangeForSmartRotationGuideline)
+                ) {
+                    calculateMaximumRect(child, tempRect, mappedMeshPoints)
+
+                    child.transformationMatrix.postRotate(
+                        snapDegree - imageRotation,
+                        tempRect.centerX(),
+                        tempRect.centerY()
+                    )
+
+                    val centerXBound = bounds.centerX()
+                    val s = child.transformationMatrix.getRealScaleX()
+                    val pW = max(bounds.width(), bounds.height()) / s
+
+                    smartRotationLineHolder[0] = (centerXBound)
+                    smartRotationLineHolder[1] = (-pW)
+                    smartRotationLineHolder[2] = (centerXBound)
+                    smartRotationLineHolder[3] = (pW)
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /**
+     * Add degrees that user wants to snap to it if rotation reaches it.
+     * These values should be between 0 and 359 (360 is same as 0 degree so use 0 instead of 360).
+     * @param degrees Array of specific degrees that rotation snaps to.
+     * @throws IllegalStateException if provided array is empty or any element in array is not between 0-360 degrees.
+     */
+    fun setRotationSmartGuideline(degrees: FloatArray) {
+        if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException(
+            "array elements should be between 0-359 degrees"
+        )
+        if (degrees.isEmpty()) throw IllegalStateException("array should contain at least 1 element")
+
+        smartRotationDegreeHolder = if (degrees.any { it == 0f } && !degrees.any { it == 360f }) {
+            FloatArray(degrees.size + 1).also { array ->
+                degrees.copyInto(array)
+                array[array.lastIndex] = 360f
+            }
+        } else {
+            degrees
+        }
+    }
+
+    /**
+     * Clears any degrees that smart guideline detector detects.
+     * This way smart guideline wouldn't snap to any specific degree.
+     */
+    fun clearRotationSmartGuideline() {
+        smartRotationDegreeHolder = null
+    }
+
+    /**
+     * Returns the rotation degree holder. Smart guideline detector snaps to these
+     * degrees if there is any.
+     */
+    fun getRotationSmartGuidelineDegreeHolder() = smartRotationDegreeHolder
+
+
     private data class Child(
         val transformable: Transformable,
-        val transformationMatrix: Matrix,
-        val centerMatrix: Matrix,
-        val polyMatrix: Matrix,
+        val transformationMatrix: MananMatrix,
+        val centerMatrix: MananMatrix,
+        val polyMatrix: MananMatrix,
         val baseSizeChangeArray: FloatArray,
         val meshPoints: FloatArray,
         val targetRect: RectF?

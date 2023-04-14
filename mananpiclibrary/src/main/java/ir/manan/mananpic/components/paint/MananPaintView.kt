@@ -366,7 +366,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun initializedPainter(pp: Painter?) {
         pp?.let { p ->
             rectAlloc.set(layerBounds)
-            p.initialize(context, canvasMatrix, imageviewMatrix, rectAlloc)
+            p.initialize(context, canvasMatrix, imageviewMatrix, RectF(layerBounds))
             p.onLayerChanged(selectedLayer)
             if (this::bitmapReference.isInitialized) {
                 p.onReferenceLayerCreated(bitmapReference)
@@ -694,11 +694,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             // Concat the canvas to 'canvasMatrix'.
             concat(canvasMatrix)
 
+            concat(imageviewMatrix)
             if (isAllLayersCached) {
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
-
-                concat(imageviewMatrix)
 
                 drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
 
@@ -707,8 +706,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 drawBitmap(cachedLayer, 0f, 0f, layersPaint)
 
             } else {
-                concat(imageviewMatrix)
-
                 if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
                     layersPaint.xfermode = null
                     layersPaint.alpha = 255
