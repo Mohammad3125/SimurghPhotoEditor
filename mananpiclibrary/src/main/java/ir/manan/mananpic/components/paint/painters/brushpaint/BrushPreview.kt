@@ -18,6 +18,10 @@ import kotlin.random.Random
 class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context, attributeSet) {
     constructor(context: Context) : this(context, null)
 
+    init {
+        setLayerType(LAYER_TYPE_HARDWARE, null)
+    }
+
     var brush: Brush? = null
         set(value) {
             field = value
