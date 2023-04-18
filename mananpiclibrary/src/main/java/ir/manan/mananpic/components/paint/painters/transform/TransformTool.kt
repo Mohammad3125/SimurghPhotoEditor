@@ -522,6 +522,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
 
         findSmartGuideLines()
+        findRotationSmartGuidelines()
 
         firstSelectedIndex = -1
         secondSelectedIndex = -1
