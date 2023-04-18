@@ -715,7 +715,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         return _selectedChild != null
     }
 
-    override fun onTransformed(transformMatrix: MananMatrix) {
+    override fun onTransformed(transformMatrix: Matrix) {
         _selectedChild?.let {
             it.transformationMatrix.postConcat(transformMatrix)
             findSmartGuideLines()
@@ -1317,6 +1317,29 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
      */
     fun getRotationSmartGuidelineDegreeHolder() = smartRotationDegreeHolder
 
+    fun applyMatrix(matrix: Matrix) {
+        onTransformed(matrix)
+    }
+
+    fun setMatrix(matrix: Matrix) {
+        _selectedChild?.apply {
+            transformationMatrix.set(matrix)
+            findSmartGuideLines()
+            findRotationSmartGuidelines()
+            mergeMatrices(this)
+            sendMessage(PainterMessage.INVALIDATE)
+            invalidate()
+        }
+    }
+
+    fun getSelectedChildBounds(rect: RectF): Boolean {
+        _selectedChild?.let { child ->
+            mapFinalPointsForDraw(child)
+            calculateMaximumRect(child, rect, mappedMeshPoints)
+            return true
+        }
+        return false
+    }
 
     private data class Child(
         val transformable: Transformable,

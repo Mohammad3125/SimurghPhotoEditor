@@ -82,7 +82,7 @@ abstract class Painter {
         return false
     }
 
-    open fun onTransformed(transformMatrix: MananMatrix) {
+    open fun onTransformed(transformMatrix: Matrix) {
     }
 
     open fun onReferenceLayerCreated(reference: Bitmap) {
