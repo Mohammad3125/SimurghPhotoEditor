@@ -189,7 +189,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 polyMatrix.reset()
 
                 if (targetRect == null) {
-                    centerMatrix.setRectToRect(
+                    transformationMatrix.setRectToRect(
                         targetComponentBounds,
                         bounds,
                         Matrix.ScaleToFit.CENTER
@@ -236,7 +236,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         child.apply {
             transformable.getBounds(targetComponentBounds)
 
-            centerMatrix.setRectToRect(
+            transformationMatrix.setRectToRect(
                 targetComponentBounds,
                 rect,
                 Matrix.ScaleToFit.CENTER
@@ -474,7 +474,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private fun mapFinalPointsForDraw(child: Child) {
         child.apply {
             mappingMatrix.set(transformationMatrix)
-            mappingMatrix.preConcat(centerMatrix)
 
             meshPoints.copyInto(mappedMeshPoints)
             mappingMatrix.mapPoints(mappedMeshPoints)
@@ -549,15 +548,12 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         child.apply {
             transformationMatrix.invert(mappingMatrix)
             mappingMatrix.mapPoints(array)
-            centerMatrix.invert(mappingMatrix)
-            mappingMatrix.mapPoints(array)
         }
     }
 
     private fun mapMeshPoints(child: Child, array: FloatArray) {
         child.apply {
             polyMatrix.mapPoints(array)
-            centerMatrix.mapPoints(array)
             transformationMatrix.mapPoints(array)
         }
     }
@@ -652,13 +648,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                     )
                 }
 
-                canvas.save()
-                canvas.concat(child.transformationMatrix)
-                val strokeWidth = smartGuidePaint.strokeWidth
-                smartGuidePaint.strokeWidth /= child.transformationMatrix.getRealScaleX()
                 canvas.drawLines(smartRotationLineHolder, smartGuidePaint)
-                smartGuidePaint.strokeWidth = strokeWidth
-                canvas.restore()
             }
 
 
@@ -1040,7 +1030,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
         child.apply {
             mappingMatrix.set(transformationMatrix)
-            mappingMatrix.preConcat(centerMatrix)
             mappingMatrix.preConcat(polyMatrix)
         }
     }
@@ -1103,7 +1092,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     fun addChild(transformable: Transformable, targetRect: RectF?) {
         _selectedChild = Child(
-            transformable, MananMatrix(), MananMatrix(), MananMatrix(), FloatArray(8),
+            transformable, MananMatrix(), MananMatrix(), FloatArray(8),
             FloatArray(8), targetRect
         )
 
@@ -1255,11 +1244,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 mapFinalPointsForDraw(child)
 
-                mappingMatrix.set(child.transformationMatrix)
-                mappingMatrix.preConcat(child.centerMatrix)
-
                 val imageRotation =
-                    mappingMatrix.run {
+                    child.transformationMatrix.run {
                         GestureUtils.mapTo360(
                             -atan2(
                                 getSkewX(true),
@@ -1278,14 +1264,16 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                         tempRect.centerY()
                     )
 
-                    val centerXBound = bounds.centerX()
-                    val s = child.transformationMatrix.getRealScaleX()
-                    val pW = max(bounds.width(), bounds.height()) / s
+                    val centerXBound = tempRect.centerX()
 
                     smartRotationLineHolder[0] = (centerXBound)
-                    smartRotationLineHolder[1] = (-pW)
+                    smartRotationLineHolder[1] = (-10000f)
                     smartRotationLineHolder[2] = (centerXBound)
-                    smartRotationLineHolder[3] = (pW)
+                    smartRotationLineHolder[3] = (10000f)
+
+                    mappingMatrix.setRotate(imageRotation, tempRect.centerX(), tempRect.centerY())
+                    mappingMatrix.mapPoints(smartRotationLineHolder)
+
                     return true
                 }
             }
@@ -1333,7 +1321,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private data class Child(
         val transformable: Transformable,
         val transformationMatrix: MananMatrix,
-        val centerMatrix: MananMatrix,
         val polyMatrix: MananMatrix,
         val baseSizeChangeArray: FloatArray,
         val meshPoints: FloatArray,
