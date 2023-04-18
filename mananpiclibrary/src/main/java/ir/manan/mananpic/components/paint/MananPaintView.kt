@@ -1223,6 +1223,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         onLayersChanged?.invoke(layers, selectedLayerIndex)
     }
 
+    fun applyMatrix(matrix: Matrix) {
+        canvasMatrix.postConcat(matrix)
+        invalidate()
+    }
+
+    fun setMatrix(matrix: Matrix) {
+        canvasMatrix.set(matrix)
+        invalidate()
+    }
+
     private class State(
         val ref: PaintLayer,
         val clonedLayer: PaintLayer,
