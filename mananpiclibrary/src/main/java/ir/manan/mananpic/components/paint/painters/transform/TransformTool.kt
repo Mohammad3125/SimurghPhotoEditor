@@ -146,7 +146,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     ) {
 
         if (acceptableDistanceForSmartGuideline == 0f) {
-            acceptableDistanceForSmartGuideline = context.dp(2)
+            acceptableDistanceForSmartGuideline = context.dp(1)
         }
 
         if (!this::handleDrawable.isInitialized) {
