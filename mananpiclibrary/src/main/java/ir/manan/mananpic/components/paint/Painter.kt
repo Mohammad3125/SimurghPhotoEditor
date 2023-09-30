@@ -82,7 +82,15 @@ abstract class Painter {
         return false
     }
 
+    open fun onTransformBegin() {
+
+    }
+
     open fun onTransformed(transformMatrix: Matrix) {
+    }
+
+    open fun onTransformEnded() {
+
     }
 
     open fun onReferenceLayerCreated(reference: Bitmap) {

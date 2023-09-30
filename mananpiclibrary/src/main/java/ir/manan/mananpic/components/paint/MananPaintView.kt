@@ -420,6 +420,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             secondPointerInitialY = getY(1)
 
                             isMatrixGesture = true
+
+                            painter.onTransformBegin()
                         }
                     }
                     MotionEvent.ACTION_MOVE -> {
@@ -517,6 +519,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         } else if (shouldEndMoveOnPainter()) {
                             checkForStateSave()
                             callPainterOnMoveEnd(x, y)
+                        }
+
+                        if (isMoved) {
+                            painter.onTransformEnded()
                         }
 
                         cacheLayers()
