@@ -51,6 +51,20 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     protected val redoStack = Stack<Bitmap>()
 
+    var maskColor = Color.BLACK
+        set(value) {
+            field = value
+            maskPaint.colorFilter = LightingColorFilter(field, field)
+            sendMessage(PainterMessage.INVALIDATE)
+        }
+
+    var maskOpacity = 255
+    set(value) {
+        field = value
+        maskPaint.alpha = field
+        sendMessage(PainterMessage.INVALIDATE)
+    }
+
     override fun initialize(
         context: Context,
         transformationMatrix: MananMatrix,
@@ -156,8 +170,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     fun copy(): Bitmap? {
         setClipper()
-        val copied = clipper.copy()
-        return copied
+        return clipper.copy()
     }
 
     private fun saveState() {
@@ -216,16 +229,6 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     private fun restoreBitmapState(bitmap: Bitmap) {
         maskLayer.bitmap = bitmap.copy(bitmap.config, true)
-    }
-
-    fun setMaskOpacity(opacity: Int) {
-        maskPaint.alpha = opacity
-        sendMessage(PainterMessage.INVALIDATE)
-    }
-
-    fun setMaskColor(color: Int) {
-        maskPaint.colorFilter = LightingColorFilter(color, color)
-        sendMessage(PainterMessage.INVALIDATE)
     }
 
 }
