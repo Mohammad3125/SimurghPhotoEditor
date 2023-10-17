@@ -426,7 +426,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     }
                     MotionEvent.ACTION_MOVE -> {
 
-                        val finalSlope = abs(scaledTouchSlope / canvasMatrix.getRealScaleX())
+                        val finalSlope = if(painter.doesNeedTouchSlope()) {
+                            abs(scaledTouchSlope / canvasMatrix.getRealScaleX())
+                        } else {
+                            0f
+                        }
 
                         val firstFingerDx = (x - initialX)
                         val firstFingerDy = (y - initialY)

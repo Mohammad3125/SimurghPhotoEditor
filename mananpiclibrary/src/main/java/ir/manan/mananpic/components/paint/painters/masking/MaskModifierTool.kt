@@ -1,12 +1,20 @@
 package ir.manan.mananpic.components.paint.painters.masking
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LightingColorFilter
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.selection.clippers.BitmapMaskClipper
 import ir.manan.mananpic.utils.MananMatrix
-import java.util.*
+import java.util.Stack
 
 class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.MessageChannel {
 
@@ -225,6 +233,10 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     override fun doesHandleHistory(): Boolean {
         return true
+    }
+
+    override fun doesNeedTouchSlope(): Boolean {
+        return maskTool?.doesNeedTouchSlope() == true
     }
 
     private fun restoreBitmapState(bitmap: Bitmap) {

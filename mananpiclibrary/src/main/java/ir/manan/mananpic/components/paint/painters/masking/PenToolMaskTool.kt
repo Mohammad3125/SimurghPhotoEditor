@@ -2,7 +2,17 @@ package ir.manan.mananpic.components.paint.painters.masking
 
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ComposePathEffect
+import android.graphics.CornerPathEffect
+import android.graphics.DashPathEffect
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.paint.PaintLayer
@@ -11,7 +21,7 @@ import ir.manan.mananpic.components.selection.selectors.PenSelector
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
-import java.util.*
+import java.util.Stack
 import kotlin.math.abs
 
 class PenToolMaskTool : Painter() {
@@ -86,7 +96,7 @@ class PenToolMaskTool : Painter() {
      * Type of line that is going to be drawn in the next touch down.
      * @see LineType
      */
-    var lineType = LineType.CUBIC_BEZIER
+    var lineType = LineType.NORMAL
         set(value) {
             // Set original path to temp path if user changes
             // the type of line while a temporary line has been
@@ -216,6 +226,8 @@ class PenToolMaskTool : Painter() {
     private lateinit var canvasMatrix: MananMatrix
 
     private var selectedLayer: PaintLayer? = null
+
+    private var vectorHolder = FloatArray(2)
 
     override fun initialize(
         context: Context,
@@ -398,16 +410,16 @@ class PenToolMaskTool : Painter() {
 
     override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
         // If path is closed then offset (move around) path if user moves his/her finger.
-
-        val e = floatArrayOf(dx, dy)
-
-        canvasMatrix.invert(mappingMatrix)
-        mappingMatrix.mapVectors(e)
-
-        val tdx = e[0]
-        val tdy = e[1]
-
         if (isPathClose && currentHandleSelected == Handle.NONE) {
+
+            vectorHolder[0] = dx
+            vectorHolder[1] = dy
+
+            canvasMatrix.invert(mappingMatrix)
+            mappingMatrix.mapVectors(vectorHolder)
+
+            val tdx = vectorHolder[0]
+            val tdy = vectorHolder[1]
 
             mappingMatrix.setTranslate(tdx, tdy)
 
@@ -794,6 +806,10 @@ class PenToolMaskTool : Painter() {
 
     override fun onLayerChanged(layer: PaintLayer?) {
         selectedLayer = layer
+    }
+
+    override fun doesNeedTouchSlope(): Boolean {
+        return false
     }
 
     private enum class Handle {

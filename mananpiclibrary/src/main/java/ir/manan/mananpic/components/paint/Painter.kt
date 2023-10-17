@@ -109,6 +109,10 @@ abstract class Painter {
 
     }
 
+    open fun doesNeedTouchSlope() : Boolean  {
+        return true
+    }
+
     interface MessageChannel {
         fun onSendMessage(message: PainterMessage)
     }
