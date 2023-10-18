@@ -9,8 +9,6 @@ android {
     defaultConfig {
         minSdk 18
         targetSdk 33
-        versionCode 5
-        versionName "0.5.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -29,6 +27,7 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    namespace 'ir.manan.mananpic'
 }
 
 dependencies {
