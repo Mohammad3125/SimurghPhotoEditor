@@ -466,6 +466,7 @@ class PenToolMaskTool : Painter() {
                     }
                     sendMessage(PainterMessage.INVALIDATE)
                 }
+
                 Handle.END_HANDLE -> {
                     selectedLine?.run {
                         epx = ex
@@ -504,6 +505,7 @@ class PenToolMaskTool : Painter() {
 
                     sendMessage(PainterMessage.INVALIDATE)
                 }
+
                 Handle.NONE -> {
 
                 }
@@ -647,19 +649,24 @@ class PenToolMaskTool : Painter() {
         }
     }
 
-    private fun drawLinesIntoPath() {
+    private fun drawLinesIntoPath(targetPath: Path) {
         // Move the allocation path to first point.
-        path.moveTo(firstX, firstY)
+        targetPath.moveTo(firstX, firstY)
 
         // Draw lines in stack of lines one by one relative to each other.
         lines.forEach {
-            it.putIntoPath(path)
+            it.putIntoPath(targetPath)
         }
     }
 
+    fun getPathCopy(): Path {
+        val cPath = Path()
+        drawLinesIntoPath(cPath)
+        return cPath
+    }
 
     fun applyOnMaskLayer() {
-        drawLinesIntoPath()
+        drawLinesIntoPath(path)
         selectedLayer?.let { maskLayer ->
             canvasApply.setBitmap(maskLayer.bitmap)
             linesPaint.style = Paint.Style.FILL
@@ -731,7 +738,7 @@ class PenToolMaskTool : Painter() {
     override fun draw(canvas: Canvas) {
         canvas.run {
 
-            drawLinesIntoPath()
+            drawLinesIntoPath(path)
 
             drawPath(path, linesPaint)
 
