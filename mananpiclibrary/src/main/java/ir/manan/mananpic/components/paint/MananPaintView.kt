@@ -304,6 +304,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun setImageBitmap(bitmap: Bitmap?) {
         if (bitmap != null) {
+
+            if(!bitmap.isMutable) {
+                throw IllegalStateException("Bitmap should be mutable")
+            }
+
             this.bitmap = bitmap
             isNewBitmap = true
             bitmapWidth = bitmap.width
