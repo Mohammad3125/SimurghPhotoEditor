@@ -140,14 +140,14 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
     }
 
-    override fun onDown(e: MotionEvent?): Boolean {
+    override fun onDown(p0: MotionEvent): Boolean {
         return false
     }
 
-    override fun onShowPress(e: MotionEvent?) {
+    override fun onShowPress(p0: MotionEvent) {
     }
 
-    override fun onSingleTapUp(e: MotionEvent?): Boolean {
+    override fun onSingleTapUp(p0: MotionEvent): Boolean {
         if (selectedCircleHandleIndex != -1 && !isNewCircleCreated) {
             callCircleListeners(selectedCircleHandleIndex)
             return true
@@ -157,15 +157,15 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onScroll(
-        e1: MotionEvent?,
-        e2: MotionEvent?,
+        p0: MotionEvent,
+        p1: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
         return false
     }
 
-    override fun onLongPress(e: MotionEvent?) {
+    override fun onLongPress(p0: MotionEvent) {
         if (circleHandles.size > 2) {
             circleHandles.removeAt(selectedCircleHandleIndex)
             shouldChangeShader = true
@@ -175,8 +175,8 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onFling(
-        e1: MotionEvent?,
-        e2: MotionEvent?,
+        p0: MotionEvent,
+        p1: MotionEvent,
         velocityX: Float,
         velocityY: Float
     ): Boolean {

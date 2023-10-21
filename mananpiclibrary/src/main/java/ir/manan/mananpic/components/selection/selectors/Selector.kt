@@ -2,7 +2,6 @@ package ir.manan.mananpic.components.selection.selectors
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.Drawable
 import ir.manan.mananpic.utils.MananMatrix
 
 /**
@@ -61,9 +60,9 @@ abstract class Selector {
 
     /**
      * Selects(Crops/Clips) the selected area by user.
-     * @param drawable That is going to be clipped/cropped.
+     * @param bitmap That is going to be clipped/cropped.
      */
-    abstract fun select(drawable: Drawable): Bitmap?
+    abstract fun select(bitmap: Bitmap): Bitmap?
 
     /**
      * Draws any content that a selector might draw; for example [BrushSelector] draws circle indicating

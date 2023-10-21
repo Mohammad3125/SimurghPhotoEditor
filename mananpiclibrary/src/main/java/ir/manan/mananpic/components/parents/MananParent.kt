@@ -98,15 +98,15 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     private var onChildrenChanged: ((View, Boolean) -> Unit)? = null
     private var onChildrenChangedListener: OnChildrenListChanged? = null
 
-    override fun onScale(detector: ScaleGestureDetector?): Boolean {
+    override fun onScale(p0: ScaleGestureDetector): Boolean {
         return true
     }
 
-    override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+    override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
         return true
     }
 
-    override fun onScaleEnd(detector: ScaleGestureDetector?) {
+    override fun onScaleEnd(p0: ScaleGestureDetector) {
         // Set 'isMoved' to true to prevent selecting the target view if it's been in user touch locations.
         isMoved = true
         animateCanvasBack()
@@ -165,11 +165,11 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
         currentEditingView = newChild
     }
 
-    override fun onRotateBegin(initialDegree: Float): Boolean {
+    override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
         return true
     }
 
-    override fun onRotate(degree: Float): Boolean {
+    override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
         return true
     }
 
@@ -187,9 +187,11 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (isGesturesEnabled) {
-            scaleDetector?.onTouchEvent(event)
-            rotationDetector?.onTouchEvent(event)
-            translationDetector?.onTouchEvent(event)
+            event?.let { ev ->
+                scaleDetector?.onTouchEvent(ev)
+                rotationDetector?.onTouchEvent(ev)
+                translationDetector?.onTouchEvent(ev)
+            }
             return true
         }
         return false
@@ -391,10 +393,10 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
                 }
             }
 
-            override fun writeToParcel(out: Parcel?, flags: Int) {
-                super.writeToParcel(out, flags)
+            override fun writeToParcel(dest: Parcel, flags: Int) {
+                super.writeToParcel(dest, flags)
                 childrenArray?.let {
-                    out?.writeArray(it)
+                    dest.writeArray(it)
                 }
             }
         }

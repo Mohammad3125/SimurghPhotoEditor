@@ -1,0 +1,451 @@
+package ir.manan.mananpic.components.paint.painters.transform
+
+import android.graphics.*
+import ir.manan.mananpic.components.shapes.MananShape
+import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.utils.MananMatrix
+import kotlin.math.min
+
+class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int) : Transformable(),
+    Bitmapable, StrokeCapable, Colorable,
+    Texturable, Gradientable,
+    Shadowable, Blendable {
+
+    var shape = shape
+        set(value) {
+            field = value
+            strokeShape = field.clone()
+            invalidate()
+        }
+
+    private var shadowRadius = 0f
+    private var trueShadowRadius = 0f
+    private var shadowDx = 0f
+    private var shadowDy = 0f
+    private var shadowLColor = Color.YELLOW
+    private var isShadowCleared = true
+
+    private var strokeShape = shape.clone()
+
+    private var rawWidth = 0f
+    private var rawHeight = 0f
+
+    private val shapePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    private var paintShader: Shader? = null
+
+    private var shaderRotationHolder = 0f
+
+    var shapeColor = Color.BLACK
+        set(value) {
+            field = value
+            shapePaint.color = value
+            invalidate()
+        }
+
+    private var strokeSize = 0f
+
+    private var strokeColor = Color.BLACK
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    private val shaderMatrix = MananMatrix()
+
+    private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
+
+    private var gradientColors: IntArray? = null
+
+    private var gradientPositions: FloatArray? = null
+
+    private var pivotX = 0f
+    private var pivotY = 0f
+
+    override fun changeColor(color: Int) {
+        shapeColor = color
+    }
+
+    override fun getColor(): Int {
+        return shapeColor
+    }
+
+    override fun clone(): ShapePainter {
+        return ShapePainter(shape.clone(), shapeWidth, shapeHeight).also { painter ->
+            painter.shapeColor = shapeColor
+            painter.shapePaint.style = shapePaint.style
+            painter.shapePaint.strokeWidth = shapePaint.strokeWidth
+            painter.shapePaint.pathEffect = shapePaint.pathEffect
+
+            painter.strokeSize = strokeSize
+            painter.strokeColor = strokeColor
+            painter.shaderRotationHolder = shaderRotationHolder
+            painter.paintShader = paintShader
+            painter.shaderMatrix.set(shaderMatrix)
+            painter.shapePaint.shader = paintShader
+            if (painter.shapePaint.shader != null) {
+                painter.shapePaint.shader.setLocalMatrix(shaderMatrix)
+            }
+            painter.shapePaint.maskFilter = shapePaint.maskFilter
+            if (blendMode != PorterDuff.Mode.SRC) {
+                painter.setBlendMode(blendMode)
+            }
+            painter.setShadow(
+                trueShadowRadius,
+                shadowDx,
+                shadowDy,
+                shadowLColor
+            )
+            if (gradientColors != null) {
+                painter.gradientColors = gradientColors!!.clone()
+            }
+            if (gradientPositions != null) {
+                painter.gradientPositions = gradientPositions!!.clone()
+            }
+        }
+    }
+
+
+    override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
+        strokeSize = strokeRadiusPx
+        this.strokeColor = strokeColor
+        indicateBoundsChange()
+    }
+
+    override fun getStrokeColor(): Int {
+        return strokeColor
+    }
+
+    override fun getStrokeWidth(): Float {
+        return strokeSize
+    }
+
+
+    override fun applyTexture(bitmap: Bitmap) {
+        applyTexture(bitmap, Shader.TileMode.MIRROR)
+    }
+
+    /**
+     * Applies a texture to the text with default tileMode of [Shader.TileMode.REPEAT]
+     * @param bitmap The bitmap texture that is going to be applied to the view.
+     * @param tileMode The bitmap mode [Shader.TileMode]
+     */
+    override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
+        paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+        invalidate()
+    }
+
+
+    override fun shiftColor(dx: Float, dy: Float) {
+        shapePaint.shader?.run {
+            shaderMatrix.postTranslate(dx, dy)
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun scaleColor(scaleFactor: Float) {
+        shapePaint.shader?.run {
+            shaderMatrix.postScale(
+                scaleFactor, scaleFactor, pivotX,
+                pivotY
+            )
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun rotateColor(rotation: Float) {
+        shapePaint.shader?.run {
+            shaderMatrix.postRotate(
+                rotation - shaderRotationHolder,
+                pivotX,
+                pivotY
+            )
+
+            shaderRotationHolder = rotation
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun resetComplexColorMatrix() {
+        shapePaint.shader?.run {
+            shaderMatrix.reset()
+            shaderRotationHolder = 0f
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun removeTexture() {
+        paintShader = null
+        shapePaint.shader = null
+        invalidate()
+    }
+
+    override fun toBitmap(config: Bitmap.Config): Bitmap? {
+        return Bitmap.createBitmap(
+            rawWidth.toInt(),
+            rawHeight.toInt(),
+            config
+        ).also { bitmap ->
+            draw(Canvas(bitmap))
+        }
+    }
+
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap? {
+        val wStroke = rawWidth
+        val hStroke = rawHeight
+
+        val scale = min(width.toFloat() / wStroke, height.toFloat() / hStroke)
+
+        val ws = (wStroke * scale)
+        val hs = (hStroke * scale)
+
+        val outputBitmap = Bitmap.createBitmap(width, height, config)
+
+        val extraWidth = width - ws
+        val extraHeight = height - hs
+
+        Canvas(outputBitmap).run {
+            translate(extraWidth * 0.5f, extraHeight * 0.5f)
+
+            scale(ws / wStroke, hs / hStroke)
+
+            draw(this)
+        }
+
+        return outputBitmap
+    }
+
+    override fun applyLinearGradient(
+        x0: Float,
+        y0: Float,
+        x1: Float,
+        y1: Float,
+        colors: IntArray,
+        position: FloatArray?,
+        tileMode: Shader.TileMode
+    ) {
+        gradientColors = colors
+        gradientPositions = position
+
+        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader =
+            LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+                setLocalMatrix(shaderMatrix)
+            }
+
+        invalidate()
+    }
+
+    override fun applyRadialGradient(
+        centerX: Float,
+        centerY: Float,
+        radius: Float,
+        colors: IntArray,
+        stops: FloatArray?,
+        tileMode: Shader.TileMode
+    ) {
+        gradientColors = colors
+        gradientPositions = stops
+
+        paintShader = RadialGradient(
+            centerX,
+            centerY,
+            radius,
+            colors,
+            stops,
+            tileMode
+        ).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader =
+            RadialGradient(
+                centerX,
+                centerY,
+                radius,
+                colors,
+                stops,
+                tileMode
+            ).apply {
+                setLocalMatrix(shaderMatrix)
+            }
+        invalidate()
+    }
+
+    override fun applySweepGradient(
+        cx: Float,
+        cy: Float,
+        colors: IntArray,
+        positions: FloatArray?
+    ) {
+        gradientColors = colors
+        gradientPositions = positions
+
+        paintShader = SweepGradient(cx, cy, colors, positions).apply {
+            setLocalMatrix(shaderMatrix)
+        }
+
+        shapePaint.shader =
+            SweepGradient(cx, cy, colors, positions).apply {
+                setLocalMatrix(shaderMatrix)
+            }
+        invalidate()
+    }
+
+    override fun removeGradient() {
+        paintShader = null
+        shapePaint.shader = null
+        gradientColors = null
+        gradientPositions = null
+        invalidate()
+    }
+
+    override fun isGradientApplied(): Boolean {
+        return (shapePaint.shader != null && (shapePaint.shader is LinearGradient || shapePaint.shader is RadialGradient || shapePaint.shader is SweepGradient))
+    }
+
+    override fun getShadowDx(): Float {
+        return shadowDx
+    }
+
+    override fun getShadowDy(): Float {
+        return shadowDy
+    }
+
+    override fun getShadowRadius(): Float {
+        return trueShadowRadius
+    }
+
+    override fun getShadowColor(): Int {
+        return shadowLColor
+    }
+
+    override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
+        shadowRadius = radius
+        trueShadowRadius = radius
+        shadowDx = dx
+        shadowDy = dy
+        shadowLColor = shadowColor
+        invalidate()
+    }
+
+    override fun clearShadow() {
+        shapePaint.clearShadowLayer()
+        shadowRadius = 0f
+        shadowDx = 0f
+        shadowDy = 0f
+        shadowLColor = Color.YELLOW
+        isShadowCleared = true
+        invalidate()
+    }
+
+    override fun setBlendMode(blendMode: PorterDuff.Mode) {
+        shapePaint.xfermode = PorterDuffXfermode(blendMode)
+        this.blendMode = blendMode
+        invalidate()
+    }
+
+    override fun clearBlend() {
+        shapePaint.xfermode = null
+        blendMode = PorterDuff.Mode.SRC
+        invalidate()
+    }
+
+    override fun getBlendMode(): PorterDuff.Mode {
+        return blendMode
+    }
+
+    override fun reportPositions(): FloatArray? {
+        return gradientPositions
+    }
+
+    override fun reportColors(): IntArray? {
+        return gradientColors
+    }
+
+
+    override fun getBounds(bounds: RectF) {
+        rawWidth = shapeWidth.toFloat()
+        rawHeight = shapeHeight.toFloat()
+
+        shape.resize(rawWidth, rawHeight)
+
+        strokeShape.resize(rawWidth + strokeSize, rawHeight + strokeSize)
+
+        val finalS = strokeSize * 2f
+
+        rawWidth += finalS
+        rawHeight += finalS
+
+        pivotX = rawWidth * 0.5f
+        pivotY = rawHeight * 0.5f
+
+        bounds.set(0f, 0f, rawWidth, rawHeight)
+    }
+
+    override fun draw(canvas: Canvas) {
+        canvas.run {
+            val half = strokeSize * 0.5f
+
+            save()
+
+            translate(half, half)
+
+            if (shadowRadius > 0) {
+                val currentColor = shapeColor
+                val currentStyle = shapePaint.style
+                val currentShader = shapePaint.shader
+                shapePaint.shader = null
+                shapePaint.style = Paint.Style.FILL_AND_STROKE
+                shapePaint.strokeWidth = strokeSize
+
+                shapePaint.setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowLColor)
+
+                shape.draw(canvas, shapePaint)
+
+                shapePaint.shader = currentShader
+                shapePaint.style = currentStyle
+                shapePaint.strokeWidth = 0f
+                shapePaint.color = currentColor
+
+                shapePaint.clearShadowLayer()
+            }
+
+            if (strokeSize > 0f) {
+                val currentColor = shapeColor
+                val currentStyle = shapePaint.style
+                shapePaint.style = Paint.Style.STROKE
+                shapePaint.strokeWidth = strokeSize
+                val currentShader = shapePaint.shader
+                shapePaint.shader = null
+                shapePaint.color = strokeColor
+
+                strokeShape.draw(canvas, shapePaint)
+
+                shapePaint.shader = currentShader
+                shapePaint.style = currentStyle
+                shapePaint.strokeWidth = 0f
+                shapePaint.color = currentColor
+            }
+
+            restore()
+
+            translate(strokeSize, strokeSize)
+
+            shape.draw(canvas, shapePaint)
+        }
+    }
+}

@@ -2,7 +2,6 @@ package ir.manan.mananpic.components.selection.selectors
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.Drawable
 import ir.manan.mananpic.utils.BitmapUtility
 import ir.manan.mananpic.utils.MananMatrix
 import java.util.*
@@ -18,6 +17,10 @@ abstract class PathBasedSelector : Selector() {
     protected var topEdge = 0f
     protected var rightEdge = 0f
     protected var bottomEdge = 0f
+
+    private val bitmapPaint by lazy {
+        Paint()
+    }
 
     /**
      * Determines if path is closed or not.
@@ -64,7 +67,7 @@ abstract class PathBasedSelector : Selector() {
         canvasMatrix = matrix
     }
 
-    override fun select(drawable: Drawable): Bitmap? {
+    override fun select(bitmap: Bitmap): Bitmap? {
         // Only select if path is closed.
         if (isClosed()) {
             // Get selected bound of normal path (path that is not scaled.)
@@ -90,7 +93,7 @@ abstract class PathBasedSelector : Selector() {
             ) return null
 
             // Get how much the current bitmap displayed is scaled comparing to original drawable size.
-            val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
+            val totalScaled = bitmap.width / (rightEdge - leftEdge)
 
             // Scale the path to that scale value by using Matrix.
             val scaledPoint = Path(path).apply {
@@ -158,11 +161,10 @@ abstract class PathBasedSelector : Selector() {
                 // Translate the drawable to left edge and top edge of current image and
                 // draw it.
                 translate(leftEdge, topEdge)
-                drawable.draw(this)
+                drawBitmap(bitmap, 0f, 0f, bitmapPaint)
             }
 
             resetSelection()
-
 
             return BitmapUtility.downSizeBitmap(
                 createdBitmap,

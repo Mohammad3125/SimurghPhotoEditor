@@ -9,8 +9,7 @@ interface Bitmapable {
      */
     fun toBitmap(
         config: Bitmap.Config = Bitmap.Config.ARGB_8888,
-        ignoreAxisScale: Boolean = true
-    ): Bitmap
+    ): Bitmap?
 
     /**
      * Converts content to bitmap.
@@ -22,6 +21,5 @@ interface Bitmapable {
         width: Int,
         height: Int,
         config: Bitmap.Config = Bitmap.Config.ARGB_8888,
-        ignoreAxisScale: Boolean = true
-    ): Bitmap
+    ): Bitmap?
 }

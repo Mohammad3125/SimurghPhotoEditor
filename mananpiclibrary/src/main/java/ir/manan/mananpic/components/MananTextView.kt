@@ -482,8 +482,7 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         requestLayout()
     }
 
-    override fun toBitmap(config: Bitmap.Config, ignoreAxisScale: Boolean): Bitmap {
-        if (ignoreAxisScale) {
+    override fun toBitmap(config: Bitmap.Config): Bitmap? {
             return Bitmap.createBitmap(
                 width,
                 height,
@@ -491,38 +490,14 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             ).also { bitmap ->
                 draw(Canvas(bitmap))
             }
-        } else {
-            val wStroke = width
-            val hStroke = height
-
-            var w = wStroke * scaleX
-            var h = hStroke * scaleY
-            val s = max(wStroke, hStroke) / max(w, h)
-            w *= s
-            h *= s
-            return Bitmap.createBitmap(
-                w.toInt(),
-                h.toInt(),
-                config
-            ).also { bitmap ->
-                draw(Canvas(bitmap).also { canvas ->
-                    canvas.scale(w / wStroke, h / hStroke)
-                })
-            }
-        }
     }
 
-    override fun toBitmap(
-        width: Int,
-        height: Int,
-        config: Bitmap.Config,
-        ignoreAxisScale: Boolean
-    ): Bitmap {
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap? {
         val wStroke = this.width
         val hStroke = this.height
 
-        var w = if (ignoreAxisScale) wStroke.toFloat() else wStroke * scaleX
-        var h = if (ignoreAxisScale) hStroke.toFloat() else hStroke * scaleY
+        var w =  wStroke.toFloat()
+        var h =  hStroke.toFloat()
 
         val s = max(wStroke, hStroke) / max(w, h)
 

@@ -127,8 +127,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
                 }
                 MotionEvent.ACTION_MOVE -> {
                     // Determine total amount that user moved his/her finger on screen.
-                    val dx : Float
-                    val dy : Float
+                    val dx: Float
+                    val dy: Float
 
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
@@ -213,23 +213,22 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         initialY = ey
     }
 
-    override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+    override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
         isMatrixGesture = true
         return !matrixAnimator.isAnimationRunning()
     }
 
-    override fun onScale(detector: ScaleGestureDetector?): Boolean {
-        detector?.run {
+    override fun onScale(p0: ScaleGestureDetector): Boolean {
+        p0.run {
             val sf = scaleFactor
             canvasMatrix.postScale(sf, sf, focusX, focusY)
             invalidate()
             return true
         }
-        return false
     }
 
-    override fun onScaleEnd(detector: ScaleGestureDetector?) {
-        super.onScaleEnd(detector)
+    override fun onScaleEnd(p0: ScaleGestureDetector) {
+        super.onScaleEnd(p0)
         animateCanvasBack()
     }
 
@@ -240,35 +239,24 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     private fun mapTouchPoints(touchX: Float, touchY: Float): FloatArray {
         touchPointMappedArray[0] = touchX
         touchPointMappedArray[1] = touchY
-        mappingMatrix.run {
 
-            val tx = canvasMatrix.getTranslationX(true)
-            val ty = canvasMatrix.getTranslationY()
+        canvasMatrix.invert(mappingMatrix)
+        mappingMatrix.mapPoints(touchPointMappedArray)
 
-            setTranslate(
-                -tx, -ty
-            )
-
-            val scale = canvasMatrix.getOppositeScale()
-            postScale(scale, scale)
-
-            mapPoints(touchPointMappedArray)
-
-        }
         return touchPointMappedArray
     }
 
     fun select(): Bitmap? {
         var b: Bitmap? = null
-        if (drawable != null && selector != null) {
-            b = selector!!.select(drawable)
+        if (bitmap != null && selector != null) {
+            b = selector!!.select(bitmap!!)
             callOnStateChangeListeners(selector!!.isClosed())
         }
         return b
     }
 
-    override fun setImageBitmap(bm: Bitmap?) {
-        super.setImageBitmap(bm)
+    override fun setImageBitmap(bitmap: Bitmap?) {
+        super.setImageBitmap(bitmap)
         canvasMatrix.reset()
     }
 
@@ -354,9 +342,11 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
     fun getPathData(): Path? {
         selector?.getClipPath()?.run {
 
-
+            if(bitmap == null) {
+                return null
+            }
             // Get how much the current bitmap displayed is scaled comparing to original drawable size.
-            val totalScaled = drawable.intrinsicWidth / (rightEdge - leftEdge)
+            val totalScaled = bitmap!!.width / (rightEdge - leftEdge)
 
             return Path(this).apply {
                 transform(mappingMatrix.apply {

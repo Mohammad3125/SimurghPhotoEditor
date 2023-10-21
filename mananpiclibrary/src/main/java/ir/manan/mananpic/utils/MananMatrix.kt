@@ -1,6 +1,7 @@
 package ir.manan.mananpic.utils
 
 import android.graphics.Matrix
+import kotlin.math.sqrt
 
 /**
  * A class that extends [Matrix] and provides custom function and cleaner interface for retrieving matrix values.
@@ -32,6 +33,24 @@ class MananMatrix : Matrix() {
         }
 
         return matrixValueHolder[MSCALE_X]
+    }
+
+    /**
+     * Returns real scale. If rotation is applied to matrix the scale value will change; this method returns the true unaffected scale value.
+     */
+    fun getRealScaleX(): Float {
+        val sx = getScaleX(true)
+        val skewY = getSkewY()
+        return sqrt(sx * sx + skewY * skewY)
+    }
+
+    /**
+     * Returns real scale. If rotation is applied to matrix the scale value will change; this method returns the true unaffected scale value.
+     */
+    fun getRealScaleY() : Float{
+        val sy = getScaleY(true)
+        val skewX = getSkewX()
+        return sqrt(sy * sy + skewX * skewX)
     }
 
     /**
