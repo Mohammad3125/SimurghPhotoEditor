@@ -3,7 +3,6 @@ package ir.manan.mananpic.components.cropper.aspect_ratios
 import android.graphics.RectF
 import ir.manan.mananpic.components.cropper.AspectRatio
 import ir.manan.mananpic.components.cropper.HandleBar
-import ir.manan.mananpic.components.cropper.HandleBar.*
 import kotlin.math.min
 
 /**
@@ -18,63 +17,46 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
         rect.run {
             val ratio = getRatio()
 
-            // We add these two in case user moves finger on two coordinates.
-            val differenceForTopLeftAndBottomRight = dx + dy
-            val differenceForTopRightAndBottomLeft = dx - dy
-
             when (handleBar) {
-                TOP_LEFT -> {
-                    // If width is greater than height.
+                HandleBar.BOTTOM_RIGHT -> {
                     if (ratio > 1f) {
-                        left += differenceForTopLeftAndBottomRight
-                        top -= ((width() / ratio) - height())
-                    } else {
-                        top += differenceForTopLeftAndBottomRight
-                        left -= height() * ratio - width()
-                    }
-                }
-                BOTTOM_LEFT -> {
-                    if (ratio > 1f) {
-                        left += differenceForTopRightAndBottomLeft
+                        right = dx
                         bottom = (width() / ratio) + top
                     } else {
-                        bottom -= differenceForTopRightAndBottomLeft
-                        left -= height() * ratio - width()
-                    }
-                }
-                BOTTOM_RIGHT -> {
-                    if (ratio > 1f) {
-                        right += differenceForTopLeftAndBottomRight
-                        bottom = (width() / ratio) + top
-                    } else {
-                        bottom += differenceForTopLeftAndBottomRight
+                        bottom = dy
                         right = (height() * ratio) + left
                     }
                 }
-                TOP_RIGHT -> {
+                HandleBar.BOTTOM_LEFT -> {
                     if (ratio > 1f) {
-                        right += differenceForTopRightAndBottomLeft
+                        left = dx
+                        bottom = (width() / ratio) + top
+                    } else {
+                        bottom = dy
+                        left = height() * ratio - width()
+                    }
+                }
+                HandleBar.TOP_RIGHT -> {
+                    if (ratio > 1f) {
+                        right = dx
                         top -= ((width() / ratio) - height())
                     } else {
-                        top -= differenceForTopRightAndBottomLeft
+                        top = dy
                         right += height() * ratio - width()
                     }
                 }
-                TOP -> {
-
+                HandleBar.TOP_LEFT -> {
+                    if (ratio > 1f) {
+                        left = dx
+                        top -= ((width() / ratio) - height())
+                    } else {
+                        top = dy
+                        left -= height() * ratio - width()
+                    }
                 }
-                BOTTOM -> {
 
-                }
-                LEFT -> {
 
-                }
-                RIGHT -> {
-
-                }
-                else -> {
-
-                }
+                else -> {}
             }
             return rect
         }
