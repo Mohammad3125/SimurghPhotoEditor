@@ -1,6 +1,12 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LightingColorFilter
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import androidx.core.graphics.scale
 import kotlin.math.max
 
@@ -43,12 +49,6 @@ class BitmapBrush(
         set(value) {
             field = value
             paint.colorFilter = LightingColorFilter(field, field)
-        }
-
-    override var spacing: Float = 1f
-        set(value) {
-            field = value
-            calculateSize(size)
         }
 
     private lateinit var scaledStamp: Bitmap
