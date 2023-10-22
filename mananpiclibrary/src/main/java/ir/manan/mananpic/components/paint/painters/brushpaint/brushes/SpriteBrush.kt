@@ -108,7 +108,7 @@ class SpriteBrush(var bitmaps: List<Bitmap>?) : Brush() {
             } else {
                 val b = scaledStamps[counter]
 
-                if(++counter > bitmaps.size) {
+                if(++counter >= bitmaps.size) {
                     counter = 0
                 }
 
