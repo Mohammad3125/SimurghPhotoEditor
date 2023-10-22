@@ -795,10 +795,6 @@ class CropperTool : Painter() {
         return false
     }
 
-    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
-        super.onSizeChanged(newBounds, changeMatrix)
-    }
-
     private fun setBoundsVariablesFromRect(rect: RectF, dstArray: FloatArray) {
         dstArray[0] = rect.left
         dstArray[1] = rect.top
