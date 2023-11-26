@@ -800,6 +800,16 @@ class CropperTool : Painter() {
         return false
     }
 
+    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+
+        if (this::canvasMatrix.isInitialized) {
+            changeMatrix.invert(inverseMatrix)
+            canvasMatrix.preConcat(inverseMatrix)
+        }
+
+        sendMessage(PainterMessage.INVALIDATE)
+    }
+
     private fun setBoundsVariablesFromRect(rect: RectF, dstArray: FloatArray) {
         dstArray[0] = rect.left
         dstArray[1] = rect.top
