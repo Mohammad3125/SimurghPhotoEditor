@@ -10,6 +10,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.RectF
+import android.graphics.Region
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.cropper.AspectRatio
 import ir.manan.mananpic.components.cropper.HandleBar
@@ -417,7 +418,12 @@ class CropperTool : Painter() {
         fitCropperInsideLayer()
     }
 
-    private fun fitCropperInsideLayer(setStartRect: Boolean = true, animate: Boolean = true, setMatrix : Boolean = false, setRect: Boolean = false) {
+    private fun fitCropperInsideLayer(
+        setStartRect: Boolean = true,
+        animate: Boolean = true,
+        setMatrix: Boolean = false,
+        setRect: Boolean = false
+    ) {
 
         if (animator.isRunning && animate) {
             return
@@ -463,10 +469,10 @@ class CropperTool : Painter() {
             endMatrix.postTranslate(-it[0], -it[1])
         }
 
-        if(setMatrix) {
+        if (setMatrix) {
             canvasMatrix.set(endMatrix)
         }
-        if(setRect) {
+        if (setRect) {
             frameRect.set(endRect)
         }
 
@@ -489,20 +495,19 @@ class CropperTool : Painter() {
 
             concat(inverseMatrix)
 
-            // Draw frame.
-            drawRect(frameRect, framePaint)
+            save()
 
-            // Draw handle bars.
-            drawLines(frameHandleBar, handleBarPaint)
+            canvas.clipRect(frameRect, Region.Op.DIFFERENCE)
+
+            drawPaint(frameShadowsPaint)
+
+            restore()
+
+            drawLines(frameHandleBar, framePaint)
 
             // Draw guidelines.
             if (isDrawGuidelineEnabled) {
                 drawLines(guideLineDimension, frameGuidelinePaint)
-            }
-
-            // Draw shadows around frame.
-            for (rect in frameShadows) {
-                drawRect(rect, frameShadowsPaint)
             }
 
             restore()
