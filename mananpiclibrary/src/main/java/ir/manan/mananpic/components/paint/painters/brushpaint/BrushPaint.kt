@@ -1,7 +1,15 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
+import android.graphics.Shader
 import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
@@ -111,7 +119,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         blendPaint.alpha = if (shouldBlend) (finalBrush.opacity * 255f).toInt() else 255
 
         if (shouldCreateAlphaBitmap()) {
-            alphaBlendBitmap = ccBitmap.copy(Bitmap.Config.ARGB_8888, true)
+            alphaBlendBitmap = Bitmap.createBitmap(ccBitmap.width,ccBitmap.height,Bitmap.Config.ARGB_8888)
             alphaBlendCanvas.setBitmap(alphaBlendBitmap)
         }
     }
