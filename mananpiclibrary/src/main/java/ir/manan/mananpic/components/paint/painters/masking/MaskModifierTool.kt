@@ -241,6 +241,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     private fun restoreBitmapState(bitmap: Bitmap) {
         maskLayer.bitmap = bitmap.copy(bitmap.config, true)
+        maskTool?.onLayerChanged(maskLayer)
     }
 
 }
