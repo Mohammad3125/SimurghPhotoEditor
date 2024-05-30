@@ -137,10 +137,6 @@ class CropperTool : Painter() {
 
     private val pointHolder = FloatArray(2)
 
-
-    // List of rectangles representing shadows around frame.
-    private var frameShadows: List<RectF> = listOf(RectF(), RectF(), RectF(), RectF())
-
     // Handle bar dimensions for drawing.
     private var frameHandleBar = FloatArray(48)
 
@@ -538,8 +534,6 @@ class CropperTool : Painter() {
 
         mapOfHandleBars = createHandleBarPointMap(frameRect)
 
-        createFrameShadows(frameRect)
-
         createGuideLines(frameRect)
     }
 
@@ -572,21 +566,6 @@ class CropperTool : Painter() {
             guideLineDimension[15] = frameCenterY + offsetFromCenterY
         }
     }
-
-    /**
-     * Creates the shadows around the overlay windows.
-     * @param frame The rectangle the represents the overlay window.
-     * @return List of rectangles that surround the overlay window.
-     */
-    private fun createFrameShadows(frame: RectF) {
-        frame.run {
-            frameShadows[0].set(0f, 0f, bounds.right, top)
-            frameShadows[1].set(0f, top, left, bottom)
-            frameShadows[2].set(right, top, bounds.right, bottom)
-            frameShadows[3].set(0f, bottom, bounds.right, bounds.bottom)
-        }
-    }
-
 
     /**
      * Figures which handle bar is responsible for the current point in screen.
