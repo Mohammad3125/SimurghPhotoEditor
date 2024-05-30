@@ -768,7 +768,7 @@ class CropperTool : Painter() {
 
             cropCanvas.drawBitmap(layer.bitmap, 0f, 0f, framePaint)
 
-            cropCanvas.restoreToCount(2)
+            cropCanvas.restoreToCount(1)
 
             return croppedBitmap
         }
