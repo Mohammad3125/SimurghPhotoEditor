@@ -262,113 +262,7 @@ class PenToolMaskTool : Painter() {
     }
 
     override fun onMoveBegin(initialX: Float, initialY: Float) {
-        val finalRange = canvasMatrix.mapRadius(handleTouchRange)
-        // Figure out which handle in a line user has selected.
-        // Some handles are specific to one or two type of line and
-        // others might be for each type of them.
-        var nearest = finalRange
-
-        // Reset selected handle.
-        currentHandleSelected = Handle.NONE
-
-        if (GestureUtils.isNearTargetPoint(
-                initialX,
-                initialY,
-                bx,
-                by,
-                finalRange
-            )
-        ) {
-            (abs(bx - initialX) + abs(by - initialY)).let {
-                if (it < nearest) {
-                    nearest = it
-                    currentHandleSelected = Handle.END_HANDLE
-                }
-            }
-        }
-
-        if (GestureUtils.isNearTargetPoint(
-                initialX,
-                initialY,
-                handleX,
-                handleY,
-                finalRange
-            )
-        ) {
-            (abs(handleX - initialX) + abs(handleY - initialY)).let {
-                if (it < nearest) {
-                    nearest = it
-                    currentHandleSelected = Handle.FIRST_BEZIER_HANDLE
-                }
-            }
-        }
-
-        if (GestureUtils.isNearTargetPoint(
-                initialX,
-                initialY,
-                firstX,
-                firstY,
-                finalRange
-            ) && (pointCounter == 1 || lines.indexOf(selectedLine) == 0)
-        ) {
-            (abs(firstX - initialX) + abs(firstY - initialY)).let {
-                if (it < nearest) {
-                    nearest = it
-                    currentHandleSelected = Handle.FIRST_POINT_HANDLE
-                }
-            }
-        }
-
-
-        if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
-                initialX,
-                initialY,
-                secondHandleX,
-                secondHandleY,
-                finalRange
-            ))
-        ) {
-            (abs(secondHandleX - initialX) + abs(secondHandleY - initialY)).let {
-                if (it < nearest) {
-                    nearest = it
-                    currentHandleSelected = Handle.SECOND_BEZIER_HANDLE
-                }
-            }
-        }
-
-        // If there isn't any handle of current selected line selected,
-        // then look at other lines' end point and see if user has selected them.
-        // If user has selected another line, then restore state of that line, which may
-        // contain handle points and etc..
-        if (currentHandleSelected == Handle.NONE) {
-            lines.find {
-                GestureUtils.isNearTargetPoint(
-                    initialX,
-                    initialY,
-                    it.epx,
-                    it.epy,
-                    finalRange
-                )
-            }?.let { line ->
-                // Restore state of current line.
-                setLineRelatedVariables(line)
-
-                // Select the line.
-                selectedLine = line
-
-                // Since all end point of handles are visible,
-                // then select the end handle.
-                // State of selector will reset to the selected line.
-                currentHandleSelected = Handle.END_HANDLE
-
-                isOtherLinesSelected = true
-            }
-        }
-
-        if (currentHandleSelected == Handle.NONE && isPathClose) {
-            selectedLine = null
-            sendMessage(PainterMessage.INVALIDATE)
-        }
+        findLines(initialX, initialY)
     }
 
     private fun setLineRelatedVariables(line: Line) {
@@ -514,6 +408,7 @@ class PenToolMaskTool : Painter() {
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
+        findLines(lastX, lastY)
         // If path is closed.
         if (!isPathClose) {
             // If path is empty store the first touch location.
@@ -602,6 +497,117 @@ class PenToolMaskTool : Painter() {
         }
         isOtherLinesSelected = false
         sendMessage(PainterMessage.INVALIDATE)
+    }
+
+    private fun findLines(lastX: Float, lastY: Float) {
+        canvasMatrix.invert(mappingMatrix)
+        val finalRange = mappingMatrix.mapRadius(handleTouchRange)
+        // Figure out which handle in a line user has selected.
+        // Some handles are specific to one or two type of line and
+        // others might be for each type of them.
+        var nearest = finalRange
+
+        // Reset selected handle.
+        currentHandleSelected = Handle.NONE
+
+        if (GestureUtils.isNearTargetPoint(
+                lastX,
+                lastY,
+                bx,
+                by,
+                handleTouchRange
+            )
+        ) {
+            (abs(bx - lastX) + abs(by - lastY)).let {
+                if (it < nearest) {
+                    nearest = it
+                    currentHandleSelected = Handle.END_HANDLE
+                }
+            }
+        }
+
+        if (GestureUtils.isNearTargetPoint(
+                lastX,
+                lastY,
+                handleX,
+                handleY,
+                finalRange
+            )
+        ) {
+            (abs(handleX - lastX) + abs(handleY - lastY)).let {
+                if (it < nearest) {
+                    nearest = it
+                    currentHandleSelected = Handle.FIRST_BEZIER_HANDLE
+                }
+            }
+        }
+
+        if (GestureUtils.isNearTargetPoint(
+                lastX,
+                lastY,
+                firstX,
+                firstY,
+                finalRange
+            ) && (pointCounter == 1 || lines.indexOf(selectedLine) == 0)
+        ) {
+            (abs(firstX - lastX) + abs(firstY - lastY)).let {
+                if (it < nearest) {
+                    nearest = it
+                    currentHandleSelected = Handle.FIRST_POINT_HANDLE
+                }
+            }
+        }
+
+
+        if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
+                lastX,
+                lastY,
+                secondHandleX,
+                secondHandleY,
+                finalRange
+            ))
+        ) {
+            (abs(secondHandleX - lastX) + abs(secondHandleY - lastY)).let {
+                if (it < nearest) {
+                    nearest = it
+                    currentHandleSelected = Handle.SECOND_BEZIER_HANDLE
+                }
+            }
+        }
+
+        // If there isn't any handle of current selected line selected,
+        // then look at other lines' end point and see if user has selected them.
+        // If user has selected another line, then restore state of that line, which may
+        // contain handle points and etc..
+        if (currentHandleSelected == Handle.NONE) {
+            lines.find {
+                GestureUtils.isNearTargetPoint(
+                    lastX,
+                    lastY,
+                    it.epx,
+                    it.epy,
+                    finalRange
+                )
+            }?.let { line ->
+                // Restore state of current line.
+                setLineRelatedVariables(line)
+
+                // Select the line.
+                selectedLine = line
+
+                // Since all end point of handles are visible,
+                // then select the end handle.
+                // State of selector will reset to the selected line.
+                currentHandleSelected = Handle.END_HANDLE
+
+                isOtherLinesSelected = true
+            }
+        }
+
+        if (currentHandleSelected == Handle.NONE && isPathClose) {
+            selectedLine = null
+            sendMessage(PainterMessage.INVALIDATE)
+        }
     }
 
     private fun finalizeLine() {
