@@ -2,10 +2,21 @@ package ir.manan.mananpic.components.paint
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
-import android.view.*
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.view.View
+import android.view.ViewConfiguration
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
@@ -13,7 +24,7 @@ import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
 import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
-import java.util.*
+import java.util.Stack
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -98,6 +109,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private var onLayersChanged: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)? =
         null
     private var onLayersChangedListener: OnLayersChanged? = null
+
+    private var onDelegateTransform: ((transformationMatrix: Matrix) -> Unit)? = null
+
+    var shouldDelegateGesture: Boolean = false
 
     private val mergeCanvas = Canvas()
 
@@ -305,7 +320,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun setImageBitmap(bitmap: Bitmap?) {
         if (bitmap != null) {
 
-            if(!bitmap.isMutable) {
+            if (!bitmap.isMutable) {
                 throw IllegalStateException("Bitmap should be mutable")
             }
 
@@ -419,6 +434,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         recycle()
                         return true
                     }
+
                     MotionEvent.ACTION_POINTER_DOWN -> {
                         if (totalPoints == 2) {
                             secondPointerInitialX = getX(1)
@@ -429,9 +445,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             painter.onTransformBegin()
                         }
                     }
+
                     MotionEvent.ACTION_MOVE -> {
 
-                        val finalSlope = if(painter.doesNeedTouchSlope()) {
+                        val finalSlope = if (painter.doesNeedTouchSlope()) {
                             abs(scaledTouchSlope / canvasMatrix.getRealScaleX())
                         } else {
                             0f
@@ -478,7 +495,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                                             it[0],
                                             it[1]
                                         )
-                                        painter.onTransformed(painterTransformationMatrix)
+
+                                        if (shouldDelegateGesture) {
+                                            onDelegateTransform?.invoke(painterTransformationMatrix)
+                                        } else {
+                                            painter.onTransformed(painterTransformationMatrix)
+                                        }
                                     }
                                 } else {
                                     canvasMatrix.postTranslate(dx, dy)
@@ -521,6 +543,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         recycle()
                         return true
                     }
+
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
 
                         if (shouldCallDoubleTapListener()) {
@@ -550,6 +573,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                         recycle()
                         return false
                     }
+
                     else -> {
                         recycle()
                         return false
@@ -622,7 +646,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.apply {
             if (doesTakeGestures()) {
                 painterTransformationMatrix.setRotate(degree - rotHolder, px, py)
-                onTransformed(painterTransformationMatrix)
+                if (shouldDelegateGesture) {
+                    onDelegateTransform?.invoke(painterTransformationMatrix)
+                } else {
+                    onTransformed(painterTransformationMatrix)
+                }
             } else {
                 canvasMatrix.postRotate(degree - rotHolder, px, py)
                 invalidate()
@@ -654,7 +682,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             painter?.apply {
                 if (doesTakeGestures()) {
                     painterTransformationMatrix.setScale(sf, sf, focusX, focusY)
-                    onTransformed(painterTransformationMatrix)
+
+                    if (shouldDelegateGesture) {
+                        onDelegateTransform?.invoke(painterTransformationMatrix)
+                    } else {
+                        onTransformed(painterTransformationMatrix)
+                    }
                 } else {
                     canvasMatrix.postScale(sf, sf, focusX, focusY)
                     invalidate()
@@ -771,9 +804,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             Painter.PainterMessage.INVALIDATE -> {
                 invalidate()
             }
+
             Painter.PainterMessage.SAVE_HISTORY -> {
                 saveState(isMessage = true)
             }
+
             Painter.PainterMessage.CACHE_LAYERS -> {
                 cacheLayers()
             }
@@ -1213,6 +1248,32 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun setOnLayersChangedListener(callback: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)) {
         onLayersChanged = callback
         callListenerForFirstTime()
+    }
+
+    fun setOnTransformDelegate(func: (transformationMatrix: Matrix) -> Unit) {
+        onDelegateTransform = func
+    }
+
+    fun convertToBitmap(): Bitmap? {
+        if (layerHolder.isEmpty()) {
+            return null
+        }
+
+        val finalBitmap = layerHolder.first().bitmap.let { layer ->
+            Bitmap.createBitmap(layer.width, layer.height, layer.config)
+        }
+
+        mergeCanvas.setBitmap(finalBitmap)
+
+        layerHolder.forEach { layer ->
+            layersPaint.alpha = (255 * layer.opacity).toInt()
+
+            layersPaint.xfermode = layer.blendMode
+
+            mergeCanvas.drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
+        }
+
+        return finalBitmap
     }
 
     private fun callListenerForFirstTime() {
