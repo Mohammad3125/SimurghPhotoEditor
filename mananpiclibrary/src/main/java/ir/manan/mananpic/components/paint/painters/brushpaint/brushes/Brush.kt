@@ -23,13 +23,21 @@ abstract class Brush {
 
     open var opacityVarianceEasing = 0.1f
 
-    open var pressureSensitivity = 0.6f
+    open var sizePressureSensitivity = 0.6f
 
     open var minimumPressureSize = 0.3f
 
     open var maximumPressureSize = 1f
 
-    open var isPressureSensitive = true
+    open var isSizePressureSensitive = true
+
+    open var opacityPressureSensitivity = 0.5f
+
+    open var minimumPressureOpacity = 0f
+
+    open var maximumPressureOpacity = 1f
+
+    open var isOpacityPressureSensitive = true
 
     open var spacing: Float = 0.1f
 

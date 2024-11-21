@@ -35,8 +35,11 @@ class CanvasDrawingEngine : DrawingEngine {
 
     private var lastSizeVariance = 1f
 
-    private var lastPressure = 0f
-    private var currentPressure = 0f
+    private var lastSizePressure = 0f
+    private var currentSizePressure = 0f
+
+    private var lastOpacityPressure = 0f
+    private var currentOpacityPressure = 0f
 
     private var currentSpacing = 0f
     override fun onMoveBegin(touchData: MananPaintView.TouchData, brush: Brush) {
@@ -44,8 +47,20 @@ class CanvasDrawingEngine : DrawingEngine {
 
         sizeVarianceHolder = brush.sizeVariance
         targetSizeVarianceHolder = sizeVarianceHolder
-        lastPressure = mapPressure(touchData, brush)
-        currentPressure = lastPressure
+
+        lastSizePressure =
+            mapPressure(touchData.pressure, brush.minimumPressureSize, brush.maximumPressureSize)
+
+        lastOpacityPressure =
+            mapPressure(
+                touchData.pressure,
+                brush.minimumPressureOpacity,
+                brush.maximumPressureOpacity
+            )
+
+        currentSizePressure = lastSizePressure
+
+        currentOpacityPressure = lastOpacityPressure
 
         currentSpacing = brush.spacing
 
@@ -68,34 +83,63 @@ class CanvasDrawingEngine : DrawingEngine {
 
         calculateOpacityVariance(touchData, brush)
 
-        calculatePressureSensitivity(touchData, brush)
+        currentSizePressure = calculatePressureSensitivity(
+            touchData.pressure,
+            brush.isSizePressureSensitive,
+            brush.sizePressureSensitivity,
+            brush.minimumPressureSize,
+            brush.maximumPressureSize,
+            lastSizePressure
+        )
+
+        currentOpacityPressure = calculatePressureSensitivity(
+            touchData.pressure,
+            brush.isOpacityPressureSensitive,
+            brush.opacityPressureSensitivity,
+            brush.minimumPressureOpacity,
+            brush.maximumPressureOpacity,
+            lastOpacityPressure
+        )
     }
 
-    private fun calculatePressureSensitivity(touchData: MananPaintView.TouchData, brush: Brush) {
-        currentPressure =
-            if (!brush.isPressureSensitive || touchData.pressure == 1f) {
-                1f
-            } else {
-                val inversePressureSensitivity = 1f - brush.pressureSensitivity
-                mapPressure(
-                    touchData,
-                    brush
-                ) * brush.pressureSensitivity + (lastPressure * inversePressureSensitivity)
-            }
+    private fun calculatePressureSensitivity(
+        pressure: Float,
+        isSensitive: Boolean,
+        sensitivity: Float,
+        minimumPressure: Float,
+        maximumPressure: Float,
+        lastPressure: Float
+    ): Float {
+        return if (!isSensitive || pressure == 1f) {
+            1f
+        } else {
+            val inversePressureSensitivity = 1f - sensitivity
+            mapPressure(
+                pressure,
+                minimumPressure,
+                maximumPressure
+            ) * sensitivity + (lastPressure * inversePressureSensitivity)
+        }
     }
 
-    private fun mapPressure(touchData: MananPaintView.TouchData, brush: Brush): Float =
+
+    private fun mapPressure(
+        pressure: Float,
+        minimumPressure: Float,
+        maximumPressure: Float
+    ): Float =
         MathUtils.convertFloatRange(
             0f,
             1f,
-            brush.minimumPressureSize,
-            brush.maximumPressureSize,
-            touchData.pressure
+            minimumPressure,
+            maximumPressure,
+            pressure
         )
 
 
     override fun onMoveEnded(touchData: MananPaintView.TouchData, brush: Brush) {
-        currentPressure = mapPressure(touchData, brush)
+        currentSizePressure =
+            mapPressure(touchData.pressure, brush.minimumPressureSize, brush.maximumPressureSize)
 
         lastVtrSizeVariance = 0f
         brush.spacing = currentSpacing
@@ -236,25 +280,29 @@ class CanvasDrawingEngine : DrawingEngine {
             val finalSizeVariance =
                 if (sizeVariance != 1f) targetSizeVarianceHolder else 1f
 
-            if (currentPressure != 1f) {
-                lastPressure += ((currentPressure - lastPressure) / drawCount)
+            if (isSizePressureSensitive) {
+                lastSizePressure += ((currentSizePressure - lastSizePressure) / drawCount)
+            }
+
+            if (isOpacityPressureSensitive) {
+                lastOpacityPressure += ((currentOpacityPressure - lastOpacityPressure) / drawCount)
             }
 
             if (sizeJitter > 0f) {
                 val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
                 val finalScale = (1f + randomJitterNumber) * finalTaperSize * finalSizeVariance
-                canvas.scale(finalScale * squish * lastPressure, finalScale * lastPressure)
+                canvas.scale(finalScale * squish * lastSizePressure, finalScale * lastSizePressure)
             } else if (squish != 1f) {
                 canvas.scale(
-                    squish * lastPressure * (finalTaperSize * finalSizeVariance),
-                    finalTaperSize * finalSizeVariance * lastPressure
+                    squish * lastSizePressure * (finalTaperSize * finalSizeVariance),
+                    finalTaperSize * finalSizeVariance * lastSizePressure
                 )
             } else if (taperSizeHolder != 1f && startTaperSpeed > 0) {
                 canvas.scale(finalTaperSize * finalSizeVariance, finalTaperSize * finalSizeVariance)
             } else if (sizeVariance != 1f) {
                 canvas.scale(finalSizeVariance, finalSizeVariance)
-            } else if (currentPressure != 1f) {
-                canvas.scale(lastPressure, lastPressure)
+            } else if (isSizePressureSensitive) {
+                canvas.scale(lastSizePressure, lastSizePressure)
             }
 
             val lastColor = color
@@ -301,7 +349,9 @@ class CanvasDrawingEngine : DrawingEngine {
                 targetOpacityVariance -= opacityVarianceEasingStep
             }
 
-            val brushOpacity = if (opacityVariance != 0f) {
+            val brushOpacity = if (isOpacityPressureSensitive) {
+                ((opacity * 255f) * lastOpacityPressure).toInt()
+            } else if (opacityVariance != 0f) {
                 targetOpacityVariance.toInt()
             } else if (opacityJitter > 0f) {
                 Random.nextInt(0, (255f * opacityJitter).toInt())
@@ -311,6 +361,7 @@ class CanvasDrawingEngine : DrawingEngine {
                 (opacity * 255f).toInt()
             }
 
+            println("opacity $brushOpacity opacityP $currentOpacityPressure lopacityp $lastOpacityPressure")
             draw(canvas, brushOpacity)
 
             if (color != lastColor) {

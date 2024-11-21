@@ -12,7 +12,7 @@ class MathUtils {
          * @param input current number in input range
          * @return returns the converted range of input to output
          */
-        fun converFloatRange(
+        fun convertIntRange(
             inputStart: Int,
             inputEnd: Int,
             outputStart: Int,
