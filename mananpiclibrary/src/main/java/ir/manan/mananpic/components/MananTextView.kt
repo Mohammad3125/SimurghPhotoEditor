@@ -1,7 +1,24 @@
 package ir.manan.mananpic.components
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ComposePathEffect
+import android.graphics.CornerPathEffect
+import android.graphics.DashPathEffect
+import android.graphics.LinearGradient
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RadialGradient
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Shader
+import android.graphics.SweepGradient
+import android.graphics.Typeface
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
 import android.text.TextPaint
@@ -9,7 +26,15 @@ import android.util.AttributeSet
 import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.core.view.doOnPreDraw
-import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.properties.Bitmapable
+import ir.manan.mananpic.properties.Blendable
+import ir.manan.mananpic.properties.Colorable
+import ir.manan.mananpic.properties.Gradientable
+import ir.manan.mananpic.properties.MananComponent
+import ir.manan.mananpic.properties.Pathable
+import ir.manan.mananpic.properties.Shadowable
+import ir.manan.mananpic.properties.StrokeCapable
+import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.max
@@ -630,6 +655,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }
+    }
+
+    override fun concatColorMatrix(matrix: Matrix) {
+
     }
 
     override fun removeTexture() {

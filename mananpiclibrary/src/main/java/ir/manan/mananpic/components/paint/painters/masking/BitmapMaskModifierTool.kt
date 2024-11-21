@@ -1,10 +1,16 @@
 package ir.manan.mananpic.components.paint.painters.masking
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
@@ -66,36 +72,36 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
         layerBound.set(bounds)
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
         if (shouldDraw()) {
-            engine.onMoveBegin(initialX, initialY, finalBrush)
+            touchData.run {
+                engine.onMoveBegin(touchData, finalBrush)
 
-            lineSmoother.setFirstPoint(
-                initialX,
-                initialY,
-                finalBrush
-            )
+                lineSmoother.setFirstPoint(
+                    touchData,
+                    finalBrush
+                )
+            }
         }
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
+    override fun onMove(touchData: MananPaintView.TouchData) {
         if (shouldDraw()) {
 
-            engine.onMove(ex, ey, dx, dy, finalBrush)
+            engine.onMove(touchData, finalBrush)
 
-            lineSmoother.addPoints(ex, ey, finalBrush)
+            lineSmoother.addPoints(touchData, finalBrush)
 
         }
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
         if (shouldDraw()) {
 
-            engine.onMoveEnded(lastX, lastX, finalBrush)
+            engine.onMoveEnded(touchData, finalBrush)
 
             lineSmoother.setLastPoint(
-                lastX,
-                lastY,
+                touchData,
                 finalBrush
             )
 
@@ -119,13 +125,20 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
     override fun resetPaint() {
     }
 
-    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float, isLastPoint: Boolean) {
+    override fun onDrawPoint(
+        ex: Float,
+        ey: Float,
+        angleDirection: Float,
+        totalDrawCount: Int,
+        isLastPoint: Boolean
+    ) {
         engine.draw(
             ex,
             ey,
             angleDirection,
             paintCanvas,
-            finalBrush
+            finalBrush,
+            totalDrawCount
         )
         sendMessage(PainterMessage.INVALIDATE)
     }

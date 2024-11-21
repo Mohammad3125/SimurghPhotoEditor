@@ -2,11 +2,19 @@ package ir.manan.mananpic.components.paint.painters.selection
 
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.ComposePathEffect
+import android.graphics.CornerPathEffect
+import android.graphics.DashPathEffect
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
 import android.view.animation.LinearInterpolator
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.painters.coloring.LassoColorPainter
 import ir.manan.mananpic.components.paint.painters.selection.clippers.PathBitmapClipper
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 
@@ -101,8 +109,8 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
         return null
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        touchSmoother.setLastPoint(lastX, lastY, smoothnessBrush)
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+        touchSmoother.setLastPoint(touchData, smoothnessBrush)
     }
 
     private fun setClipper(layer: PaintLayer) {

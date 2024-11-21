@@ -1,9 +1,14 @@
 package ir.manan.mananpic.components.paint.painters.coloring.flood
 
 import android.content.Context
-import android.graphics.*
-import ir.manan.mananpic.components.paint.PaintLayer
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.RectF
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 
 class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
@@ -27,18 +32,18 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
         currentThreshold = threshold
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
 
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
+    override fun onMove(touchData: MananPaintView.TouchData) {
 
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
         layerBitmap?.let { bitmap ->
-            val xI = lastX.toInt()
-            val xY = lastY.toInt()
+            val xI = touchData.ex.toInt()
+            val xY = touchData.ey.toInt()
 
             if (!isValid(bitmap, xI, xY)) {
                 return

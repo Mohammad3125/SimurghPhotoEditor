@@ -10,6 +10,7 @@ import android.view.View
 import androidx.core.view.doOnLayout
 import ir.manan.mananpic.components.paint.engines.CachedCanvasEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.dp
@@ -50,10 +51,12 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             MeasureSpec.EXACTLY -> {
                 measureWidth
             }
+
             MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED -> {
                 val w = dp(120).toInt()
                 if (w > measureWidth) measureWidth else w
             }
+
             else -> {
                 suggestedMinimumWidth
             }
@@ -63,10 +66,12 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             MeasureSpec.EXACTLY -> {
                 measureHeight
             }
+
             MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED -> {
                 val h = dp(40).toInt()
                 if (h > measureHeight) measureHeight else h
             }
+
             else -> {
                 suggestedMinimumHeight
             }
@@ -162,6 +167,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
         private val pathPointHolder = FloatArray(2)
 
+        private val touchData = MananPaintView.TouchData(0f, 0f, 0f, 0f, 0f)
+
         fun createBrushSnapshot(
             targetWidth: Int,
             targetHeight: Int,
@@ -193,6 +200,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                         ex: Float,
                         ey: Float,
                         angleDirection: Float,
+                        totalDrawCount: Int,
                         isLastPoint: Boolean
                     ) {
                         cachePointHolder.add(ex)
@@ -289,46 +297,44 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             val brushSmoothness = brush.smoothness
             brush.smoothness = 0f
 
+            touchData.ex = ex
+            touchData.ey = ey
+
+
             lineSmoother.setFirstPoint(
-                ex,
-                ey,
+                touchData,
                 brush
             )
 
             engine.onMoveBegin(
-                ex,
-                ey, brush
+                touchData, brush
             )
 
             for (i in 2..points.size - 2 step 2) {
-                ex = points[i]
-                ey = points[i + 1]
+                touchData.ex = points[i]
+                touchData.ey = points[i + 1]
 
                 lineSmoother.addPoints(
-                    ex,
-                    ey,
+                    touchData,
                     brush
                 )
 
                 engine.onMove(
-                    ex,
-                    ey,
-                    0f, 0f,
+                    touchData,
                     brush
                 )
             }
 
-            ex = points[points.lastIndex - 1]
-            ey = points[points.lastIndex]
+            touchData.ex = points[points.lastIndex - 1]
+            touchData.ey = points[points.lastIndex]
 
             lineSmoother.setLastPoint(
-                ex,
-                ey,
+                touchData,
                 brush
             )
 
             engine.onMoveEnded(
-                ex, ey, brush
+                touchData, brush
             )
 
             brush.smoothness = brushSmoothness
@@ -349,7 +355,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                     cachePointHolder[i + 1],
                     cacheDirectionAngleHolder[i / 2],
                     canvas,
-                    brush
+                    brush,
+                    1
                 )
 
                 if (++cacheCounter > cacheSizeInByte - 1) {

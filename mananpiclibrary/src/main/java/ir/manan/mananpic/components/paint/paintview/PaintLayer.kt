@@ -1,4 +1,4 @@
-package ir.manan.mananpic.components.paint
+package ir.manan.mananpic.components.paint.paintview
 
 import android.graphics.Bitmap
 import android.graphics.Matrix

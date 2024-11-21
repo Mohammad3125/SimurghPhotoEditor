@@ -1,8 +1,26 @@
 package ir.manan.mananpic.components.paint.painters.transform
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RadialGradient
+import android.graphics.RectF
+import android.graphics.Shader
+import android.graphics.SweepGradient
 import ir.manan.mananpic.components.shapes.MananShape
-import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.properties.Bitmapable
+import ir.manan.mananpic.properties.Blendable
+import ir.manan.mananpic.properties.Colorable
+import ir.manan.mananpic.properties.Gradientable
+import ir.manan.mananpic.properties.Shadowable
+import ir.manan.mananpic.properties.StrokeCapable
+import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.min
 
@@ -179,6 +197,14 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         shapePaint.shader?.run {
             shaderMatrix.reset()
             shaderRotationHolder = 0f
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun concatColorMatrix(matrix: Matrix) {
+        shapePaint.shader?.run {
+            shaderMatrix.postConcat(matrix)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }

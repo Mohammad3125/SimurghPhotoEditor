@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.paint.smoothers
 import android.graphics.Path
 import android.graphics.PathMeasure
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import kotlin.math.floor
 
 class BasicSmoother : LineSmoother() {
@@ -19,18 +20,18 @@ class BasicSmoother : LineSmoother() {
 
     private val pointHolder = FloatArray(2)
 
-    override fun setFirstPoint(ex: Float, ey: Float, brush: Brush) {
+    override fun setFirstPoint(touchData: MananPaintView.TouchData, brush: Brush) {
         path.rewind()
-        path.moveTo(ex, ey)
+        path.moveTo(touchData.ex, touchData.ey)
     }
 
-    override fun addPoints(ex: Float, ey: Float, brush: Brush) {
-        path.lineTo(ex, ey)
+    override fun addPoints(touchData: MananPaintView.TouchData, brush: Brush) {
+        path.lineTo(touchData.ex, touchData.ey)
         drawPoints(brush)
     }
 
-    override fun setLastPoint(ex: Float, ey: Float, brush: Brush) {
-        path.lineTo(ex, ey)
+    override fun setLastPoint(touchData: MananPaintView.TouchData, brush: Brush) {
+        path.lineTo(touchData.ex, touchData.ey)
         drawPoints(brush)
         distance = 0f
     }
@@ -59,7 +60,7 @@ class BasicSmoother : LineSmoother() {
             )
 
             if (!isListenerNull) {
-                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], 0f, it == (total - 1))
+                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], 0f, 1, it == (total - 1))
             }
         }
     }

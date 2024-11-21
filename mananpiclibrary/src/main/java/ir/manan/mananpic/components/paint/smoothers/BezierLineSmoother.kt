@@ -3,6 +3,7 @@ package ir.manan.mananpic.components.paint.smoothers
 import android.graphics.Path
 import android.graphics.PathMeasure
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import kotlin.math.atan2
 import kotlin.math.floor
@@ -33,83 +34,90 @@ class BezierLineSmoother : LineSmoother() {
     private val pointHolder = floatArrayOf(0f, 0f)
     private val tanHolder = floatArrayOf(0f, 0f)
 
+    private var drawCounter = 0
+
     private val path = Path()
     private val pathMeasure = PathMeasure()
 
-    override fun setFirstPoint(ex: Float, ey: Float, brush: Brush) {
+    override fun setFirstPoint(touchData: MananPaintView.TouchData, brush: Brush) {
         isFirstThreeCreated = false
 
-        perv2x = ex
-        perv2y = ey
+        perv2x = touchData.ex
+        perv2y = touchData.ey
 
         counter = 0
         counter++
     }
 
-    override fun addPoints(ex: Float, ey: Float, brush: Brush) {
-        if (!isFirstThreeCreated) {
+    override fun addPoints(touchData: MananPaintView.TouchData, brush: Brush) {
+        touchData.run {
+            if (!isFirstThreeCreated) {
 
-            when (counter) {
-                0 -> {
-                    perv2x = ex
-                    perv2y = ey
+                when (counter) {
+                    0 -> {
+                        perv2x = ex
+                        perv2y = ey
+                    }
+
+                    1 -> {
+                        perv1x = ex
+                        perv1y = ey
+                    }
+
+                    2 -> {
+                        curX = ex
+                        curY = ey
+
+                        calculateQuadAndDraw(brush)
+
+                        counter = 0
+
+                        isFirstThreeCreated = true
+
+                        return
+                    }
                 }
-                1 -> {
-                    perv1x = ex
-                    perv1y = ey
-                }
-                2 -> {
-                    curX = ex
-                    curY = ey
 
-                    calculateQuadAndDraw(brush)
+                counter++
+            } else {
+                perv2x = perv1x
+                perv2y = perv1y
 
-                    counter = 0
+                perv1x = curX
+                perv1y = curY
 
-                    isFirstThreeCreated = true
+                curX = ex
+                curY = ey
 
-                    return
-                }
+                calculateQuadAndDraw(brush)
+
             }
-
-            counter++
-        } else {
-            perv2x = perv1x
-            perv2y = perv1y
-
-            perv1x = curX
-            perv1y = curY
-
-            curX = ex
-            curY = ey
-
-            calculateQuadAndDraw(brush)
-
         }
     }
 
-    override fun setLastPoint(ex: Float, ey: Float, brush: Brush) {
+    override fun setLastPoint(touchData: MananPaintView.TouchData, brush: Brush) {
+        touchData.run {
+            if (isFirstThreeCreated) {
 
-        if (isFirstThreeCreated) {
+                perv2x = perv1x
+                perv2y = perv1y
 
-            perv2x = perv1x
-            perv2y = perv1y
+                perv1x = curX
+                perv1y = curY
 
-            perv1x = curX
-            perv1y = curY
+                curX = ex
+                curY = ey
 
-            curX = ex
-            curY = ey
+                calculateQuadAndDraw(brush)
 
-            calculateQuadAndDraw(brush)
+                isFirstThreeCreated = false
+            } else {
+                onDrawPoint?.onDrawPoint(ex, ey, 0f, 1, true)
+            }
 
-            isFirstThreeCreated = false
-        } else {
-            onDrawPoint?.onDrawPoint(ex, ey, 0f, true)
+            distance = 0f
+            path.rewind()
         }
-
-        distance = 0f
-        path.rewind()
     }
 
     private fun calculateQuadAndDraw(brush: Brush) {
@@ -142,6 +150,8 @@ class BezierLineSmoother : LineSmoother() {
 
         val total = floor((width - distance) / spacedWidth).toInt()
 
+        drawCounter = 0
+
         repeat(total) {
 
             distance += spacedWidth
@@ -167,8 +177,16 @@ class BezierLineSmoother : LineSmoother() {
             }
 
             if (!isListenerNull) {
-                onDrawPoint!!.onDrawPoint(pointHolder[0], pointHolder[1], degree, it == (total - 1))
+                onDrawPoint!!.onDrawPoint(
+                    pointHolder[0],
+                    pointHolder[1],
+                    degree,
+                    total - drawCounter,
+                    it == (total - 1)
+                )
             }
+
+            drawCounter++
         }
     }
 }

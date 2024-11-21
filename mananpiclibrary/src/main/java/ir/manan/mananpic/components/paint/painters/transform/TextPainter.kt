@@ -1,11 +1,35 @@
 package ir.manan.mananpic.components.paint.painters.transform
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ComposePathEffect
+import android.graphics.CornerPathEffect
+import android.graphics.DashPathEffect
+import android.graphics.LinearGradient
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RadialGradient
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Shader
+import android.graphics.SweepGradient
+import android.graphics.Typeface
 import android.os.Build
 import android.text.TextPaint
 import androidx.annotation.RequiresApi
 import ir.manan.mananpic.components.MananTextView
-import ir.manan.mananpic.properties.*
+import ir.manan.mananpic.properties.Bitmapable
+import ir.manan.mananpic.properties.Blendable
+import ir.manan.mananpic.properties.Colorable
+import ir.manan.mananpic.properties.Gradientable
+import ir.manan.mananpic.properties.Pathable
+import ir.manan.mananpic.properties.Shadowable
+import ir.manan.mananpic.properties.StrokeCapable
+import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.min
 
@@ -340,6 +364,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         textPaint.shader?.run {
             shaderMatrix.reset()
             shaderRotationHolder = 0f
+            setLocalMatrix(shaderMatrix)
+            invalidate()
+        }
+    }
+
+    override fun concatColorMatrix(matrix: Matrix) {
+        textPaint.shader?.run {
+            shaderMatrix.postConcat(matrix)
             setLocalMatrix(shaderMatrix)
             invalidate()
         }

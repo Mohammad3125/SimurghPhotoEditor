@@ -1,9 +1,14 @@
 package ir.manan.mananpic.components.paint.painters.coloring
 
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PathMeasure
 import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.paint.painters.masking.LassoMaskPainterTool
-import java.util.*
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import java.util.Stack
 
 open class LassoColorPainter : LassoMaskPainterTool() {
 
@@ -27,8 +32,8 @@ open class LassoColorPainter : LassoMaskPainterTool() {
         lassoPaint.style = Paint.Style.FILL
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        super.onMoveEnded(lastX, lastY)
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+        super.onMoveEnded(touchData)
         saveState()
     }
 

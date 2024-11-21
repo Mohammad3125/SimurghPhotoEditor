@@ -10,9 +10,10 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.selection.clippers.BitmapMaskClipper
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import java.util.Stack
 
@@ -105,17 +106,18 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
-        maskTool?.onMoveBegin(initialX, initialY)
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+        maskTool?.onMoveBegin(touchData)
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
-        maskTool?.onMove(ex, ey, dx, dy)
+    override fun onMove(touchData: MananPaintView.TouchData) {
+        maskTool?.onMove(touchData)
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        maskTool?.onMoveEnded(lastX, lastY)
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+        maskTool?.onMoveEnded(touchData)
         saveState()
+        // TODO: Fix undo
     }
 
     override fun draw(canvas: Canvas) {
@@ -160,6 +162,8 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     override fun resetPaint() {
         maskLayer.bitmap.eraseColor(Color.TRANSPARENT)
+        redoStack.clear()
+        undoStack.clear()
         sendMessage(PainterMessage.INVALIDATE)
     }
 

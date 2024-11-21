@@ -1,6 +1,11 @@
 package ir.manan.mananpic.components.paint.painters.selection.clippers
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 
 class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitmap) {
 

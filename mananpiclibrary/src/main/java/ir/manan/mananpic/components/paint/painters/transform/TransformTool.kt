@@ -1,18 +1,28 @@
 package ir.manan.mananpic.components.paint.painters.transform
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.DashPathEffect
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.MananFrame.Guidelines
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
-import java.util.*
-import kotlin.math.*
+import java.util.LinkedList
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.max
+import kotlin.math.min
 
 class TransformTool : Painter(), Transformable.OnInvalidate {
 
@@ -248,9 +258,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
         _selectedChild?.let {
-            selectIndexes(it, initialX, initialY)
+            selectIndexes(it, touchData.ex, touchData.ey)
         }
     }
 
@@ -433,10 +443,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
+    override fun onMove(touchData: MananPaintView.TouchData) {
 
         _selectedChild?.apply {
-            mapMeshPoints(this, ex, ey)
+            mapMeshPoints(this, touchData.ex, touchData.ey)
 
             if (firstSelectedIndex > -1 && secondSelectedIndex > -1) {
                 if (thirdSelectedIndex > -1 && forthSelectedIndex > -1) {
@@ -484,14 +494,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
         if (firstSelectedIndex == -1 && secondSelectedIndex == -1 && firstSizeChangeIndex == -1 && secondSizeChangeIndex == -1) {
 
             _selectedChild = null
 
             _children.forEach { child ->
 
-                mapMeshPoints(child, lastX, lastY)
+                mapMeshPoints(child, touchData.ex, touchData.ey)
 
                 val x = pointHolder[0]
                 val y = pointHolder[1]
@@ -1173,6 +1183,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     fun removeChildAt(index: Int) {
         _children.removeAt(index)
+        invalidate()
+    }
+
+    fun removeAllChildren() {
+        _children.clear()
         invalidate()
     }
 

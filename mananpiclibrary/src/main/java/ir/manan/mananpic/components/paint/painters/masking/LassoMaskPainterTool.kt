@@ -2,11 +2,21 @@ package ir.manan.mananpic.components.paint.painters.masking
 
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.ComposePathEffect
+import android.graphics.CornerPathEffect
+import android.graphics.DashPathEffect
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.view.animation.LinearInterpolator
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.NativeBrush
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
@@ -103,20 +113,26 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
         pathEffectAnimator.start()
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
-        touchSmoother.setFirstPoint(initialX, initialY, smoothnessBrush)
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+        touchSmoother.setFirstPoint(touchData, smoothnessBrush)
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
-        touchSmoother.addPoints(ex, ey, smoothnessBrush)
+    override fun onMove(touchData: MananPaintView.TouchData) {
+        touchSmoother.addPoints(touchData, smoothnessBrush)
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        touchSmoother.setLastPoint(lastX, lastY, smoothnessBrush)
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+        touchSmoother.setLastPoint(touchData, smoothnessBrush)
         applyOnLayer()
     }
 
-    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float, isLastPoint: Boolean) {
+    override fun onDrawPoint(
+        ex: Float,
+        ey: Float,
+        angleDirection: Float,
+        totalDrawCount: Int,
+        isLastPoint: Boolean
+    ) {
         drawLine(ex, ey)
     }
 

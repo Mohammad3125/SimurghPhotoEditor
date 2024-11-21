@@ -2,10 +2,18 @@ package ir.manan.mananpic.components.paint.painters.masking
 
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.ComposePathEffect
+import android.graphics.CornerPathEffect
+import android.graphics.DashPathEffect
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.view.animation.LinearInterpolator
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
@@ -96,23 +104,23 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
         pathEffectAnimator.start()
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
-        shapeBounds.left = initialX
-        shapeBounds.top = initialY
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+        shapeBounds.left = touchData.ex
+        shapeBounds.top = touchData.ey
         isMoveBeginCalled = true
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
-        resizeShape(ex, ey)
+    override fun onMove(touchData: MananPaintView.TouchData) {
+        resizeShape(touchData.ex, touchData.ey)
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
         if (!isMoveBeginCalled) {
             return
         }
         isMoveBeginCalled = false
-        resizeShape(lastX, lastY)
+        resizeShape(touchData.ex, touchData.ey)
         shapePaint.style = Paint.Style.FILL
         drawOnLayer()
         shapePaint.style = Paint.Style.STROKE

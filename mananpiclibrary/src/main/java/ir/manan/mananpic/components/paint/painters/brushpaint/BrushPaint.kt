@@ -10,11 +10,12 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.Shader
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.components.paint.painters.masking.MaskTool
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
@@ -82,7 +83,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         lineSmoother.onDrawPoint = this
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
         if (!this::finalBrush.isInitialized || isLayerNull) {
             isBrushNull = true
             return
@@ -92,11 +93,10 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
         chooseCanvasToDraw()
 
-        engine.onMoveBegin(initialX, initialY, finalBrush)
+        engine.onMoveBegin(touchData, finalBrush)
 
         lineSmoother.setFirstPoint(
-            initialX,
-            initialY,
+            touchData,
             finalBrush
         )
 
@@ -119,7 +119,8 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         blendPaint.alpha = if (shouldBlend) (finalBrush.opacity * 255f).toInt() else 255
 
         if (shouldCreateAlphaBitmap()) {
-            alphaBlendBitmap = Bitmap.createBitmap(ccBitmap.width,ccBitmap.height,Bitmap.Config.ARGB_8888)
+            alphaBlendBitmap =
+                Bitmap.createBitmap(ccBitmap.width, ccBitmap.height, Bitmap.Config.ARGB_8888)
             alphaBlendCanvas.setBitmap(alphaBlendBitmap)
         }
     }
@@ -128,39 +129,45 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         return (shouldBlend || shouldBlendTexture) && (!this::alphaBlendBitmap.isInitialized || (alphaBlendBitmap.width != ccBitmap.width || alphaBlendBitmap.height != ccBitmap.height))
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
+    override fun onMove(touchData: MananPaintView.TouchData) {
 
         if (shouldDraw()) {
 
-            engine.onMove(ex, ey, dx, dy, finalBrush)
+            engine.onMove(touchData, finalBrush)
 
-            lineSmoother.addPoints(ex, ey, finalBrush)
+            lineSmoother.addPoints(touchData, finalBrush)
 
         }
     }
 
-    override fun onDrawPoint(ex: Float, ey: Float, angleDirection: Float, isLastPoint: Boolean) {
+    override fun onDrawPoint(
+        ex: Float,
+        ey: Float,
+        angleDirection: Float,
+        totalDrawCount: Int,
+        isLastPoint: Boolean
+    ) {
         engine.draw(
             ex,
             ey,
             angleDirection,
             finalCanvasToDraw,
-            finalBrush
+            finalBrush,
+            totalDrawCount
         )
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
 
         chooseCanvasToDraw()
 
         if (shouldDraw()) {
 
-            engine.onMoveEnded(lastX, lastX, finalBrush)
+            engine.onMoveEnded(touchData, finalBrush)
 
             lineSmoother.setLastPoint(
-                lastX,
-                lastY,
+                touchData,
                 finalBrush
             )
 
@@ -223,8 +230,14 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
 
     override fun resetPaint() {
-        ccBitmap.eraseColor(Color.TRANSPARENT)
-        alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
+        if (this::ccBitmap.isInitialized) {
+            ccBitmap.eraseColor(Color.TRANSPARENT)
+        }
+
+        if (this::alphaBlendBitmap.isInitialized) {
+            alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
+        }
+
         sendMessage(PainterMessage.INVALIDATE)
     }
 

@@ -1,7 +1,15 @@
 package ir.manan.mananpic.components.paint.painters.colorpicker
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RadialGradient
+import android.graphics.RectF
+import android.graphics.Shader
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
@@ -9,6 +17,7 @@ import ir.manan.mananpic.components.MananDropper
 import ir.manan.mananpic.components.MananDropper.OnColorDetected
 import ir.manan.mananpic.components.MananDropper.OnLastColorDetected
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import kotlin.math.min
@@ -184,16 +193,16 @@ class ColorDropper : Painter() {
         circleOffsetFromCenter = (circlesRadius * 1.5f)
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
-        showDropper(initialX, initialY)
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+        showDropper(touchData.ex, touchData.ey)
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
-        showDropper(ex, ey)
+    override fun onMove(touchData: MananPaintView.TouchData) {
+        showDropper(touchData.ex, touchData.ey)
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        showDropper(lastX, lastY)
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+        showDropper(touchData.ex, touchData.ey)
         // Call interfaces.
         onLastColorDetected?.invoke(lastSelectedColor)
         interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)

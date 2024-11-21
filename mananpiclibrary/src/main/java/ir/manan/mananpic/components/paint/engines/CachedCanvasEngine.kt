@@ -2,6 +2,7 @@ package ir.manan.mananpic.components.paint.engines
 
 import android.graphics.Canvas
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import kotlin.random.Random
 
@@ -14,17 +15,24 @@ class CachedCanvasEngine : DrawingEngine {
 
     private var taperSizeHolder = 0f
 
-    override fun onMoveBegin(ex: Float, ey: Float, brush: Brush) {
+    override fun onMoveBegin(touchData: MananPaintView.TouchData, brush: Brush) {
         taperSizeHolder = brush.startTaperSize
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float, brush: Brush) {
+    override fun onMove(touchData: MananPaintView.TouchData, brush: Brush) {
     }
 
-    override fun onMoveEnded(ex: Float, ey: Float, brush: Brush) {
+    override fun onMoveEnded(touchData: MananPaintView.TouchData, brush: Brush) {
     }
 
-    override fun draw(ex: Float, ey: Float, directionalAngle: Float, canvas: Canvas, brush: Brush) {
+    override fun draw(
+        ex: Float,
+        ey: Float,
+        directionalAngle: Float,
+        canvas: Canvas,
+        brush: Brush,
+        drawCount: Int
+    ) {
         brush.apply {
             canvas.save()
 

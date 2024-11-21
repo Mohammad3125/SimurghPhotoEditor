@@ -1,5 +1,7 @@
 package ir.manan.mananpic.properties
 
+import android.graphics.Matrix
+
 interface ComplexColor {
     /**
      * Shifts the complex color with given amount.
@@ -30,4 +32,6 @@ interface ComplexColor {
      */
     fun resetComplexColorMatrix()
 
+
+    fun concatColorMatrix(matrix: Matrix)
 }

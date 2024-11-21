@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.selection.selectors.BrushSelector
 import ir.manan.mananpic.utils.MananMatrix
 
@@ -32,7 +34,7 @@ abstract class Painter {
      * @param initialX Coordinate of current x.
      * @param initialY Coordinate of current y.
      */
-    abstract fun onMoveBegin(initialX: Float, initialY: Float)
+    abstract fun onMoveBegin(touchData: MananPaintView.TouchData)
 
     /**
      * Called when user is currently moving his/her finger on screen.
@@ -42,7 +44,7 @@ abstract class Painter {
      * @param ex Exact location of current x.
      * @param ey Exact location of current y.
      */
-    abstract fun onMove(ex: Float, ey: Float, dx: Float, dy: Float)
+    abstract fun onMove(touchData: MananPaintView.TouchData)
 
     /**
      * Called when user raises his/her finger on screen.
@@ -50,7 +52,7 @@ abstract class Painter {
      * @param lastX Exact location of last x user touched.
      * @param lastY Exact location of last y user touched.
      */
-    abstract fun onMoveEnded(lastX: Float, lastY: Float)
+    abstract fun onMoveEnded(touchData: MananPaintView.TouchData)
 
     /**
      * Draws any content that a selector might draw; for example [BrushSelector] draws circle indicating

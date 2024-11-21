@@ -13,8 +13,9 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.selection.selectors.PenSelector
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
@@ -254,8 +255,8 @@ abstract class PenToolBase : Painter() {
         }
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
-        findLines(initialX, initialY)
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+        findLines(touchData.ex, touchData.ey)
     }
 
     protected fun setLineRelatedVariables(line: Line) {
@@ -295,12 +296,12 @@ abstract class PenToolBase : Painter() {
     }
 
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
+    override fun onMove(touchData: MananPaintView.TouchData) {
         // If path is closed then offset (move around) path if user moves his/her finger.
         if (isPathClose && currentHandleSelected == Handle.NONE) {
 
-            vectorHolder[0] = dx
-            vectorHolder[1] = dy
+            vectorHolder[0] = touchData.dx
+            vectorHolder[1] = touchData.dy
 
             canvasMatrix.invert(mappingMatrix)
             mappingMatrix.mapVectors(vectorHolder)
@@ -325,16 +326,16 @@ abstract class PenToolBase : Painter() {
                 Handle.FIRST_BEZIER_HANDLE -> {
                     // Reset the bezier path to original path.
                     (selectedLine as? QuadBezier)?.run {
-                        handleX = ex
-                        handleY = ey
+                        handleX = touchData.ex
+                        handleY = touchData.ey
 
                         this@PenToolBase.handleX = handleX
                         this@PenToolBase.handleY = handleY
                     }
 
                     (selectedLine as? CubicBezier)?.run {
-                        firstHandleX = ex
-                        firstHandleY = ey
+                        firstHandleX = touchData.ex
+                        firstHandleY = touchData.ey
 
                         this@PenToolBase.handleX = firstHandleX
                         this@PenToolBase.handleY = firstHandleY
@@ -345,8 +346,8 @@ abstract class PenToolBase : Painter() {
                 // Second handle is only for CUBIC_BEZIER.
                 Handle.SECOND_BEZIER_HANDLE -> {
                     (selectedLine as? CubicBezier)?.run {
-                        secondHandleX = ex
-                        secondHandleY = ey
+                        secondHandleX = touchData.ex
+                        secondHandleY = touchData.ey
 
                         this@PenToolBase.secondHandleX = secondHandleX
                         this@PenToolBase.secondHandleY = secondHandleY
@@ -356,8 +357,8 @@ abstract class PenToolBase : Painter() {
 
                 Handle.END_HANDLE -> {
                     selectedLine?.run {
-                        epx = ex
-                        epy = ey
+                        epx = touchData.ex
+                        epy = touchData.ey
 
                         if (selectedLine === lines.lastElement() && isPathClose) {
                             firstX = epx
@@ -366,19 +367,20 @@ abstract class PenToolBase : Painter() {
                     }
 
                     // Change the end point of current path.
-                    bx = ex
-                    by = ey
+                    bx = touchData.ex
+                    by = touchData.ey
 
                     if (lines.indexOf(selectedLine) == lines.size - 1) {
-                        lvx = ex
-                        lvy = ey
+                        lvx = touchData.ex
+                        lvy = touchData.ey
                     }
 
                     sendMessage(PainterMessage.INVALIDATE)
                 }
+
                 Handle.FIRST_POINT_HANDLE -> {
-                    firstX = ex
-                    firstY = ey
+                    firstX = touchData.ex
+                    firstY = touchData.ey
 
                     if (isPathClose) {
                         lines.lastElement()?.let { lastLine ->
@@ -387,8 +389,8 @@ abstract class PenToolBase : Painter() {
                         }
                     }
 
-                    vx = ex
-                    vy = ey
+                    vx = touchData.ex
+                    vy = touchData.ey
 
                     sendMessage(PainterMessage.INVALIDATE)
                 }
@@ -400,96 +402,100 @@ abstract class PenToolBase : Painter() {
         }
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
-        findLines(lastX, lastY)
-        // If path is closed.
-        if (!isPathClose) {
-            // If path is empty store the first touch location.
-            if (pointCounter == 0) {
-                firstX = lastX
-                firstY = lastY
-                vx = lastX
-                vy = lastY
-                pointCounter++
-            } else {
-                // If a new line is drawn and user touched somewhere else instead of lines' handles, then
-                // store the last point of current line as start point of new line (because lines are drawn relative to another).
-                if (isNewLineDrawn && currentHandleSelected == Handle.NONE) {
-                    finalizeLine()
-                }
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+        touchData.run {
 
-                // If we have drawn the first point (pointCounter > 0) and current handle is not first handle then draw a new line.
-                if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != Handle.FIRST_POINT_HANDLE) {
 
-                    if (lineType != LineType.NORMAL) {
-
-                        // Determine width and height of current line to later
-                        // get center of that line to use as handle for bezier.
-                        val lineWidth = (lastX - vx)
-                        val lineHeight = (lastY - vy)
-
-                        if (lineType == LineType.QUAD_BEZIER) {
-                            handleX = vx + (lineWidth * 0.5f)
-                            handleY = vy + (lineHeight * 0.5f)
-
-                            // Create new QuadBezier and select it.
-                            selectedLine = QuadBezier(lastX, lastY, handleX, handleY)
-                        } else {
-                            // First handle of CUBIC_BEZIER is at 33% of
-                            // width and height of line.
-                            handleX = vx + (lineWidth * 0.33f)
-                            handleY = vy + (lineHeight * 0.33f)
-
-                            // Second handle of CUBIC_BEZIER is at 66% of
-                            // width and height of line.
-                            secondHandleX = vx + (lineWidth * 0.66f)
-                            secondHandleY = vy + (lineHeight * 0.66f)
-
-                            // Create new CubicBezier and select it.
-                            selectedLine = CubicBezier(
-                                lastX,
-                                lastY,
-                                handleX,
-                                handleY,
-                                secondHandleX,
-                                secondHandleY,
-                            )
-
-                        }
-                    } else {
-                        // Create new simple line and select it.
-                        selectedLine = Line(lastX, lastY)
+            findLines(ex, ey)
+            // If path is closed.
+            if (!isPathClose) {
+                // If path is empty store the first touch location.
+                if (pointCounter == 0) {
+                    firstX = ex
+                    firstY = ey
+                    vx = ex
+                    vy = ey
+                    pointCounter++
+                } else {
+                    // If a new line is drawn and user touched somewhere else instead of lines' handles, then
+                    // store the last point of current line as start point of new line (because lines are drawn relative to another).
+                    if (isNewLineDrawn && currentHandleSelected == Handle.NONE) {
+                        finalizeLine()
                     }
 
-                    isNewLineDrawn = true
+                    // If we have drawn the first point (pointCounter > 0) and current handle is not first handle then draw a new line.
+                    if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != Handle.FIRST_POINT_HANDLE) {
 
-                    // Store last point of current bezier to variables.
-                    bx = lastX
-                    by = lastY
+                        if (lineType != LineType.NORMAL) {
 
-                    lvx = lastX
-                    lvy = lastY
+                            // Determine width and height of current line to later
+                            // get center of that line to use as handle for bezier.
+                            val lineWidth = (ex - vx)
+                            val lineHeight = (ey - vy)
 
-                    pointCounter++
+                            if (lineType == LineType.QUAD_BEZIER) {
+                                handleX = vx + (lineWidth * 0.5f)
+                                handleY = vy + (lineHeight * 0.5f)
 
-                    // Push the newly create line to lines holder.
-                    lines.push(selectedLine)
-                }
+                                // Create new QuadBezier and select it.
+                                selectedLine = QuadBezier(ex, ey, handleX, handleY)
+                            } else {
+                                // First handle of CUBIC_BEZIER is at 33% of
+                                // width and height of line.
+                                handleX = vx + (lineWidth * 0.33f)
+                                handleY = vy + (lineHeight * 0.33f)
 
-                // If line is close to first point that user touched,
-                // close the path.
-                if (shouldClosePath(
-                        lastX,
-                        lastY
-                    ) && currentHandleSelected != Handle.FIRST_POINT_HANDLE
-                ) {
-                    finalizeLine()
-                    closePath()
+                                // Second handle of CUBIC_BEZIER is at 66% of
+                                // width and height of line.
+                                secondHandleX = vx + (lineWidth * 0.66f)
+                                secondHandleY = vy + (lineHeight * 0.66f)
+
+                                // Create new CubicBezier and select it.
+                                selectedLine = CubicBezier(
+                                    ex,
+                                    ey,
+                                    handleX,
+                                    handleY,
+                                    secondHandleX,
+                                    secondHandleY,
+                                )
+
+                            }
+                        } else {
+                            // Create new simple line and select it.
+                            selectedLine = Line(ex, ey)
+                        }
+
+                        isNewLineDrawn = true
+
+                        // Store last point of current bezier to variables.
+                        bx = ex
+                        by = ey
+
+                        lvx = ex
+                        lvy = ey
+
+                        pointCounter++
+
+                        // Push the newly create line to lines holder.
+                        lines.push(selectedLine)
+                    }
+
+                    // If line is close to first point that user touched,
+                    // close the path.
+                    if (shouldClosePath(
+                            ex,
+                            ey
+                        ) && currentHandleSelected != Handle.FIRST_POINT_HANDLE
+                    ) {
+                        finalizeLine()
+                        closePath()
+                    }
                 }
             }
+            isOtherLinesSelected = false
+            sendMessage(PainterMessage.INVALIDATE)
         }
-        isOtherLinesSelected = false
-        sendMessage(PainterMessage.INVALIDATE)
     }
 
     protected fun findLines(lastX: Float, lastY: Float) {
@@ -663,7 +669,6 @@ abstract class PenToolBase : Painter() {
             it.putIntoPath(targetPath)
         }
     }
-
 
 
     override fun resetPaint() {

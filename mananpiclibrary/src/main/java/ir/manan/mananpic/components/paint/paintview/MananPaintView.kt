@@ -1,4 +1,4 @@
-package ir.manan.mananpic.components.paint
+package ir.manan.mananpic.components.paint.paintview
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -18,6 +18,7 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewConfiguration
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
@@ -64,6 +65,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
 
     private var isMoved = false
+
+    private val touchData = TouchData(0f, 0f, 0f, 0f, 0f)
 
     // Used to retrieve touch slopes.
     private var scaledTouchSlope = 0
@@ -518,22 +521,30 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                                 checkForStateSave()
 
-                                callPainterOnMoveBegin(initialX, initialY)
+                                setTouchData(initialX, initialY, 0f, 0f, pressure)
+                                callPainterOnMoveBegin()
                             }
 
                             if (isTouchEventHistoryEnabled) {
                                 repeat(historySize) {
-                                    callPainterOnMove(
-                                        getHistoricalX(0, it),
-                                        getHistoricalY(0, it),
+
+                                    val histX = getHistoricalX(0, it)
+                                    val histY = getHistoricalY(0, it)
+
+                                    setTouchData(
+                                        histX,
+                                        histY,
+                                        histX - initialX,
+                                        histY - initialY,
+                                        getHistoricalPressure(0)
                                     )
+
+                                    callPainterOnMove()
                                 }
                             }
 
-                            callPainterOnMove(
-                                x,
-                                y,
-                            )
+                            setTouchData(x, y, x - initialX, y - initialY, pressure)
+                            callPainterOnMove()
 
                         }
 
@@ -550,7 +561,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             callOnDoubleTapListeners()
                         } else if (shouldEndMoveOnPainter()) {
                             checkForStateSave()
-                            callPainterOnMoveEnd(x, y)
+                            setTouchData(x, y, x - initialX, y - initialY, pressure)
+                            callPainterOnMoveEnd()
                         }
 
                         if (isMoved) {
@@ -585,6 +597,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return false
     }
 
+    private fun setTouchData(ex: Float, ey: Float, dx: Float, dy: Float, pressure: Float) {
+        touchData.let { data ->
+            mapTouchPoints(ex, ey).let { points ->
+                data.ex = points[0]
+                data.ey = points[1]
+            }
+            data.dx = dx
+            data.dy = dy
+            data.pressure = pressure
+        }
+
+    }
+
     private fun checkForStateSave() {
         if (undoStack.isNotEmpty() && (selectedLayer !== undoStack.peek().ref || undoStack.peek().isLayerChangeState)) {
             saveState(true, isMessage = true)
@@ -593,12 +618,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun callPainterOnMoveBegin(x: Float, y: Float) {
-        mapTouchPoints(x, y).let { points ->
-            painter!!.onMoveBegin(points[0], points[1])
-            isFirstMove = false
-            isAllLayersCached = false
-        }
+    private fun callPainterOnMoveBegin() {
+        painter!!.onMoveBegin(touchData)
+        isFirstMove = false
+        isAllLayersCached = false
+
     }
 
     private fun shouldCallDoubleTapListener(): Boolean = isMatrixGesture && !isMoved
@@ -606,35 +630,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun shouldEndMoveOnPainter(): Boolean =
         selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
 
-    private fun callPainterOnMoveEnd(ex: Float, ey: Float) {
-        mapTouchPoints(ex, ey).let { points ->
-            painter!!.onMoveEnded(points[0], points[1])
-            saveState()
-        }
+    private fun callPainterOnMoveEnd() {
+        painter!!.onMoveEnded(touchData)
+        saveState()
     }
 
-    private fun callPainterOnMove(ex: Float, ey: Float) {
-        mapTouchPoints(ex, ey).let { points ->
-
-            val dx = points[0] - initialX
-            val dy = points[1] - initialY
-
-            val gdx = ex - initialX
-            val gdy = ey - initialY
-
-            // Reset initial positions.
-            initialX = ex
-            initialY = ey
-
-            if (dx == 0f && dy == 0f) {
-                return
-            }
-
-            painter!!.onMove(
-                points[0], points[1], gdx, gdy
-            )
-
+    private fun callPainterOnMove() {
+        if (touchData.dx == 0f && touchData.dy == 0f) {
+            return
         }
+        painter!!.onMove(touchData)
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
@@ -1372,5 +1377,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     interface OnLayersChanged {
         fun onLayersChanged(layers: List<PaintLayer>, selectedLayerIndex: Int)
     }
+
+    data class TouchData(
+        var ex: Float,
+        var ey: Float,
+        var dx: Float,
+        var dy: Float,
+        var pressure: Float
+    )
 
 }

@@ -16,8 +16,9 @@ import ir.manan.mananpic.components.cropper.AspectRatio
 import ir.manan.mananpic.components.cropper.HandleBar
 import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioFree
 import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioLocked
-import ir.manan.mananpic.components.paint.PaintLayer
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.evaluators.MatrixEvaluator
@@ -300,10 +301,8 @@ class CropperTool : Painter() {
         )
     }
 
-    override fun onMoveBegin(initialX: Float, initialY: Float) {
-
-
-        mapPoints(initialX, initialY).let {
+    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+        mapPoints(touchData.ex, touchData.ey).let {
             // Figure out which handle bar is in range of the event.
             handleBar = figureOutWhichHandleIsInRangeOfEvent(
                 PointF(
@@ -330,7 +329,7 @@ class CropperTool : Painter() {
         canvasMatrix.mapVectors(array)
     }
 
-    override fun onMove(ex: Float, ey: Float, dx: Float, dy: Float) {
+    override fun onMove(touchData: MananPaintView.TouchData) {
         if (animator.isRunning) {
             return
         }
@@ -338,7 +337,7 @@ class CropperTool : Painter() {
         if (handleBar != null) {
 
 
-            val changedRect = mapPoints(ex, ey).let {
+            val changedRect = mapPoints(touchData.ex, touchData.ey).let {
                 aspectRatio.resize(allocRectF.apply {
                     set(frameRect)
                 }, handleBar, it[0], it[1])
@@ -362,7 +361,7 @@ class CropperTool : Painter() {
             }
 
         } else {
-            canvasMatrix.postTranslate(dx, dy)
+            canvasMatrix.postTranslate(touchData.dx, touchData.dy)
         }
         // Reset the shadows,handle bar dimensions, handle bar map and etc based on new frame size.
         setDrawingDimensions()
@@ -406,7 +405,7 @@ class CropperTool : Painter() {
         tempRect.set(minX, minY, maxX, maxY)
     }
 
-    override fun onMoveEnded(lastX: Float, lastY: Float) {
+    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
         fitCropperInsideLayer()
     }
 

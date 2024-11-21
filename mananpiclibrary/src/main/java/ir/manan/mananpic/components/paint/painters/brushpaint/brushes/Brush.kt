@@ -1,6 +1,10 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.PorterDuff
 import androidx.annotation.ColorInt
 
 abstract class Brush {
@@ -18,6 +22,14 @@ abstract class Brush {
     open var opacityVarianceSpeed = 0.6f
 
     open var opacityVarianceEasing = 0.1f
+
+    open var pressureSensitivity = 0.6f
+
+    open var minimumPressureSize = 0.3f
+
+    open var maximumPressureSize = 1f
+
+    open var isPressureSensitive = true
 
     open var spacing: Float = 0.1f
 
@@ -57,9 +69,9 @@ abstract class Brush {
         get() = size * spacing
         private set
 
-    var texture : Bitmap? = null
+    var texture: Bitmap? = null
 
-    var textureTransformation : Matrix? = null
+    var textureTransformation: Matrix? = null
 
     internal abstract var brushBlending: PorterDuff.Mode
     abstract fun draw(canvas: Canvas, opacity: Int)
