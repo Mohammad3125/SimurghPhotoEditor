@@ -167,7 +167,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
         private val pathPointHolder = FloatArray(2)
 
-        private val touchData = MananPaintView.TouchData(0f, 0f, 0f, 0f, 0f)
+        private val touchData = MananPaintView.TouchData(0f, 0f, 0f, 0f, 0, 0f)
 
         fun createBrushSnapshot(
             targetWidth: Int,
@@ -291,8 +291,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             cachePointHolder.clear()
             cacheDirectionAngleHolder.clear()
 
-            var ex = points[0]
-            var ey = points[1]
+            val ex = points[0]
+            val ey = points[1]
 
             val brushSmoothness = brush.smoothness
             brush.smoothness = 0f

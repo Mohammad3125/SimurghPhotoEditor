@@ -66,7 +66,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     private var isMoved = false
 
-    private val touchData = TouchData(0f, 0f, 0f, 0f, 0f)
+    private val touchData = TouchData(0f, 0f, 0f, 0f, 0, 0f)
 
     // Used to retrieve touch slopes.
     private var scaledTouchSlope = 0
@@ -217,6 +217,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         rotationDetector = TwoFingerRotationDetector(this)
 
         scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
+
+        println("maximum fling speed ${ViewConfiguration.get(context).scaledMaximumFlingVelocity}")
 
     }
 
@@ -521,7 +523,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                                 checkForStateSave()
 
-                                setTouchData(initialX, initialY, 0f, 0f, pressure)
+                                setTouchData(initialX, initialY, 0f, 0f, eventTime, pressure)
                                 callPainterOnMoveBegin()
                             }
 
@@ -536,6 +538,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                                         histY,
                                         histX - initialX,
                                         histY - initialY,
+                                        getHistoricalEventTime(0),
                                         getHistoricalPressure(0)
                                     )
 
@@ -543,7 +546,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                                 }
                             }
 
-                            setTouchData(x, y, x - initialX, y - initialY, pressure)
+                            setTouchData(x, y, x - initialX, y - initialY, eventTime, pressure)
                             callPainterOnMove()
 
                         }
@@ -561,7 +564,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             callOnDoubleTapListeners()
                         } else if (shouldEndMoveOnPainter()) {
                             checkForStateSave()
-                            setTouchData(x, y, x - initialX, y - initialY, pressure)
+                            setTouchData(x, y, x - initialX, y - initialY, eventTime, pressure)
                             callPainterOnMoveEnd()
                         }
 
@@ -597,7 +600,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return false
     }
 
-    private fun setTouchData(ex: Float, ey: Float, dx: Float, dy: Float, pressure: Float) {
+    private fun setTouchData(
+        ex: Float,
+        ey: Float,
+        dx: Float,
+        dy: Float,
+        time: Long,
+        pressure: Float
+    ) {
         touchData.let { data ->
             mapTouchPoints(ex, ey).let { points ->
                 data.ex = points[0]
@@ -605,6 +615,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             }
             data.dx = dx
             data.dy = dy
+            data.time = time
             data.pressure = pressure
         }
 
@@ -1383,6 +1394,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         var ey: Float,
         var dx: Float,
         var dy: Float,
+        var time: Long,
         var pressure: Float
     )
 
