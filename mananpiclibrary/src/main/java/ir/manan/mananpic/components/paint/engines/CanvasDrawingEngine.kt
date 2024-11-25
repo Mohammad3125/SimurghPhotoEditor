@@ -342,6 +342,10 @@ class CanvasDrawingEngine : DrawingEngine {
         squish: Float
     ) {
         when {
+            isSizePressureSensitive -> {
+                canvas.scale(lastSizePressure, lastSizePressure)
+            }
+
             sizeJitter > 0f -> {
                 val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
                 val finalScale =
@@ -367,9 +371,6 @@ class CanvasDrawingEngine : DrawingEngine {
                 canvas.scale(finalSizeVariance, finalSizeVariance)
             }
 
-            isSizePressureSensitive -> {
-                canvas.scale(lastSizePressure, lastSizePressure)
-            }
         }
     }
 
