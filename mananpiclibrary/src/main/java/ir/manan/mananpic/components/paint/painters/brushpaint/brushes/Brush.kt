@@ -19,25 +19,25 @@ abstract class Brush {
 
     open var opacityVariance: Float = 0f
 
-    open var opacityVarianceSpeed = 0.6f
+    open var opacityVarianceSpeed: Float = 0.6f
 
-    open var opacityVarianceEasing = 0.1f
+    open var opacityVarianceEasing: Float = 0.1f
 
-    open var sizePressureSensitivity = 0.6f
+    open var sizePressureSensitivity: Float = 0.6f
 
-    open var minimumPressureSize = 0.3f
+    open var minimumPressureSize: Float = 0.3f
 
-    open var maximumPressureSize = 1f
+    open var maximumPressureSize: Float = 1f
 
     open var isSizePressureSensitive = true
 
-    open var opacityPressureSensitivity = 0.5f
+    open var opacityPressureSensitivity: Float = 0.5f
 
-    open var minimumPressureOpacity = 0f
+    open var minimumPressureOpacity: Float = 0f
 
-    open var maximumPressureOpacity = 1f
+    open var maximumPressureOpacity: Float = 1f
 
-    open var isOpacityPressureSensitive = false
+    open var isOpacityPressureSensitive = true
 
     open var spacing: Float = 0.1f
 
@@ -55,7 +55,7 @@ abstract class Brush {
 
     open var sizeVarianceEasing: Float = 0.05f
 
-    open var squish = 0f
+    open var squish: Float = 0f
 
     open var hueJitter = 0
 
@@ -71,7 +71,7 @@ abstract class Brush {
 
     open var startTaperSpeed = 0f
 
-    open var startTaperSize = 1f
+    open var startTaperSize: Float = 1f
 
     var spacedWidth: Float = 0.0f
         get() = size * spacing
