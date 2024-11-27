@@ -746,7 +746,7 @@ class CropperTool : Painter() {
                 Bitmap.createBitmap(
                     tempRect.width().toInt(),
                     tempRect.height().toInt(),
-                    layer.bitmap.config
+                    layer.bitmap.config ?: Bitmap.Config.ARGB_8888
                 )
 
             cropCanvas.setBitmap(croppedBitmap)

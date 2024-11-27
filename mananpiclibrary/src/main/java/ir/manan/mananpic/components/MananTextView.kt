@@ -389,8 +389,8 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
 
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        canvas?.run {
+    override fun onDraw(canvas: Canvas) {
+        canvas.run {
             super.onDraw(this)
 
             var finalTranslateX = 0f

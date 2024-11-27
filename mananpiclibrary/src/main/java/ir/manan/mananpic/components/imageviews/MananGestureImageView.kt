@@ -2,7 +2,11 @@ package ir.manan.mananpic.components.imageviews
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -183,8 +187,8 @@ abstract class MananGestureImageView(
     }
 
     override fun onScroll(
+        e1: MotionEvent?,
         p0: MotionEvent,
-        p1: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
@@ -196,8 +200,8 @@ abstract class MananGestureImageView(
     }
 
     override fun onFling(
+        e1: MotionEvent?,
         p0: MotionEvent,
-        p1: MotionEvent,
         velocityX: Float,
         velocityY: Float
     ): Boolean {
@@ -254,9 +258,9 @@ abstract class MananGestureImageView(
         }
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        if (bitmap != null && canvas != null) {
-            canvas.drawBitmap(bitmap!!, imageviewMatrix, bitmapPaint)
+    override fun onDraw(canvas: Canvas) {
+        bitmap?.let {
+            canvas.drawBitmap(it, imageviewMatrix, bitmapPaint)
         }
     }
 

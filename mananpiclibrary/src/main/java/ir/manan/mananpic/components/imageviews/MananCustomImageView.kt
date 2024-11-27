@@ -1,7 +1,14 @@
 package ir.manan.mananpic.components.imageviews
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.ColorFilter
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.view.View
 import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.properties.Bitmapable
@@ -67,8 +74,8 @@ class MananCustomImageView(context: Context) : View(context), MananComponent,
     }
 
 
-    override fun onDraw(canvas: Canvas?) {
-        canvas?.run {
+    override fun onDraw(canvas: Canvas) {
+        canvas.run {
             bitmap?.let {
                 drawBitmap(it, 0f, 0f, bitmapPaint)
             }

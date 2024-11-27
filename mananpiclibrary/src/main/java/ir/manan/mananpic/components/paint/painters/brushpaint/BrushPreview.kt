@@ -121,11 +121,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         }
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        if (canvas == null) {
-            return
-        }
-
+    override fun onDraw(canvas: Canvas) {
         brush?.let {
             drawPoints(canvas, it)
         }

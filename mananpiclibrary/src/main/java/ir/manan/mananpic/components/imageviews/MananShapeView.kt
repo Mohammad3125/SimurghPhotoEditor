@@ -253,9 +253,9 @@ class MananShapeView(
         return strokeSize
     }
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas?.run {
+        canvas.run {
             val half = strokeSize * 0.5f
 
             save()

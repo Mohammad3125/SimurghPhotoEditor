@@ -1,7 +1,13 @@
 package ir.manan.mananpic.components
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.DashPathEffect
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -751,19 +757,19 @@ open class MananFrame(context: Context, attr: AttributeSet?) : MananParent(conte
 
     }
 
-    override fun dispatchDraw(canvas: Canvas?) {
+    override fun dispatchDraw(canvas: Canvas) {
         // Draws page rectangle to be visible to user.
-        canvas?.drawRect(pageRect, pagePaint)
+        canvas.drawRect(pageRect, pagePaint)
 
         lockedBackgroundBitmap?.let {
-            canvas?.drawBitmap(it, lockedBitmapDstRect, pageRectRect, backgroundBitmapPaint)
+            canvas.drawBitmap(it, lockedBitmapDstRect, pageRectRect, backgroundBitmapPaint)
         }
 
         super.dispatchDraw(canvas)
     }
 
-    override fun draw(canvas: Canvas?) {
-        canvas?.run {
+    override fun draw(canvas: Canvas) {
+        canvas.run {
             super.draw(this)
 
             currentEditingView?.run {

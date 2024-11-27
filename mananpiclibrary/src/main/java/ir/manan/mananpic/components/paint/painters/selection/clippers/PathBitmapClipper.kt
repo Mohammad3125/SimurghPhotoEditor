@@ -1,6 +1,12 @@
 package ir.manan.mananpic.components.paint.painters.selection.clippers
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import androidx.core.graphics.toRect
 import ir.manan.mananpic.components.paint.painters.brushpaint.BrushPreview
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
@@ -141,7 +147,7 @@ class PathBitmapClipper(
     }
 
     private fun createMaskedBitmap(bitmap: Bitmap): Bitmap {
-        return bitmap.copy(bitmap.config, true)
+        return bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
     }
 
     private fun createSmoothEdgesBitmap(width: Int, height: Int): Bitmap {

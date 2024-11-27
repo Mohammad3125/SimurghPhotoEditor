@@ -3,12 +3,25 @@ package ir.manan.mananpic.components.cropper
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PointF
+import android.graphics.RectF
 import android.util.AttributeSet
+import android.view.MotionEvent
 import androidx.core.text.isDigitsOnly
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
-import ir.manan.mananpic.components.cropper.HandleBar.*
+import ir.manan.mananpic.components.cropper.HandleBar.BOTTOM
+import ir.manan.mananpic.components.cropper.HandleBar.BOTTOM_LEFT
+import ir.manan.mananpic.components.cropper.HandleBar.BOTTOM_RIGHT
+import ir.manan.mananpic.components.cropper.HandleBar.LEFT
+import ir.manan.mananpic.components.cropper.HandleBar.RIGHT
+import ir.manan.mananpic.components.cropper.HandleBar.TOP
+import ir.manan.mananpic.components.cropper.HandleBar.TOP_LEFT
+import ir.manan.mananpic.components.cropper.HandleBar.TOP_RIGHT
 import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioFree
 import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioLocked
 import ir.manan.mananpic.components.imageviews.MananGestureImageView
@@ -397,11 +410,29 @@ class MananCropper(context: Context, attr: AttributeSet?) : MananGestureImageVie
         invalidate()
     }
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onScroll(
+        e1: MotionEvent?,
+        e2: MotionEvent,
+        distanceX: Float,
+        distanceY: Float
+    ): Boolean {
+        return false
+    }
+
+    override fun onFling(
+        e1: MotionEvent?,
+        p0: MotionEvent,
+        velocityX: Float,
+        velocityY: Float
+    ): Boolean {
+        return false
+    }
+
+    override fun onDraw(canvas: Canvas) {
         // Draw image.
         super.onDraw(canvas)
 
-        canvas!!.run {
+        canvas.run {
             // Draw frame.
             drawRect(frameRect, framePaint)
 

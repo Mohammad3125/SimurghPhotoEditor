@@ -42,7 +42,7 @@ class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitm
     override fun copy(): Bitmap? {
         doIfBitmapAndMaskNotNull { bit, mask ->
 
-            val copy = bit.copy(bit.config, true)
+            val copy = bit.copy(bit.config ?: Bitmap.Config.ARGB_8888, true)
 
             changePaintPorterDuffMode(PorterDuff.Mode.DST_IN) {
                 drawMaskLayer(copy, mask)

@@ -127,7 +127,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     fun invertMaskLayer() {
         if (this::maskLayer.isInitialized) {
-            val invert = maskLayer.bitmap.copy(maskLayer.bitmap.config, true)
+            val invert = maskLayer.bitmap.copy(maskLayer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
             invert.eraseColor(Color.BLACK)
 
             canvasOperation.setBitmap(invert)
@@ -199,7 +199,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         }
 
         maskLayer.bitmap.let { layer ->
-            undoStack.push(layer.copy(layer.config, true))
+            undoStack.push(layer.copy(layer.config ?: Bitmap.Config.ARGB_8888, true))
         }
 
     }
@@ -244,7 +244,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
     private fun restoreBitmapState(bitmap: Bitmap) {
-        maskLayer.bitmap = bitmap.copy(bitmap.config, true)
+        maskLayer.bitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
         maskTool?.onLayerChanged(maskLayer)
     }
 

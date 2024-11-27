@@ -218,12 +218,19 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
 
-        println("maximum fling speed ${ViewConfiguration.get(context).scaledMaximumFlingVelocity}")
-
     }
 
     override fun onSingleTapUp(p0: MotionEvent): Boolean {
         return true
+    }
+
+    override fun onScroll(
+        e1: MotionEvent?,
+        e2: MotionEvent,
+        distanceX: Float,
+        distanceY: Float
+    ): Boolean {
+        return false
     }
 
     override fun onSingleTapConfirmed(p0: MotionEvent): Boolean {
@@ -245,22 +252,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     override fun onShowPress(p0: MotionEvent) {
     }
 
-    override fun onScroll(
-        p0: MotionEvent,
-        p1: MotionEvent,
-        distanceX: Float,
-        distanceY: Float
-    ): Boolean {
-        return false
-    }
 
     override fun onLongPress(p0: MotionEvent) {
 
     }
 
     override fun onFling(
+        e1: MotionEvent?,
         p0: MotionEvent,
-        p1: MotionEvent,
         velocityX: Float,
         velocityY: Float
     ): Boolean {
@@ -752,8 +751,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.resetPaint()
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        canvas?.run {
+    override fun onDraw(canvas: Canvas) {
+        canvas.run {
 
             // Concat the canvas to 'canvasMatrix'.
             concat(canvasMatrix)
@@ -877,7 +876,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun isHistorySizeExceeded() = undoStack.size > maximumHistorySize
 
     private fun removeFirstState() {
-        undoStack.removeFirst()
+        undoStack.removeAt(0)
     }
 
 
@@ -1276,7 +1275,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
 
         val finalBitmap = layerHolder.first().bitmap.let { layer ->
-            Bitmap.createBitmap(layer.width, layer.height, layer.config)
+            Bitmap.createBitmap(layer.width, layer.height, layer.config ?: Bitmap.Config.ARGB_8888)
         }
 
         mergeCanvas.setBitmap(finalBitmap)

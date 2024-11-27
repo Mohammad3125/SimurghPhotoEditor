@@ -14,7 +14,7 @@ data class PaintLayer(
 ) {
     fun clone(shouldCloneBitmap: Boolean): PaintLayer {
         return PaintLayer(
-            if (shouldCloneBitmap) bitmap.copy(bitmap.config, true) else bitmap,
+            if (shouldCloneBitmap) bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true) else bitmap,
             Matrix(layerMatrix),
             isLocked,
             opacity,

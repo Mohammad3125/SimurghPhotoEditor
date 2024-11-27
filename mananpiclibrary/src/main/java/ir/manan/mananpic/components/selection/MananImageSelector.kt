@@ -2,7 +2,11 @@ package ir.manan.mananpic.components.selection
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Path
+import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -269,8 +273,8 @@ class MananImageSelector(context: Context, attributeSet: AttributeSet?) :
         callOnStateChangeListeners(selector!!.isClosed())
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        canvas?.run {
+    override fun onDraw(canvas: Canvas) {
+        canvas.run {
             // Save state of canvas.
             save()
             // Concat the canvas to 'canvasMatrix'.

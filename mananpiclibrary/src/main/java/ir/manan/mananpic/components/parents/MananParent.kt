@@ -8,7 +8,12 @@ import android.graphics.RectF
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
-import android.view.*
+import android.view.Gravity
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.view.View
+import android.view.ViewConfiguration
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.core.view.children
 import androidx.core.view.doOnLayout
@@ -197,8 +202,8 @@ abstract class MananParent(context: Context, attributeSet: AttributeSet?) :
         return false
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        canvas?.run {
+    override fun onDraw(canvas: Canvas) {
+        canvas.run {
             if (isCanvasMatrixEnabled)
                 concat(canvasMatrix)
 

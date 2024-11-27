@@ -1,8 +1,16 @@
 package ir.manan.mananpic.components
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import android.util.AttributeSet
+import android.view.MotionEvent
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
@@ -328,10 +336,28 @@ class MananDropper(context: Context, attributeSet: AttributeSet?) :
         invalidate()
     }
 
-    override fun dispatchDraw(canvas: Canvas?) {
+    override fun onScroll(
+        e1: MotionEvent?,
+        e2: MotionEvent,
+        distanceX: Float,
+        distanceY: Float
+    ): Boolean {
+        return false
+    }
+
+    override fun onFling(
+        e1: MotionEvent?,
+        e2: MotionEvent,
+        velocityX: Float,
+        velocityY: Float
+    ): Boolean {
+        return false
+    }
+
+    override fun dispatchDraw(canvas: Canvas) {
         super.dispatchDraw(canvas)
         if (showCircle && bitmapToViewInCircle != null) {
-            canvas?.run {
+            canvas.run {
                 colorRingPaint.color = lastSelectedColor
 
                 // Variables to store positions of drawing to reuse them.

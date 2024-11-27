@@ -37,7 +37,7 @@ abstract class Brush {
 
     open var maximumPressureOpacity: Float = 1f
 
-    open var isOpacityPressureSensitive = true
+    open var isOpacityPressureSensitive = false
 
     open var spacing: Float = 0.1f
 

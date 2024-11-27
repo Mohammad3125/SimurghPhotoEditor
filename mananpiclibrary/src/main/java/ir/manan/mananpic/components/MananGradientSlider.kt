@@ -2,7 +2,11 @@ package ir.manan.mananpic.components
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
 import android.util.AttributeSet
 import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
@@ -157,8 +161,8 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onScroll(
+        e1: MotionEvent?,
         p0: MotionEvent,
-        p1: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
@@ -175,8 +179,8 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onFling(
+        e1: MotionEvent?,
         p0: MotionEvent,
-        p1: MotionEvent,
         velocityX: Float,
         velocityY: Float
     ): Boolean {
@@ -233,9 +237,9 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         drawingBaseline = height * 0.5f
     }
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas?.also { c ->
+        canvas.also { c ->
 
             if(!isFirstCirclesAdded && circleHandles.isEmpty()) {
                 circleHandles.add(CircleHandle(colorCircleStrokeWidth + colorCircleRadius, Color.WHITE))

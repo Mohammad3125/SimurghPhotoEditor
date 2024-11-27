@@ -23,8 +23,8 @@ class PenToolColorPainter : PenToolBase() {
     fun applyColoring(isInverse: Boolean) {
 
         selectedLayer?.let { layer ->
-            if (!this::coloringBitmap.isInitialized) {
-                coloringBitmap = layer.bitmap.copy(layer.bitmap.config, true)
+            if (!this::coloringBitmap.isInitialized && layer.bitmap.config != null) {
+                coloringBitmap = layer.bitmap.copy(layer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
             }
 
             drawLinesIntoPath(path)
