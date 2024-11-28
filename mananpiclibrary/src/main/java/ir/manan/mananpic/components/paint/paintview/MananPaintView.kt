@@ -1181,6 +1181,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         cacheLayers()
     }
 
+    fun isLayerAtIndexLocked(index: Int): Boolean {
+        checkIndex(index)
+        return layerHolder[index].isLocked
+    }
+
+
     fun removeLayerAt(index: Int) {
         checkIndex(index)
 
