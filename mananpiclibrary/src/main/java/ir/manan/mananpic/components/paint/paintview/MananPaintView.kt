@@ -766,6 +766,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                 drawLayer(canvas)
 
+                layersPaint.xfermode = null
+                layersPaint.alpha = 255
+
                 drawBitmap(cachedLayer, 0f, 0f, layersPaint)
 
             } else {
