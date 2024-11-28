@@ -1056,6 +1056,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    fun getLayerOpacityAt(index: Int) : Float {
+        checkIndex(index)
+        return layerHolder[index].opacity
+    }
+
     fun changeSelectedLayerOpacity(opacity: Float) {
         selectedLayer?.opacity = opacity
         invalidate()
