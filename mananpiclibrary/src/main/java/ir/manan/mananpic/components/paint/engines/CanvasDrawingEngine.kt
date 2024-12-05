@@ -342,8 +342,13 @@ class CanvasDrawingEngine : DrawingEngine {
         squish: Float
     ) {
         when {
-            isSizePressureSensitive -> {
-                canvas.scale(lastSizePressure, lastSizePressure)
+
+            squish != 1f -> {
+                val s = lastSizePressure * finalTaperSize * finalSizeVariance
+                canvas.scale(
+                    squish * s,
+                    s
+                )
             }
 
             sizeJitter > 0f -> {
@@ -354,12 +359,8 @@ class CanvasDrawingEngine : DrawingEngine {
                 canvas.scale(finalScale * squish, finalScale)
             }
 
-            squish != 1f -> {
-                val s = lastSizePressure * finalTaperSize * finalSizeVariance
-                canvas.scale(
-                    squish * s,
-                    s
-                )
+            isSizePressureSensitive -> {
+                canvas.scale(lastSizePressure, lastSizePressure)
             }
 
             taperSizeHolder != 1f && startTaperSpeed > 0 -> {
