@@ -1,5 +1,7 @@
 package ir.manan.mananpic.components.paint.paintview
 
+import android.animation.TimeInterpolator
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
@@ -17,11 +19,13 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewConfiguration
+import androidx.core.animation.doOnEnd
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.evaluators.MatrixEvaluator
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
 import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
@@ -206,6 +210,35 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     var isRotatingEnabled = true
     var isScalingEnabled = true
     var isTranslationEnabled = true
+
+    // Used to animate the matrix in MatrixEvaluator
+    private val endMatrix = MananMatrix()
+    private val startMatrix = MananMatrix()
+
+
+    var matrixAnimationDuration: Long = 500
+        set(value) {
+            field = value
+            resetMatrixAnimator.duration = field
+        }
+
+    var matrixAnimationInterpolator: TimeInterpolator = FastOutSlowInInterpolator()
+        set(value) {
+            field = value
+            resetMatrixAnimator.interpolator = field
+        }
+
+
+    private val resetMatrixAnimator by lazy {
+        ValueAnimator.ofObject(MatrixEvaluator(), startMatrix, endMatrix).apply {
+            interpolator = matrixAnimationInterpolator
+            duration = matrixAnimationDuration
+            addUpdateListener {
+                canvasMatrix.set(it.animatedValue as MananMatrix)
+                invalidate()
+            }
+        }
+    }
 
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
@@ -401,7 +434,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         painter?.let { painter ->
-            if (event == null) {
+            if (event == null || resetMatrixAnimator.isRunning) {
                 return false
             }
 
@@ -1056,7 +1089,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun getLayerOpacityAt(index: Int) : Float {
+    fun getLayerOpacityAt(index: Int): Float {
         checkIndex(index)
         return layerHolder[index].opacity
     }
@@ -1303,6 +1336,31 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
 
         return finalBitmap
+    }
+
+    fun resetTransformationMatrix() {
+
+        if (canvasMatrix.isIdentity) {
+            return
+        }
+
+        startMatrix.set(canvasMatrix)
+        endMatrix.reset()
+        resetMatrixAnimator.start()
+    }
+
+    fun doAfterResetTransformation(func: () -> Unit) {
+        resetTransformationMatrix()
+
+        if (canvasMatrix.isIdentity) {
+            func.invoke()
+        } else {
+            resetMatrixAnimator.doOnEnd {
+                func.invoke()
+                // prevents this function to be called again.
+                resetMatrixAnimator.listeners.clear()
+            }
+        }
     }
 
     private fun callListenerForFirstTime() {
