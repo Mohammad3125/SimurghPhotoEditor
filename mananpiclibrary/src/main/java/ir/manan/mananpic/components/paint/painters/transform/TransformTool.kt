@@ -1344,6 +1344,29 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         onTransformed(matrix)
     }
 
+    fun flipSelectedChildVertically() {
+        _selectedChild?.apply {
+            transformable.getBounds(tempRect)
+            mappingMatrix.setScale(1f, -1f, tempRect.centerX(), tempRect.centerY())
+            transformationMatrix.preConcat(mappingMatrix)
+            mergeMatrices(this)
+            sendMessage(PainterMessage.INVALIDATE)
+        }
+    }
+
+    fun flipSelectedChildHorizontally() {
+        _selectedChild?.apply {
+            transformable.getBounds(tempRect)
+            mappingMatrix.setScale(-1f, 1f, tempRect.centerX(), tempRect.centerY())
+            transformationMatrix.preConcat(mappingMatrix)
+            mergeMatrices(this)
+            sendMessage(PainterMessage.INVALIDATE)
+        }
+    }
+
+
+
+
     fun setMatrix(matrix: Matrix) {
         _selectedChild?.apply {
             transformationMatrix.set(matrix)
