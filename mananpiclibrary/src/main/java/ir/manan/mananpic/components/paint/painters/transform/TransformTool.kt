@@ -12,6 +12,13 @@ import androidx.core.content.res.ResourcesCompat
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.MananFrame.Guidelines
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.BOTTOM
+import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.CENTER
+import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.HORIZONTAL
+import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.LEFT
+import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.RIGHT
+import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.TOP
+import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.VERTICAL
 import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
@@ -1348,6 +1355,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    fun getChildMatrix(): Matrix? =
+        _selectedChild?.transformationMatrix
+
+
     fun getSelectedChildBounds(rect: RectF): Boolean {
         _selectedChild?.let { child ->
             mapFinalPointsForDraw(child)
@@ -1355,6 +1366,28 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             return true
         }
         return false
+    }
+
+    fun setSelectedChildAlignment(alignment: TransformableAlignment) {
+        _selectedChild?.let {
+            getSelectedChildBounds(tempRect)
+
+            when (alignment) {
+                TOP -> mappingMatrix.setTranslate(0f, bounds.top - tempRect.top)
+                BOTTOM -> mappingMatrix.setTranslate(0f, bounds.bottom - tempRect.bottom)
+                LEFT -> mappingMatrix.setTranslate(bounds.left - tempRect.left, 0f)
+                RIGHT -> mappingMatrix.setTranslate(bounds.right - tempRect.right, 0F)
+                VERTICAL -> mappingMatrix.setTranslate(0f, bounds.centerY() - tempRect.centerY())
+                HORIZONTAL -> mappingMatrix.setTranslate(bounds.centerX() - tempRect.centerX(), 0f)
+                CENTER -> mappingMatrix.setTranslate(
+                    bounds.centerX() - tempRect.centerX(),
+                    bounds.centerY() - tempRect.centerY()
+                )
+            }
+
+            applyMatrix(mappingMatrix)
+
+        }
     }
 
     private data class Child(
@@ -1366,4 +1399,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         val targetRect: RectF?
     )
 
+    enum class TransformableAlignment {
+        TOP, LEFT, RIGHT, BOTTOM, VERTICAL, HORIZONTAL, CENTER
+    }
 }
