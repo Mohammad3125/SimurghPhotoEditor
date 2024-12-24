@@ -190,7 +190,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private fun initializeChild(
         child: Child,
         isSelectChild: Boolean = false,
-        shouldCalculateBounds: Boolean
+        shouldCalculateBounds: Boolean,
+        shouldStickToTargetRect: Boolean = true
     ) {
         child.apply {
             transformable.onInvalidateListener = this@TransformTool
@@ -205,14 +206,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 transformationMatrix.reset()
                 polyMatrix.reset()
 
-                if (targetRect == null) {
+                if (shouldStickToTargetRect && targetRect != null) {
+                    changeMatrixToMatchRect(child, targetRect)
+                } else {
                     transformationMatrix.setRectToRect(
                         targetComponentBounds,
                         bounds,
                         Matrix.ScaleToFit.CENTER
                     )
-                } else {
-                    changeMatrixToMatchRect(child, targetRect)
                 }
             }
 
@@ -1364,7 +1365,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-
+    fun resetSelectedChildMatrix(resetToBounds: Boolean) {
+        _selectedChild?.apply {
+            initializeChild(this, false, false, resetToBounds)
+            findSmartGuideLines()
+            findRotationSmartGuidelines()
+            sendMessage(PainterMessage.INVALIDATE)
+        }
+    }
 
 
     fun setMatrix(matrix: Matrix) {
