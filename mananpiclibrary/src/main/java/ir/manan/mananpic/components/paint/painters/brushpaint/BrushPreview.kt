@@ -2,12 +2,17 @@ package ir.manan.mananpic.components.paint.painters.brushpaint
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PathMeasure
+import android.graphics.Shader
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.view.doOnLayout
+import ir.manan.mananpic.R
 import ir.manan.mananpic.components.paint.engines.CachedCanvasEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.components.paint.paintview.MananPaintView
@@ -22,6 +27,12 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
     init {
         setLayerType(LAYER_TYPE_HARDWARE, null)
     }
+
+    var isCheckerBoardEnabled = true
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     var brush: Brush? = null
         set(value) {
@@ -40,6 +51,16 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
             requestRender()
         }
+
+    private val checkerPatternPaint by lazy {
+        Paint().apply {
+            shader = BitmapShader(
+                BitmapFactory.decodeResource(resources, R.drawable.checker),
+                Shader.TileMode.REPEAT,
+                Shader.TileMode.REPEAT
+            )
+        }
+    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -122,6 +143,9 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
     }
 
     override fun onDraw(canvas: Canvas) {
+        if (isCheckerBoardEnabled) {
+            canvas.drawPaint(checkerPatternPaint)
+        }
         brush?.let {
             drawPoints(canvas, it)
         }
