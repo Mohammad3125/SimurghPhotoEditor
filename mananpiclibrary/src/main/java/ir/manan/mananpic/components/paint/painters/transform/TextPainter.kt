@@ -163,6 +163,13 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             indicateBoundsChange()
         }
 
+    var isStrikethrough = false
+        set(value) {
+            field = value
+            textPaint.isStrikeThruText = field
+            indicateBoundsChange()
+        }
+
     init {
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
         textPaint.textSize = 256f
