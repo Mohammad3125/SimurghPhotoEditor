@@ -157,10 +157,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     private var gradientPositions: FloatArray? = null
 
-    var isUnderlineEnabled = false
+    var underlineSize = 0f
         set(value) {
             field = value
-            textPaint.isUnderlineText = value
             indicateBoundsChange()
         }
 
@@ -180,7 +179,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textPaint.strokeWidth = textPaint.strokeWidth
             textPainter.textPaint.pathEffect = textPaint.pathEffect
             textPainter.letterSpacing = letterSpacing
-            textPainter.isUnderlineEnabled = isUnderlineEnabled
+            textPainter.underlineSize = underlineSize
             textPainter.extraSpace = extraSpace
             textPainter.textBaseLineY = textBaseLineY
             textPainter.textBaseLineX = textBaseLineX
@@ -225,12 +224,28 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             acc += finalHeights[index]
 
+            val w =
+                ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index]
+
+            val h = acc - finalYBaseLine[index]
+
             canvas.drawText(
                 s,
-                ((rawWidth - finalWidths[index]) * Alignment.getNumber(alignmentText)) - finalXBaseLine[index],
-                acc - finalYBaseLine[index],
+                w,
+                h,
                 textPaint
             )
+
+
+            if (underlineSize > 0f) {
+                canvas.drawRect(
+                    w + finalXBaseLine[index],
+                    h,
+                    (w + finalWidths[index]) + finalXBaseLine[index],
+                    h + underlineSize, textPaint
+                )
+            }
+
 
             shiftTextureWithoutInvalidation(0f, -toTransfer)
         }
@@ -688,9 +703,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 finalExtra = lineSpacing
             }
 
-            if (isUnderlineEnabled && (UNDERLINE_SIZE > textBoundsRect.bottom)) {
-                finalYBaseLine[finalYBaseLine.lastIndex] = UNDERLINE_SIZE.toInt()
-                finalExtra += UNDERLINE_SIZE
+            if (underlineSize > 0f && underlineSize > textBoundsRect.bottom) {
+                finalYBaseLine[finalYBaseLine.lastIndex] = underlineSize.toInt()
+                finalExtra += (underlineSize - textBoundsRect.bottom)
             }
 
             finalHeights.add(h + finalExtra)
@@ -765,6 +780,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 val currentShader = textPaint.shader
                 textPaint.style = Paint.Style.STROKE
 
+
                 textPaint.strokeWidth = textStrokeWidth
                 textPaint.shader = null
                 textPaint.pathEffect = null
@@ -791,9 +807,5 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             restore()
         }
-    }
-
-    companion object {
-        private const val UNDERLINE_SIZE: Float = 30.5f
     }
 }
