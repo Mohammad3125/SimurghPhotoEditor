@@ -18,9 +18,7 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.SweepGradient
 import android.graphics.Typeface
-import android.os.Build
 import android.text.TextPaint
-import androidx.annotation.RequiresApi
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
@@ -51,6 +49,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
         }
+
 
     private val dstOutMode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
 
@@ -98,16 +97,11 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var textStrokeWidth = 0f
     var textStrokeColor: Int = Color.BLACK
 
-    @RequiresApi(api = 21)
     var letterSpacing = 0f
         set(value) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                field = value
-                textPaint.letterSpacing = field
-                indicateBoundsChange()
-            } else {
-                throw IllegalStateException("letter spacing is only available after api 21")
-            }
+            field = value
+            textPaint.letterSpacing = field
+            indicateBoundsChange()
         }
 
     @Transient
@@ -163,8 +157,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     private var gradientPositions: FloatArray? = null
 
+    var isUnderlineEnabled = false
+        set(value) {
+            field = value
+            textPaint.isUnderlineText = value
+            indicateBoundsChange()
+        }
+
     init {
-//        setLayerType(LAYER_TYPE_H ARDWARE, textPaint)
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
         textPaint.textSize = 256f
     }
@@ -179,10 +179,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textPaint.style = textPaint.style
             textPainter.textPaint.strokeWidth = textPaint.strokeWidth
             textPainter.textPaint.pathEffect = textPaint.pathEffect
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                textPainter.letterSpacing = letterSpacing
-            }
-
+            textPainter.letterSpacing = letterSpacing
+            textPainter.isUnderlineEnabled = isUnderlineEnabled
             textPainter.extraSpace = extraSpace
             textPainter.textBaseLineY = textBaseLineY
             textPainter.textBaseLineX = textBaseLineX
@@ -491,9 +489,11 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             Alignment.LEFT -> {
 
             }
+
             Alignment.RIGHT -> {
                 finalShiftValueX = diffCurrentStrokeWithLast
             }
+
             Alignment.CENTER -> {
                 finalShiftValueX = diffCurrentStrokeWithLast * 0.5f
             }
@@ -688,10 +688,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 finalExtra = lineSpacing
             }
 
+            if (isUnderlineEnabled && (UNDERLINE_SIZE > textBoundsRect.bottom)) {
+                finalYBaseLine[finalYBaseLine.lastIndex] = UNDERLINE_SIZE.toInt()
+                finalExtra += UNDERLINE_SIZE
+            }
+
             finalHeights.add(h + finalExtra)
 
             isFirstPass = false
-
         }
 
         rawWidth = maxWidth + extraSpace
@@ -716,9 +720,11 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                     finalTranslateX = halfSpace
                     finalTranslateY = halfSpace
                 }
+
                 Alignment.CENTER -> {
                     finalTranslateY = halfSpace
                 }
+
                 Alignment.RIGHT -> {
                     finalTranslateX = -halfSpace
                     finalTranslateY = halfSpace
@@ -785,5 +791,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             restore()
         }
+    }
+
+    companion object {
+        private const val UNDERLINE_SIZE: Float = 30.5f
     }
 }
