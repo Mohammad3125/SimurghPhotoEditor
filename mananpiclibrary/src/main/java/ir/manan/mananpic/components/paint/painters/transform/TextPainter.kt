@@ -264,13 +264,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
      * @param style Style of typeface, [Typeface.ITALIC],[Typeface.BOLD],[Typeface.BOLD_ITALIC],[Typeface.NORMAL]
      */
     fun setTypeface(typeface: Typeface, style: Int) {
-        val finalTypeface =
-            if (style > 0) {
-                Typeface.create(typeface, style)
-            } else {
-                typeface
-            }
-        textPaint.typeface = finalTypeface
+        textPaint.typeface = Typeface.create(typeface, style)
         indicateBoundsChange()
     }
 
@@ -280,6 +274,10 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     fun setTypeface(typeface: Typeface) {
         textPaint.typeface = typeface
         indicateBoundsChange()
+    }
+
+    fun setTextStyle(style: Int) {
+        setTypeface(textPaint.typeface, style)
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
