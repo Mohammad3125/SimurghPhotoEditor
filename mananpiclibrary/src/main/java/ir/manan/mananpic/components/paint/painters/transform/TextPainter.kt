@@ -793,13 +793,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
                 drawTexts(this, false)
 
+                val lastMode = textPaint.xfermode
                 textPaint.xfermode = dstOutMode
                 textPaint.color = Color.BLACK
                 textPaint.style = Paint.Style.FILL
 
                 drawTexts(this, true)
-                textPaint.xfermode = null
 
+                textPaint.xfermode = lastMode
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
                 textPaint.strokeWidth = 0f
