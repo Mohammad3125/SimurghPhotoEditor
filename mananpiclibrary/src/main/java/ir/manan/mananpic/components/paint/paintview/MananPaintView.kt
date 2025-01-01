@@ -10,7 +10,6 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
@@ -791,7 +790,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             concat(canvasMatrix)
 
             concat(imageviewMatrix)
-            if (isAllLayersCached) {
+            if (isAllLayersCached && !isAnyLayerBlending()) {
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
 
@@ -819,7 +818,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                     layersPaint.alpha = (255 * layer.opacity).toInt()
 
-                    layersPaint.xfermode = layer.blendMode
+                    layersPaint.xfermode = layer.blendingModeObject
 
                     drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
                 }
@@ -829,12 +828,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    private fun isAnyLayerBlending(): Boolean =
+        layerHolder.any { it.blendingModeObject != null }
+
     private fun drawLayer(canvas: Canvas) {
         canvas.apply {
             selectedLayer?.let { layer ->
 
                 layersPaint.alpha = (255 * layer.opacity).toInt()
-                layersPaint.xfermode = layer.blendMode
+                layersPaint.xfermode = layer.blendingModeObject
 
                 drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
 
@@ -1074,7 +1076,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             layersPaint.alpha = (255 * layer.opacity).toInt()
 
-            layersPaint.xfermode = layer.blendMode
+            layersPaint.xfermode = layer.blendingModeObject
 
             mergeCanvas.drawBitmap(
                 layer.bitmap,
@@ -1107,7 +1109,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     fun changeSelectedLayerBlendingMode(blendingMode: PorterDuff.Mode) {
-        selectedLayer?.blendMode = PorterDuffXfermode(blendingMode)
+        selectedLayer?.blendingMode = blendingMode
 
         saveState(shouldClone = false)
 
@@ -1117,7 +1119,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun changedLayerBlendingModeAt(index: Int, blendingMode: PorterDuff.Mode) {
         checkIndex(index)
 
-        layerHolder[index].blendMode = PorterDuffXfermode(blendingMode)
+        layerHolder[index].blendingMode = blendingMode
 
         cacheLayers()
 
@@ -1330,7 +1332,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         layerHolder.forEach { layer ->
             layersPaint.alpha = (255 * layer.opacity).toInt()
 
-            layersPaint.xfermode = layer.blendMode
+            layersPaint.xfermode = layer.blendingModeObject
 
             mergeCanvas.drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
         }

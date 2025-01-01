@@ -10,16 +10,30 @@ data class PaintLayer(
     val layerMatrix: Matrix,
     var isLocked: Boolean = false,
     var opacity: Float,
-    var blendMode: PorterDuffXfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_OVER)
 ) {
+    var blendingMode = PorterDuff.Mode.SRC
+        set(value) {
+            field = value
+            blendingModeObject = if (blendingMode != PorterDuff.Mode.SRC) {
+                PorterDuffXfermode(blendingMode)
+            } else {
+                null
+            }
+        }
+    var blendingModeObject: PorterDuffXfermode? = null
+
     fun clone(shouldCloneBitmap: Boolean): PaintLayer {
         return PaintLayer(
-            if (shouldCloneBitmap) bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true) else bitmap,
+            if (shouldCloneBitmap) bitmap.copy(
+                bitmap.config ?: Bitmap.Config.ARGB_8888,
+                true
+            ) else bitmap,
             Matrix(layerMatrix),
             isLocked,
-            opacity,
-            blendMode
-        )
+            opacity
+        ).also { copied ->
+            copied.blendingMode = blendingMode
+        }
     }
 
     fun set(otherLayer: PaintLayer) {
@@ -27,7 +41,7 @@ data class PaintLayer(
         layerMatrix.set(otherLayer.layerMatrix)
         isLocked = otherLayer.isLocked
         opacity = otherLayer.opacity
-        blendMode = otherLayer.blendMode
+        blendingModeObject = otherLayer.blendingModeObject
     }
 
     override fun equals(other: Any?): Boolean {
@@ -35,7 +49,7 @@ data class PaintLayer(
         return (bitmap.sameAs(other.bitmap)) &&
                 (isLocked == other.isLocked) &&
                 (opacity == other.opacity) &&
-                (blendMode == other.blendMode)
+                (blendingModeObject == other.blendingModeObject)
     }
 
     override fun hashCode(): Int {
@@ -43,7 +57,7 @@ data class PaintLayer(
         result = 31 * result + layerMatrix.hashCode()
         result = 31 * result + isLocked.hashCode()
         result = 31 * result + opacity.hashCode()
-        result = 31 * result + blendMode.hashCode()
+        result = 31 * result + blendingModeObject.hashCode()
         return result
     }
 }
