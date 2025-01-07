@@ -1,6 +1,8 @@
 package ir.manan.mananpic.utils
 
 import android.graphics.Matrix
+import kotlin.math.atan2
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
@@ -34,6 +36,19 @@ class MananMatrix : Matrix() {
 
         return matrixValueHolder[MSCALE_X]
     }
+
+    fun getMatrixRotation(): Float {
+        getValues(matrixValueHolder)
+
+        val scaleX = sqrt(matrixValueHolder[MSCALE_X].toDouble().pow(2.0) + matrixValueHolder[MSKEW_Y].toDouble().pow(2.0)).toFloat()
+
+        return  if (scaleX != 0f) {
+            atan2(matrixValueHolder[MSKEW_X].toDouble(), matrixValueHolder[MSCALE_X].toDouble()).toFloat() * (180 / Math.PI).toFloat()
+        } else {
+            0f
+        }
+    }
+
 
     /**
      * Returns real scale. If rotation is applied to matrix the scale value will change; this method returns the true unaffected scale value.

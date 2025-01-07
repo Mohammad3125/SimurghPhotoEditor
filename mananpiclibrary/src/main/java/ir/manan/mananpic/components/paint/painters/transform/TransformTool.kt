@@ -1345,13 +1345,31 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         onTransformed(matrix)
     }
 
+    fun rotateSelectedChildBy(degree: Float) {
+        _selectedChild?.apply {
+            transformable.getBounds(tempRect)
+            mappingMatrix.setRotate(
+                degree,
+                tempRect.centerX(),
+                tempRect.centerY()
+            )
+            transformationMatrix.preConcat(mappingMatrix)
+            mergeMatrices(this)
+            sendMessage(PainterMessage.INVALIDATE)
+        }
+    }
+
+    fun resetSelectedChildRotation() {
+        getChildMatrix()?.let {
+            rotateSelectedChildBy(it.getMatrixRotation())
+        }
+    }
+
     fun flipSelectedChildVertically() {
         _selectedChild?.apply {
             transformable.getBounds(tempRect)
             mappingMatrix.setScale(1f, -1f, tempRect.centerX(), tempRect.centerY())
-            transformationMatrix.preConcat(mappingMatrix)
-            mergeMatrices(this)
-            sendMessage(PainterMessage.INVALIDATE)
+            preConcatTransformationMatrix(this, mappingMatrix)
         }
     }
 
@@ -1359,10 +1377,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         _selectedChild?.apply {
             transformable.getBounds(tempRect)
             mappingMatrix.setScale(-1f, 1f, tempRect.centerX(), tempRect.centerY())
-            transformationMatrix.preConcat(mappingMatrix)
-            mergeMatrices(this)
-            sendMessage(PainterMessage.INVALIDATE)
+            preConcatTransformationMatrix(this, mappingMatrix)
         }
+    }
+
+    private fun preConcatTransformationMatrix(child: Child, matrix: Matrix) {
+        child.transformationMatrix.preConcat(mappingMatrix)
+        mergeMatrices(child)
+        sendMessage(PainterMessage.INVALIDATE)
     }
 
     fun resetSelectedChildMatrix(resetToBounds: Boolean) {
@@ -1386,7 +1408,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    fun getChildMatrix(): Matrix? =
+    fun getChildMatrix(): MananMatrix? =
         _selectedChild?.transformationMatrix
 
 
