@@ -90,7 +90,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         Canvas()
     }
 
-    var isFreeTransform = true
+    var isFreeTransform = false
+        set(value) {
+            field = value
+            sendMessage(PainterMessage.INVALIDATE)
+        }
 
     private var firstSelectedIndex = -1
     private var secondSelectedIndex = -1
