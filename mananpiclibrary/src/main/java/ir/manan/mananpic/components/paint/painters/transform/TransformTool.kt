@@ -539,8 +539,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
         }
 
-        findSmartGuideLines()
-        findRotationSmartGuidelines()
+        findAllGuidelines()
 
         firstSelectedIndex = -1
         secondSelectedIndex = -1
@@ -737,8 +736,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     override fun onTransformed(transformMatrix: Matrix) {
         _selectedChild?.let {
             it.transformationMatrix.postConcat(transformMatrix)
-            findSmartGuideLines()
-            findRotationSmartGuidelines()
+            findAllGuidelines()
             mergeMatrices(it)
             sendMessage(PainterMessage.INVALIDATE)
         }
@@ -1355,6 +1353,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             )
             transformationMatrix.preConcat(mappingMatrix)
             mergeMatrices(this)
+            findAllGuidelines()
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -1384,24 +1383,22 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private fun preConcatTransformationMatrix(child: Child, matrix: Matrix) {
         child.transformationMatrix.preConcat(mappingMatrix)
         mergeMatrices(child)
+        findAllGuidelines()
         sendMessage(PainterMessage.INVALIDATE)
     }
 
     fun resetSelectedChildMatrix(resetToBounds: Boolean) {
         _selectedChild?.apply {
             initializeChild(this, false, false, resetToBounds)
-            findSmartGuideLines()
-            findRotationSmartGuidelines()
+            findAllGuidelines()
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
 
-
     fun setMatrix(matrix: Matrix) {
         _selectedChild?.apply {
             transformationMatrix.set(matrix)
-            findSmartGuideLines()
-            findRotationSmartGuidelines()
+            findAllGuidelines()
             mergeMatrices(this)
             sendMessage(PainterMessage.INVALIDATE)
             invalidate()
@@ -1441,6 +1438,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             applyMatrix(mappingMatrix)
 
         }
+    }
+
+    private fun findAllGuidelines() {
+        findSmartGuideLines()
+        findRotationSmartGuidelines()
     }
 
     private data class Child(

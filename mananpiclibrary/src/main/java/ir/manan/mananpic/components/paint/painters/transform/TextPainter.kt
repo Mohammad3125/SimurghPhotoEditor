@@ -217,6 +217,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 textPainter.gradientPositions = gradientPositions!!.clone()
             }
 
+            textPainter.text = text
+
         }
     }
 
