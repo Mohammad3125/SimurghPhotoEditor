@@ -5,12 +5,15 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.RectF
+import android.graphics.Shader
 import android.os.Build
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -20,6 +23,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import androidx.core.animation.doOnEnd
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import ir.manan.mananpic.R
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
@@ -66,6 +70,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private var firstDxSum = 0f
     private var firstDySum = 0f
 
+    var isCheckerBoardEnabled = true
+        set(value) {
+            field = value
+            cacheLayers()
+            invalidate()
+        }
 
     private var isMoved = false
 
@@ -239,6 +249,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    private val checkerPatternPaint by lazy {
+        Paint().apply {
+            shader = BitmapShader(
+                BitmapFactory.decodeResource(resources, R.drawable.checker),
+                Shader.TileMode.REPEAT,
+                Shader.TileMode.REPEAT
+            )
+        }
+    }
+
     init {
         scaleDetector = ScaleGestureDetector(context, this).apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -249,6 +269,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         rotationDetector = TwoFingerRotationDetector(this)
 
         scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
+
+        setLayerType(LAYER_TYPE_HARDWARE, null)
 
     }
 
@@ -835,13 +857,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         canvas.apply {
             selectedLayer?.let { layer ->
 
+                save()
+                clipRect(0, 0, layer.bitmap.width, layer.bitmap.height)
+
+                if (layer === layerHolder.first() && isCheckerBoardEnabled) {
+                    drawPaint(checkerPatternPaint)
+                }
+
                 layersPaint.alpha = (255 * layer.opacity).toInt()
                 layersPaint.xfermode = layer.blendingModeObject
 
                 drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
-
-                save()
-                clipRect(0, 0, layer.bitmap.width, layer.bitmap.height)
 
                 painter?.draw(this)
 
@@ -1041,7 +1067,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                 mergeCanvas.setBitmap(partiallyCachedLayer)
 
-                mergeCanvas.drawBitmap(mainBitmap, 0f, 0f, layersPaint)
+                if (isCheckerBoardEnabled) {
+                    mergeCanvas.drawPaint(checkerPatternPaint)
+                }
 
                 val selectedLayerIndex = layerHolder.indexOf(sv)
 
