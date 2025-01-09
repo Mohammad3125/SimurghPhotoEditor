@@ -145,6 +145,13 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             invalidate()
         }
 
+    var typeface: Typeface = Typeface.DEFAULT
+        set(value) {
+            field = value
+            textPaint.typeface = typeface
+            indicateBoundsChange()
+        }
+
 
     private var pathOnValue = 0f
     private var pathOffValue = 0f
@@ -267,14 +274,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
      */
     fun setTypeface(typeface: Typeface, style: Int) {
         textPaint.typeface = Typeface.create(typeface, style)
-        indicateBoundsChange()
-    }
-
-    /**
-     * Sets type face of current text.
-     */
-    fun setTypeface(typeface: Typeface) {
-        textPaint.typeface = typeface
         indicateBoundsChange()
     }
 
