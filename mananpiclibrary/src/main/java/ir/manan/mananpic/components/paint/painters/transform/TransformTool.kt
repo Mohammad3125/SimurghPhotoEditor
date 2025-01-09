@@ -159,6 +159,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private val smartGuideLineDashedPathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
 
+    var onChildSelected : ((Transformable) -> Unit)? = null
+    var onChildDeselected : (() -> Unit)? = null
+
     override fun initialize(
         context: Context,
         transformationMatrix: MananMatrix,
@@ -537,6 +540,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             _selectedChild?.let {
                 selectChild(it, true)
+                onChildSelected?.invoke(it.transformable)
+            }
+
+            if(_selectedChild == null) {
+                onChildDeselected?.invoke()
             }
 
             invalidate()
