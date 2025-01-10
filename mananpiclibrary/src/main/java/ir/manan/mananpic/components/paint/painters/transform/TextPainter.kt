@@ -730,8 +730,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     override fun draw(canvas: Canvas) {
         canvas.run {
 
-            saveLayer(textBounds, null)
-
             var finalTranslateX = 0f
             var finalTranslateY = 0f
 
@@ -811,8 +809,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             }
 
             drawTexts(this)
-
-            restore()
         }
     }
 }
