@@ -45,9 +45,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     constructor(context: Context) : this(context, null)
 
-    private val layersPaint = Paint().apply {
-        isFilterBitmap = true
+    private val layersPaint by lazy {
+        Paint().apply {
+            isFilterBitmap = true
+        }
     }
+
     private var initialX = 0f
     private var initialY = 0f
 
@@ -270,7 +273,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
 
-        setLayerType(LAYER_TYPE_HARDWARE, null)
 
     }
 
@@ -1370,7 +1372,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun resetTransformationMatrix() {
 
-        if (canvasMatrix.isIdentity) {
+        if (canvasMatrix.isIdentity || resetMatrixAnimator.isRunning) {
             return
         }
 
