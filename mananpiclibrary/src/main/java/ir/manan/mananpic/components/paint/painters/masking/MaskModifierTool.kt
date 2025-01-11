@@ -68,11 +68,11 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         }
 
     var maskOpacity = 255
-    set(value) {
-        field = value
-        maskPaint.alpha = field
-        sendMessage(PainterMessage.INVALIDATE)
-    }
+        set(value) {
+            field = value
+            maskPaint.alpha = field
+            sendMessage(PainterMessage.INVALIDATE)
+        }
 
     override fun initialize(
         context: Context,
@@ -127,7 +127,8 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
     fun invertMaskLayer() {
         if (this::maskLayer.isInitialized) {
-            val invert = maskLayer.bitmap.copy(maskLayer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+            val invert =
+                maskLayer.bitmap.copy(maskLayer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
             invert.eraseColor(Color.BLACK)
 
             canvasOperation.setBitmap(invert)
@@ -167,16 +168,23 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    fun clip() {
+    fun clip(shouldSaveHistory: Boolean = true) {
         setClipper()
         clipper.clip()
-        sendMessage(PainterMessage.SAVE_HISTORY)
+
+        if (shouldSaveHistory) {
+            sendMessage(PainterMessage.SAVE_HISTORY)
+        }
     }
 
-    fun cut(): Bitmap? {
+    fun cut(shouldSaveHistory: Boolean = true): Bitmap? {
         setClipper()
         val cutBitmap = clipper.cut()
-        sendMessage(PainterMessage.SAVE_HISTORY)
+
+        if (shouldSaveHistory) {
+            sendMessage(PainterMessage.SAVE_HISTORY)
+        }
+
         return cutBitmap
     }
 
