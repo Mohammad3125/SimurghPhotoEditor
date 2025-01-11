@@ -229,7 +229,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         }
     }
 
-    private fun drawTexts(canvas: Canvas, tt: Boolean = false) {
+    private fun drawTexts(canvas: Canvas) {
 
         var acc = 0f
         finalTexts.forEachIndexed { index, s ->
@@ -750,12 +750,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 }
             }
 
+            if (textStrokeWidth > 0f) {
+                saveLayer(0f, 0f, rawWidth, rawHeight, textPaint)
+            }
+
             translate(
                 finalTranslateX,
                 finalTranslateY
             )
-
-
 
             if (shadowRadius > 0) {
                 val currentColor = textColor
@@ -777,38 +779,45 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 textPaint.clearShadowLayer()
             }
 
+            val currentMode = textPaint.xfermode
+
             if (textStrokeWidth > 0f && textPaint.pathEffect == null) {
+
                 val currentColor = textColor
                 val currentStyle = textPaint.style
                 val currentPath = textPaint.pathEffect
                 val currentShader = textPaint.shader
+
                 textPaint.style = Paint.Style.STROKE
-
-
                 textPaint.strokeWidth = textStrokeWidth
                 textPaint.shader = null
                 textPaint.pathEffect = null
                 textPaint.color = textStrokeColor
+                textPaint.xfermode = null
 
-                drawTexts(this, false)
+                drawTexts(this)
 
-                val lastMode = textPaint.xfermode
                 textPaint.xfermode = dstOutMode
                 textPaint.color = Color.BLACK
                 textPaint.style = Paint.Style.FILL
 
-                drawTexts(this, true)
+                drawTexts(this)
 
-                textPaint.xfermode = lastMode
+                textPaint.xfermode = null
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
                 textPaint.strokeWidth = 0f
                 textPaint.pathEffect = currentPath
                 textPaint.color = currentColor
-
             }
 
             drawTexts(this)
+
+            if (textStrokeWidth > 0f) {
+                textPaint.xfermode = currentMode
+                restore()
+            }
+
         }
     }
 }
