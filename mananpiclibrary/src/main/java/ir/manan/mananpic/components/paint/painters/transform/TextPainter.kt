@@ -758,9 +758,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 }
             }
 
-            if (textStrokeWidth > 0f) {
-                saveLayer(0f, 0f, rawWidth, rawHeight, textPaint)
-            }
 
             translate(
                 finalTranslateX,
@@ -785,6 +782,10 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 textPaint.color = currentColor
 
                 textPaint.clearShadowLayer()
+            }
+
+            if (textStrokeWidth > 0f) {
+                saveLayer(-finalTranslateX, -finalTranslateY, rawWidth, rawHeight, textPaint)
             }
 
             val currentMode = textPaint.xfermode
