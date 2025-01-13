@@ -177,7 +177,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             indicateBoundsChange()
         }
 
-    private var currentTexture : Bitmap? = null
+    private var currentTexture: Bitmap? = null
 
     init {
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
@@ -202,12 +202,17 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textStrokeColor = textStrokeColor
             textPainter.textStrokeWidth = textStrokeWidth
             textPainter.shaderRotationHolder = shaderRotationHolder
-            textPainter.paintShader = paintShader
+
+            getTexture()?.let { t ->
+                textPainter.applyTexture(t)
+            }
+
             textPainter.shaderMatrix.set(shaderMatrix)
-            textPainter.textPaint.shader = paintShader
+
             if (textPainter.textPaint.shader != null) {
                 textPainter.textPaint.shader.setLocalMatrix(shaderMatrix)
             }
+
             textPainter.textPaint.maskFilter = textPaint.maskFilter
             if (blendMode != PorterDuff.Mode.SRC) {
                 textPainter.setBlendMode(blendMode)

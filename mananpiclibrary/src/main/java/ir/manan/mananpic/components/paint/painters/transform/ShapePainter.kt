@@ -80,7 +80,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     private var pivotX = 0f
     private var pivotY = 0f
 
-    private var currentTexture : Bitmap? = null
+    private var currentTexture: Bitmap? = null
 
     override fun changeColor(color: Int) {
         shapeColor = color
@@ -100,9 +100,10 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
             painter.strokeSize = strokeSize
             painter.strokeColor = strokeColor
             painter.shaderRotationHolder = shaderRotationHolder
-            painter.paintShader = paintShader
+            getTexture()?.let { t ->
+                painter.applyTexture(t)
+            }
             painter.shaderMatrix.set(shaderMatrix)
-            painter.shapePaint.shader = paintShader
             if (painter.shapePaint.shader != null) {
                 painter.shapePaint.shader.setLocalMatrix(shaderMatrix)
             }
