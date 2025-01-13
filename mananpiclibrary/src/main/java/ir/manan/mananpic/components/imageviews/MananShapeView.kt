@@ -327,6 +327,10 @@ class MananShapeView(
         invalidate()
     }
 
+    override fun getTexture(): Bitmap? {
+        TODO("Not yet implemented")
+    }
+
 
     override fun shiftColor(dx: Float, dy: Float) {
         shapePaint.shader?.run {

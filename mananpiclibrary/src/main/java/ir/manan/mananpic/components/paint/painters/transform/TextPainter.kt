@@ -177,6 +177,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             indicateBoundsChange()
         }
 
+    private var currentTexture : Bitmap? = null
+
     init {
         // Minimum size of a small font cache recommended in OpenGlRendered properties.
         textPaint.textSize = 256f
@@ -333,6 +335,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
+        currentTexture = bitmap
         paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
             setLocalMatrix(shaderMatrix)
         }
@@ -341,6 +344,10 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             setLocalMatrix(shaderMatrix)
         }
         invalidate()
+    }
+
+    override fun getTexture(): Bitmap? {
+        return currentTexture
     }
 
     override fun shiftColor(dx: Float, dy: Float) {
@@ -398,6 +405,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     override fun removeTexture() {
         paintShader = null
+        currentTexture = null
         textPaint.shader = null
         invalidate()
     }

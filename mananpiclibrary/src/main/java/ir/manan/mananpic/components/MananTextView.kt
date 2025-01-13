@@ -612,6 +612,10 @@ class MananTextView(context: Context, attr: AttributeSet?) : View(context, attr)
         invalidate()
     }
 
+    override fun getTexture(): Bitmap {
+        TODO("Not yet implemented")
+    }
+
     override fun shiftColor(dx: Float, dy: Float) {
         textPaint.shader?.run {
             shaderMatrix.postTranslate(dx, dy)

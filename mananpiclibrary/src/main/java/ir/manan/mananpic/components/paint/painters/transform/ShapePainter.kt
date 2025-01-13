@@ -80,6 +80,8 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     private var pivotX = 0f
     private var pivotY = 0f
 
+    private var currentTexture : Bitmap? = null
+
     override fun changeColor(color: Int) {
         shapeColor = color
     }
@@ -149,6 +151,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
+        currentTexture = bitmap
         paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
             setLocalMatrix(shaderMatrix)
         }
@@ -157,6 +160,10 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
             setLocalMatrix(shaderMatrix)
         }
         invalidate()
+    }
+
+    override fun getTexture(): Bitmap? {
+        return currentTexture
     }
 
 
@@ -211,6 +218,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     }
 
     override fun removeTexture() {
+        currentTexture = null
         paintShader = null
         shapePaint.shader = null
         invalidate()

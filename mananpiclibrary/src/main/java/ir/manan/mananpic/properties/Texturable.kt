@@ -14,6 +14,7 @@ interface Texturable : ComplexColor {
      */
     fun applyTexture(bitmap: Bitmap)
 
+    fun getTexture(): Bitmap?
 
     /**
      * This method make a view texturable with TileMode option on the provided bitmap.
