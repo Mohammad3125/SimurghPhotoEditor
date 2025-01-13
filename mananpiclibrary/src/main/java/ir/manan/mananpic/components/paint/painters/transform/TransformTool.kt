@@ -1127,6 +1127,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
         _children.add(_selectedChild!!)
 
+        onChildSelected?.invoke(_selectedChild!!.transformable)
+
         if (isToolInitialized) {
             initializeChild(_selectedChild!!, shouldCalculateBounds = true)
             invalidate()
