@@ -285,7 +285,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     fun setTextStyle(style: Int) {
-        setTypeface(textPaint.typeface, style)
+        setTypeface(typeface, style)
     }
 
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
