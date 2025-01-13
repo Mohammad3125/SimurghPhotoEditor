@@ -51,6 +51,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    private val saveLayerPaint by lazy {
+        Paint().apply {
+            isFilterBitmap = true
+        }
+    }
+
     private var initialX = 0f
     private var initialY = 0f
 
@@ -272,8 +278,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         rotationDetector = TwoFingerRotationDetector(this)
 
         scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
-
-
     }
 
     override fun onSingleTapUp(p0: MotionEvent): Boolean {
@@ -869,6 +873,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layersPaint.alpha = (255 * layer.opacity).toInt()
                 layersPaint.xfermode = layer.blendingModeObject
 
+                saveLayer(layerBounds, saveLayerPaint)
+
                 drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
 
                 painter?.draw(this)
@@ -944,7 +950,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun removeFirstState() {
         undoStack.removeAt(0)
     }
-
 
     fun undo() {
         painter?.let { p ->
