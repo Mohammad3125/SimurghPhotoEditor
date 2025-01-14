@@ -159,8 +159,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private val smartGuideLineDashedPathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
 
-    var onChildSelected : ((Transformable) -> Unit)? = null
-    var onChildDeselected : (() -> Unit)? = null
+    var onChildSelected: ((Transformable, isInitialization: Boolean) -> Unit)? = null
+    var onChildDeselected: (() -> Unit)? = null
 
     override fun initialize(
         context: Context,
@@ -540,10 +540,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             _selectedChild?.let {
                 selectChild(it, true)
-                onChildSelected?.invoke(it.transformable)
+                onChildSelected?.invoke(it.transformable, false)
             }
 
-            if(_selectedChild == null) {
+            if (_selectedChild == null) {
                 onChildDeselected?.invoke()
             }
 
@@ -1127,7 +1127,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
         _children.add(_selectedChild!!)
 
-        onChildSelected?.invoke(_selectedChild!!.transformable)
+        onChildSelected?.invoke(_selectedChild!!.transformable, true)
 
         if (isToolInitialized) {
             initializeChild(_selectedChild!!, shouldCalculateBounds = true)
