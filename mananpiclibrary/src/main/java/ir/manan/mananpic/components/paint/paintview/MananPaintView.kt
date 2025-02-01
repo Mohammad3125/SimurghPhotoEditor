@@ -328,6 +328,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        if(isInLayout) {
+            return
+        }
+
         rectAlloc.set(boundsRectangle)
 
         super.onSizeChanged(w, h, oldw, oldh)
