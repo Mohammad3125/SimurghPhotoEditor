@@ -163,7 +163,7 @@ class CropperTool : Painter() {
 
     private val inverseMatrix = MananMatrix()
 
-    // Used to animate the matrix in Matrix Evulator
+    // Used to animate the matrix in MatrixEvaluator
     private val endMatrix = MananMatrix()
     private val startMatrix = MananMatrix()
 
@@ -266,7 +266,8 @@ class CropperTool : Painter() {
         limitRect.set(r)
 
         normalizeCropper(r.width(), r.height(), frameRect)
-        fitCropperInsideLayer(setRect = true)
+        fitCropperInsideLayer(setRect = true, animate = false)
+        setDrawingDimensions()
 
         context.apply {
             excessTouchArea = dp(40)
@@ -779,12 +780,9 @@ class CropperTool : Painter() {
     }
 
     override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
-
-        if (this::canvasMatrix.isInitialized) {
-            changeMatrix.invert(inverseMatrix)
-            canvasMatrix.preConcat(inverseMatrix)
-        }
-
+        limitRect.set(newBounds)
+        fitCropperInsideLayer(animate = false, setRect = true, setMatrix = true)
+        setDrawingDimensions()
         sendMessage(PainterMessage.INVALIDATE)
     }
 
