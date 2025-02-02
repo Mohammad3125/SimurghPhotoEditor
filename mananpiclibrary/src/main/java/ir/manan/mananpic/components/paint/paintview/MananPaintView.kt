@@ -1290,7 +1290,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    fun getLayerSize(): Int {
+    fun getLayerCount(): Int {
         return layerHolder.size
     }
 
