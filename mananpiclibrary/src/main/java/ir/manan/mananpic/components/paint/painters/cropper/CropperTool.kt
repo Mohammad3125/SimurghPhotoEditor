@@ -182,13 +182,6 @@ class CropperTool : Painter() {
         RectF()
     }
 
-    private var leftEdge = 0f
-    private var topEdge = 0f
-    private var rightEdge = 0f
-    private var bottomEdge = 0f
-
-    private lateinit var bounds: RectF
-
     private val basePoints by lazy {
         FloatArray(8)
     }
@@ -240,11 +233,10 @@ class CropperTool : Painter() {
         this.context = context
         canvasMatrix = transformationMatrix
         this.fitInsideMatrix = fitInsideMatrix
-        this.bounds = bounds
 
-        val r = RectF(bounds)
+        tempRect.set(bounds)
 
-        fitInsideMatrix.mapRect(r)
+        fitInsideMatrix.mapRect(tempRect)
 
         frameShadowsPaint.color = backgroundShadowColor
         frameShadowsPaint.alpha = backgroundShadowAlpha
@@ -257,15 +249,10 @@ class CropperTool : Painter() {
         handleBarPaint.strokeCap = handleBarCornerType
         handleBarPaint.isAntiAlias = handleBarCornerType == Paint.Cap.ROUND
 
-        leftEdge = r.left
-        topEdge = r.top
-        rightEdge = r.right
-        bottomEdge = r.bottom
-
         // Initialize limit rect that later will be used to limit resizing.
-        limitRect.set(r)
+        limitRect.set(tempRect)
 
-        normalizeCropper(r.width(), r.height(), frameRect)
+        normalizeCropper(tempRect.width(), tempRect.height(), frameRect)
         fitCropperInsideLayer(setRect = true, animate = false)
         setDrawingDimensions()
 
@@ -295,9 +282,9 @@ class CropperTool : Painter() {
         val t = limitRect.centerY() - (pair.second * 0.5f)
 
         targetRect.set(
-            leftEdge,
+            limitRect.left,
             t,
-            pair.first + leftEdge,
+            pair.first + limitRect.left,
             pair.second + t
         )
     }
