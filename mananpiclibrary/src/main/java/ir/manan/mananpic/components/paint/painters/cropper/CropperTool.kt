@@ -795,6 +795,9 @@ class CropperTool : Painter() {
         }
     }
 
+    override fun doesHandleHistory(): Boolean {
+        return true
+    }
 
     override fun doesNeedTouchSlope(): Boolean {
         return false
