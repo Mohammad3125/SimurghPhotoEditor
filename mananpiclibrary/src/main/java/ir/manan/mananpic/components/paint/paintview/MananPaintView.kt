@@ -912,15 +912,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun animateCanvasBack() {
-        matrixAnimator.run {
-            startAnimation(maximumScale, animatorExtraSpaceAroundAxes)
-            setOnMatrixUpdateListener {
-                invalidate()
-            }
-        }
-    }
-
     private fun saveState(
         isSpecial: Boolean = false,
         isMessage: Boolean = false,
