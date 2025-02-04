@@ -9,6 +9,8 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PointF
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.Region
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
@@ -761,6 +763,38 @@ class CropperTool : Painter() {
         }
         return null
     }
+
+    fun clip() {
+        selectedLayer?.let { layer ->
+            cropCanvas.run {
+                val layerBitmapCopy =
+                    layer.bitmap.copy(layer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+
+                layer.bitmap.eraseColor(Color.TRANSPARENT)
+
+                setBitmap(layer.bitmap)
+                inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
+                inverseMatrix.invert(inverseMatrix)
+                save()
+                concat(inverseMatrix)
+                drawRect(frameRect, framePaint.apply {
+                    style = Paint.Style.FILL
+                })
+                restore()
+
+                drawBitmap(layerBitmapCopy, 0f, 0f, framePaint.apply {
+                    xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+                })
+
+                framePaint.style = Paint.Style.STROKE
+                framePaint.xfermode = null
+
+                sendMessage(PainterMessage.INVALIDATE)
+                sendMessage(PainterMessage.SAVE_HISTORY)
+            }
+        }
+    }
+
 
     override fun doesNeedTouchSlope(): Boolean {
         return false
