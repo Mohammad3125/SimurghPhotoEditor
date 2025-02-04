@@ -328,7 +328,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        if(isInLayout) {
+        if (isInLayout) {
             return
         }
 
@@ -385,7 +385,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun setImageBitmap(bitmap: Bitmap?) {
+    fun setImageBitmap(bitmap: Bitmap?, saveHistory: Boolean = false) {
         if (bitmap != null) {
 
             if (!bitmap.isMutable) {
@@ -396,8 +396,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             isNewBitmap = true
             bitmapWidth = bitmap.width
             bitmapHeight = bitmap.height
+            isViewInitialized = false
 
-            addNewLayerWithoutSavingHistory(bitmap)
+            if (saveHistory) {
+                addNewLayer(bitmap)
+            } else {
+                addNewLayerWithoutSavingHistory(bitmap)
+            }
+
 
             requestLayout()
             invalidate()
@@ -938,7 +944,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     sl.clone(shouldClone),
                     copiedList,
                     isSpecial,
-                    isLayerChange
+                    isLayerChange,
+                    bitmapWidth,
+                    bitmapHeight,
                 )
             )
         }
@@ -986,10 +994,24 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             val poppedState = if (isFirstSnapshot) popStack.peek() else popStack.pop()
 
-            if ((popStack.isNotEmpty() && !isFirstSnapshot) && (pushStack.isEmpty() || (poppedState.clonedLayer == layerHolder.last() && !poppedState.isLayerChangeState) || poppedState.isSpecial)
+            var needLayout = false
+
+            if ((popStack.isNotEmpty() && !isFirstSnapshot)
+                && (pushStack.isEmpty()
+                        || (poppedState.clonedLayer == layerHolder.last()
+                        && !poppedState.isLayerChangeState)
+                        || poppedState.isSpecial)
             ) {
+
+                needLayout =
+                    (poppedState.bWidth != bitmapWidth || poppedState.bHeight != bitmapHeight)
+
                 poppedState.restoreState(this)
                 val newPopped = popStack.pop()
+
+                needLayout =
+                    needLayout.or((newPopped.bWidth != bitmapWidth || newPopped.bHeight != bitmapHeight))
+
                 newPopped.restoreState(this)
                 pushStack.push(poppedState)
                 pushStack.push(newPopped)
@@ -997,10 +1019,18 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 if (!isFirstSnapshot) {
                     pushStack.push(poppedState)
                 }
+                needLayout =
+                    needLayout.or((poppedState.bWidth != bitmapWidth || poppedState.bHeight != bitmapHeight))
                 poppedState.restoreState(this)
             }
 
-            cacheLayers()
+            if (needLayout) {
+                isViewInitialized = false
+                isNewBitmap = true
+                requestLayout()
+            } else {
+                cacheLayers()
+            }
 
             callOnLayerChangedListeners(
                 layerHolder.toList(),
@@ -1014,6 +1044,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     fun addNewLayer() {
+        addNewLayer(createLayerBitmap())
+    }
+
+    private fun addNewLayer(bitmap: Bitmap) {
 
         if (isFirstLayerCreation) {
             saveState(isMessage = false)
@@ -1023,7 +1057,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         checkForStateSave()
 
         selectedLayer = PaintLayer(
-            createLayerBitmap(), Matrix(), false, 1f
+            bitmap, Matrix(), false, 1f
         )
 
         layerHolder.add(selectedLayer!!)
@@ -1442,7 +1476,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         val clonedLayer: PaintLayer,
         val layers: MutableList<PaintLayer>,
         val isSpecial: Boolean = false,
-        val isLayerChangeState: Boolean
+        val isLayerChangeState: Boolean,
+        val bWidth: Int,
+        val bHeight: Int,
     ) {
         fun restoreState(paintView: MananPaintView) {
             if (!isLayerChangeState) {
@@ -1450,6 +1486,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             }
 
             paintView.run {
+
+                bitmapWidth = bWidth
+                bitmapHeight = bHeight
 
                 var i = layerHolder.indexOf(selectedLayer)
                 if (i > layers.lastIndex) i = layers.lastIndex
@@ -1489,8 +1528,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             result = 31 * result + layers.hashCode()
             result = 31 * result + isSpecial.hashCode()
             result = 31 * result + isLayerChangeState.hashCode()
+            result = 31 * result + bWidth
+            result = 31 * result + bHeight
             return result
         }
+
     }
 
     interface OnDoubleTapUp {
