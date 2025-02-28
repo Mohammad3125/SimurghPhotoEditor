@@ -51,7 +51,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         }
     }
 
-
     @ColorInt
     var backgroundColor: Int = Color.RED
         set(value) {
@@ -119,13 +118,19 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     private var shaderRotationHolder = 0f
 
-    var backgroundPaddingSize = 0f
+    var isTextBackgroundEnabled = false
         set(value) {
             field = value
             indicateBoundsChange()
         }
 
-    var backgroundRadius = 25f
+    var backgroundPaddingSize = 50f
+        set(value) {
+            field = value
+            indicateBoundsChange()
+        }
+
+    var backgroundRadius = 12f
         set(value) {
             field = value
             firstBackgroundRadiusArray.fill(value)
@@ -243,6 +248,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textBaseLineX = textBaseLineX
             textPainter.textStrokeColor = textStrokeColor
             textPainter.textStrokeWidth = textStrokeWidth
+            textPainter.isTextBackgroundEnabled = isTextBackgroundEnabled
+            textPainter.backgroundRadius = backgroundRadius
+            textPainter.backgroundColor = backgroundColor
             textPainter.shaderRotationHolder = shaderRotationHolder
 
             getTexture()?.let { t ->
@@ -329,6 +337,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             val bottomRect = acc + halfExtraSpace
 
+            val rectWidth = rightRect - leftRect
+
             val finalLineSpacing = if (index == 0) 0f else lineSpacing
 
             backgroundPath.addRoundRect(
@@ -341,120 +351,129 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             if (index > 0) {
 
-                val lastTextLength = finalTexts[index - 1].length
-
                 val lastLeftRect =
                     ((rawWidth - finalWidths[index - 1]) * Alignment.getNumber(alignmentText)) - halfExtraSpace
 
-                val lastBottom = acc - finalHeights[index]
+                val lastBottom = acc - finalHeights[index] + halfExtraSpace
 
-                val lastRightRect = lastLeftRect + finalWidths[index - 1] + halfExtraSpace
+                val lastRightRect = lastLeftRect + finalWidths[index - 1] + extraSpace
 
-                val lastTop = lastBottom - finalHeights[index - 1]
+                val lastTop = lastBottom - finalHeights[index - 1] - halfExtraSpace
 
-                if (s.length == lastTextLength) {
+                val lastWidth = lastRightRect - lastLeftRect
+
+                val lineSpacingSecondary = if (index < 2) 0f else lineSpacing
+
+                if (rectWidth == lastWidth) {
                     backgroundPath.addRoundRect(
-                        leftRect,
-                        topRect,
+                        lastLeftRect,
+                        lastTop,
                         rightRect,
                         bottomRect,
                         firstBackgroundRadiusArray, Path.Direction.CCW
                     )
-                } else if (s.length < lastTextLength) {
+                } else if (rectWidth > lastWidth) {
 
                     backgroundPath.addRoundRect(
-                        (lastLeftRect + halfExtraSpace + leftRect) * 0.5f,
-                        topRect,
+                        (leftRect + lastLeftRect) * 0.5f,
+                        (lastTop + lineSpacingSecondary + topRect) * 0.5f,
                         (rightRect + lastRightRect) * 0.5f,
-                        acc - extraSpace,
-                        0f, 0f, Path.Direction.CCW
-                    )
-
-                    if (alignmentText != TextPainter.Alignment.LEFT) {
-                        connectorPath.addRoundRect(
-                            lastLeftRect + halfExtraSpace,
-                            lastBottom + halfExtraSpace,
-                            leftRect,
-                            acc - halfExtraSpace,
-                            firstBackgroundRadiusArray, Path.Direction.CCW
-                        )
-                    } else {
-                        backgroundPath.addRect(
-                            lastLeftRect,
-                            lastTop,
-                            rightRect,
-                            bottomRect - halfExtraSpace,
-                            Path.Direction.CCW
-                        )
-                    }
-
-                    if (alignmentText != TextPainter.Alignment.RIGHT) {
-                        connectorPath.addRoundRect(
-                            rightRect,
-                            lastBottom + halfExtraSpace,
-                            lastRightRect,
-                            acc - halfExtraSpace,
-                            firstBackgroundRadiusArray, Path.Direction.CCW
-                        )
-                    } else {
-                        backgroundPath.addRect(
-                            leftRect,
-                            lastTop,
-                            rightRect,
-                            bottomRect - halfExtraSpace,
-                            Path.Direction.CCW
-                        )
-                    }
-
-                } else {
-                    val extraRectFinalSpacing = if (index < 2) 0f else lineSpacing
-
-                    backgroundPath.addRoundRect(
-                        leftRect + halfExtraSpace,
-                        lastTop + extraRectFinalSpacing + extraSpace,
-                        rightRect - halfExtraSpace,
                         topRect + lineSpacing,
                         0f, 0f, Path.Direction.CCW
                     )
 
+                    val topConnectors =
+                        ((lastTop + lineSpacingSecondary + topRect) * 0.5f) - backgroundRadius
+
                     if (alignmentText != TextPainter.Alignment.LEFT) {
                         connectorPath.addRoundRect(
                             leftRect,
-                            lastTop + halfExtraSpace,
+                            topConnectors,
                             lastLeftRect,
                             topRect + lineSpacing,
                             firstBackgroundRadiusArray, Path.Direction.CCW
                         )
                     } else {
-                        backgroundPath.addRect(
+                        backgroundPath.addRoundRect(
                             lastLeftRect,
-                            lastTop,
-                            lastRightRect,
+                            (lastTop + lineSpacingSecondary + lastBottom) * 0.5f,
+                            (rightRect + lastRightRect) * 0.5f,
                             bottomRect - halfExtraSpace,
+                            firstBackgroundRadiusArray,
                             Path.Direction.CCW
                         )
                     }
                     if (alignmentText != TextPainter.Alignment.RIGHT) {
                         connectorPath.addRoundRect(
-                            lastRightRect + halfExtraSpace,
-                            lastTop + halfExtraSpace,
+                            lastRightRect,
+                            topConnectors,
                             rightRect,
                             topRect + lineSpacing,
                             firstBackgroundRadiusArray, Path.Direction.CCW
                         )
                     } else {
-                        backgroundPath.addRect(
-                            lastLeftRect + halfExtraSpace,
-                            lastTop,
+                        backgroundPath.addRoundRect(
+                            (leftRect + lastLeftRect) * 0.5f,
+                            (lastTop + lastBottom) * 0.5f,
                             rightRect,
                             bottomRect - halfExtraSpace,
+                            firstBackgroundRadiusArray,
                             Path.Direction.CCW
                         )
                     }
+                } else {
+                    backgroundPath.addRoundRect(
+                        (lastLeftRect + leftRect) * 0.5f,
+                        topRect,
+                        (rightRect + lastRightRect) * 0.5f,
+                        (lastBottom + lineSpacing + bottomRect) * 0.5f,
+                        0f, 0f, Path.Direction.CCW
+                    )
+
+                    val bottomConnectors =
+                        ((lastBottom + lineSpacing + bottomRect) * 0.5f) + backgroundRadius
+
+                    if (alignmentText != TextPainter.Alignment.LEFT) {
+                        connectorPath.addRoundRect(
+                            lastLeftRect,
+                            lastBottom,
+                            leftRect,
+                            bottomConnectors,
+                            firstBackgroundRadiusArray, Path.Direction.CCW
+                        )
+                    } else {
+                        backgroundPath.addRoundRect(
+                            lastLeftRect,
+                            lastTop,
+                            rightRect,
+                            bottomRect - halfExtraSpace,
+                            firstBackgroundRadiusArray,
+                            Path.Direction.CCW
+                        )
+                    }
+
+                    if (alignmentText != TextPainter.Alignment.RIGHT) {
+                        connectorPath.addRoundRect(
+                            rightRect,
+                            lastBottom,
+                            lastRightRect,
+                            bottomConnectors,
+                            firstBackgroundRadiusArray, Path.Direction.CCW
+                        )
+                    } else {
+                        backgroundPath.addRoundRect(
+                            leftRect,
+                            lastTop,
+                            rightRect,
+                            bottomRect - halfExtraSpace,
+                            firstBackgroundRadiusArray,
+                            Path.Direction.CCW
+                        )
+                    }
+
                 }
 
             }
-
         }
 
         backgroundPath.op(connectorPath, Path.Op.DIFFERENCE)
@@ -911,7 +930,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             isFirstPass = false
         }
 
-        extraSpace = textStrokeWidth + backgroundPaddingSize
+        extraSpace = textStrokeWidth + if (isTextBackgroundEnabled) backgroundPaddingSize else 0f
 
         rawWidth = maxWidth + extraSpace
 
@@ -950,7 +969,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 finalTranslateY
             )
 
-            drawTextBackground()
+            if (isTextBackgroundEnabled) {
+                drawTextBackground()
+            }
 
             if (shadowRadius > 0) {
                 val currentColor = textColor
