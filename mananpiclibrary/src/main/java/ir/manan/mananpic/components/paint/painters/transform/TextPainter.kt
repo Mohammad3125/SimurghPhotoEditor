@@ -195,10 +195,12 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var typeface: Typeface = Typeface.DEFAULT
         set(value) {
             field = value
+            typefaceStyle = value.style
             textPaint.typeface = typeface
             indicateBoundsChange()
         }
 
+    private var typefaceStyle = Typeface.NORMAL
 
     private var pathOnValue = 0f
     private var pathOffValue = 0f
@@ -237,7 +239,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textPaint.textSize = textPaint.textSize
             textPainter.alignmentText = alignmentText
             textPainter.textColor = textColor
-            textPainter.typeface = typeface
+            textPainter.setTypeface(typeface, typefaceStyle)
             textPainter.textPaint.style = textPaint.style
             textPainter.textPaint.strokeWidth = textPaint.strokeWidth
             textPainter.textPaint.pathEffect = textPaint.pathEffect
@@ -274,15 +276,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 shadowLColor
             )
 
-            if (gradientColors != null) {
-                textPainter.gradientColors = gradientColors!!.clone()
+            gradientColors?.let {
+                textPainter.gradientColors = it.clone()
             }
-            if (gradientPositions != null) {
-                textPainter.gradientPositions = gradientPositions!!.clone()
+            gradientPositions?.let {
+                textPainter.gradientPositions = it.clone()
             }
 
             textPainter.text = text
-
         }
     }
 
@@ -487,6 +488,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
      */
     fun setTypeface(typeface: Typeface, style: Int) {
         textPaint.typeface = Typeface.create(typeface, style)
+        typefaceStyle = style
         indicateBoundsChange()
     }
 
