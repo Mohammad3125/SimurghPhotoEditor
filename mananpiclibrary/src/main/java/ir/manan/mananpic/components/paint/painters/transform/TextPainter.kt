@@ -174,7 +174,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         mutableListOf<Float>()
     }
 
-    var lineSpacing = 0f
+    var lineSpacing = textPaint.fontMetrics.bottom
         set(value) {
             field = value
             indicateBoundsChange()
@@ -197,7 +197,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             field = value
             typefaceStyle = value.style
             textPaint.typeface = typeface
-            indicateBoundsChange()
+            lineSpacing = textPaint.fontMetrics.bottom
         }
 
     private var typefaceStyle = Typeface.NORMAL
@@ -489,7 +489,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     fun setTypeface(typeface: Typeface, style: Int) {
         textPaint.typeface = Typeface.create(typeface, style)
         typefaceStyle = style
-        indicateBoundsChange()
+        lineSpacing = textPaint.fontMetrics.bottom
     }
 
     fun setTextStyle(style: Int) {
