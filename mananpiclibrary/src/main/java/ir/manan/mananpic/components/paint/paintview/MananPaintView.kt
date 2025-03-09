@@ -1378,6 +1378,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         callListenerForFirstTime()
     }
 
+    fun changeSelectedLayerBitmap(bitmap: Bitmap) {
+        selectedLayer?.bitmap = bitmap
+        saveState()
+        invalidate()
+    }
+
     fun setOnTransformDelegate(func: (transformationMatrix: Matrix) -> Unit) {
         onDelegateTransform = func
     }
