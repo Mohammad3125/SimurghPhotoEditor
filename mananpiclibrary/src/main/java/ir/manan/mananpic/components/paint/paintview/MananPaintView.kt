@@ -1095,7 +1095,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun cacheLayers() {
-
+        if (!this::partiallyCachedLayer.isInitialized || !this::bitmapReference.isInitialized || !this::cachedLayer.isInitialized) {
+            return
+        }
         bitmap?.let { mainBitmap ->
             selectedLayer?.let { sv ->
 
