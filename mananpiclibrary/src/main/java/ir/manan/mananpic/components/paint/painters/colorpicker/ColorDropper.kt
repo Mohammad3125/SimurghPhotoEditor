@@ -292,7 +292,10 @@ class ColorDropper : Painter() {
         }
 
         canvas.run {
-            referenceLayer?.let {
+            referenceLayer?.let { reference ->
+
+                drawBitmap(reference, 0f, 0f, circleShadowPaint)
+
                 colorRingPaint.color = lastSelectedColor
 
                 // Variables to store positions of drawing to reuse them.
