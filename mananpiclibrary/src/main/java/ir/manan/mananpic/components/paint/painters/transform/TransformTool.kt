@@ -1349,6 +1349,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     fun clearRotationSmartGuideline() {
         smartRotationDegreeHolder = null
         originalRotationHolder = null
+        invalidate()
     }
 
     /**
@@ -1471,6 +1472,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         val meshPoints: FloatArray,
         val targetRect: RectF?
     )
+
+    override fun release() {
+
+    }
 
     enum class TransformableAlignment {
         TOP, LEFT, RIGHT, BOTTOM, VERTICAL, HORIZONTAL, CENTER
