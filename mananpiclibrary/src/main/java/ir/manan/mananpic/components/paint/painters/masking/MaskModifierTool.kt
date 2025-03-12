@@ -52,8 +52,6 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     private lateinit var fitInsideMatrix: MananMatrix
     private lateinit var bounds: RectF
 
-    private var isInitialized = false
-
     private var selectedLayer: PaintLayer? = null
 
     protected val undoStack = Stack<Bitmap>()
@@ -80,7 +78,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
-
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         this.context = context
         this.transformationMatrix = transformationMatrix
         this.fitInsideMatrix = fitInsideMatrix
@@ -95,8 +93,6 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         )
 
         maskTool?.let { initializeTool(it) }
-
-        isInitialized = true
     }
 
     private fun initializeTool(tool: Painter) {

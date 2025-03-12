@@ -229,7 +229,7 @@ abstract class PenToolBase : Painter() {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
-
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         canvasMatrix = transformationMatrix
 
         context.run {

@@ -152,7 +152,7 @@ class ColorDropper : Painter() {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
-
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         // Get display matrix to use width and height of device to pick a size for circle.
         val displayMetrics = context.resources.displayMetrics
 

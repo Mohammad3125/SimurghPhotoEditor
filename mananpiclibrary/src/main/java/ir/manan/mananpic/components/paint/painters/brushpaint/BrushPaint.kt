@@ -77,9 +77,8 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
-
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         viewBounds.set(bounds)
-
         lineSmoother.onDrawPoint = this
     }
 

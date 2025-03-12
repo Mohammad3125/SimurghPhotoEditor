@@ -104,6 +104,7 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         context.apply {
             cornerPathEffect = CornerPathEffect(dp(2))
         }

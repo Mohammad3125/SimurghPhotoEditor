@@ -232,6 +232,7 @@ class CropperTool : Painter() {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         this.context = context
         canvasMatrix = transformationMatrix
         this.fitInsideMatrix = fitInsideMatrix

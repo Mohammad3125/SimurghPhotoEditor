@@ -13,6 +13,9 @@ import ir.manan.mananpic.utils.MananMatrix
 abstract class Painter {
     private var messageListener: MessageChannel? = null
 
+    var isInitialized = false
+        private set
+
     fun setOnMessageListener(listener: MessageChannel) {
         messageListener = listener
     }
@@ -21,12 +24,14 @@ abstract class Painter {
         messageListener?.onSendMessage(message)
     }
 
-    abstract fun initialize(
+    open fun initialize(
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
         bounds: RectF,
-    )
+    ) {
+        isInitialized = true
+    }
 
     /**
      * Called when user starts to move his/her finger on screen.
@@ -108,7 +113,7 @@ abstract class Painter {
     }
 
     open fun release() {
-
+        isInitialized = false
     }
 
     open fun doesNeedTouchSlope() : Boolean  {

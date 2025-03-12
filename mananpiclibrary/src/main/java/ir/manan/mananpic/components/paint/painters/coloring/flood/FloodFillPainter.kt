@@ -29,6 +29,7 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         currentThreshold = threshold
     }
 

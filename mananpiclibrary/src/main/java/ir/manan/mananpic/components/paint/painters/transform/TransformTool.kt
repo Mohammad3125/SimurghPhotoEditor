@@ -169,7 +169,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
-
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         if (acceptableDistanceForSmartGuideline == 0f) {
             acceptableDistanceForSmartGuideline = context.dp(1)
         }

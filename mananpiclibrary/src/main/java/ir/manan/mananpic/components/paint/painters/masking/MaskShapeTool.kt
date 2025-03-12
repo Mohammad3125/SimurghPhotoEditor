@@ -92,6 +92,7 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         context.apply {
             if (strokeWidth == 0f) {
                 strokeWidth = dp(3)

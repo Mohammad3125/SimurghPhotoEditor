@@ -64,6 +64,7 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         canvasMatrix = transformationMatrix
         context.apply {
             cornerPathEffect = CornerPathEffect(dp(2))
@@ -143,6 +144,7 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
     }
 
     override fun release() {
+        super.release()
         pathEffectAnimator.cancel()
     }
 

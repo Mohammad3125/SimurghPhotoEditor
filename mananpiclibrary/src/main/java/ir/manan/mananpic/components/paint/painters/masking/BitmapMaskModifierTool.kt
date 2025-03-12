@@ -67,6 +67,7 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
         fitInsideMatrix: MananMatrix,
         bounds: RectF
     ) {
+        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
         paintCanvas.setBitmap(maskBitmap)
         lineSmoother.onDrawPoint = this
         layerBound.set(bounds)
