@@ -146,6 +146,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private var smartGuidelineFlags: Int = 0
 
     private var smartRotationDegreeHolder: FloatArray? = null
+    private var originalRotationHolder: FloatArray? = null
 
     private var smartRotationLineHolder = FloatArray(4)
 
@@ -1329,6 +1330,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         )
         if (degrees.isEmpty()) throw IllegalStateException("array should contain at least 1 element")
 
+        originalRotationHolder = degrees
+
         smartRotationDegreeHolder = if (degrees.any { it == 0f } && !degrees.any { it == 360f }) {
             FloatArray(degrees.size + 1).also { array ->
                 degrees.copyInto(array)
@@ -1345,13 +1348,14 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
      */
     fun clearRotationSmartGuideline() {
         smartRotationDegreeHolder = null
+        originalRotationHolder = null
     }
 
     /**
      * Returns the rotation degree holder. Smart guideline detector snaps to these
      * degrees if there is any.
      */
-    fun getRotationSmartGuidelineDegreeHolder() = smartRotationDegreeHolder
+    fun getRotationSmartGuidelineDegreeHolder() = originalRotationHolder
 
     fun applyMatrix(matrix: Matrix) {
         onTransformed(matrix)
