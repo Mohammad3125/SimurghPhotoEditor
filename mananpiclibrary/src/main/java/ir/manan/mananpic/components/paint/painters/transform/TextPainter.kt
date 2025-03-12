@@ -52,7 +52,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     @ColorInt
-    var backgroundColor: Int = Color.RED
+    var backgroundColor: Int = Color.GRAY
         set(value) {
             field = value
             backgroundPaint.color = field
