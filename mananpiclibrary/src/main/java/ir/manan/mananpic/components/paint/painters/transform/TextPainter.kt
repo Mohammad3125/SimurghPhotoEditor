@@ -637,10 +637,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         gradientColors = colors
         gradientPositions = position
 
-        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode)
+        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+            setLocalMatrix(shaderMatrix)
+        }
 
         textPaint.shader =
-            LinearGradient(x0, y0, x1, y1, colors, position, tileMode)
+            LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
+                setLocalMatrix(shaderMatrix)
+            }
 
         invalidate()
     }
@@ -664,7 +668,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             colors,
             stops,
             tileMode
-        )
+        ).apply {
+            setLocalMatrix(shaderMatrix)
+        }
 
         textPaint.shader =
             RadialGradient(
@@ -674,7 +680,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 colors,
                 stops,
                 tileMode
-            )
+            ).apply {
+                setLocalMatrix(shaderMatrix)
+            }
         invalidate()
     }
 
@@ -687,10 +695,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         gradientColors = colors
         gradientPositions = positions
 
-        paintShader = SweepGradient(cx, cy, colors, positions)
+        paintShader = SweepGradient(cx, cy, colors, positions).apply {
+            setLocalMatrix(shaderMatrix)
+        }
 
         textPaint.shader =
-            SweepGradient(cx, cy, colors, positions)
+            SweepGradient(cx, cy, colors, positions).apply {
+                setLocalMatrix(shaderMatrix)
+            }
 
         invalidate()
     }
