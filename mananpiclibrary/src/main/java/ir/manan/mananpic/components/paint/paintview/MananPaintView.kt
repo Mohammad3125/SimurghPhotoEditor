@@ -169,6 +169,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     var painter: Painter? = null
         set(value) {
+            cacheLayers()
 
             painter?.release()
 
