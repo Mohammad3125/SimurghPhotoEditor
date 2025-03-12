@@ -1121,6 +1121,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     fun addChild(transformable: Transformable, targetRect: RectF?) {
+        eraseSmartGuidelines()
+        eraseRotationSmartGuidelines()
+
         _selectedChild = Child(
             transformable, MananMatrix(), MananMatrix(), FloatArray(8),
             FloatArray(8), targetRect
