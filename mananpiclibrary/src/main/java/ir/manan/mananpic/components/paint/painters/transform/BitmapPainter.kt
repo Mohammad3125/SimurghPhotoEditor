@@ -1,9 +1,15 @@
 package ir.manan.mananpic.components.paint.painters.transform
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import ir.manan.mananpic.properties.Blendable
+import ir.manan.mananpic.properties.Opacityable
 
-class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable {
+class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable, Opacityable {
 
     private val bitmapPaint = Paint().apply {
         isFilterBitmap = true
@@ -35,11 +41,21 @@ class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable {
         return BitmapPainter(bitmap).also {
             if (blendMode != PorterDuff.Mode.SRC) {
                 it.setBlendMode(blendMode)
+                it.setOpacity(getOpacity())
             }
         }
     }
 
     override fun getBlendMode(): PorterDuff.Mode {
         return blendMode
+    }
+
+    override fun getOpacity(): Int {
+        return bitmapPaint.alpha
+    }
+
+    override fun setOpacity(opacity: Int) {
+        bitmapPaint.alpha = opacity
+        invalidate()
     }
 }

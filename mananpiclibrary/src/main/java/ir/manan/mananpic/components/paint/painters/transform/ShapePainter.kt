@@ -18,6 +18,7 @@ import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.Colorable
 import ir.manan.mananpic.properties.Gradientable
+import ir.manan.mananpic.properties.Opacityable
 import ir.manan.mananpic.properties.Shadowable
 import ir.manan.mananpic.properties.StrokeCapable
 import ir.manan.mananpic.properties.Texturable
@@ -27,7 +28,7 @@ import kotlin.math.min
 class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int) : Transformable(),
     Bitmapable, StrokeCapable, Colorable,
     Texturable, Gradientable,
-    Shadowable, Blendable {
+    Shadowable, Blendable, Opacityable {
 
     var shape = shape
         set(value) {
@@ -123,6 +124,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
             if (gradientPositions != null) {
                 painter.gradientPositions = gradientPositions!!.clone()
             }
+            painter.setOpacity(getOpacity())
         }
     }
 
@@ -482,5 +484,14 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
 
             shape.draw(canvas, shapePaint)
         }
+    }
+
+    override fun getOpacity(): Int {
+        return shapePaint.alpha
+    }
+
+    override fun setOpacity(opacity: Int) {
+        shapePaint.alpha = opacity
+        invalidate()
     }
 }

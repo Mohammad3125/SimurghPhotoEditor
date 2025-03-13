@@ -26,6 +26,7 @@ import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.Colorable
 import ir.manan.mananpic.properties.Gradientable
+import ir.manan.mananpic.properties.Opacityable
 import ir.manan.mananpic.properties.Pathable
 import ir.manan.mananpic.properties.Shadowable
 import ir.manan.mananpic.properties.StrokeCapable
@@ -35,7 +36,7 @@ import kotlin.math.min
 
 class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
     Blendable, Bitmapable,
-    Colorable, Shadowable {
+    Colorable, Shadowable, Opacityable {
 
     private val backgroundPath by lazy {
         Path()
@@ -284,6 +285,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             }
 
             textPainter.text = text
+
+            textPainter.setOpacity(getOpacity())
         }
     }
 
@@ -1051,5 +1054,15 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             }
 
         }
+    }
+
+    override fun getOpacity(): Int {
+        return textPaint.alpha
+    }
+
+    override fun setOpacity(opacity: Int) {
+        textPaint.alpha = opacity
+        backgroundPaint.alpha = opacity
+        invalidate()
     }
 }
