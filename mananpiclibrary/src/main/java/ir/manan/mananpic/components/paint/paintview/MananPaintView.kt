@@ -27,15 +27,12 @@ import ir.manan.mananpic.R
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
-import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.evaluators.MatrixEvaluator
 import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
 import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import java.util.Stack
 import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
 
 class MananPaintView(context: Context, attrSet: AttributeSet?) :
     View(context, attrSet), Painter.MessageChannel,
@@ -66,8 +63,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private var isMatrixGesture = false
 
     private var isNewGesture = true
-
-    private var maximumScale = 0f
 
     private var rotHolder = 0f
 
@@ -100,8 +95,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private val undoStack = Stack<State>()
 
     private val redoStack = Stack<State>()
-
-    private val animatorExtraSpaceAroundAxes = dp(128)
 
     private var selectedLayer: PaintLayer? = null
 
@@ -436,11 +429,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun onImageLaidOut() {
-        context.resources.displayMetrics.run {
-            maximumScale =
-                max(widthPixels, heightPixels) / min(bitmapWidth, bitmapHeight) * 10f
-        }
-
         rectAlloc.set(boundsRectangle)
 
         if (!isViewInitialized) {
