@@ -15,7 +15,7 @@ class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable, Opacityabl
         isFilterBitmap = true
     }
 
-    private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC_OVER
+    private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
     override fun getBounds(bounds: RectF) {
         bounds.set(0f, 0f, bitmap.width.toFloat(), bitmap.height.toFloat())
