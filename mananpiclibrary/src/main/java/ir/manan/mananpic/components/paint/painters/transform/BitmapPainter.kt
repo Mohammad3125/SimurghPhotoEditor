@@ -38,7 +38,8 @@ class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable, Opacityabl
     }
 
     override fun clone(): Transformable {
-        return BitmapPainter(bitmap).also {
+        val clonedBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+        return BitmapPainter(clonedBitmap).also {
             if (blendMode != PorterDuff.Mode.SRC) {
                 it.setBlendMode(blendMode)
                 it.setOpacity(getOpacity())
