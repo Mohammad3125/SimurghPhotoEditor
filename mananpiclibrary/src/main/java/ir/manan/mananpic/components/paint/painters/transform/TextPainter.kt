@@ -201,7 +201,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             lineSpacing = textPaint.fontMetrics.bottom
         }
 
-    private var typefaceStyle = Typeface.NORMAL
+    var typefaceStyle = Typeface.NORMAL
 
     private var pathOnValue = 0f
     private var pathOffValue = 0f
@@ -1057,7 +1057,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     override fun getOpacity(): Int {
-        return textPaint.alpha
+        return backgroundPaint.alpha
     }
 
     override fun setOpacity(opacity: Int) {
