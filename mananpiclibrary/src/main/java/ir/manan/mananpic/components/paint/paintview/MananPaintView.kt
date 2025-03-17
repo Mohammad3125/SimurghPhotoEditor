@@ -1186,6 +1186,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
+    fun getSelectedLayerBlendingMode(): PorterDuff.Mode {
+        return selectedLayer?.blendingMode ?: PorterDuff.Mode.SRC
+    }
+
     fun moveLayer(from: Int, to: Int) {
         if (cantMoveLayers(from, to)) {
             return
