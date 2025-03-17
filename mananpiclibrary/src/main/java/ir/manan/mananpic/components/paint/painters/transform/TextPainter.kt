@@ -21,6 +21,10 @@ import android.graphics.SweepGradient
 import android.graphics.Typeface
 import android.text.TextPaint
 import androidx.annotation.ColorInt
+import androidx.core.graphics.alpha
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
@@ -33,10 +37,12 @@ import ir.manan.mananpic.properties.StrokeCapable
 import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
     Blendable, Bitmapable,
     Colorable, Shadowable, Opacityable {
+
 
     private val backgroundPath by lazy {
         Path()
@@ -64,15 +70,18 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     private var trueShadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
-    private var shadowLColor = Color.YELLOW
+    private var shadowColor = Color.YELLOW
     private var isShadowCleared = true
 
     private var rawWidth = 0f
     private var rawHeight = 0f
 
+    private var opacityHolder: Int = 255
+
     private val textPaint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
+            color = Color.BLACK
         }
 
 
@@ -274,7 +283,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 trueShadowRadius,
                 shadowDx,
                 shadowDy,
-                shadowLColor
+                shadowColor
             )
 
             gradientColors?.let {
@@ -764,7 +773,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     override fun getShadowColor(): Int {
-        return shadowLColor
+        return shadowColor
     }
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
@@ -772,7 +781,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         trueShadowRadius = radius
         shadowDx = dx
         shadowDy = dy
-        shadowLColor = shadowColor
+        this.shadowColor = shadowColor
         invalidate()
     }
 
@@ -781,7 +790,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         shadowRadius = 0f
         shadowDx = 0f
         shadowDy = 0f
-        shadowLColor = Color.YELLOW
+        shadowColor = Color.YELLOW
         isShadowCleared = true
         invalidate()
     }
@@ -980,37 +989,50 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 }
             }
 
-
             translate(
                 finalTranslateX,
                 finalTranslateY
             )
 
+            val opacityFactor = opacityHolder / 255f
+
             if (isTextBackgroundEnabled) {
+
+                backgroundPaint.color =
+                    backgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+
                 drawTextBackground()
+
+                backgroundPaint.color = backgroundColor
+                backgroundPaint.alpha = opacityHolder
             }
 
             if (shadowRadius > 0) {
-                val currentColor = textColor
                 val currentStyle = textPaint.style
                 val currentShader = textPaint.shader
                 textPaint.shader = null
                 textPaint.style = Paint.Style.FILL_AND_STROKE
                 textPaint.strokeWidth = textStrokeWidth
+                textPaint.color = Color.TRANSPARENT
 
-                textPaint.setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowLColor)
+                textPaint.setShadowLayer(
+                    shadowRadius,
+                    shadowDx,
+                    shadowDy,
+                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                )
 
                 drawTexts()
 
+                textPaint.clearShadowLayer()
+                textPaint.color = textColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
                 textPaint.strokeWidth = 0f
-                textPaint.color = currentColor
-
-                textPaint.clearShadowLayer()
             }
 
             if (textStrokeWidth > 0f) {
+                textPaint.alpha = 255
                 saveLayer(-finalTranslateX, -finalTranslateY, rawWidth, rawHeight, textPaint)
             }
 
@@ -1018,7 +1040,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
             if (textStrokeWidth > 0f && textPaint.pathEffect == null) {
 
-                val currentColor = textColor
                 val currentStyle = textPaint.style
                 val currentPath = textPaint.pathEffect
                 val currentShader = textPaint.shader
@@ -1027,8 +1048,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 textPaint.strokeWidth = textStrokeWidth
                 textPaint.shader = null
                 textPaint.pathEffect = null
-                textPaint.color = textStrokeColor
                 textPaint.xfermode = null
+                textPaint.color =
+                    textStrokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
                 drawTexts()
 
@@ -1043,9 +1065,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 textPaint.style = currentStyle
                 textPaint.strokeWidth = 0f
                 textPaint.pathEffect = currentPath
-                textPaint.color = currentColor
             }
 
+            textPaint.color = textColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
             drawTexts()
 
             if (textStrokeWidth > 0f) {
@@ -1057,12 +1079,24 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     override fun getOpacity(): Int {
-        return backgroundPaint.alpha
+        return opacityHolder
     }
 
     override fun setOpacity(opacity: Int) {
         textPaint.alpha = opacity
         backgroundPaint.alpha = opacity
+        opacityHolder = opacity
         invalidate()
     }
+
+    private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
+        factor: Float
+    ): Int =
+        Color.argb(
+            (this.alpha * factor).roundToInt(),
+            this.red,
+            this.green,
+            this.blue,
+        )
+
 }

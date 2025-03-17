@@ -13,6 +13,11 @@ import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.SweepGradient
+import androidx.annotation.ColorInt
+import androidx.core.graphics.alpha
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
@@ -24,11 +29,13 @@ import ir.manan.mananpic.properties.StrokeCapable
 import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int) : Transformable(),
     Bitmapable, StrokeCapable, Colorable,
     Texturable, Gradientable,
     Shadowable, Blendable, Opacityable {
+
 
     var shape = shape
         set(value) {
@@ -41,8 +48,9 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     private var trueShadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
-    private var shadowLColor = Color.YELLOW
-    private var isShadowCleared = true
+    private var shadowColor = Color.YELLOW
+
+    private var opacityHolder: Int = 255
 
     private var strokeShape = shape.clone()
 
@@ -116,7 +124,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
                 trueShadowRadius,
                 shadowDx,
                 shadowDy,
-                shadowLColor
+                shadowColor
             )
             if (gradientColors != null) {
                 painter.gradientColors = gradientColors!!.clone()
@@ -367,7 +375,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     }
 
     override fun getShadowColor(): Int {
-        return shadowLColor
+        return shadowColor
     }
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
@@ -375,7 +383,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         trueShadowRadius = radius
         shadowDx = dx
         shadowDy = dy
-        shadowLColor = shadowColor
+        this.shadowColor = shadowColor
         invalidate()
     }
 
@@ -384,8 +392,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         shadowRadius = 0f
         shadowDx = 0f
         shadowDy = 0f
-        shadowLColor = Color.YELLOW
-        isShadowCleared = true
+        shadowColor = Color.YELLOW
         invalidate()
     }
 
@@ -441,57 +448,73 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
 
             translate(half, half)
 
+            val opacityFactor = opacityHolder / 255f
+
             if (shadowRadius > 0) {
-                val currentColor = shapeColor
+                save()
+                translate(half, half)
                 val currentStyle = shapePaint.style
                 val currentShader = shapePaint.shader
                 shapePaint.shader = null
                 shapePaint.style = Paint.Style.FILL_AND_STROKE
                 shapePaint.strokeWidth = strokeSize
-
-                shapePaint.setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowLColor)
+                shapePaint.color = Color.TRANSPARENT
+                shapePaint.setShadowLayer(
+                    shadowRadius,
+                    shadowDx,
+                    shadowDy,
+                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                )
 
                 shape.draw(canvas, shapePaint)
 
+                shapePaint.clearShadowLayer()
                 shapePaint.shader = currentShader
                 shapePaint.style = currentStyle
                 shapePaint.strokeWidth = 0f
-                shapePaint.color = currentColor
-
-                shapePaint.clearShadowLayer()
+                restore()
             }
 
             if (strokeSize > 0f) {
-                val currentColor = shapeColor
                 val currentStyle = shapePaint.style
                 shapePaint.style = Paint.Style.STROKE
                 shapePaint.strokeWidth = strokeSize
                 val currentShader = shapePaint.shader
                 shapePaint.shader = null
-                shapePaint.color = strokeColor
+                shapePaint.color = strokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
                 strokeShape.draw(canvas, shapePaint)
 
                 shapePaint.shader = currentShader
                 shapePaint.style = currentStyle
                 shapePaint.strokeWidth = 0f
-                shapePaint.color = currentColor
             }
 
             restore()
 
             translate(strokeSize, strokeSize)
 
+            shapePaint.color = shapeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
             shape.draw(canvas, shapePaint)
         }
     }
 
     override fun getOpacity(): Int {
-        return shapePaint.alpha
+        return opacityHolder
     }
 
     override fun setOpacity(opacity: Int) {
-        shapePaint.alpha = opacity
+        opacityHolder = opacity
         invalidate()
     }
+
+    private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
+        factor: Float
+    ): Int =
+        Color.argb(
+            (this.alpha * factor).roundToInt(),
+            this.red,
+            this.green,
+            this.blue,
+        )
 }
