@@ -874,6 +874,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layersPaint.alpha = (255 * layer.opacity).toInt()
                 layersPaint.xfermode = layer.blendingModeObject
 
+                saveLayerPaint.xfermode = layer.blendingModeObject
                 saveLayer(layerBounds, saveLayerPaint)
 
                 drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
