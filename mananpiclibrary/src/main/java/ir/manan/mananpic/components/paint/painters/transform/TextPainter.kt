@@ -26,6 +26,7 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import ir.manan.mananpic.components.MananTextView
+import ir.manan.mananpic.properties.Backgroundable
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.Colorable
@@ -41,7 +42,7 @@ import kotlin.math.roundToInt
 
 class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
     Blendable, Bitmapable,
-    Colorable, Shadowable, Opacityable {
+    Colorable, Shadowable, Opacityable, Backgroundable {
 
 
     private val backgroundPath by lazy {
@@ -50,21 +51,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     private val connectorPath by lazy {
         Path()
     }
-
-    private val backgroundPaint by lazy {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            color = backgroundColor
-        }
-    }
-
-    @ColorInt
-    var backgroundColor: Int = Color.GRAY
-        set(value) {
-            field = value
-            backgroundPaint.color = field
-            invalidate()
-        }
 
     private var shadowRadius = 0f
     private var trueShadowRadius = 0f
@@ -128,24 +114,21 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     private var shaderRotationHolder = 0f
 
-    var isTextBackgroundEnabled = false
-        set(value) {
-            field = value
-            indicateBoundsChange()
-        }
+    private var isTextBackgroundEnabled = false
 
-    var backgroundPaddingSize = 50f
-        set(value) {
-            field = value
-            indicateBoundsChange()
-        }
+    private var backgroundPaddingSize = 50f
 
-    var backgroundRadius = 12f
-        set(value) {
-            field = value
-            firstBackgroundRadiusArray.fill(value)
-            indicateBoundsChange()
+    private var backgroundRadius = 12f
+
+    @ColorInt
+    private var backgroundColor: Int = Color.GRAY
+
+    private val backgroundPaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = backgroundColor
         }
+    }
 
     private val firstBackgroundRadiusArray = FloatArray(8) {
         backgroundRadius
@@ -1089,6 +1072,40 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         backgroundPaint.alpha = opacity
         opacityHolder = opacity
         invalidate()
+    }
+
+    override fun setBackground(padding: Float, radius: Float, @ColorInt color: Int) {
+        val shouldChangeBounds = (backgroundPaddingSize != padding || backgroundRadius != radius)
+        backgroundPaddingSize = padding
+        backgroundColor = color
+        backgroundRadius = radius
+        firstBackgroundRadiusArray.fill(backgroundRadius)
+        if (shouldChangeBounds) {
+            indicateBoundsChange()
+        } else {
+            invalidate()
+        }
+    }
+
+    override fun getBackgroundPadding(): Float {
+        return backgroundPaddingSize
+    }
+
+    override fun getBackgroundRadius(): Float {
+        return backgroundRadius
+    }
+
+    override fun getBackgroundColor(): Int {
+        return backgroundColor
+    }
+
+    override fun getBackgroundState(): Boolean {
+        return isTextBackgroundEnabled
+    }
+
+    override fun setBackgroundState(isEnabled: Boolean) {
+        isTextBackgroundEnabled = isEnabled
+        indicateBoundsChange()
     }
 
     private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
