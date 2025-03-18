@@ -858,12 +858,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     override fun setBlendMode(blendMode: PorterDuff.Mode) {
         textPaint.xfermode = PorterDuffXfermode(blendMode)
+        backgroundPaint.xfermode = textPaint.xfermode
         this.blendMode = blendMode
         invalidate()
     }
 
     override fun clearBlend() {
         textPaint.xfermode = null
+        backgroundPaint.xfermode = null
         blendMode = PorterDuff.Mode.SRC
         invalidate()
     }
