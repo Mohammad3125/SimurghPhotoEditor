@@ -1,12 +1,14 @@
 package ir.manan.mananpic.components.paint.painters.transform
 
 import android.graphics.Bitmap
+import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
+import android.graphics.Shader
 import androidx.annotation.ColorInt
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
@@ -15,14 +17,25 @@ import androidx.core.graphics.red
 import androidx.core.graphics.withSave
 import ir.manan.mananpic.properties.Backgroundable
 import ir.manan.mananpic.properties.Blendable
+import ir.manan.mananpic.properties.CornerRounder
 import ir.manan.mananpic.properties.Opacityable
 import kotlin.math.roundToInt
 
-class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable, Opacityable, Backgroundable {
+class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, Backgroundable,
+    CornerRounder {
 
+    private var cornerRoundness: Float = 0f
     private val bitmapPaint = Paint().apply {
         isFilterBitmap = true
+        shader = BitmapShader(bitmap, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
     }
+
+    var bitmap: Bitmap = bitmap
+        set(value) {
+            field = value
+            bitmapPaint.shader = BitmapShader(value, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
+            indicateBoundsChange()
+        }
 
     private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
@@ -84,10 +97,27 @@ class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable, Opacityabl
                 backgroundPaint.color = backgroundColor
 
                 translate(halfPadding, halfPadding)
-                drawBitmap(bitmap, 0f, 0f, bitmapPaint)
+
+                canvas.drawRoundRect(
+                    0f,
+                    0f,
+                    bitmap.width.toFloat(),
+                    bitmap.height.toFloat(),
+                    cornerRoundness,
+                    cornerRoundness,
+                    bitmapPaint
+                )
             }
         } else {
-            canvas.drawBitmap(bitmap, 0f, 0f, bitmapPaint)
+            canvas.drawRoundRect(
+                0f,
+                0f,
+                bitmap.width.toFloat(),
+                bitmap.height.toFloat(),
+                cornerRoundness,
+                cornerRoundness,
+                bitmapPaint
+            )
         }
     }
 
@@ -116,6 +146,8 @@ class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable, Opacityabl
                 getBackgroundColor()
             )
             it.setBackgroundState(getBackgroundState())
+
+            it.setCornerRoundness(getCornerRoundness())
         }
     }
 
@@ -164,6 +196,15 @@ class BitmapPainter(var bitmap: Bitmap) : Transformable(), Blendable, Opacityabl
     override fun setBackgroundState(isEnabled: Boolean) {
         isTextBackgroundEnabled = isEnabled
         indicateBoundsChange()
+    }
+
+    override fun getCornerRoundness(): Float {
+        return cornerRoundness
+    }
+
+    override fun setCornerRoundness(roundness: Float) {
+        cornerRoundness = roundness
+        invalidate()
     }
 
     private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
