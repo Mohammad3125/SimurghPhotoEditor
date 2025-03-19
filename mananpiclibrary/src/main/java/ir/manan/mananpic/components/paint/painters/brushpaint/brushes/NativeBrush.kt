@@ -1,6 +1,12 @@
 package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RadialGradient
+import android.graphics.Shader
 
 class NativeBrush : Brush() {
 
@@ -20,6 +26,8 @@ class NativeBrush : Brush() {
     private var lastColor = Color.TRANSPARENT
 
     private var sizeHalf = 0f
+
+    var brushShape = BrushShape.CIRCLE
 
     override var size: Int = 1
         set(value) {
@@ -63,15 +71,26 @@ class NativeBrush : Brush() {
     }
 
     override fun draw(canvas: Canvas, opacity: Int) {
-        if (lastSize != size || lastColor != color) {
+        if ((lastSize != size || lastColor != color) && brushShape == BrushShape.CIRCLE) {
             lastSize = size
             lastColor = color
             createHardnessShader()
+        } else if (brushShape != BrushShape.CIRCLE) {
+            paint.shader = null
+            paint.color = color
         }
 
         paint.alpha = opacity
 
-        // easy size jitter here
-        canvas.drawCircle(0f, 0f, sizeHalf, paint)
+        if (brushShape == BrushShape.CIRCLE) {
+            canvas.drawCircle(0f, 0f, sizeHalf, paint)
+        } else {
+            canvas.drawRect(-sizeHalf, -sizeHalf, sizeHalf, sizeHalf, paint)
+        }
+    }
+
+    enum class BrushShape {
+        RECT,
+        CIRCLE
     }
 }
