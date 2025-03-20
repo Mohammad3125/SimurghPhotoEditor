@@ -757,7 +757,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             painter?.apply {
                 if (doesTakeGestures()) {
-                    painterTransformationMatrix.setScale(sf, sf, focusX, focusY)
+
+                    mapTouchPoints(focusX, focusY, false).let {
+                        painterTransformationMatrix.setScale(sf, sf, it[0], it[1])
+                    }
 
                     if (shouldDelegateGesture) {
                         onDelegateTransform?.invoke(painterTransformationMatrix)
