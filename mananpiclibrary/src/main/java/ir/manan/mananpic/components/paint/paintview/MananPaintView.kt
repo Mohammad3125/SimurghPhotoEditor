@@ -1172,6 +1172,8 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun changeSelectedLayerBlendingMode(blendingMode: PorterDuff.Mode) {
         selectedLayer?.blendingMode = blendingMode
 
+        cacheLayers()
+
         saveState(shouldClone = false)
 
         invalidate()
