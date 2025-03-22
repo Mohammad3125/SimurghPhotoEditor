@@ -11,6 +11,7 @@ import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Region
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
@@ -130,8 +131,15 @@ class CropperTool : Painter() {
         RectF()
     }
 
-    val cropperDimensions: RectF
-        get() = frameRect
+    val cropperDimensions: Rect
+        get() {
+            inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
+            inverseMatrix.invert(inverseMatrix)
+            tempRectF.set(frameRect)
+            inverseMatrix.mapRect(tempRectF)
+            tempRectF.round(tempRect)
+            return tempRect
+        }
 
     private val allocRectF by lazy {
         RectF()
@@ -171,8 +179,13 @@ class CropperTool : Painter() {
     private val tempMatrix by lazy {
         Matrix()
     }
-    private val tempRect by lazy {
+
+    private val tempRectF by lazy {
         RectF()
+    }
+
+    private val tempRect by lazy {
+        Rect()
     }
 
     private val startRect by lazy {
@@ -198,7 +211,6 @@ class CropperTool : Painter() {
     private val startingRect by lazy {
         RectF()
     }
-
 
     var animationDuration: Long = 500
         set(value) {
@@ -240,9 +252,9 @@ class CropperTool : Painter() {
         canvasMatrix = transformationMatrix
         this.fitInsideMatrix = fitInsideMatrix
 
-        tempRect.set(bounds)
+        tempRectF.set(bounds)
 
-        fitInsideMatrix.mapRect(tempRect)
+        fitInsideMatrix.mapRect(tempRectF)
 
         frameShadowsPaint.color = backgroundShadowColor
         frameShadowsPaint.alpha = backgroundShadowAlpha
@@ -256,9 +268,9 @@ class CropperTool : Painter() {
         handleBarPaint.isAntiAlias = handleBarCornerType == Paint.Cap.ROUND
 
         // Initialize limit rect that later will be used to limit resizing.
-        limitRect.set(tempRect)
+        limitRect.set(tempRectF)
 
-        normalizeCropper(tempRect.width(), tempRect.height(), frameRect)
+        normalizeCropper(tempRectF.width(), tempRectF.height(), frameRect)
         fitCropperInsideLayer(setRect = true, animate = false)
         setDrawingDimensions()
 
@@ -349,7 +361,7 @@ class CropperTool : Painter() {
 
             mapRectToMatrix(changedRect)
 
-            getOffsetValues(tempRect).let {
+            getOffsetValues(tempRectF).let {
 
                 if (it[0] != 0f || it[1] != 0f) {
                     return
@@ -394,7 +406,7 @@ class CropperTool : Painter() {
         basePoints.copyInto(cc)
         mapArray(cc)
 
-        calculateMaximumBounds(cc, tempRect)
+        calculateMaximumBounds(cc, tempRectF)
     }
 
     private fun calculateMaximumBounds(cc: FloatArray, tempRect: RectF) {
@@ -426,7 +438,7 @@ class CropperTool : Painter() {
 
         mapRectToMatrix(frameRect)
 
-        val s = 1f / calculateRectScaleDifference(tempRect)
+        val s = 1f / calculateRectScaleDifference(tempRectF)
 
         startMatrix.set(canvasMatrix)
         endMatrix.set(canvasMatrix)
@@ -459,7 +471,7 @@ class CropperTool : Painter() {
 
         mapRectToMatrix(endRect)
 
-        getOffsetValues(tempRect).let {
+        getOffsetValues(tempRectF).let {
             mapVectorPoints(it)
             endMatrix.postTranslate(-it[0], -it[1])
         }
@@ -739,13 +751,13 @@ class CropperTool : Painter() {
 
             fitInsideMatrix.invert(startMatrix)
 
-            tempRect.set(frameRect)
-            startMatrix.mapRect(tempRect)
+            tempRectF.set(frameRect)
+            startMatrix.mapRect(tempRectF)
 
             val croppedBitmap =
                 Bitmap.createBitmap(
-                    tempRect.width().toInt(),
-                    tempRect.height().toInt(),
+                    tempRectF.width().toInt(),
+                    tempRectF.height().toInt(),
                     layer.bitmap.config ?: Bitmap.Config.ARGB_8888
                 )
 
@@ -753,7 +765,7 @@ class CropperTool : Painter() {
 
             cropCanvas.save()
 
-            cropCanvas.translate(-tempRect.left, -tempRect.top)
+            cropCanvas.translate(-tempRectF.left, -tempRectF.top)
 
             cropCanvas.concat(startMatrix)
 
