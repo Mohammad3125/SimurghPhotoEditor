@@ -1548,6 +1548,23 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         var dy: Float,
         var time: Long,
         var pressure: Float
-    )
+    ) {
+        override fun toString(): String {
+            return buildString {
+                append("  ex ")
+                append(ex)
+                append("  ey ")
+                append(ey)
+                append("  dx ")
+                append(dx)
+                append("  dy ")
+                append(dy)
+                append("  time ")
+                append(time)
+                append("  pressure ")
+                append(pressure)
+            }
+        }
+    }
 
 }
