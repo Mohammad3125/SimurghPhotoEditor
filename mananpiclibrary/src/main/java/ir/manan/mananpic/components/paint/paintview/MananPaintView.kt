@@ -860,7 +860,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun isAnyLayerBlending(): Boolean =
+    fun isAnyLayerBlending(): Boolean =
         layerHolder.any { it.blendingModeObject != null }
 
     private fun drawLayer(canvas: Canvas) {
