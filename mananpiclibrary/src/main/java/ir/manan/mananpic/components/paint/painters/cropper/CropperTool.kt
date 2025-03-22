@@ -124,12 +124,10 @@ class CropperTool : Painter() {
      */
     var selectedHandleBarColor = handleBarColor
 
-
     // Rectangle that represents the crop frame.
     private val frameRect by lazy {
         RectF()
     }
-
 
     val cropperDimensions: RectF
         get() = frameRect
@@ -327,12 +325,9 @@ class CropperTool : Painter() {
         // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
         if (handleBar != null) {
 
-
-            val changedRect = mapPoints(touchData.ex, touchData.ey).let {
-                aspectRatio.resize(allocRectF.apply {
+            val changedRect = aspectRatio.resize(allocRectF.apply {
                     set(frameRect)
-                }, handleBar, it[0], it[1])
-            }
+            }, handleBar, touchData.dx, touchData.dy)
 
 
             // Change color of handle bar indicating that user is changing size of cropper.

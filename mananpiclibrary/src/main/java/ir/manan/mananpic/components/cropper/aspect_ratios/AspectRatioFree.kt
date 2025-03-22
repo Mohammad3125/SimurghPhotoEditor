@@ -14,32 +14,32 @@ class AspectRatioFree : AspectRatio() {
         rect.run {
             when (handleBar) {
                 HandleBar.BOTTOM_RIGHT -> {
-                    right = dx
-                    bottom = dy
+                    right += dx
+                    bottom += dy
                 }
                 HandleBar.TOP_RIGHT -> {
-                    right = dx
-                    top = dy
+                    right += dx
+                    top += dy
                 }
                 HandleBar.RIGHT -> {
-                    right = dx
+                    right += dx
                 }
                 HandleBar.TOP -> {
-                    top = dy
+                    top += dy
                 }
                 HandleBar.BOTTOM -> {
-                    bottom = dy
+                    bottom += dy
                 }
                 HandleBar.TOP_LEFT -> {
-                    left = dx
-                    top = dy
+                    left += dx
+                    top += dy
                 }
                 HandleBar.LEFT -> {
-                    left = dx
+                    left += dx
                 }
                 HandleBar.BOTTOM_LEFT -> {
-                    left = dx
-                    bottom = dy
+                    left += dx
+                    bottom += dy
                 }
 
                 else -> {}

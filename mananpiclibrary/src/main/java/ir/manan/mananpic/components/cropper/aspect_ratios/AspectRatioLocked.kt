@@ -20,42 +20,40 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
             when (handleBar) {
                 HandleBar.BOTTOM_RIGHT -> {
                     if (ratio > 1f) {
-                        right = dx
+                        right += dx
                         bottom = (width() / ratio) + top
                     } else {
-                        bottom = dy
+                        bottom += dy
                         right = (height() * ratio) + left
                     }
                 }
                 HandleBar.BOTTOM_LEFT -> {
                     if (ratio > 1f) {
-                        left = dx
+                        left += dx
                         bottom = (width() / ratio) + top
                     } else {
-                        bottom = dy
+                        bottom += dy
                         left = height() * ratio - width()
                     }
                 }
                 HandleBar.TOP_RIGHT -> {
                     if (ratio > 1f) {
-                        right = dx
+                        right += dx
                         top -= ((width() / ratio) - height())
                     } else {
-                        top = dy
+                        top += dy
                         right += height() * ratio - width()
                     }
                 }
                 HandleBar.TOP_LEFT -> {
                     if (ratio > 1f) {
-                        left = dx
+                        left += dx
                         top -= ((width() / ratio) - height())
                     } else {
-                        top = dy
+                        top += dy
                         left -= height() * ratio - width()
                     }
                 }
-
-
                 else -> {}
             }
             return rect
