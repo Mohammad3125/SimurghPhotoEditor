@@ -48,12 +48,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private val saveLayerPaint by lazy {
-        Paint().apply {
-            isFilterBitmap = true
-        }
-    }
-
     private var initialX = 0f
     private var initialY = 0f
 
@@ -876,9 +870,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
                 layersPaint.alpha = (255 * layer.opacity).toInt()
                 layersPaint.xfermode = layer.blendingModeObject
-
-                saveLayerPaint.xfermode = layer.blendingModeObject
-                saveLayer(layerBounds, saveLayerPaint)
 
                 drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
 
