@@ -25,6 +25,7 @@ import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.evaluators.MatrixEvaluator
 import ir.manan.mananpic.utils.evaluators.RectFloatEvaluator
+import ir.manan.mananpic.utils.perimeter
 import kotlin.math.max
 import kotlin.math.min
 
@@ -194,6 +195,10 @@ class CropperTool : Painter() {
         Canvas()
     }
 
+    private val startingRect by lazy {
+        RectF()
+    }
+
 
     var animationDuration: Long = 500
         set(value) {
@@ -299,6 +304,9 @@ class CropperTool : Painter() {
                 )
             )
         }
+
+        startingRect.set(frameRect)
+
     }
 
     private fun mapPoints(ex: Float, ey: Float): FloatArray {
@@ -326,9 +334,15 @@ class CropperTool : Painter() {
         if (handleBar != null) {
 
             val changedRect = aspectRatio.resize(allocRectF.apply {
-                    set(frameRect)
+                set(frameRect)
             }, handleBar, touchData.dx, touchData.dy)
 
+
+            val frameRectPerimeter = frameRect.perimeter()
+
+            if (frameRectPerimeter < (startingRect.perimeter() / 3f) && allocRectF.perimeter() < frameRectPerimeter) {
+                return
+            }
 
             // Change color of handle bar indicating that user is changing size of cropper.
             handleBarPaint.color = selectedHandleBarColor

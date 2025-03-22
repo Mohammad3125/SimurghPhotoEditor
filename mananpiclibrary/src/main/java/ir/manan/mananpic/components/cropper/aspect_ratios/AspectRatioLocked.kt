@@ -3,7 +3,6 @@ package ir.manan.mananpic.components.cropper.aspect_ratios
 import android.graphics.RectF
 import ir.manan.mananpic.components.cropper.AspectRatio
 import ir.manan.mananpic.components.cropper.HandleBar
-import kotlin.math.min
 
 /**
  * This class represents an aspect-ratio with locked ratio.
@@ -63,12 +62,6 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
     override fun validate(rect: RectF, dirtyRect: RectF, limitRect: RectF): RectF {
         dirtyRect.run {
             val ratio = getRatio()
-
-            // Limit the dirty rect to do not resize less than minimum dimension of limit rect divided by 4.
-            if (min(width(), height()) < min(limitRect.width(), limitRect.height()) / 4f) {
-                set(rect)
-                return dirtyRect
-            }
 
             // If right side of rectangle is greater than maximum width do not allow it
             // to go further.

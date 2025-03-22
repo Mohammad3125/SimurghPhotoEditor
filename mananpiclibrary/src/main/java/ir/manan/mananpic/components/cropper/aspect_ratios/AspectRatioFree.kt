@@ -71,17 +71,6 @@ class AspectRatioFree : AspectRatio() {
             // If top side of rectangle reaches limit of y axis don't let it go further.
             if (dirtyRect.top < limitRect.top) finalTop = limitRect.top
 
-            // This piece of code makes rectangle to don't get resized less than minimum width and height.
-            if (frameWidth - (dirtyRect.left - left) < minSize)
-                finalLeft = left + (frameWidth - minSize)
-            if (frameWidth - (right - dirtyRect.right) < minSize)
-                finalRight = right
-            if (frameHeight - (dirtyRect.top - top) < minSize)
-                finalTop = top + (frameHeight - minSize)
-            if (frameHeight - (bottom - dirtyRect.bottom) < minSize)
-                finalBottom = bottom
-
-
             return RectF(finalLeft, finalTop, finalRight, finalBottom)
         }
     }
