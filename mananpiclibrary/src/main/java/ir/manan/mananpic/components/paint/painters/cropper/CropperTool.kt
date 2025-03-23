@@ -298,11 +298,12 @@ class CropperTool : Painter() {
         )
 
         val t = limitRect.centerY() - (pair.second * 0.5f)
+        val l = limitRect.centerX() - (pair.first * 0.5f)
 
         targetRect.set(
-            limitRect.left,
+            l,
             t,
-            pair.first + limitRect.left,
+            pair.first + l,
             pair.second + t
         )
     }
