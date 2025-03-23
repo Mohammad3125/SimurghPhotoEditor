@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RadialGradient
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.core.graphics.blue
@@ -145,16 +146,21 @@ class ColorDropper : Painter() {
      */
     private var interfaceOnColorDetected: MananDropper.OnColorDetected? = null
 
+    private val clipBounds by lazy {
+        RectF()
+    }
+
 
     override fun initialize(
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
-        // Get display matrix to use width and height of device to pick a size for circle.
-        val displayMetrics = context.resources.displayMetrics
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
+
+        this.clipBounds.set(clipBounds)
 
         if (centerCrossLineSize == 0f) {
             centerCrossLineSize = context.dp(4)
@@ -168,7 +174,7 @@ class ColorDropper : Painter() {
         // it by 5.
         if (circlesRadius == 0f) {
             circlesRadius =
-                min(displayMetrics.widthPixels, displayMetrics.heightPixels).toFloat() / 5f
+                min(clipBounds.width(), clipBounds.height()) / 5f
         }
 
         // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
@@ -221,15 +227,12 @@ class ColorDropper : Painter() {
             dropperXPosition = ex
             dropperYPosition = ey
 
-            val bitWidth = refBitmap.width
-            val bitHeight = refBitmap.height
-
-            dropperXPosition = dropperXPosition.coerceIn(0f, bitWidth - 1f)
-            dropperYPosition = dropperYPosition.coerceIn(0f, bitHeight - 1f)
+            dropperXPosition = dropperXPosition.coerceIn(clipBounds.left, clipBounds.right - 1f)
+            dropperYPosition = dropperYPosition.coerceIn(clipBounds.top, clipBounds.bottom - 1f)
 
             // Offset the Circle in case circle exceeds the height of layout y coordinate.
-            offsetY = if (dropperYPosition - circleOffsetFromCenter * 1.5f <= 0f) {
-                (refBitmap.height - dropperYPosition)
+            offsetY = if (dropperYPosition - circleOffsetFromCenter * 1.5f <= clipBounds.top) {
+                (clipBounds.bottom - dropperYPosition)
             } else 0f
 
             // Scale the image to be more visible to user.
@@ -242,7 +245,6 @@ class ColorDropper : Painter() {
 
             // If user's finger is on the image, then show the circle.
             showCircle = true
-
 
             // Finally get the color of current selected pixel (the pixel user pointing at) and set
             // The ring color to that.
@@ -445,6 +447,10 @@ class ColorDropper : Painter() {
      */
     fun setOnLastColorDetected(listener: OnLastColorDetected) {
         interfaceOnLastColorDetected = listener
+    }
+
+    override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
+        this.clipBounds.set(clipBounds)
     }
 
 }

@@ -246,14 +246,15 @@ class CropperTool : Painter() {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         this.context = context
         canvasMatrix = transformationMatrix
         this.fitInsideMatrix = fitInsideMatrix
 
-        tempRectF.set(bounds)
+        tempRectF.set(layerBounds)
 
         fitInsideMatrix.mapRect(tempRectF)
 
@@ -856,8 +857,8 @@ class CropperTool : Painter() {
         return false
     }
 
-    override fun onSizeChanged(newBounds: RectF, layerBounds: Rect, changeMatrix: Matrix) {
-        tempRectF.set(layerBounds)
+    override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
+        tempRectF.set(clipBounds)
         fitInsideMatrix.mapRect(tempRectF)
         limitRect.set(tempRectF)
         fitCropperInsideLayer(animate = false, setRect = true, setMatrix = true)

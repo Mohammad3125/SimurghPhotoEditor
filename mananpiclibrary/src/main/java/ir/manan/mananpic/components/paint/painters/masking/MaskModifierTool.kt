@@ -9,7 +9,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
-import android.graphics.RectF
+import android.graphics.Rect
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.selection.clippers.BitmapMaskClipper
 import ir.manan.mananpic.components.paint.paintview.MananPaintView
@@ -50,7 +50,12 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     private lateinit var context: Context
     private lateinit var transformationMatrix: MananMatrix
     private lateinit var fitInsideMatrix: MananMatrix
-    private lateinit var bounds: RectF
+    private val boundsRect by lazy {
+        Rect()
+    }
+    private val clipBounds by lazy {
+        Rect()
+    }
 
     private var selectedLayer: PaintLayer? = null
 
@@ -76,18 +81,20 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         this.context = context
         this.transformationMatrix = transformationMatrix
         this.fitInsideMatrix = fitInsideMatrix
-        this.bounds = bounds
+        boundsRect.set(layerBounds)
+        this.clipBounds.set(clipBounds)
 
         maskLayer = PaintLayer(
             Bitmap.createBitmap(
-                bounds.width().toInt(),
-                bounds.height().toInt(),
+                layerBounds.width(),
+                layerBounds.height(),
                 Bitmap.Config.ARGB_8888
             ), Matrix(), false, 1f
         )
@@ -96,7 +103,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
     private fun initializeTool(tool: Painter) {
-        tool.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        tool.initialize(context, transformationMatrix, fitInsideMatrix, boundsRect, clipBounds)
         tool.onLayerChanged(maskLayer)
         tool.setOnMessageListener(this)
     }
@@ -195,8 +202,8 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         if (undoStack.isEmpty()) {
             undoStack.push(
                 Bitmap.createBitmap(
-                    bounds.width().toInt(),
-                    bounds.height().toInt(),
+                    boundsRect.width().toInt(),
+                    boundsRect.height().toInt(),
                     Bitmap.Config.ARGB_8888
                 )
             )

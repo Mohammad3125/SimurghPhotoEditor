@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import ir.manan.mananpic.components.paint.Painter
@@ -75,10 +76,11 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
-        viewBounds.set(bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
+        viewBounds.set(layerBounds)
         lineSmoother.onDrawPoint = this
     }
 

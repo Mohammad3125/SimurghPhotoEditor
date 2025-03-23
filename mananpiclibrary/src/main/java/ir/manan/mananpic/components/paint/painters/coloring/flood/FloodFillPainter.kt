@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.RectF
+import android.graphics.Rect
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
@@ -26,9 +26,10 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         currentThreshold = threshold
     }
 

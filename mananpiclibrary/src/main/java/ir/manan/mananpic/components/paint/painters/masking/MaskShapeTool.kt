@@ -9,6 +9,7 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
 import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.Painter
@@ -90,9 +91,10 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         context.apply {
             if (strokeWidth == 0f) {
                 strokeWidth = dp(3)

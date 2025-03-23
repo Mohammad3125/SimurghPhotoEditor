@@ -6,12 +6,11 @@ import android.graphics.Canvas
 import android.graphics.ComposePathEffect
 import android.graphics.CornerPathEffect
 import android.graphics.DashPathEffect
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
-import android.graphics.RectF
+import android.graphics.Rect
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.NativeBrush
@@ -102,9 +101,10 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         context.apply {
             cornerPathEffect = CornerPathEffect(dp(2))
         }
@@ -137,7 +137,7 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
         drawLine(ex, ey)
     }
 
-    private fun applyOnLayer() {
+    protected open fun applyOnLayer() {
         selectedLayer?.bitmap?.let { layer ->
             canvasColorApply.setBitmap(layer)
             lassoPaint.style = Paint.Style.FILL
@@ -167,10 +167,6 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
         lassoPath.rewind()
         isFirstPoint = true
         sendMessage(PainterMessage.INVALIDATE)
-    }
-
-    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
-
     }
 
     override fun onLayerChanged(layer: PaintLayer?) {

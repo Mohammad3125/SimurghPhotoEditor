@@ -29,7 +29,8 @@ abstract class Painter {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF,
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
         isInitialized = true
     }
@@ -73,7 +74,7 @@ abstract class Painter {
     }
 
 
-    open fun onSizeChanged(newBounds: RectF, layerBounds: Rect, changeMatrix: Matrix) {
+    open fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
 
     }
 
@@ -117,7 +118,7 @@ abstract class Painter {
         isInitialized = false
     }
 
-    open fun doesNeedTouchSlope() : Boolean  {
+    open fun doesNeedTouchSlope(): Boolean {
         return true
     }
 

@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
 import android.graphics.RectF
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
@@ -65,12 +66,13 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         paintCanvas.setBitmap(maskBitmap)
         lineSmoother.onDrawPoint = this
-        layerBound.set(bounds)
+        layerBound.set(layerBounds)
     }
 
     override fun onMoveBegin(touchData: MananPaintView.TouchData) {

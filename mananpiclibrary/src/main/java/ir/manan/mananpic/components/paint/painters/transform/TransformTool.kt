@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
@@ -109,7 +110,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private var lastX = 0f
     private var lastY = 0f
 
-    private lateinit var bounds: RectF
+    private val bounds by lazy {
+        RectF()
+    }
 
     private lateinit var matrix: MananMatrix
 
@@ -167,9 +170,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         if (acceptableDistanceForSmartGuideline == 0f) {
             acceptableDistanceForSmartGuideline = context.dp(1)
         }
@@ -186,7 +190,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             touchRange = context.dp(24)
         }
         matrix = transformationMatrix
-        this.bounds = bounds
+        bounds.set(clipBounds)
 
         isToolInitialized = true
 
@@ -1464,6 +1468,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         findRotationSmartGuidelines()
     }
 
+    override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
+        bounds.set(clipBounds)
+    }
+
     private data class Child(
         val transformable: Transformable,
         val transformationMatrix: MananMatrix,
@@ -1472,10 +1480,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         val meshPoints: FloatArray,
         val targetRect: RectF?
     )
-
-    override fun release() {
-
-    }
 
     enum class TransformableAlignment {
         TOP, LEFT, RIGHT, BOTTOM, VERTICAL, HORIZONTAL, CENTER

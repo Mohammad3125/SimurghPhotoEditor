@@ -10,7 +10,7 @@ import android.graphics.DashPathEffect
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.RectF
+import android.graphics.Rect
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.paint.Painter
@@ -227,9 +227,10 @@ abstract class PenToolBase : Painter() {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         canvasMatrix = transformationMatrix
 
         context.run {

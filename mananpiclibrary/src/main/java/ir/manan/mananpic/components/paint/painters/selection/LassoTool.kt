@@ -9,6 +9,7 @@ import android.graphics.CornerPathEffect
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.painters.coloring.LassoColorPainter
@@ -62,16 +63,17 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
         context: Context,
         transformationMatrix: MananMatrix,
         fitInsideMatrix: MananMatrix,
-        bounds: RectF
+        layerBounds: Rect,
+        clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, bounds)
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         canvasMatrix = transformationMatrix
         context.apply {
             cornerPathEffect = CornerPathEffect(dp(2))
             lassoStrokeWidth = dp(4)
         }
         pathEffectAnimator.start()
-        viewBounds.set(bounds)
+        viewBounds.set(layerBounds)
     }
 
     override fun draw(canvas: Canvas) {
@@ -93,9 +95,6 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
     override fun resetPaint() {
         lassoPath.rewind()
         lassoCopy.rewind()
-
-        undoStack.clear()
-        redoStack.clear()
 
         isFirstPoint = true
         sendMessage(PainterMessage.INVALIDATE)
