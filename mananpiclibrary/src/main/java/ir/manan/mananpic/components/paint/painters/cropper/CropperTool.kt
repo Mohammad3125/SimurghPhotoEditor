@@ -827,7 +827,9 @@ class CropperTool : Painter() {
     }
 
     override fun onSizeChanged(newBounds: RectF, layerBounds: Rect, changeMatrix: Matrix) {
-        limitRect.set(newBounds)
+        tempRectF.set(layerBounds)
+        fitInsideMatrix.mapRect(tempRectF)
+        limitRect.set(tempRectF)
         fitCropperInsideLayer(animate = false, setRect = true, setMatrix = true)
         setDrawingDimensions()
         sendMessage(PainterMessage.INVALIDATE)
