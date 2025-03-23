@@ -731,9 +731,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     override fun resetPaint() {
     }
 
-    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
-    }
-
     override fun onLayerChanged(layer: PaintLayer?) {
         selectedLayer = layer
     }

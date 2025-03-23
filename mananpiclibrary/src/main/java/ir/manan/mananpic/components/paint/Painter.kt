@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.graphics.RectF
 import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
@@ -72,7 +73,7 @@ abstract class Painter {
     }
 
 
-    open fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
+    open fun onSizeChanged(newBounds: RectF, layerBounds: Rect, changeMatrix: Matrix) {
 
     }
 

@@ -1,5 +1,6 @@
 package ir.manan.mananpic.components.paint.paintview
 
+import android.animation.RectEvaluator
 import android.animation.TimeInterpolator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
@@ -12,6 +13,7 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import android.os.Build
@@ -22,6 +24,7 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewConfiguration
 import androidx.core.animation.doOnEnd
+import androidx.core.graphics.toRectF
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.paint.Painter
@@ -221,6 +224,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private val endMatrix = MananMatrix()
     private val startMatrix = MananMatrix()
 
+    private val endRect = Rect()
+    private val startRect = Rect()
+
 
     var matrixAnimationDuration: Long = 500
         set(value) {
@@ -246,6 +252,17 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    private val clipAnimator by lazy {
+        ValueAnimator.ofObject(RectEvaluator(), startRect, endRect).apply {
+            interpolator = matrixAnimationInterpolator
+            duration = matrixAnimationDuration
+            addUpdateListener {
+                changeClipSize(it.animatedValue as Rect)
+                invalidate()
+            }
+        }
+    }
+
     private val checkerPatternPaint by lazy {
         Paint().apply {
             shader = BitmapShader(
@@ -254,6 +271,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 Shader.TileMode.REPEAT
             )
         }
+    }
+
+    private val layerClipBounds by lazy {
+        Rect()
     }
 
     init {
@@ -324,9 +345,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         super.onSizeChanged(w, h, oldw, oldh)
 
-        resizeDrawable(w.toFloat() - paddingRight, h.toFloat() - paddingBottom)
-
-        calculateBounds()
+        resizeCanvas(w.toFloat(), h.toFloat())
 
         mappingMatrix.setRectToRect(
             rectAlloc,
@@ -335,7 +354,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         rectAlloc.set(boundsRectangle)
 
-        painter?.onSizeChanged(rectAlloc, mappingMatrix)
+        painter?.onSizeChanged(rectAlloc, layerClipBounds, mappingMatrix)
     }
 
     /**
@@ -344,17 +363,12 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
      */
     private fun resizeDrawable(targetWidth: Float, targetHeight: Float) {
         imageviewMatrix.setRectToRect(
-            RectF(
-                0f,
-                0f,
-                bitmapWidth.toFloat(),
-                bitmapHeight.toFloat()
-            ),
+            layerClipBounds.toRectF(),
             RectF(
                 paddingLeft.toFloat(),
                 paddingTop.toFloat(),
-                targetWidth,
-                targetHeight
+                targetWidth - paddingRight,
+                targetHeight - paddingBottom
             ),
             Matrix.ScaleToFit.CENTER
         )
@@ -363,9 +377,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         if (isNewBitmap && bitmap != null) {
 
-            resizeDrawable(width.toFloat() - paddingRight, height.toFloat() - paddingBottom)
-
-            calculateBounds()
+            resizeCanvas(width.toFloat(), height.toFloat())
 
             onImageLaidOut()
 
@@ -386,12 +398,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             bitmapHeight = bitmap.height
             isViewInitialized = false
 
+            layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
+
             if (saveHistory) {
                 addNewLayer(bitmap)
             } else {
                 addNewLayerWithoutSavingHistory(bitmap)
             }
-
 
             requestLayout()
             invalidate()
@@ -417,8 +430,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             boundsRectangle.set(leftEdge, topEdge, rightEdge, bottomEdge)
 
-            layerBounds.set(0f, 0f, bitmapWidth.toFloat(), bitmapHeight.toFloat())
-
+            layerBounds.set(layerClipBounds)
         }
     }
 
@@ -444,7 +456,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         pp?.let { p ->
             rectAlloc.set(layerBounds)
             if (!pp.isInitialized) {
-                p.initialize(context, canvasMatrix, imageviewMatrix, RectF(layerBounds))
+                p.initialize(context, canvasMatrix, imageviewMatrix, layerBounds)
             }
             p.onLayerChanged(selectedLayer)
             if (this::bitmapReference.isInitialized) {
@@ -816,10 +828,14 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             concat(canvasMatrix)
 
             concat(imageviewMatrix)
+
+            if (!layerClipBounds.isEmpty) {
+                clipRect(layerClipBounds)
+            }
+
             if (isAllLayersCached && !isAnyLayerBlending()) {
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
-
                 drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
 
                 drawLayer(canvas)
@@ -828,7 +844,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 layersPaint.alpha = 255
 
                 drawBitmap(cachedLayer, 0f, 0f, layersPaint)
-
             } else {
                 if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
                     layersPaint.xfermode = null
@@ -860,10 +875,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     private fun drawLayer(canvas: Canvas) {
         canvas.apply {
             selectedLayer?.let { layer ->
-
-                save()
-                clipRect(0, 0, layer.bitmap.width, layer.bitmap.height)
-
                 if (layer === layerHolder.first() && isCheckerBoardEnabled) {
                     drawPaint(checkerPatternPaint)
                 }
@@ -874,9 +885,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
 
                 painter?.draw(this)
-
-                restore()
-
             }
         }
 
@@ -1084,7 +1092,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         if (!this::partiallyCachedLayer.isInitialized || !this::bitmapReference.isInitialized || !this::cachedLayer.isInitialized) {
             return
         }
-        bitmap?.let { mainBitmap ->
+        bitmap?.let { _ ->
             selectedLayer?.let { sv ->
 
                 partiallyCachedLayer.eraseColor(Color.TRANSPARENT)
@@ -1460,6 +1468,48 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     fun setMatrix(matrix: Matrix) {
         canvasMatrix.set(matrix)
         invalidate()
+    }
+
+    fun setClipRect(rect: Rect, animate: Boolean = true, func: () -> Unit = {}) {
+        if (animate && !clipAnimator.isRunning && rect != layerClipBounds) {
+            startRect.set(layerClipBounds)
+            endRect.set(rect)
+            clipAnimator.start()
+
+            clipAnimator.doOnEnd {
+                func.invoke()
+                clipAnimator.listeners.clear()
+            }
+        } else {
+            changeClipSize(rect)
+            func.invoke()
+            invalidate()
+        }
+    }
+
+    private fun changeClipSize(rect: Rect) {
+        rectAlloc.set(boundsRectangle)
+
+        layerClipBounds.set(rect)
+        bitmapWidth = layerClipBounds.width()
+        bitmapHeight = layerClipBounds.height()
+
+        resizeCanvas(width.toFloat(), height.toFloat())
+
+        mappingMatrix.setRectToRect(
+            rectAlloc,
+            boundsRectangle, Matrix.ScaleToFit.CENTER
+        )
+
+        rectAlloc.set(boundsRectangle)
+
+        painter?.onSizeChanged(rectAlloc, layerClipBounds, mappingMatrix)
+    }
+
+    private fun resizeCanvas(width: Float, height: Float) {
+        resizeDrawable(width, height)
+
+        calculateBounds()
     }
 
     private class State(

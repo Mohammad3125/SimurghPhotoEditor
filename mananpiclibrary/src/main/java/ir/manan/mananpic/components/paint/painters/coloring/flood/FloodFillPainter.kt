@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.RectF
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.paintview.MananPaintView
@@ -71,10 +70,6 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
     }
 
     override fun resetPaint() {
-
-    }
-
-    override fun onSizeChanged(newBounds: RectF, changeMatrix: Matrix) {
 
     }
 
