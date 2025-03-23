@@ -273,7 +273,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private val layerClipBounds by lazy {
+    val layerClipBounds by lazy {
+        Rect()
+    }
+
+    val identityClip by lazy {
         Rect()
     }
 
@@ -399,6 +403,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             isViewInitialized = false
 
             layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
+            identityClip.set(layerClipBounds)
 
             if (saveHistory) {
                 addNewLayer(bitmap)
@@ -1505,6 +1510,9 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         painter?.onSizeChanged(rectAlloc, layerClipBounds, mappingMatrix)
     }
+
+    fun isIdentityClip(): Boolean =
+        layerClipBounds == identityClip
 
     private fun resizeCanvas(width: Float, height: Float) {
         resizeDrawable(width, height)
