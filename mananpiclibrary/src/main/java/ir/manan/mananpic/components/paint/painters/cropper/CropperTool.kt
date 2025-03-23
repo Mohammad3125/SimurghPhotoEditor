@@ -729,8 +729,10 @@ class CropperTool : Painter() {
         }
     }
 
-    fun setAspectRatio(newAspectRatio: AspectRatio) {
-        if (newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked) if ((aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio()) return
+    fun setAspectRatio(newAspectRatio: AspectRatio, force: Boolean = false) {
+        if (!force && newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked && (aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio()) {
+            return
+        }
 
         if (newAspectRatio is AspectRatioFree && aspectRatio is AspectRatioFree) return
 
