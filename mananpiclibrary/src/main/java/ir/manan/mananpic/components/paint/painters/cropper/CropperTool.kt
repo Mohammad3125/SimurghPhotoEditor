@@ -14,6 +14,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Region
+import androidx.core.animation.doOnEnd
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.manan.mananpic.components.cropper.AspectRatio
 import ir.manan.mananpic.components.cropper.HandleBar
@@ -815,6 +816,33 @@ class CropperTool : Painter() {
                 sendMessage(PainterMessage.INVALIDATE)
                 sendMessage(PainterMessage.SAVE_HISTORY)
             }
+        }
+    }
+
+    fun setFrame(
+        rect: Rect,
+        fit: Boolean = false,
+        animate: Boolean = true,
+        onEnd: () -> Unit = {}
+    ) {
+        inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
+        tempRectF.set(rect)
+        inverseMatrix.mapRect(tempRectF)
+        frameRect.set(tempRectF)
+        if (fit) {
+            fitCropperInsideLayer(animate = animate, setRect = !animate)
+            if (!animate) {
+                setDrawingDimensions()
+                sendMessage(PainterMessage.INVALIDATE)
+            } else {
+                animator.doOnEnd {
+                    onEnd.invoke()
+                    animator.listeners.clear()
+                }
+            }
+        } else {
+            setDrawingDimensions()
+            sendMessage(PainterMessage.INVALIDATE)
         }
     }
 
