@@ -4,9 +4,9 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.utils.MathUtils
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import ir.manan.mananpic.utils.gesture.TouchData
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -42,7 +42,7 @@ class CanvasDrawingEngine : DrawingEngine {
     private var currentOpacityPressure = 0f
 
     private var currentSpacing = 0f
-    override fun onMoveBegin(touchData: MananPaintView.TouchData, brush: Brush) {
+    override fun onMoveBegin(touchData: TouchData, brush: Brush) {
         taperSizeHolder = brush.startTaperSize
 
         sizeVarianceHolder = brush.sizeVariance
@@ -73,7 +73,7 @@ class CanvasDrawingEngine : DrawingEngine {
 
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData, brush: Brush) {
+    override fun onMove(touchData: TouchData, brush: Brush) {
 
         calculateSizeVariance(touchData, brush)
 
@@ -99,7 +99,7 @@ class CanvasDrawingEngine : DrawingEngine {
     }
 
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData, brush: Brush) {
+    override fun onMoveEnded(touchData: TouchData, brush: Brush) {
         currentSizePressure =
             mapPressure(touchData.pressure, brush.minimumPressureSize, brush.maximumPressureSize)
 
@@ -134,7 +134,7 @@ class CanvasDrawingEngine : DrawingEngine {
     )
 
 
-    private fun calculateSizeVariance(touchData: MananPaintView.TouchData, brush: Brush) {
+    private fun calculateSizeVariance(touchData: TouchData, brush: Brush) {
         if (brush.sizeVariance == 1f) {
             return
         }
@@ -171,7 +171,7 @@ class CanvasDrawingEngine : DrawingEngine {
         return abs(vtr - lastSpeed)
     }
 
-    private fun calculateOpacityVariance(touchData: MananPaintView.TouchData, brush: Brush) {
+    private fun calculateOpacityVariance(touchData: TouchData, brush: Brush) {
         if (brush.opacityVariance == 0f) {
             return
         }

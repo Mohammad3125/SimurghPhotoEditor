@@ -14,12 +14,12 @@ import android.graphics.Rect
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.paint.Painter
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.selection.selectors.PenSelector
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import ir.manan.mananpic.utils.gesture.TouchData
 import java.util.Stack
 import kotlin.math.abs
 
@@ -256,7 +256,7 @@ abstract class PenToolBase : Painter() {
         }
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         findLines(touchData.ex, touchData.ey)
     }
 
@@ -297,7 +297,7 @@ abstract class PenToolBase : Painter() {
     }
 
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
         // If path is closed then offset (move around) path if user moves his/her finger.
         if (isPathClose && currentHandleSelected == Handle.NONE) {
 
@@ -403,7 +403,7 @@ abstract class PenToolBase : Painter() {
         }
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         touchData.run {
 
 

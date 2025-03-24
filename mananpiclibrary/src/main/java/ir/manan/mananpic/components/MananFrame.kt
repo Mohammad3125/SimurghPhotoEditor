@@ -23,7 +23,7 @@ import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
-import ir.manan.mananpic.utils.gesture.detectors.TwoFingerRotationDetector
+import ir.manan.mananpic.utils.gesture.detectors.rotation.TwoFingerRotationDetector
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min

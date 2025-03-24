@@ -14,10 +14,10 @@ import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.painters.coloring.LassoColorPainter
 import ir.manan.mananpic.components.paint.painters.selection.clippers.PathBitmapClipper
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.gesture.TouchData
 
 class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
 
@@ -109,7 +109,7 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
         return null
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         touchSmoother.setLastPoint(touchData, smoothnessBrush)
     }
 

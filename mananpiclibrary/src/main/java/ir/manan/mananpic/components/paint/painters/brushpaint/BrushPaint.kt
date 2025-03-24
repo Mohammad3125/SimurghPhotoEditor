@@ -15,11 +15,11 @@ import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
 import ir.manan.mananpic.components.paint.painters.masking.MaskTool
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.gesture.TouchData
 
 @MaskTool
 class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint {
@@ -84,7 +84,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         lineSmoother.onDrawPoint = this
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         if (!this::finalBrush.isInitialized || isLayerNull) {
             isBrushNull = true
             return
@@ -130,7 +130,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         return (shouldBlend || shouldBlendTexture) && (!this::alphaBlendBitmap.isInitialized || (alphaBlendBitmap.width != ccBitmap.width || alphaBlendBitmap.height != ccBitmap.height))
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
 
         if (shouldDraw()) {
 
@@ -159,7 +159,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
 
         chooseCanvasToDraw()
 

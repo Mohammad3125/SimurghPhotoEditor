@@ -15,10 +15,10 @@ import android.view.View
 import android.widget.ImageView
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.gesture.detectors.rotation.OnRotateListener
+import ir.manan.mananpic.utils.gesture.detectors.rotation.RotationDetectorGesture
 import ir.manan.mananpic.utils.gesture.gestures.Gesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
-import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
-import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import kotlin.math.min
 
 /**

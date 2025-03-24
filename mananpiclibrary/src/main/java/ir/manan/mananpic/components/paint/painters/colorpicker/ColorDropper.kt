@@ -18,9 +18,9 @@ import ir.manan.mananpic.components.MananDropper
 import ir.manan.mananpic.components.MananDropper.OnColorDetected
 import ir.manan.mananpic.components.MananDropper.OnLastColorDetected
 import ir.manan.mananpic.components.paint.Painter
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.gesture.TouchData
 import kotlin.math.min
 
 class ColorDropper : Painter() {
@@ -199,15 +199,15 @@ class ColorDropper : Painter() {
         circleOffsetFromCenter = (circlesRadius * 1.5f)
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         showDropper(touchData.ex, touchData.ey)
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
         showDropper(touchData.ex, touchData.ey)
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         showDropper(touchData.ex, touchData.ey)
         // Call interfaces.
         onLastColorDetected?.invoke(lastSelectedColor)

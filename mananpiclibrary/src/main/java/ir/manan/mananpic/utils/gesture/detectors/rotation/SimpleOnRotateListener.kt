@@ -1,4 +1,4 @@
-package ir.manan.mananpic.utils.gesture.gestures
+package ir.manan.mananpic.utils.gesture.detectors.rotation
 
 /**
  * A class to simplify [OnRotateListener] to be cleaner.

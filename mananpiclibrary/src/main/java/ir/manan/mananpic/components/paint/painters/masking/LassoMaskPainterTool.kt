@@ -14,12 +14,12 @@ import android.graphics.Rect
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.NativeBrush
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.gesture.TouchData
 
 @MaskTool
 open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
@@ -114,15 +114,15 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
         pathEffectAnimator.start()
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         touchSmoother.setFirstPoint(touchData, smoothnessBrush)
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
         touchSmoother.addPoints(touchData, smoothnessBrush)
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         touchSmoother.setLastPoint(touchData, smoothnessBrush)
         applyOnLayer()
     }

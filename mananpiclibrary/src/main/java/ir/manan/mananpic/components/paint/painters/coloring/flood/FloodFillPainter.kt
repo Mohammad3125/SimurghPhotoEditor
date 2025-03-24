@@ -6,9 +6,9 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
 import ir.manan.mananpic.components.paint.Painter
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.gesture.TouchData
 
 class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
@@ -33,15 +33,15 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
         currentThreshold = threshold
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
 
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
 
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         layerBitmap?.let { bitmap ->
             val xI = touchData.ex.toInt()
             val xY = touchData.ey.toInt()

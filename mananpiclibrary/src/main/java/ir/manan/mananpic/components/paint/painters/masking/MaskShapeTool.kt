@@ -13,11 +13,11 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.Painter
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.gesture.TouchData
 
 class MaskShapeTool(shape: MananShape?) : Painter() {
 
@@ -107,18 +107,18 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
         pathEffectAnimator.start()
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         shapeBounds.left = touchData.ex
         shapeBounds.top = touchData.ey
         isMoveBeginCalled = true
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
         resizeShape(touchData.ex, touchData.ey)
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         if (!isMoveBeginCalled) {
             return
         }

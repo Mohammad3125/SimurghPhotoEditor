@@ -4,7 +4,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import androidx.annotation.ColorInt
 import ir.manan.mananpic.components.paint.painters.masking.LassoMaskPainterTool
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.utils.gesture.TouchData
 
 open class LassoColorPainter : LassoMaskPainterTool() {
 
@@ -20,7 +20,7 @@ open class LassoColorPainter : LassoMaskPainterTool() {
         lassoPaint.style = Paint.Style.FILL
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         super.onMoveEnded(touchData)
         applyOnLayer()
     }

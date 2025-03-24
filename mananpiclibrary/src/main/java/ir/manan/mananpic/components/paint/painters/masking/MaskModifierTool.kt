@@ -12,9 +12,9 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.selection.clippers.BitmapMaskClipper
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.gesture.TouchData
 import java.util.Stack
 
 class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.MessageChannel {
@@ -109,15 +109,15 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         maskTool?.onMoveBegin(touchData)
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
         maskTool?.onMove(touchData)
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         maskTool?.onMoveEnded(touchData)
         saveState()
         // TODO: Fix undo

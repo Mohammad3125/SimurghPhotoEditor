@@ -23,9 +23,9 @@ import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.MananMatrixAnimator
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
+import ir.manan.mananpic.utils.gesture.detectors.rotation.OnRotateListener
+import ir.manan.mananpic.utils.gesture.detectors.rotation.RotationDetectorGesture
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
-import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
-import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import kotlin.math.abs
 
 abstract class MananParent(context: Context, attributeSet: AttributeSet?) :

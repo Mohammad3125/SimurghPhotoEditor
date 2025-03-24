@@ -1,4 +1,4 @@
-package ir.manan.mananpic.utils.gesture.gestures
+package ir.manan.mananpic.utils.gesture.detectors.rotation
 
 /**
  * Interface to be used as callback to detect rotation via a detector.

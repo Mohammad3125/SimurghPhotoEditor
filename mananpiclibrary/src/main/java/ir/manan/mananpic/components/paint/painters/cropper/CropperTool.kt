@@ -21,12 +21,12 @@ import ir.manan.mananpic.components.cropper.HandleBar
 import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioFree
 import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioLocked
 import ir.manan.mananpic.components.paint.Painter
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.evaluators.MatrixEvaluator
 import ir.manan.mananpic.utils.evaluators.RectFloatEvaluator
+import ir.manan.mananpic.utils.gesture.TouchData
 import ir.manan.mananpic.utils.perimeter
 import kotlin.math.max
 import kotlin.math.min
@@ -310,7 +310,7 @@ class CropperTool : Painter() {
         )
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         mapPoints(touchData.ex, touchData.ey).let {
             // Figure out which handle bar is in range of the event.
             handleBar = figureOutWhichHandleIsInRangeOfEvent(
@@ -341,7 +341,7 @@ class CropperTool : Painter() {
         canvasMatrix.mapVectors(array)
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
         if (animator.isRunning) {
             return
         }
@@ -420,7 +420,7 @@ class CropperTool : Painter() {
         tempRect.set(minX, minY, maxX, maxY)
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         fitCropperInsideLayer()
     }
 

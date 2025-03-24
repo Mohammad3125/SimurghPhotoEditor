@@ -10,6 +10,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.toRectF
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.MananFrame.Guidelines
 import ir.manan.mananpic.components.paint.Painter
@@ -20,11 +21,11 @@ import ir.manan.mananpic.components.paint.painters.transform.TransformTool.Trans
 import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.RIGHT
 import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.TOP
 import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.VERTICAL
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import ir.manan.mananpic.utils.gesture.TouchData
 import java.util.LinkedList
 import kotlin.math.PI
 import kotlin.math.abs
@@ -110,9 +111,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     private var lastX = 0f
     private var lastY = 0f
 
-    private val bounds by lazy {
-        RectF()
-    }
+    private lateinit var bounds: Rect
 
     private lateinit var matrix: MananMatrix
 
@@ -130,8 +129,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         get() {
             return _selectedChild?.transformable
         }
-
-    private var isToolInitialized = false
 
     val smartGuidePaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -190,9 +187,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             touchRange = context.dp(24)
         }
         matrix = transformationMatrix
-        bounds.set(clipBounds)
-
-        isToolInitialized = true
+        bounds = clipBounds
 
         _children.forEach { child ->
             initializeChild(child, shouldCalculateBounds = true)
@@ -223,7 +218,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 } else {
                     transformationMatrix.setRectToRect(
                         targetComponentBounds,
-                        bounds,
+                        bounds.toRectF(),
                         Matrix.ScaleToFit.CENTER
                     )
                 }
@@ -278,7 +273,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         _selectedChild?.let {
             selectIndexes(it, touchData.ex, touchData.ey)
         }
@@ -463,7 +458,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
 
         _selectedChild?.apply {
             mapMeshPoints(this, touchData.ex, touchData.ey)
@@ -514,7 +509,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         if (firstSelectedIndex == -1 && secondSelectedIndex == -1 && firstSizeChangeIndex == -1 && secondSizeChangeIndex == -1) {
 
             _selectedChild = null
@@ -803,6 +798,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             mergeMatrices(child, true)
             calculateMaximumRect(child, tempRect, mappedMeshPoints)
 
+            val floutBounds = bounds.toRectF()
             // Remove selected component from list of children (because we don't need to find smart guideline for
             // selected component which is a undefined behaviour) and then map each bounds of children to get exact
             // location of points and then add page's bounds to get smart guidelines for page too.
@@ -811,7 +807,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 mergeMatrices(c, true)
                 calculateMaximumRect(c, r, mappedMeshPoints)
                 r
-            }.plus(bounds).forEach { childBounds ->
+            }.plus(floutBounds).forEach { childBounds ->
 
                 // Stores total value that selected component should shift in each axis
                 var totalToShiftX = 0f
@@ -943,7 +939,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 smartGuidelineHolder.run {
 
-                    val isNotPage = childBounds !== bounds
+                    val isNotPage = childBounds !== floutBounds
 
                     // Draw a line on left side of selected component if two lefts are the same
                     // or right of other component is same to left of selected component
@@ -1011,20 +1007,20 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                             if (totalToShiftX == centerXDiff) {
                                 add(tempRect.centerX())
                                 smartGuidelineDashedLine.add(isNotPage)
-                                add(bounds.top)
+                                add(floutBounds.top)
                                 smartGuidelineDashedLine.add(isNotPage)
                                 add(tempRect.centerX())
                                 smartGuidelineDashedLine.add(isNotPage)
-                                add(bounds.bottom)
+                                add(floutBounds.bottom)
                                 smartGuidelineDashedLine.add(isNotPage)
                             }
 
                             if (totalToShiftY == centerYDiff) {
-                                add(bounds.left)
+                                add(floutBounds.left)
                                 smartGuidelineDashedLine.add(isNotPage)
                                 add(tempRect.centerY())
                                 smartGuidelineDashedLine.add(isNotPage)
-                                add(bounds.right)
+                                add(floutBounds.right)
                                 smartGuidelineDashedLine.add(isNotPage)
                                 add(tempRect.centerY())
                                 smartGuidelineDashedLine.add(isNotPage)
@@ -1134,7 +1130,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
         onChildSelected?.invoke(_selectedChild!!.transformable, true)
 
-        if (isToolInitialized) {
+        if (isInitialized) {
             initializeChild(_selectedChild!!, shouldCalculateBounds = true)
             invalidate()
         }
@@ -1468,8 +1464,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         findRotationSmartGuidelines()
     }
 
-    override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
-        bounds.set(clipBounds)
+    override fun release() {
+        // Do not reinitialize child
     }
 
     private data class Child(

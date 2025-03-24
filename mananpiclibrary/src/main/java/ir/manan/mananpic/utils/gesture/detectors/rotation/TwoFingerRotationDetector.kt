@@ -1,10 +1,8 @@
-package ir.manan.mananpic.utils.gesture.detectors
+package ir.manan.mananpic.utils.gesture.detectors.rotation
 
 import android.view.MotionEvent
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import ir.manan.mananpic.utils.gesture.GestureUtils.Companion.mapTo360
-import ir.manan.mananpic.utils.gesture.gestures.OnRotateListener
-import ir.manan.mananpic.utils.gesture.gestures.RotationDetectorGesture
 import kotlin.math.round
 
 /**
@@ -72,19 +70,19 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
 
                     val validatedRotation = mapTo360(rawRotation)
 
-                    if (step > 0f) {
+                    shouldProgress = if (step > 0f) {
                         // Calculate the nearest step point by rounding the result of dividing current rotation by step.
                         // For example if we had a step of 8.5 and we have been rotated 3 degrees so far then result would be:
                         // round(3 / 8.5f ~= 0.3529) -> 0f = 8.5 * 0 = 0.
                         // Now imagine we had rotation of 8 and step of 8.5f, the result would be:
                         // round(8 / 8.5f ~= 0.9411) -> 1f = 8.5 * 1f = 8.5.
-                        shouldProgress = listener.onRotate(
+                        listener.onRotate(
                             mapTo360(step * (round(validatedRotation / step))),
                             px,
                             py
                         )
                     } else {
-                        shouldProgress = listener.onRotate(validatedRotation, px, py)
+                        listener.onRotate(validatedRotation, px, py)
                     }
 
                     wasTouchedWithTwoPointers = true

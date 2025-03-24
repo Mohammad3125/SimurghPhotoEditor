@@ -11,10 +11,10 @@ import android.graphics.RectF
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.MananMatrix
+import ir.manan.mananpic.utils.gesture.TouchData
 
 class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: DrawingEngine) :
     Painter(),
@@ -75,7 +75,7 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
         layerBound.set(layerBounds)
     }
 
-    override fun onMoveBegin(touchData: MananPaintView.TouchData) {
+    override fun onMoveBegin(touchData: TouchData) {
         if (shouldDraw()) {
             touchData.run {
                 engine.onMoveBegin(touchData, finalBrush)
@@ -88,7 +88,7 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
         }
     }
 
-    override fun onMove(touchData: MananPaintView.TouchData) {
+    override fun onMove(touchData: TouchData) {
         if (shouldDraw()) {
 
             engine.onMove(touchData, finalBrush)
@@ -98,7 +98,7 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
         }
     }
 
-    override fun onMoveEnded(touchData: MananPaintView.TouchData) {
+    override fun onMoveEnded(touchData: TouchData) {
         if (shouldDraw()) {
 
             engine.onMoveEnded(touchData, finalBrush)

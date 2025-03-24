@@ -1,4 +1,6 @@
-package ir.manan.mananpic.utils.gesture.gestures
+package ir.manan.mananpic.utils.gesture.detectors.rotation
+
+import ir.manan.mananpic.utils.gesture.gestures.Gesture
 
 /**
  * Interface definition for a class that detects rotation.

@@ -15,10 +15,10 @@ import androidx.core.view.doOnLayout
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.paint.engines.CachedCanvasEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
 import ir.manan.mananpic.utils.dp
+import ir.manan.mananpic.utils.gesture.TouchData
 import kotlin.random.Random
 
 class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context, attributeSet) {
@@ -187,7 +187,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
 
         private val pathPointHolder = FloatArray(2)
 
-        private val touchData = MananPaintView.TouchData(0f, 0f, 0f, 0f, 0, 0f)
+        private val touchData = TouchData()
 
         fun createBrushSnapshot(
             targetWidth: Int,

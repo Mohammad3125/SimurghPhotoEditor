@@ -1,14 +1,14 @@
 package ir.manan.mananpic.components.paint.smoothers
 
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
+import ir.manan.mananpic.utils.gesture.TouchData
 
 abstract class LineSmoother {
     var onDrawPoint: OnDrawPoint? = null
 
-    abstract fun setFirstPoint(touchData: MananPaintView.TouchData, brush: Brush)
-    abstract fun addPoints(touchData: MananPaintView.TouchData, brush: Brush)
-    abstract fun setLastPoint(touchData: MananPaintView.TouchData, brush: Brush)
+    abstract fun setFirstPoint(touchData: TouchData, brush: Brush)
+    abstract fun addPoints(touchData: TouchData, brush: Brush)
+    abstract fun setLastPoint(touchData: TouchData, brush: Brush)
 
     interface OnDrawPoint {
         fun onDrawPoint(

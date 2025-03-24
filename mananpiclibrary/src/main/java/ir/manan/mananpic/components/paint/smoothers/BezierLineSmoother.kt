@@ -3,8 +3,8 @@ package ir.manan.mananpic.components.paint.smoothers
 import android.graphics.Path
 import android.graphics.PathMeasure
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
-import ir.manan.mananpic.components.paint.paintview.MananPaintView
 import ir.manan.mananpic.utils.gesture.GestureUtils
+import ir.manan.mananpic.utils.gesture.TouchData
 import kotlin.math.atan2
 import kotlin.math.floor
 
@@ -39,7 +39,7 @@ class BezierLineSmoother : LineSmoother() {
     private val path = Path()
     private val pathMeasure = PathMeasure()
 
-    override fun setFirstPoint(touchData: MananPaintView.TouchData, brush: Brush) {
+    override fun setFirstPoint(touchData: TouchData, brush: Brush) {
         isFirstThreeCreated = false
 
         perv2x = touchData.ex
@@ -49,7 +49,7 @@ class BezierLineSmoother : LineSmoother() {
         counter++
     }
 
-    override fun addPoints(touchData: MananPaintView.TouchData, brush: Brush) {
+    override fun addPoints(touchData: TouchData, brush: Brush) {
         touchData.run {
             if (!isFirstThreeCreated) {
 
@@ -95,7 +95,7 @@ class BezierLineSmoother : LineSmoother() {
         }
     }
 
-    override fun setLastPoint(touchData: MananPaintView.TouchData, brush: Brush) {
+    override fun setLastPoint(touchData: TouchData, brush: Brush) {
         touchData.run {
             if (isFirstThreeCreated) {
 
