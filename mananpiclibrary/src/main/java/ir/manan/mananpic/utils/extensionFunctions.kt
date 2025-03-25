@@ -5,6 +5,7 @@ import android.content.res.Resources
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.View
+import androidx.fragment.app.Fragment
 
 /**
  * Extension function for converting a dp value to pixels.
@@ -87,5 +88,18 @@ fun Context?.mm(number: Number): Float {
 
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_MM, number.toFloat(), metric)
 }
+
+fun Fragment.dp(number: Number): Float {
+    val metric =
+        getDisplayMetric(context)
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, number.toFloat(), metric)
+}
+
+fun Fragment.sp(number: Number): Float {
+    val metric =
+        getDisplayMetric(context)
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, number.toFloat(), metric)
+}
+
 
 
