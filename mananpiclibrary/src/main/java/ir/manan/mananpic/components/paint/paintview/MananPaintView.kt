@@ -9,7 +9,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
@@ -37,10 +36,9 @@ import ir.manan.mananpic.utils.gesture.detectors.rotation.RotationDetectorGestur
 import ir.manan.mananpic.utils.gesture.detectors.rotation.TwoFingerRotationDetector
 import ir.manan.mananpic.utils.gesture.detectors.translation.OnTranslationDetector
 import ir.manan.mananpic.utils.gesture.detectors.translation.TranslationDetector
-import java.util.Stack
 import kotlin.math.abs
 
-class MananPaintView(context: Context, attrSet: AttributeSet?) :
+open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     View(context, attrSet), Painter.MessageChannel,
     ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, GestureDetector.OnDoubleTapListener,
@@ -48,106 +46,78 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     constructor(context: Context) : this(context, null)
 
-    private val layersPaint by lazy {
+    protected val layersPaint by lazy {
         Paint().apply {
             isFilterBitmap = true
         }
     }
 
-    private var isMatrixGesture = false
+    protected var isMatrixGesture = false
 
-    private var rotHolder = 0f
+    protected var rotHolder = 0f
 
-    private var isFirstMove = true
+    protected var isFirstMove = true
 
-    var isCheckerBoardEnabled = true
+    open var isCheckerBoardEnabled = true
         set(value) {
             field = value
-            cacheLayers()
             invalidate()
         }
 
-    private var isMoved = false
+    protected var isMoved = false
 
     // Used to retrieve touch slopes.
-    private var scaledTouchSlope = 0
+    protected var scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
 
-    private val rectAlloc by lazy {
+    protected val rectAlloc by lazy {
         RectF()
     }
 
-    private val undoStack = Stack<State>()
 
-    private val redoStack = Stack<State>()
+    protected var selectedLayer: PaintLayer? = null
 
-    private var selectedLayer: PaintLayer? = null
-
-    private val canvasMatrix by lazy {
+    protected val canvasMatrix by lazy {
         MananMatrix()
     }
 
-    private val mappingMatrix by lazy {
+    protected val mappingMatrix by lazy {
         MananMatrix()
     }
 
-    private val painterTransformationMatrix by lazy {
+    protected val painterTransformationMatrix by lazy {
         MananMatrix()
     }
 
-    private val matrixAnimator by lazy {
+    protected val matrixAnimator by lazy {
         MananMatrixAnimator(canvasMatrix, RectF(boundsRectangle), 300L, FastOutSlowInInterpolator())
     }
 
-    private var layerHolder = mutableListOf<PaintLayer>()
+    protected val touchPointMappedArray = FloatArray(2)
 
-    private val touchPointMappedArray = FloatArray(2)
+    protected var onTapUp: ((Unit) -> Unit)? = null
 
-    private var isFirstLayerCreation = true
+    protected var onDoubleTapUpInterface: OnDoubleTapUp? = null
 
-    private var onTapUp: ((Unit) -> Unit)? = null
+    protected var onDelegateTransform: ((transformationMatrix: Matrix) -> Unit)? = null
 
-    private var onDoubleTapUpInterface: OnDoubleTapUp? = null
+    open var shouldDelegateGesture: Boolean = false
 
-    private var onLayersChanged: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)? =
-        null
-    private var onLayersChangedListener: OnLayersChanged? = null
+    protected var totalRotated = 0f
 
-    private var onDelegateTransform: ((transformationMatrix: Matrix) -> Unit)? = null
+    protected var rotationSlope = 0.5f
 
-    var shouldDelegateGesture: Boolean = false
+    protected var isFirstFingerMoved = false
 
-    private val mergeCanvas = Canvas()
-
-    private lateinit var bitmapReference: Bitmap
-
-    private lateinit var cachedLayer: Bitmap
-
-    private lateinit var partiallyCachedLayer: Bitmap
-
-    private var isAllLayersCached: Boolean = false
-
-    private var tot = 0f
-
-    private var isFirstFingerMoved = false
-
-    private var isFirstTimeToCallListener = false
-
-    var isTouchEventHistoryEnabled = false
-
-    var maximumHistorySize = 15
+    open var isTouchEventHistoryEnabled = false
         set(value) {
             field = value
-            while (isHistorySizeExceeded()) {
-                removeFirstState()
-            }
+            translationDetector.isTouchEventHistoryEnabled = value
         }
 
-    private var isViewInitialized = false
+    protected var isViewInitialized = false
 
-    var painter: Painter? = null
+    open var painter: Painter? = null
         set(value) {
-            cacheLayers()
-
             painter?.release()
 
             field = value
@@ -162,13 +132,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     /**
      * Matrix that we later modify and assign to image matrix.
      */
-    private val imageviewMatrix = MananMatrix()
+    protected val imageviewMatrix = MananMatrix()
 
     /**
      * Scale detector that is used to detect if user scaled matrix.
      * It is nullable; meaning a derived class could use scale gesture or not.
      */
-    private var scaleDetector: ScaleGestureDetector = ScaleGestureDetector(context, this).apply {
+    protected var scaleDetector: ScaleGestureDetector = ScaleGestureDetector(context, this).apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             isQuickScaleEnabled = false
         }
@@ -178,25 +148,23 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
      * Rotation detector that is used to detect if user performed rotation gesture.
      * It is nullable; meaning a derived class could use rotating gesture or not.
      */
-    private var rotationDetector: RotationDetectorGesture = TwoFingerRotationDetector(this)
+    protected var rotationDetector: RotationDetectorGesture = TwoFingerRotationDetector(this)
 
-    private var translationDetector = TranslationDetector(this)
+    protected var translationDetector = TranslationDetector(this)
 
-    private val onMoveBeginTouchData by lazy {
+    protected val onMoveBeginTouchData by lazy {
         TouchData()
     }
 
-    @Transient
-    private val boundsRectangle = RectF()
+    protected val boundsRectangle = RectF()
 
-
-    private val layerBounds = RectF()
+    protected val layerBounds = RectF()
 
     /**
      * Real width of current image's bitmap.
      * This value is available after [onImageLaidOut] has ben called.
      */
-    private var bitmapWidth = 0
+    protected var bitmapWidth = 0
 
     /**
      * Real height of current image's bitmap.
@@ -207,37 +175,58 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     /**
      * Later will be used to notify if imageview's bitmap has been changed.
      */
-    private var isNewBitmap = true
+    protected var isNewBitmap = true
 
-    var bitmap: Bitmap? = null
-        private set
+    open var bitmap: Bitmap? = null
+        set(value) {
+            field = value
+            if (value != null) {
 
-    var isRotatingEnabled = true
-    var isScalingEnabled = true
-    var isTranslationEnabled = true
+                if (!value.isMutable) {
+                    throw IllegalStateException("Bitmap should be mutable")
+                }
+
+                isNewBitmap = true
+                bitmapWidth = value.width
+                bitmapHeight = value.height
+                isViewInitialized = false
+
+                layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
+                identityClip.set(layerClipBounds)
+
+                selectedLayer = PaintLayer(value, Matrix(), false, 1f)
+
+                requestLayout()
+                invalidate()
+            }
+        }
+
+    open var isRotatingEnabled = true
+    open var isScalingEnabled = true
+    open var isTranslationEnabled = true
 
     // Used to animate the matrix in MatrixEvaluator
-    private val endMatrix = MananMatrix()
-    private val startMatrix = MananMatrix()
+    protected val endMatrix = MananMatrix()
+    protected val startMatrix = MananMatrix()
 
-    private val endRect = Rect()
-    private val startRect = Rect()
+    protected val endRect = Rect()
+    protected val startRect = Rect()
 
 
-    var matrixAnimationDuration: Long = 500
+    open var matrixAnimationDuration: Long = 500
         set(value) {
             field = value
             resetMatrixAnimator.duration = field
         }
 
-    var matrixAnimationInterpolator: TimeInterpolator = FastOutSlowInInterpolator()
+    open var matrixAnimationInterpolator: TimeInterpolator = FastOutSlowInInterpolator()
         set(value) {
             field = value
             resetMatrixAnimator.interpolator = field
         }
 
 
-    private val resetMatrixAnimator by lazy {
+    protected open val resetMatrixAnimator by lazy {
         ValueAnimator.ofObject(MatrixEvaluator(), startMatrix, endMatrix).apply {
             interpolator = matrixAnimationInterpolator
             duration = matrixAnimationDuration
@@ -248,7 +237,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private val clipAnimator by lazy {
+    protected open val clipAnimator by lazy {
         ValueAnimator.ofObject(RectEvaluator(), startRect, endRect).apply {
             interpolator = matrixAnimationInterpolator
             duration = matrixAnimationDuration
@@ -259,7 +248,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private val checkerPatternPaint by lazy {
+    protected open val checkerPatternPaint by lazy {
         Paint().apply {
             shader = BitmapShader(
                 BitmapFactory.decodeResource(resources, R.drawable.checker),
@@ -277,9 +266,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         Rect()
     }
 
-    init {
-        scaledTouchSlope = ViewConfiguration.get(context).scaledTouchSlop
-    }
 
     override fun onSingleTapUp(p0: MotionEvent): Boolean {
         return true
@@ -353,7 +339,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
      * Called when drawable is about to be resized to fit the view's dimensions.
      * @return Modified matrix.
      */
-    private fun resizeDrawable(targetWidth: Float, targetHeight: Float) {
+    protected open fun resizeDrawable(targetWidth: Float, targetHeight: Float) {
         imageviewMatrix.setRectToRect(
             layerClipBounds.toRectF(),
             RectF(
@@ -377,37 +363,10 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun setImageBitmap(bitmap: Bitmap?, saveHistory: Boolean = false) {
-        if (bitmap != null) {
-
-            if (!bitmap.isMutable) {
-                throw IllegalStateException("Bitmap should be mutable")
-            }
-
-            this.bitmap = bitmap
-            isNewBitmap = true
-            bitmapWidth = bitmap.width
-            bitmapHeight = bitmap.height
-            isViewInitialized = false
-
-            layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
-            identityClip.set(layerClipBounds)
-
-            if (saveHistory) {
-                addNewLayer(bitmap)
-            } else {
-                addNewLayerWithoutSavingHistory(bitmap)
-            }
-
-            requestLayout()
-            invalidate()
-        }
-    }
-
     /**
      * Calculates bounds of image with matrix values.
      */
-    private fun calculateBounds() {
+    protected open fun calculateBounds() {
         imageviewMatrix.run {
 
             val matrixScale = imageviewMatrix.getScaleX(true)
@@ -427,25 +386,16 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun onImageLaidOut() {
+    protected open fun onImageLaidOut() {
         rectAlloc.set(boundsRectangle)
 
         if (!isViewInitialized) {
             initializedPainter(painter)
-
-            cachedLayer = createLayerBitmap()
-
-            partiallyCachedLayer = createLayerBitmap()
-
-            bitmapReference = createLayerBitmap()
-
-            cacheLayers()
-
             isViewInitialized = true
         }
     }
 
-    private fun initializedPainter(pp: Painter?) {
+    protected open fun initializedPainter(pp: Painter?) {
         pp?.let { p ->
             rectAlloc.set(layerBounds)
             if (!pp.isInitialized) {
@@ -457,9 +407,11 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     layerClipBounds
                 )
             }
+
             p.onLayerChanged(selectedLayer)
-            if (this::bitmapReference.isInitialized) {
-                p.onReferenceLayerCreated(bitmapReference)
+
+            selectedLayer?.let { layer ->
+                p.onReferenceLayerCreated(layer.bitmap)
             }
         }
     }
@@ -551,7 +503,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         } else if (!isMatrixGesture && isFirstFingerMoved && selectedLayer?.isLocked == false) {
 
             if (isFirstMove) {
-                checkForStateSave()
                 mapTouchData(onMoveBeginTouchData)
                 callPainterOnMoveBegin(onMoveBeginTouchData)
             }
@@ -569,7 +520,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         if (shouldCallDoubleTapListener()) {
             callOnDoubleTapListeners()
         } else if (shouldEndMoveOnPainter()) {
-            checkForStateSave()
             mapTouchData(firstPointerTouchData)
             callPainterOnMoveEnd(firstPointerTouchData)
         }
@@ -578,47 +528,34 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
             painter?.onTransformEnded()
         }
 
-        cacheLayers()
-
         isMatrixGesture = false
         isMoved = false
         isFirstFingerMoved = false
     }
 
 
-    private fun mapTouchData(touchData: TouchData) {
+    protected open fun mapTouchData(touchData: TouchData) {
         mapTouchPoints(touchData.ex, touchData.ey).let { points ->
             touchData.ex = points[0]
             touchData.ey = points[1]
         }
     }
 
-    private fun checkForStateSave() {
-        if (undoStack.isNotEmpty() && (selectedLayer !== undoStack.peek().ref || undoStack.peek().isLayerChangeState)) {
-            saveState(true, isMessage = true)
-        } else if (redoStack.isNotEmpty() || undoStack.size == 0) {
-            saveState(false, isMessage = true)
-        }
-    }
-
-    private fun callPainterOnMoveBegin(touchData: TouchData) {
+    protected open fun callPainterOnMoveBegin(touchData: TouchData) {
         painter!!.onMoveBegin(touchData)
         isFirstMove = false
-        isAllLayersCached = false
-
     }
 
-    private fun shouldCallDoubleTapListener(): Boolean = isMatrixGesture && !isMoved
+    protected open fun shouldCallDoubleTapListener(): Boolean = isMatrixGesture && !isMoved
 
-    private fun shouldEndMoveOnPainter(): Boolean =
+    protected open fun shouldEndMoveOnPainter(): Boolean =
         selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
 
-    private fun callPainterOnMoveEnd(touchData: TouchData) {
+    protected open fun callPainterOnMoveEnd(touchData: TouchData) {
         painter!!.onMoveEnded(touchData)
-        saveState()
     }
 
-    private fun callPainterOnMove(touchData: TouchData) {
+    protected open fun callPainterOnMove(touchData: TouchData) {
         if (touchData.dx == 0f && touchData.dy == 0f) {
             return
         }
@@ -626,7 +563,6 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
-        isAllLayersCached = isFirstMove
         return true
     }
 
@@ -644,21 +580,20 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 invalidate()
             }
         }
-        tot += abs(degree - rotHolder)
+        totalRotated += abs(degree - rotHolder)
         rotHolder = degree
         return true
     }
 
     override fun onRotateEnded() {
-        if (tot > 0.5f) {
+        if (totalRotated > rotationSlope) {
             isMoved = true
         }
 
-        tot = 0f
+        totalRotated = 0f
     }
 
     override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
-        isAllLayersCached = isFirstMove
         return !matrixAnimator.isAnimationRunning()
     }
 
@@ -696,7 +631,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
      * This function maps the touch location provided with canvas matrix to provide
      * correct coordinates of touch if canvas is scaled and or translated.
      */
-    private fun mapTouchPoints(
+    protected open fun mapTouchPoints(
         touchX: Float,
         touchY: Float,
         shouldMapVector: Boolean = false
@@ -723,7 +658,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return touchPointMappedArray
     }
 
-    fun resetPaint() {
+    open fun resetPaint() {
         painter?.resetPaint()
     }
 
@@ -739,49 +674,15 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 clipRect(layerClipBounds)
             }
 
-            if (isAllLayersCached && !isAnyLayerBlending()) {
-                layersPaint.xfermode = null
-                layersPaint.alpha = 255
-                drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
-
-                drawLayer(canvas)
-
-                layersPaint.xfermode = null
-                layersPaint.alpha = 255
-
-                drawBitmap(cachedLayer, 0f, 0f, layersPaint)
-            } else {
-                if (this@MananPaintView::partiallyCachedLayer.isInitialized) {
-                    layersPaint.xfermode = null
-                    layersPaint.alpha = 255
-                    drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
-                }
-
-                drawLayer(canvas)
-
-                for (i in layerHolder.indexOf(selectedLayer) + 1..layerHolder.lastIndex) {
-
-                    val layer = layerHolder[i]
-
-                    layersPaint.alpha = (255 * layer.opacity).toInt()
-
-                    layersPaint.xfermode = layer.blendingModeObject
-
-                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
-                }
-
-            }
-
+            drawLayer(canvas)
         }
     }
 
-    fun isAnyLayerBlending(): Boolean =
-        layerHolder.any { it.blendingModeObject != null }
-
-    private fun drawLayer(canvas: Canvas) {
+    protected open fun drawLayer(canvas: Canvas) {
         canvas.apply {
             selectedLayer?.let { layer ->
-                if (layer === layerHolder.first() && isCheckerBoardEnabled) {
+
+                if (isCheckerBoardEnabled) {
                     drawPaint(checkerPatternPaint)
                 }
 
@@ -802,524 +703,60 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 invalidate()
             }
 
-            Painter.PainterMessage.SAVE_HISTORY -> {
-                saveState(isMessage = true)
-            }
+            else -> {
 
-            Painter.PainterMessage.CACHE_LAYERS -> {
-                cacheLayers()
             }
         }
     }
 
-    private fun saveState(
-        isSpecial: Boolean = false,
-        isMessage: Boolean = false,
-        shouldClone: Boolean = true,
-        isLayerChange: Boolean = false
-    ) {
-
-        if (painter?.doesHandleHistory() == true && !isMessage && undoStack.isNotEmpty()) {
-            return
-        }
-
-        redoStack.clear()
-
-        selectedLayer?.let { sl ->
-            val copiedList = MutableList(layerHolder.size) {
-                layerHolder[it]
-            }
-            undoStack.add(
-                State(
-                    sl,
-                    sl.clone(shouldClone),
-                    copiedList,
-                    isSpecial,
-                    isLayerChange,
-                    bitmapWidth,
-                    bitmapHeight,
-                )
-            )
-        }
-
-        if (isHistorySizeExceeded()) {
-            removeFirstState()
-        }
-
+    open fun setSelectedLayerLockState(lockedState: Boolean) {
+        selectedLayer?.isLocked = lockedState
     }
 
-    private fun isHistorySizeExceeded() = undoStack.size > maximumHistorySize
-
-    private fun removeFirstState() {
-        undoStack.removeAt(0)
-    }
-
-    fun undo() {
-        painter?.let { p ->
-            if (p.doesHandleHistory()) {
-                p.undo()
-                return
-            }
-        }
-        swapStacks(undoStack, redoStack, true)
-    }
-
-    fun redo() {
-        painter?.let { p ->
-            if (p.doesHandleHistory()) {
-                p.redo()
-                return
-            }
-        }
-        swapStacks(redoStack, undoStack)
-    }
-
-    private fun swapStacks(
-        popStack: Stack<State>,
-        pushStack: Stack<State>,
-        isUndo: Boolean = false
-    ) {
-        if (popStack.isNotEmpty()) {
-
-            val isFirstSnapshot = isUndo && popStack.size == 1
-
-            val poppedState = if (isFirstSnapshot) popStack.peek() else popStack.pop()
-
-            var needLayout = false
-
-            if ((popStack.isNotEmpty() && !isFirstSnapshot)
-                && (pushStack.isEmpty()
-                        || (poppedState.clonedLayer == layerHolder.last()
-                        && !poppedState.isLayerChangeState)
-                        || poppedState.isSpecial)
-            ) {
-
-                needLayout =
-                    (poppedState.bWidth != bitmapWidth || poppedState.bHeight != bitmapHeight)
-
-                poppedState.restoreState(this)
-                val newPopped = popStack.pop()
-
-                needLayout =
-                    needLayout.or((newPopped.bWidth != bitmapWidth || newPopped.bHeight != bitmapHeight))
-
-                newPopped.restoreState(this)
-                pushStack.push(poppedState)
-                pushStack.push(newPopped)
-            } else {
-                if (!isFirstSnapshot) {
-                    pushStack.push(poppedState)
-                }
-                needLayout =
-                    needLayout.or((poppedState.bWidth != bitmapWidth || poppedState.bHeight != bitmapHeight))
-                poppedState.restoreState(this)
-            }
-
-            if (needLayout) {
-                isViewInitialized = false
-                isNewBitmap = true
-                requestLayout()
-            } else {
-                cacheLayers()
-            }
-
-            callOnLayerChangedListeners(
-                layerHolder.toList(),
-                layerHolder.indexOf(selectedLayer)
-            )
-
-            painter?.onLayerChanged(selectedLayer)
-
-            invalidate()
-        }
-    }
-
-    fun addNewLayer() {
-        addNewLayer(createLayerBitmap())
-    }
-
-    private fun addNewLayer(bitmap: Bitmap) {
-
-        if (isFirstLayerCreation) {
-            saveState(isMessage = false)
-            isFirstLayerCreation = false
-        }
-
-        checkForStateSave()
-
-        selectedLayer = PaintLayer(
-            bitmap, Matrix(), false, 1f
-        )
-
-        layerHolder.add(selectedLayer!!)
-
-        cacheLayers()
-
-        // State of layer should be saved no matter if another painter handles history or not.
-        saveState(isMessage = true)
-
-        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
-
-        painter?.onLayerChanged(selectedLayer)
-
-        invalidate()
-
-    }
-
-    fun addNewLayerWithoutSavingHistory() {
-        addNewLayerWithoutSavingHistory(createLayerBitmap())
-
-        if (isViewInitialized) {
-            cacheLayers()
-        }
-
-        invalidate()
-    }
-
-    private fun addNewLayerWithoutSavingHistory(bitmap: Bitmap) {
-        selectedLayer = PaintLayer(
-            bitmap, Matrix(), false, 1f
-        )
-
-        layerHolder.add(selectedLayer!!)
-
-        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
-    }
-
-    private fun createLayerBitmap(): Bitmap {
-        return Bitmap.createBitmap(
-            bitmapWidth,
-            bitmapHeight,
-            Bitmap.Config.ARGB_8888
-        )
-    }
-
-    private fun cacheLayers() {
-        if (!this::partiallyCachedLayer.isInitialized || !this::bitmapReference.isInitialized || !this::cachedLayer.isInitialized) {
-            return
-        }
-        bitmap?.let { _ ->
-            selectedLayer?.let { sv ->
-
-                partiallyCachedLayer.eraseColor(Color.TRANSPARENT)
-
-                mergeCanvas.setBitmap(partiallyCachedLayer)
-
-                if (isCheckerBoardEnabled) {
-                    mergeCanvas.drawPaint(checkerPatternPaint)
-                }
-
-                val selectedLayerIndex = layerHolder.indexOf(sv)
-
-                mergeLayersAtIndex(0, selectedLayerIndex - 1)
-
-                cachedLayer.eraseColor(Color.TRANSPARENT)
-
-                mergeCanvas.setBitmap(cachedLayer)
-
-                mergeLayersAtIndex(selectedLayerIndex + 1, layerHolder.lastIndex)
-
-                mergeCanvas.setBitmap(bitmapReference)
-
-                mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
-
-                mergeCanvas.drawBitmap(cachedLayer, 0f, 0f, layersPaint)
-
-                drawLayer(mergeCanvas)
-
-                painter?.onReferenceLayerCreated(bitmapReference)
-
-                isAllLayersCached = true
-            }
-        }
-
-    }
-
-    private fun mergeLayersAtIndex(from: Int, to: Int) {
-        for (i in from..to) {
-
-            val layer = layerHolder[i]
-
-            layersPaint.alpha = (255 * layer.opacity).toInt()
-
-            layersPaint.xfermode = layer.blendingModeObject
-
-            mergeCanvas.drawBitmap(
-                layer.bitmap,
-                0f,
-                0f,
-                layersPaint
-            )
-
-            if (layer === selectedLayer) {
-                painter?.draw(mergeCanvas)
-            }
-        }
-    }
-
-    fun getLayerOpacityAt(index: Int): Float {
-        checkIndex(index)
-        return layerHolder[index].opacity
-    }
-
-    fun changeSelectedLayerOpacity(opacity: Float) {
+    open fun setSelectedLayerOpacity(opacity: Float) {
         selectedLayer?.opacity = opacity
         invalidate()
     }
 
-    fun changeLayerOpacityAt(index: Int, opacity: Float) {
-        checkIndex(index)
-        layerHolder[index].opacity = opacity
-        cacheLayers()
-        invalidate()
-    }
-
-    fun changeSelectedLayerBlendingMode(blendingMode: PorterDuff.Mode) {
+    open fun setSelectedLayerBlendingMode(blendingMode: PorterDuff.Mode) {
         selectedLayer?.blendingMode = blendingMode
-
-        cacheLayers()
-
-        saveState(shouldClone = false)
-
         invalidate()
     }
 
-    fun changedLayerBlendingModeAt(index: Int, blendingMode: PorterDuff.Mode) {
-        checkIndex(index)
-
-        layerHolder[index].blendingMode = blendingMode
-
-        cacheLayers()
-
-        saveState(shouldClone = false)
-
+    open fun setSelectedLayerBitmap(bitmap: Bitmap) {
+        selectedLayer?.bitmap = bitmap
         invalidate()
     }
 
-    fun getSelectedLayerBlendingMode(): PorterDuff.Mode {
+    open fun getSelectedLayerBlendingMode(): PorterDuff.Mode {
         return selectedLayer?.blendingMode ?: PorterDuff.Mode.SRC
     }
 
-    fun moveLayer(from: Int, to: Int) {
-        if (cantMoveLayers(from, to)) {
-            return
-        }
-
-        val layerFrom = layerHolder[from]
-        layerHolder[from] = layerHolder[to]
-        layerHolder[to] = layerFrom
-
-        cacheLayers()
-
-        saveState(shouldClone = false, isLayerChange = true)
-
-        callOnLayerChangedListeners(
-            layerHolder.toList(),
-            layerHolder.indexOf(selectedLayer)
-        )
-
-        invalidate()
+    open fun getSelectedLayerLockState(): Boolean {
+        return selectedLayer?.isLocked == true
     }
 
-    private fun cantMoveLayers(from: Int, to: Int): Boolean {
-        return from == to || from < 0 || to < 0 || from > layerHolder.lastIndex || to > layerHolder.lastIndex
+    open fun getSelectedLayerOpacity(): Float {
+        return selectedLayer?.opacity ?: 1f
     }
 
-    fun moveSelectedLayerDown() {
-        selectedLayer?.let { sv ->
-            val index = layerHolder.indexOf(selectedLayer)
-
-            if (index > 0) {
-                val pervIndex = index - 1
-                val previousLayer = layerHolder[pervIndex]
-                layerHolder[pervIndex] = sv
-                layerHolder[index] = previousLayer
-
-                cacheLayers()
-
-                saveState(shouldClone = false, isLayerChange = true)
-
-                callOnLayerChangedListeners(
-                    layerHolder.toList(),
-                    layerHolder.indexOf(selectedLayer)
-                )
-
-                invalidate()
-            }
-        }
-    }
-
-    fun moveSelectedLayerUp() {
-        selectedLayer?.let { sv ->
-            val index = layerHolder.indexOf(selectedLayer)
-
-            if (index < layerHolder.lastIndex) {
-                val nextIndex = index + 1
-                val previousLayer = layerHolder[nextIndex]
-                layerHolder[nextIndex] = sv
-                layerHolder[index] = previousLayer
-
-                cacheLayers()
-
-                saveState(shouldClone = false, isLayerChange = true)
-
-                callOnLayerChangedListeners(
-                    layerHolder.toList(),
-                    layerHolder.indexOf(selectedLayer)
-                )
-
-                invalidate()
-            }
-        }
-    }
-
-    fun lockLayer(index: Int) {
-        changeLayerLockState(index, true)
-    }
-
-
-    fun unlockLayer(index: Int) {
-        changeLayerLockState(index, false)
-    }
-
-    private fun changeLayerLockState(index: Int, shouldLock: Boolean) {
-        checkIndex(index)
-        layerHolder[index].isLocked = shouldLock
-        cacheLayers()
-    }
-
-    fun isLayerAtIndexLocked(index: Int): Boolean {
-        checkIndex(index)
-        return layerHolder[index].isLocked
-    }
-
-
-    fun removeLayerAt(index: Int) {
-        checkIndex(index)
-
-        if (index == getIndexOfSelectedLayer()) {
-            selectedLayer = if (layerHolder.size > 1) {
-                layerHolder[index - 1]
-            } else {
-                null
-            }
-
-
-            painter?.onLayerChanged(selectedLayer)
-
-        }
-
-        layerHolder.removeAt(index)
-
-        cacheLayers()
-
-        saveState()
-
-        callOnLayerChangedListeners(
-            layerHolder.toList(),
-            layerHolder.indexOf(selectedLayer)
-        )
-
-        invalidate()
-    }
-
-    fun getLayerCount(): Int {
-        return layerHolder.size
-    }
-
-    fun selectLayer(index: Int) {
-        checkIndex(index)
-        selectedLayer = layerHolder[index]
-        painter?.onLayerChanged(selectedLayer)
-        callOnLayerChangedListeners(
-            layerHolder.toList(),
-            layerHolder.indexOf(selectedLayer)
-        )
-        cacheLayers()
-        invalidate()
-    }
-
-    fun selectLayer(paintLayer: PaintLayer) {
-        if (layerHolder.contains(paintLayer) && selectedLayer !== paintLayer) {
-            selectedLayer = paintLayer
-            painter?.onLayerChanged(selectedLayer)
-            callOnLayerChangedListeners(
-                layerHolder.toList(),
-                layerHolder.indexOf(selectedLayer)
-            )
-            cacheLayers()
-            invalidate()
-        }
-    }
-
-    fun getIndexOfSelectedLayer(): Int {
-        return layerHolder.indexOf(selectedLayer)
-    }
-
-    fun getLayersBitmap(): List<Bitmap> {
-        return layerHolder.map {
-            it.bitmap
-        }
-    }
-
-    private fun checkIndex(index: Int) {
-        if (index < 0 || index >= layerHolder.size) {
-            throw ArrayIndexOutOfBoundsException("provided index is out of bounds")
-        }
-    }
-
-    fun setOnDoubleTapUpListener(onDoubleTapUp: OnDoubleTapUp) {
+    open fun setOnDoubleTapUpListener(onDoubleTapUp: OnDoubleTapUp) {
         onDoubleTapUpInterface = onDoubleTapUp
     }
 
-    fun setOnDoubleTapUpListener(callback: ((Unit) -> Unit)) {
+    open fun setOnDoubleTapUpListener(callback: ((Unit) -> Unit)) {
         onTapUp = callback
     }
 
-    fun setOnLayersChangedListener(onLayersChanged: OnLayersChanged) {
-        onLayersChangedListener = onLayersChanged
-        callListenerForFirstTime()
-    }
-
-    fun setOnLayersChangedListener(callback: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)) {
-        onLayersChanged = callback
-        callListenerForFirstTime()
-    }
-
-    fun changeSelectedLayerBitmap(bitmap: Bitmap) {
-        selectedLayer?.bitmap = bitmap
-        saveState()
-        invalidate()
-    }
-
-    fun setOnTransformDelegate(func: (transformationMatrix: Matrix) -> Unit) {
+    open fun setOnTransformDelegate(func: (transformationMatrix: Matrix) -> Unit) {
         onDelegateTransform = func
     }
 
-    fun convertToBitmap(): Bitmap? {
-        if (layerHolder.isEmpty()) {
-            return null
-        }
-
-        val finalBitmap = layerHolder.first().bitmap.let { layer ->
-            Bitmap.createBitmap(layer.width, layer.height, layer.config ?: Bitmap.Config.ARGB_8888)
-        }
-
-        mergeCanvas.setBitmap(finalBitmap)
-
-        layerHolder.forEach { layer ->
-            layersPaint.alpha = (255 * layer.opacity).toInt()
-
-            layersPaint.xfermode = layer.blendingModeObject
-
-            mergeCanvas.drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
-        }
-
-        return finalBitmap
+    open fun convertToBitmap(): Bitmap? {
+        return selectedLayer?.bitmap
     }
 
-    fun resetTransformationMatrix() {
-
+    open fun resetTransformationMatrix() {
         if (canvasMatrix.isIdentity || resetMatrixAnimator.isRunning) {
             return
         }
@@ -1329,7 +766,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         resetMatrixAnimator.start()
     }
 
-    fun doAfterResetTransformation(func: () -> Unit) {
+    open fun doAfterResetTransformation(func: () -> Unit) {
         resetTransformationMatrix()
 
         if (canvasMatrix.isIdentity) {
@@ -1343,40 +780,22 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun callListenerForFirstTime() {
-        if (isViewInitialized && !isFirstLayerCreation && isFirstTimeToCallListener) {
-            callOnLayerChangedListeners(
-                layerHolder.toList(),
-                layerHolder.indexOf(selectedLayer)
-            )
-            isFirstTimeToCallListener = false
-        }
-    }
-
-    private fun callOnDoubleTapListeners() {
+    protected open fun callOnDoubleTapListeners() {
         onTapUp?.invoke(Unit)
         onDoubleTapUpInterface?.onDoubleTapUp()
     }
 
-    private fun callOnLayerChangedListeners(
-        layers: List<PaintLayer>,
-        selectedLayerIndex: Int
-    ) {
-        onLayersChangedListener?.onLayersChanged(layers, selectedLayerIndex)
-        onLayersChanged?.invoke(layers, selectedLayerIndex)
-    }
-
-    fun applyMatrix(matrix: Matrix) {
+    open fun applyMatrix(matrix: Matrix) {
         canvasMatrix.postConcat(matrix)
         invalidate()
     }
 
-    fun setMatrix(matrix: Matrix) {
+    open fun setMatrix(matrix: Matrix) {
         canvasMatrix.set(matrix)
         invalidate()
     }
 
-    fun setClipRect(rect: Rect, animate: Boolean = true, func: () -> Unit = {}) {
+    open fun setClipRect(rect: Rect, animate: Boolean = true, func: () -> Unit = {}) {
         if (animate && !clipAnimator.isRunning && rect != layerClipBounds) {
             startRect.set(layerClipBounds)
             endRect.set(rect)
@@ -1393,7 +812,7 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun changeClipSize(rect: Rect) {
+    protected open fun changeClipSize(rect: Rect) {
         rectAlloc.set(boundsRectangle)
 
         layerClipBounds.set(rect)
@@ -1412,77 +831,13 @@ class MananPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.onSizeChanged(rectAlloc, layerClipBounds, mappingMatrix)
     }
 
-    fun isIdentityClip(): Boolean =
+    open fun isIdentityClip(): Boolean =
         layerClipBounds == identityClip
 
-    private fun resizeCanvas(width: Float, height: Float) {
+    protected open fun resizeCanvas(width: Float, height: Float) {
         resizeDrawable(width, height)
 
         calculateBounds()
-    }
-
-    private class State(
-        val ref: PaintLayer,
-        val clonedLayer: PaintLayer,
-        val layers: MutableList<PaintLayer>,
-        val isSpecial: Boolean = false,
-        val isLayerChangeState: Boolean,
-        val bWidth: Int,
-        val bHeight: Int,
-    ) {
-        fun restoreState(paintView: MananPaintView) {
-            if (!isLayerChangeState) {
-                ref.set(clonedLayer.clone(true))
-            }
-
-            paintView.run {
-
-                bitmapWidth = bWidth
-                bitmapHeight = bHeight
-
-                var i = layerHolder.indexOf(selectedLayer)
-                if (i > layers.lastIndex) i = layers.lastIndex
-                selectedLayer = layers[i]
-
-                layerHolder = MutableList(layers.size) {
-                    layers[it]
-                }
-            }
-
-        }
-
-        override fun equals(other: Any?): Boolean {
-            other as State
-            return clonedLayer == other.clonedLayer &&
-                    layers.size == other.layers.size &&
-                    layers.containsAll(other.layers) &&
-                    isOrderOfLayersMatched(layers, other.layers)
-        }
-
-        private fun isOrderOfLayersMatched(
-            firstLayers: List<PaintLayer>,
-            secondLayers: List<PaintLayer>
-        ): Boolean {
-
-            repeat(firstLayers.size) { index ->
-                if (firstLayers[index] !== secondLayers[index]) {
-                    return false
-                }
-            }
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = ref.hashCode()
-            result = 31 * result + clonedLayer.hashCode()
-            result = 31 * result + layers.hashCode()
-            result = 31 * result + isSpecial.hashCode()
-            result = 31 * result + isLayerChangeState.hashCode()
-            result = 31 * result + bWidth
-            result = 31 * result + bHeight
-            return result
-        }
-
     }
 
     interface OnDoubleTapUp {
