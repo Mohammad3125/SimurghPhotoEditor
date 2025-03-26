@@ -793,9 +793,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
 
         _selectedChild?.let { child ->
-            val finalDistanceValue =
-                acceptableDistanceForSmartGuideline / child.transformationMatrix.getRealScaleX()
-
             // Get flags to determine if we should use corresponding guideline or not.
             val isLeftLeftEnabled = smartGuidelineFlags.and(Guidelines.LEFT_LEFT) != 0
             val isLeftRightEnabled = smartGuidelineFlags.and(Guidelines.LEFT_RIGHT) != 0
@@ -838,10 +835,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 // If absolute value of difference two center x was in range of acceptable distance,
                 // then store total difference to later shift the component.
-                if (centerXDiffAbs <= finalDistanceValue && isCenterXEnabled) {
+                if (centerXDiffAbs <= acceptableDistanceForSmartGuideline && isCenterXEnabled) {
                     totalToShiftX = centerXDiff
                 }
-                if (centerYDiffAbs <= finalDistanceValue && isCenterYEnabled) {
+                if (centerYDiffAbs <= acceptableDistanceForSmartGuideline && isCenterYEnabled) {
                     totalToShiftY = centerYDiff
                 }
 
@@ -868,11 +865,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 // side should not be calculated or be smart guided.
                 if (totalToShiftX != centerXDiff) {
                     if (leftToLeftAbs < leftToRightAbs) {
-                        if (leftToLeftAbs <= finalDistanceValue && isLeftLeftEnabled) {
+                        if (leftToLeftAbs <= acceptableDistanceForSmartGuideline && isLeftLeftEnabled) {
                             totalToShiftX = leftToLeft
                         }
                     } else if (leftToRightAbs < leftToLeftAbs) {
-                        if (leftToRightAbs <= finalDistanceValue && isLeftRightEnabled) {
+                        if (leftToRightAbs <= acceptableDistanceForSmartGuideline && isLeftRightEnabled) {
                             totalToShiftX = leftToRight
                         }
                     }
@@ -881,7 +878,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                     // set any value to shift so far or current difference is less than current
                     // total shift amount, then set total shift amount to the right to right difference.
                     if (rightToRightAbs < rightToLeftAbs) {
-                        if (rightToRightAbs <= finalDistanceValue && isRightRightEnabled) {
+                        if (rightToRightAbs <= acceptableDistanceForSmartGuideline && isRightRightEnabled) {
                             if (totalToShiftX == 0f) {
                                 totalToShiftX = rightToRight
                             } else if (rightToRightAbs < abs(totalToShiftX)) {
@@ -889,7 +886,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                             }
                         }
                     } else if (rightToLeftAbs < rightToRightAbs) {
-                        if (rightToLeftAbs <= finalDistanceValue && isRightLeftEnabled) {
+                        if (rightToLeftAbs <= acceptableDistanceForSmartGuideline && isRightLeftEnabled) {
                             if (totalToShiftX == 0f) {
                                 totalToShiftX = rightToLeft
                             } else if (rightToLeftAbs < abs(totalToShiftX)) {
@@ -911,17 +908,17 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 if (totalToShiftY != centerYDiff) {
                     if (topToTopAbs < topToBottomAbs) {
-                        if (topToTopAbs <= finalDistanceValue && isTopTopEnabled) {
+                        if (topToTopAbs <= acceptableDistanceForSmartGuideline && isTopTopEnabled) {
                             totalToShiftY = topToTop
                         }
                     } else if (topToBottomAbs < topToTopAbs && isTopBottomEnabled) {
-                        if (topToBottomAbs <= finalDistanceValue) {
+                        if (topToBottomAbs <= acceptableDistanceForSmartGuideline) {
                             totalToShiftY = topToBottom
                         }
                     }
 
                     if (bottomToBottomAbs < bottomToTopAbs) {
-                        if (bottomToBottomAbs <= finalDistanceValue && isBottomBottomEnabled) {
+                        if (bottomToBottomAbs <= acceptableDistanceForSmartGuideline && isBottomBottomEnabled) {
                             if (totalToShiftY == 0f) {
                                 totalToShiftY = bottomToBottom
                             } else if (bottomToBottomAbs < abs(totalToShiftY)) {
@@ -929,7 +926,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                             }
                         }
                     } else if (bottomToTopAbs < bottomToBottomAbs) {
-                        if (bottomToTopAbs <= finalDistanceValue && isBottomTopEnabled) {
+                        if (bottomToTopAbs <= acceptableDistanceForSmartGuideline && isBottomTopEnabled) {
                             if (totalToShiftY == 0f) {
                                 totalToShiftY = bottomToTop
                             } else if (bottomToTopAbs < abs(totalToShiftY)) {
