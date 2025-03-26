@@ -534,15 +534,6 @@ class CropperTool : Painter() {
         animator.start()
     }
 
-
-    fun resetTransformationMatrix() {
-        startMatrix.set(canvasMatrix)
-        endMatrix.reset()
-        startRect.set(frameRect)
-        endRect.set(frameRect)
-        animator.start()
-    }
-
     private fun setDrawingDimensions() {
         createHandleBarsDimensions(frameRect)
 
@@ -766,26 +757,27 @@ class CropperTool : Painter() {
                     layer.bitmap.config ?: Bitmap.Config.ARGB_8888
                 )
 
-            cropCanvas.setBitmap(croppedBitmap)
+            cropCanvas.run {
+                setBitmap(croppedBitmap)
 
-            cropCanvas.save()
+                save()
 
-            cropCanvas.translate(-tempRectF.left, -tempRectF.top)
+                translate(-tempRectF.left, -tempRectF.top)
 
-            cropCanvas.concat(startMatrix)
+                concat(startMatrix)
 
-            cropCanvas.clipRect(frameRect)
+                clipRect(frameRect)
 
-            cropCanvas.save()
+                save()
 
-            inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
+                inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
 
-            cropCanvas.concat(inverseMatrix)
+                concat(inverseMatrix)
 
-            cropCanvas.drawBitmap(layer.bitmap, 0f, 0f, framePaint)
+                drawBitmap(layer.bitmap, 0f, 0f, framePaint)
 
-            cropCanvas.restoreToCount(1)
-
+                restoreToCount(1)
+            }
             return croppedBitmap
         }
         return null
