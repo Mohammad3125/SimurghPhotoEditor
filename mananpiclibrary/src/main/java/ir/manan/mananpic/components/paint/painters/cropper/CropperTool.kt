@@ -836,6 +836,7 @@ class CropperTool : Painter() {
             fitCropperInsideLayer(animate = animate, setRect = !animate)
             if (!animate) {
                 setDrawingDimensions()
+                onEnd.invoke()
                 sendMessage(PainterMessage.INVALIDATE)
             } else {
                 animator.doOnEnd {
@@ -845,6 +846,7 @@ class CropperTool : Painter() {
             }
         } else {
             setDrawingDimensions()
+            onEnd.invoke()
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
