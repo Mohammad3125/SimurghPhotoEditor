@@ -756,14 +756,19 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return selectedLayer?.bitmap
     }
 
-    open fun resetTransformationMatrix() {
+    open fun resetTransformationMatrix(animate: Boolean = true) {
         if (canvasMatrix.isIdentity || resetMatrixAnimator.isRunning) {
             return
         }
 
-        startMatrix.set(canvasMatrix)
-        endMatrix.reset()
-        resetMatrixAnimator.start()
+        if (animate) {
+            startMatrix.set(canvasMatrix)
+            endMatrix.reset()
+            resetMatrixAnimator.start()
+        } else {
+            canvasMatrix.reset()
+            invalidate()
+        }
     }
 
     open fun doAfterResetTransformation(func: () -> Unit) {
@@ -785,12 +790,12 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         onDoubleTapUpInterface?.onDoubleTapUp()
     }
 
-    open fun applyMatrix(matrix: Matrix) {
+    open fun applyCanvasMatrix(matrix: Matrix) {
         canvasMatrix.postConcat(matrix)
         invalidate()
     }
 
-    open fun setMatrix(matrix: Matrix) {
+    open fun setCanvasMatrix(matrix: Matrix) {
         canvasMatrix.set(matrix)
         invalidate()
     }
