@@ -287,10 +287,12 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         isSpecial: Boolean = false,
         isMessage: Boolean = false,
         shouldClone: Boolean = true,
-        isLayerChange: Boolean = false
+        isLayerChange: Boolean = false,
+        isClipChange: Boolean = false,
+        targetClip: Rect = layerClipBounds
     ) {
 
-        if (painter?.doesHandleHistory() == true && !isMessage && undoStack.isNotEmpty()) {
+        if (!isClipChange && painter?.doesHandleHistory() == true && !isMessage && undoStack.isNotEmpty()) {
             return
         }
 
@@ -307,6 +309,7 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                     copiedList,
                     isSpecial,
                     isLayerChange,
+                    Rect(targetClip)
                 )
             )
         }
@@ -764,9 +767,10 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         onLayersChanged?.invoke(layers, selectedLayerIndex)
     }
 
-    override fun setClipRect(rect: Rect, animate: Boolean, func: () -> Unit) {
+    fun setClipRectSavedState(rect: Rect, animate: Boolean = true, func: () -> Unit = {}) {
+        saveState(shouldClone = true, isClipChange = true)
         super.setClipRect(rect, animate, func)
-        saveState(shouldClone = false)
+        saveState(shouldClone = true, isClipChange = true, targetClip = rect)
     }
 
     private class State(
@@ -775,6 +779,7 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         val layers: MutableList<PaintLayer>,
         val isSpecial: Boolean = false,
         val isLayerChangeState: Boolean,
+        val clipBoundState: Rect
     ) {
         fun restoreState(paintView: LayeredPaintView) {
             if (!isLayerChangeState) {
@@ -788,6 +793,10 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
                 layerHolder = MutableList(layers.size) {
                     layers[it]
+                }
+
+                if (clipBoundState != layerClipBounds) {
+                    setClipRect(clipBoundState, true)
                 }
             }
 
