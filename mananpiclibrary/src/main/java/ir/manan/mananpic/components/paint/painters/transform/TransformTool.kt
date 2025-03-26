@@ -115,6 +115,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private lateinit var matrix: MananMatrix
 
+    private lateinit var fitMatrix: MananMatrix
+
     private val _children = LinkedList<Child>()
 
     val children: List<Transformable>
@@ -187,6 +189,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             touchRange = context.dp(24)
         }
         matrix = transformationMatrix
+        fitMatrix = fitInsideMatrix
         bounds = clipBounds
 
         _children.forEach { child ->
@@ -595,6 +598,16 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             drawChild(canvas, child)
 
+            val mergedCanvasMatrices = mergeCanvasMatrices()
+            val sx = mergedCanvasMatrices.getRealScaleX()
+            val currentBoundWidth = boundPaint.strokeWidth
+            val currentGuideWidth = smartGuidePaint.strokeWidth
+            val finalBoundWidth = currentBoundWidth * sx
+            val finalGuidelineWidth = currentGuideWidth * sx
+
+            boundPaint.strokeWidth = finalBoundWidth
+            smartGuidePaint.strokeWidth = finalGuidelineWidth
+
             if (child === _selectedChild) {
 
                 selectChild(child)
@@ -631,73 +644,75 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                         mappedMeshPoints[7],
                         boundPaint
                     )
+                }
 
-                    if (isFreeTransform) {
-                        resizeAndDrawDrawable(
-                            mappedMeshPoints[0].toInt(),
-                            mappedMeshPoints[1].toInt(),
-                            canvas
-                        )
-                        resizeAndDrawDrawable(
-                            mappedMeshPoints[2].toInt(),
-                            mappedMeshPoints[3].toInt(),
-                            canvas
-                        )
-                        resizeAndDrawDrawable(
-                            mappedMeshPoints[4].toInt(),
-                            mappedMeshPoints[5].toInt(),
-                            canvas
-                        )
-                        resizeAndDrawDrawable(
-                            mappedMeshPoints[6].toInt(),
-                            mappedMeshPoints[7].toInt(),
-                            canvas
-                        )
-                    }
-
-
+                if (isFreeTransform) {
                     resizeAndDrawDrawable(
-                        mappedBaseSizeChangePoints[0].toInt(),
-                        mappedBaseSizeChangePoints[1].toInt(),
+                        mappedMeshPoints[0].toInt(),
+                        mappedMeshPoints[1].toInt(),
                         canvas
                     )
                     resizeAndDrawDrawable(
-                        mappedBaseSizeChangePoints[2].toInt(),
-                        mappedBaseSizeChangePoints[3].toInt(),
+                        mappedMeshPoints[2].toInt(),
+                        mappedMeshPoints[3].toInt(),
                         canvas
                     )
                     resizeAndDrawDrawable(
-                        mappedBaseSizeChangePoints[4].toInt(),
-                        mappedBaseSizeChangePoints[5].toInt(),
+                        mappedMeshPoints[4].toInt(),
+                        mappedMeshPoints[5].toInt(),
                         canvas
                     )
                     resizeAndDrawDrawable(
-                        mappedBaseSizeChangePoints[6].toInt(),
-                        mappedBaseSizeChangePoints[7].toInt(),
+                        mappedMeshPoints[6].toInt(),
+                        mappedMeshPoints[7].toInt(),
                         canvas
                     )
                 }
 
-                canvas.drawLines(smartRotationLineHolder, smartGuidePaint)
-            }
 
-
-            for (i in smartGuidelineHolder.indices step 4) {
-
-                if (smartGuidelineDashedLine[i]) {
-                    smartGuidePaint.pathEffect = smartGuideLineDashedPathEffect
-                }
-
-                canvas.drawLine(
-                    smartGuidelineHolder[i],
-                    smartGuidelineHolder[i + 1],
-                    smartGuidelineHolder[i + 2],
-                    smartGuidelineHolder[i + 3],
-                    smartGuidePaint
+                resizeAndDrawDrawable(
+                    mappedBaseSizeChangePoints[0].toInt(),
+                    mappedBaseSizeChangePoints[1].toInt(),
+                    canvas
+                )
+                resizeAndDrawDrawable(
+                    mappedBaseSizeChangePoints[2].toInt(),
+                    mappedBaseSizeChangePoints[3].toInt(),
+                    canvas
+                )
+                resizeAndDrawDrawable(
+                    mappedBaseSizeChangePoints[4].toInt(),
+                    mappedBaseSizeChangePoints[5].toInt(),
+                    canvas
+                )
+                resizeAndDrawDrawable(
+                    mappedBaseSizeChangePoints[6].toInt(),
+                    mappedBaseSizeChangePoints[7].toInt(),
+                    canvas
                 )
 
-                smartGuidePaint.pathEffect = null
+
+                canvas.drawLines(smartRotationLineHolder, smartGuidePaint)
+
+                for (i in smartGuidelineHolder.indices step 4) {
+
+                    if (smartGuidelineDashedLine[i]) {
+                        smartGuidePaint.pathEffect = smartGuideLineDashedPathEffect
+                    }
+
+                    canvas.drawLine(
+                        smartGuidelineHolder[i],
+                        smartGuidelineHolder[i + 1],
+                        smartGuidelineHolder[i + 2],
+                        smartGuidelineHolder[i + 3],
+                        smartGuidePaint
+                    )
+
+                    smartGuidePaint.pathEffect = null
+                }
             }
+            boundPaint.strokeWidth = currentBoundWidth
+            smartGuidePaint.strokeWidth = currentGuideWidth
         }
     }
 
@@ -1030,6 +1045,13 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 }
             }
+        }
+    }
+
+    private fun mergeCanvasMatrices(): MananMatrix {
+        return mappingMatrix.apply {
+            setConcat(fitMatrix, matrix)
+            invert(mappingMatrix)
         }
     }
 
