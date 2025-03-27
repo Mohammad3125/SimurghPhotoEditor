@@ -12,7 +12,6 @@ import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.toRectF
 import ir.manan.mananpic.R
-import ir.manan.mananpic.components.MananFrame.Guidelines
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.BOTTOM
 import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.CENTER
@@ -1495,6 +1494,26 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         val meshPoints: FloatArray,
         val targetRect: RectF?
     )
+
+    /**
+     * A class holding static flags for smart guideline. User should
+     * set the desired flags in [setSmartGuidelineFlags] method.
+     */
+    class Guidelines {
+        companion object {
+            const val ALL = 1
+            const val LEFT_LEFT = 2
+            const val LEFT_RIGHT = 4
+            const val RIGHT_LEFT = 8
+            const val RIGHT_RIGHT = 16
+            const val TOP_TOP = 32
+            const val TOP_BOTTOM = 64
+            const val BOTTOM_TOP = 128
+            const val BOTTOM_BOTTOM = 256
+            const val CENTER_X = 512
+            const val CENTER_Y = 1024
+        }
+    }
 
     enum class TransformableAlignment {
         TOP, LEFT, RIGHT, BOTTOM, VERTICAL, HORIZONTAL, CENTER
