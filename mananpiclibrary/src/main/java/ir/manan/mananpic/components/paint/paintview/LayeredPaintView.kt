@@ -9,21 +9,15 @@ import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.util.AttributeSet
-import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.gesture.TouchData
-import ir.manan.mananpic.utils.gesture.detectors.rotation.OnRotateListener
-import ir.manan.mananpic.utils.gesture.detectors.translation.OnTranslationDetector
 import ir.manan.mananpic.utils.gesture.detectors.translation.TranslationDetector
 import java.util.Stack
 
 class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
-    MananPaintView(context, attrSet), Painter.MessageChannel,
-    ScaleGestureDetector.OnScaleGestureListener,
-    OnRotateListener, GestureDetector.OnDoubleTapListener,
-    GestureDetector.OnGestureListener, OnTranslationDetector {
+    MananPaintView(context, attrSet) {
 
     constructor(context: Context) : this(context, null)
 
@@ -289,7 +283,8 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         shouldClone: Boolean = true,
         isLayerChange: Boolean = false,
         isClipChange: Boolean = false,
-        targetClip: Rect = layerClipBounds
+        targetClip: Rect = layerClipBounds,
+        refLayer: PaintLayer? = selectedLayer
     ) {
 
         if (!isClipChange && painter?.doesHandleHistory() == true && !isMessage && undoStack.isNotEmpty()) {
@@ -304,8 +299,8 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             }
             undoStack.add(
                 State(
-                    sl,
-                    sl.clone(shouldClone),
+                    refLayer!!,
+                    refLayer.clone(shouldClone),
                     copiedList,
                     isSpecial,
                     isLayerChange,
@@ -636,6 +631,43 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     fun removeLayerAt(index: Int) {
+        removeLayerAtWithoutStateSave(index)
+        saveState()
+    }
+
+    fun removeLayers(layersIndex: IntArray) {
+        removeLayersWithoutStateSave(layersIndex)
+        saveState()
+    }
+
+    private fun removeLayersWithoutStateSave(layersIndex: IntArray) {
+        layersIndex.forEach { checkIndex(it) }
+
+        if (layersIndex.contains(getIndexOfSelectedLayer())) {
+            selectedLayer = if (layerHolder.size > 1) {
+                layerHolder[layersIndex.min() - 1]
+            } else {
+                null
+            }
+
+            painter?.onLayerChanged(selectedLayer)
+        }
+
+        layerHolder =
+            layerHolder.filterIndexed { index, _ -> !layersIndex.contains(index) }
+                .toMutableList()
+
+        cacheLayers()
+
+        callOnLayerChangedListeners(
+            layerHolder.toList(),
+            layerHolder.indexOf(selectedLayer)
+        )
+
+        invalidate()
+    }
+
+    private fun removeLayerAtWithoutStateSave(index: Int) {
         checkIndex(index)
 
         if (index == getIndexOfSelectedLayer()) {
@@ -645,16 +677,12 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                 null
             }
 
-
             painter?.onLayerChanged(selectedLayer)
-
         }
 
         layerHolder.removeAt(index)
 
         cacheLayers()
-
-        saveState()
 
         callOnLayerChangedListeners(
             layerHolder.toList(),
@@ -703,12 +731,51 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    fun mergeLayers(layersIndex: IntArray) {
+        if (layersIndex.size < 2) {
+            throw IllegalStateException("you need at least two layers to merge")
+        }
+        layersIndex.forEach { checkIndex(it) }
+
+        if (layersIndex.distinct().size != layersIndex.size) {
+            throw IllegalStateException("cannot merge layers with duplicate index")
+        }
+
+        val lowerIndex = layersIndex.min()
+        val bottomLayer = layerHolder[lowerIndex]
+
+        saveState(refLayer = bottomLayer, isSpecial = true)
+
+        mergeCanvas.setBitmap(bottomLayer.bitmap)
+
+        val sortedMinusBottomIndex = layersIndex.sorted().minus(lowerIndex)
+
+        sortedMinusBottomIndex.map { layerHolder[it] }.forEach { layer ->
+            layersPaint.alpha = (255 * layer.opacity).toInt()
+
+            layersPaint.xfermode = layer.blendingModeObject
+
+            mergeCanvas.drawBitmap(
+                layer.bitmap,
+                0f,
+                0f,
+                layersPaint
+            )
+
+            if (layer === selectedLayer) {
+                painter?.draw(mergeCanvas)
+            }
+        }
+
+        removeLayersWithoutStateSave(sortedMinusBottomIndex.toIntArray())
+        saveState(refLayer = bottomLayer)
+    }
+
     private fun checkIndex(index: Int) {
         if (index < 0 || index >= layerHolder.size) {
             throw ArrayIndexOutOfBoundsException("provided index is out of bounds")
         }
     }
-
 
     fun setOnLayersChangedListener(onLayersChanged: OnLayersChanged) {
         onLayersChangedListener = onLayersChanged
