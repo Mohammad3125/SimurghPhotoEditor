@@ -814,10 +814,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             // selected component which is a undefined behaviour) and then map each bounds of children to get exact
             // location of points and then add page's bounds to get smart guidelines for page too.
             _children.minus(child).map { c ->
-                val r = RectF()
-                mergeMatrices(c, true)
-                calculateMaximumRect(c, r, mappedMeshPoints)
-                r
+                RectF().apply {
+                    mergeMatrices(c, true)
+                    calculateMaximumRect(c, this, mappedMeshPoints)
+                }
             }.plus(floutBounds).forEach { childBounds ->
 
                 // Stores total value that selected component should shift in each axis
