@@ -403,7 +403,7 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         // State of layer should be saved no matter if another painter handles history or not.
         saveState(isMessage = true)
 
-        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.indexOf(selectedLayer))
+        callOnLayerChangedListeners(layerHolder.toList(), layerHolder.size - 1)
 
         painter?.onLayerChanged(selectedLayer)
 
