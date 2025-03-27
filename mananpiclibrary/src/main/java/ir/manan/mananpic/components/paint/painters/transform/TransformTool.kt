@@ -1326,7 +1326,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                     smartRotationLineHolder[2] = (centerXBound)
                     smartRotationLineHolder[3] = (10000f)
 
-                    mappingMatrix.setRotate(imageRotation, tempRect.centerX(), tempRect.centerY())
+                    mappingMatrix.setRotate(snapDegree, tempRect.centerX(), tempRect.centerY())
                     mappingMatrix.mapPoints(smartRotationLineHolder)
 
                     return true
