@@ -671,12 +671,11 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         checkIndex(index)
 
         if (index == getIndexOfSelectedLayer()) {
-            selectedLayer = if (layerHolder.size > 1) {
-                layerHolder[index - 1]
-            } else {
-                null
+            selectedLayer = when {
+                layerHolder.size <= 1 -> null
+                index > 0 -> layerHolder[index - 1]
+                else -> layerHolder[1]
             }
-
             painter?.onLayerChanged(selectedLayer)
         }
 
@@ -854,9 +853,20 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             }
 
             paintView.run {
-                var i = layerHolder.indexOf(selectedLayer)
-                if (i > layers.lastIndex) i = layers.lastIndex
-                selectedLayer = layers[i]
+                val i = layerHolder.indexOf(selectedLayer)
+                selectedLayer = when {
+                    i > -1 -> {
+                        layers.getOrNull(i.coerceAtMost(layers.lastIndex))
+                    }
+
+                    layers.isNotEmpty() -> {
+                        selectedLayer.takeIf { it in layers } ?: layers.first()
+                    }
+
+                    else -> {
+                        null
+                    }
+                }
 
                 layerHolder = MutableList(layers.size) {
                     layers[it]
