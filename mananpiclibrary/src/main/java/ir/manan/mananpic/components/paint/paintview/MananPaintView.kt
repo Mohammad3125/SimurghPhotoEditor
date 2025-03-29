@@ -41,8 +41,7 @@ import kotlin.math.abs
 open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     View(context, attrSet), Painter.MessageChannel,
     ScaleGestureDetector.OnScaleGestureListener,
-    OnRotateListener, GestureDetector.OnDoubleTapListener,
-    GestureDetector.OnGestureListener, OnTranslationDetector {
+    OnRotateListener, OnTranslationDetector {
 
     constructor(context: Context) : this(context, null)
 
@@ -94,9 +93,13 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     protected val touchPointMappedArray = FloatArray(2)
 
-    protected var onTapUp: ((Unit) -> Unit)? = null
+    protected var onDoubleFingerTapUp: ((Unit) -> Unit)? = null
 
-    protected var onDoubleTapUpInterface: OnDoubleTapUp? = null
+    protected var onDoubleFingerTapUpInterface: OnDoubleFingerTapUp? = null
+
+    protected var onDoubleTap: ((event: MotionEvent) -> Boolean)? = null
+
+    protected var onDoubleTappedListener: OnDoubleTap? = null
 
     protected var onDelegateTransform: ((transformationMatrix: Matrix) -> Unit)? = null
 
@@ -148,9 +151,22 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
      * Rotation detector that is used to detect if user performed rotation gesture.
      * It is nullable; meaning a derived class could use rotating gesture or not.
      */
-    protected var rotationDetector: RotationDetectorGesture = TwoFingerRotationDetector(this)
+    protected val rotationDetector: RotationDetectorGesture by lazy {
+        TwoFingerRotationDetector(this)
+    }
 
-    protected var translationDetector = TranslationDetector(this)
+    protected val translationDetector by lazy {
+        TranslationDetector(this)
+    }
+
+    private val gestureDetector: GestureDetector by lazy {
+        GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                callDoubleTapListeners(e)
+                return true
+            }
+        })
+    }
 
     protected val onMoveBeginTouchData by lazy {
         TouchData()
@@ -265,54 +281,6 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     val identityClip by lazy {
         Rect()
     }
-
-
-    override fun onSingleTapUp(p0: MotionEvent): Boolean {
-        return true
-    }
-
-    override fun onScroll(
-        e1: MotionEvent?,
-        e2: MotionEvent,
-        distanceX: Float,
-        distanceY: Float
-    ): Boolean {
-        return false
-    }
-
-    override fun onSingleTapConfirmed(p0: MotionEvent): Boolean {
-        return false
-    }
-
-    override fun onDoubleTap(p0: MotionEvent): Boolean {
-        return true
-    }
-
-    override fun onDoubleTapEvent(p0: MotionEvent): Boolean {
-        return false
-    }
-
-    override fun onDown(p0: MotionEvent): Boolean {
-        return false
-    }
-
-    override fun onShowPress(p0: MotionEvent) {
-    }
-
-
-    override fun onLongPress(p0: MotionEvent) {
-
-    }
-
-    override fun onFling(
-        e1: MotionEvent?,
-        p0: MotionEvent,
-        velocityX: Float,
-        velocityY: Float
-    ): Boolean {
-        return false
-    }
-
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         if (isInLayout) {
@@ -436,6 +404,8 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             event.transform(mappingMatrix)
         }
 
+        gestureDetector.onTouchEvent(event)
+
         if (isRotatingEnabled) {
             rotationDetector.onTouchEvent(event)
         }
@@ -453,10 +423,15 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             painter?.onTransformBegin()
         }
 
-        return true
+        println("onMoveBegin")
+
+        return painter != null || detector.pointerCount > 1
     }
 
     override fun onMove(detector: TranslationDetector): Boolean {
+
+        println("onMove ${detector.pointerCount}")
+
         val firstPointerTouchData = detector.getTouchData(0)
 
         val finalSlope = if (painter?.doesNeedTouchSlope() == true) {
@@ -740,12 +715,16 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return selectedLayer?.opacity ?: 1f
     }
 
-    open fun setOnDoubleTapUpListener(onDoubleTapUp: OnDoubleTapUp) {
-        onDoubleTapUpInterface = onDoubleTapUp
+    open fun getSelectedLayerBitmap(): Bitmap? {
+        return selectedLayer?.bitmap
     }
 
-    open fun setOnDoubleTapUpListener(callback: ((Unit) -> Unit)) {
-        onTapUp = callback
+    open fun setOnDoubleFingerTapUpListener(onDoubleFingerTapUp: OnDoubleFingerTapUp) {
+        onDoubleFingerTapUpInterface = onDoubleFingerTapUp
+    }
+
+    open fun setOnDoubleFingerTapUpListener(callback: ((Unit) -> Unit)) {
+        onDoubleFingerTapUp = callback
     }
 
     open fun setOnTransformDelegate(func: (transformationMatrix: Matrix) -> Unit) {
@@ -786,8 +765,8 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     protected open fun callOnDoubleTapListeners() {
-        onTapUp?.invoke(Unit)
-        onDoubleTapUpInterface?.onDoubleTapUp()
+        onDoubleFingerTapUp?.invoke(Unit)
+        onDoubleFingerTapUpInterface?.onDoubleFingerTapUp()
     }
 
     open fun applyCanvasMatrix(matrix: Matrix) {
@@ -845,8 +824,27 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         calculateBounds()
     }
 
-    interface OnDoubleTapUp {
-        fun onDoubleTapUp()
+    fun setOnDoubleTapListener(func: ((event: MotionEvent) -> Boolean)) {
+        onDoubleTap = func
+    }
+
+    fun setOnDoubleTapListener(listener: OnDoubleTap) {
+        onDoubleTappedListener = listener
+    }
+
+    private fun callDoubleTapListeners(event: MotionEvent): Boolean {
+        var isConsumed = false
+        isConsumed = isConsumed.or(onDoubleTap?.invoke(event) == true)
+        isConsumed = isConsumed.or(onDoubleTappedListener?.onDoubleTap(event) == true)
+        return isConsumed
+    }
+
+    interface OnDoubleFingerTapUp {
+        fun onDoubleFingerTapUp()
+    }
+
+    interface OnDoubleTap {
+        fun onDoubleTap(event: MotionEvent): Boolean
     }
 
     interface OnLayersChanged {

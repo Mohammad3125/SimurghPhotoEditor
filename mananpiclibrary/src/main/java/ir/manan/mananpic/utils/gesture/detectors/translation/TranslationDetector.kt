@@ -28,6 +28,8 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
 
     var isTouchEventHistoryEnabled = false
 
+    private var shouldProgress = false
+
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return event?.run {
             when (actionMasked) {
@@ -45,7 +47,8 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
                     touchHolder[0].pressure = pressure
                     touchHolder[0].time = eventTime
 
-                    listener.onMoveBegin(this@TranslationDetector)
+                    shouldProgress = listener.onMoveBegin(this@TranslationDetector)
+                    shouldProgress
                 }
 
                 MotionEvent.ACTION_POINTER_DOWN -> {
@@ -63,10 +66,14 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
                         touchHolder[1].ey = secondPointerInitialY
                     }
 
-                    listener.onMoveBegin(this@TranslationDetector)
+                    shouldProgress = listener.onMoveBegin(this@TranslationDetector)
+                    shouldProgress
                 }
 
                 MotionEvent.ACTION_MOVE -> {
+                    if (!shouldProgress) {
+                        return false
+                    }
                     // If there are currently 2 pointers on screen and user is not scaling then
                     // translate the canvas matrix.
                     if (pointerCount == 2) {
@@ -133,7 +140,11 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
 
                     calculateFirstPointer(x, y, eventTime, pressure)
 
-                    listener.onMoveEnded(this@TranslationDetector)
+                    if (shouldProgress) {
+                        listener.onMoveEnded(this@TranslationDetector)
+                    }
+
+                    shouldProgress = false
 
                     touchHolder.clear()
 
