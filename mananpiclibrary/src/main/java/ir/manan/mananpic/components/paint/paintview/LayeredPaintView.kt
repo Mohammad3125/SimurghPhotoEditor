@@ -1,6 +1,5 @@
 package ir.manan.mananpic.components.paint.paintview
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -9,7 +8,6 @@ import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.util.AttributeSet
-import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.gesture.TouchData
@@ -127,32 +125,6 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                 p.onReferenceLayerCreated(bitmapReference)
             }
         }
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event == null || resetMatrixAnimator.isRunning) {
-            return false
-        }
-
-        if (isScalingEnabled) {
-            scaleDetector.onTouchEvent(event)
-        }
-
-        if (isTranslationEnabled) {
-            translationDetector.onTouchEvent(event)
-        }
-
-        if (painter?.doesTakeGestures() == true) {
-            mappingMatrix.setConcat(canvasMatrix, imageviewMatrix)
-            mappingMatrix.invert(mappingMatrix)
-            event.transform(mappingMatrix)
-        }
-
-        if (isRotatingEnabled) {
-            rotationDetector.onTouchEvent(event)
-        }
-        return true
     }
 
     override fun onMoveEnded(detector: TranslationDetector) {
