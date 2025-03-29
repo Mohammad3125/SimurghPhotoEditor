@@ -53,7 +53,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     protected var isMatrixGesture = false
 
-    protected var rotHolder = 0f
+    protected var rotationHolder = 0f
 
     protected var isFirstMove = true
 
@@ -423,15 +423,10 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             painter?.onTransformBegin()
         }
 
-        println("onMoveBegin")
-
         return painter != null || detector.pointerCount > 1
     }
 
     override fun onMove(detector: TranslationDetector): Boolean {
-
-        println("onMove ${detector.pointerCount}")
-
         val firstPointerTouchData = detector.getTouchData(0)
 
         val finalSlope = if (painter?.doesNeedTouchSlope() == true) {
@@ -542,21 +537,22 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onRotate(degree: Float, px: Float, py: Float): Boolean {
-        painter?.apply {
-            if (doesTakeGestures()) {
-                painterTransformationMatrix.setRotate(degree - rotHolder, px, py)
-                if (shouldDelegateGesture) {
-                    onDelegateTransform?.invoke(painterTransformationMatrix)
-                } else {
-                    onTransformed(painterTransformationMatrix)
-                }
+        val rotationDelta = degree - rotationHolder
+
+        if (painter?.doesTakeGestures() == true) {
+            painterTransformationMatrix.setRotate(rotationDelta, px, py)
+            if (shouldDelegateGesture) {
+                onDelegateTransform?.invoke(painterTransformationMatrix)
             } else {
-                canvasMatrix.postRotate(degree - rotHolder, px, py)
-                invalidate()
+                painter?.onTransformed(painterTransformationMatrix)
             }
+        } else {
+            canvasMatrix.postRotate(rotationDelta, px, py)
+            invalidate()
         }
-        totalRotated += abs(degree - rotHolder)
-        rotHolder = degree
+
+        totalRotated += abs(rotationDelta)
+        rotationHolder = degree
         return true
     }
 
@@ -577,22 +573,19 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             val sf = scaleFactor
             isMoved = true
 
-            painter?.apply {
-                if (doesTakeGestures()) {
-
-                    mapTouchPoints(focusX, focusY, false).let {
-                        painterTransformationMatrix.setScale(sf, sf, it[0], it[1])
-                    }
-
-                    if (shouldDelegateGesture) {
-                        onDelegateTransform?.invoke(painterTransformationMatrix)
-                    } else {
-                        onTransformed(painterTransformationMatrix)
-                    }
-                } else {
-                    canvasMatrix.postScale(sf, sf, focusX, focusY)
-                    invalidate()
+            if (painter?.doesTakeGestures() == true) {
+                mapTouchPoints(focusX, focusY, false).let {
+                    painterTransformationMatrix.setScale(sf, sf, it[0], it[1])
                 }
+
+                if (shouldDelegateGesture) {
+                    onDelegateTransform?.invoke(painterTransformationMatrix)
+                } else {
+                    painter?.onTransformed(painterTransformationMatrix)
+                }
+            } else {
+                canvasMatrix.postScale(sf, sf, focusX, focusY)
+                invalidate()
             }
             return true
         }
