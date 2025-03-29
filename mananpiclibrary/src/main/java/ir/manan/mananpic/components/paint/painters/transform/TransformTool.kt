@@ -514,6 +514,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     override fun onMoveEnded(touchData: TouchData) {
         if (firstSelectedIndex == -1 && secondSelectedIndex == -1 && firstSizeChangeIndex == -1 && secondSizeChangeIndex == -1) {
 
+            val lastSelected = _selectedChild
             _selectedChild = null
 
             _children.forEach { child ->
@@ -540,9 +541,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 }
             }
 
-            _selectedChild?.let {
-                selectChild(it, true)
-                onChildSelected?.invoke(it.transformable, false)
+            if (lastSelected !== _selectedChild) {
+                _selectedChild?.let {
+                    selectChild(it, true)
+                    onChildSelected?.invoke(it.transformable, false)
+                }
             }
 
             if (_selectedChild == null) {
