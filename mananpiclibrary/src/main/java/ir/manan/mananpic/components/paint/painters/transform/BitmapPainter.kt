@@ -30,6 +30,12 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
         shader = BitmapShader(bitmap, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
     }
 
+    private val dstOutPaint by lazy {
+        Paint().apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+        }
+    }
+
     var bitmap: Bitmap = bitmap
         set(value) {
             field = value
@@ -61,6 +67,10 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
 
     private var finalHeight = 0f
 
+    private val finalBounds by lazy {
+        RectF()
+    }
+
     override fun getBounds(bounds: RectF) {
         val extraSpace = if (isTextBackgroundEnabled) backgroundPaddingSize else 0f
 
@@ -74,6 +84,8 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
             finalWidth,
             finalHeight
         )
+
+        finalBounds.set(bounds)
     }
 
     override fun draw(canvas: Canvas) {
@@ -83,6 +95,8 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
 
                 backgroundPaint.color =
                     backgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+
+                saveLayer(finalBounds, null)
 
                 drawRoundRect(
                     0f,
@@ -105,8 +119,21 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
                     bitmap.height.toFloat(),
                     cornerRoundness,
                     cornerRoundness,
+                    dstOutPaint
+                )
+
+                canvas.drawRoundRect(
+                    0f,
+                    0f,
+                    bitmap.width.toFloat(),
+                    bitmap.height.toFloat(),
+                    cornerRoundness,
+                    cornerRoundness,
                     bitmapPaint
                 )
+
+                restore()
+
             }
         } else {
             canvas.drawRoundRect(
