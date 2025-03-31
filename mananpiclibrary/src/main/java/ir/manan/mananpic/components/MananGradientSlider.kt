@@ -8,24 +8,26 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import android.util.AttributeSet
+import android.view.GestureDetector
 import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.ColorInt
-import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.doOnLayout
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.detectors.MoveDetector
 import ir.manan.mananpic.utils.gesture.gestures.OnMoveListener
 import kotlin.math.abs
+import kotlin.math.max
 
 class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     View(context, attributeSet), OnMoveListener, OnGestureListener {
     constructor(context: Context) : this(context, null)
 
-    private var drawingBaseline = 0f
+    private var strokeWidthHalf = 0f
+    private var isWrapContent = false
 
-    private var shouldChangeShader = true
+    private var isShaderDirty = true
 
     private var isNewCircleCreated = false
 
@@ -46,7 +48,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
     private val moveDetector = MoveDetector(1, this)
 
-    private val gestureDetector = GestureDetectorCompat(context, this)
+    private val gestureDetector = GestureDetector(context, this)
 
     private val gradientLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
@@ -83,20 +85,28 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
     private var isFirstCirclesAdded = false
 
+    private var widthF = 0f
+    private var heightF = 0f
+    private var drawingStart = 0f
+    private var drawingTop = 0f
+    private var heightHalf = 0f
+
+    private var defaultPaddingVertical = dp(12)
+    private var wrapContentSize = dp(48).toInt()
+
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
-        val halfHeight = height * 0.5f
         if (initialX.coerceIn(-circleHandleTouchArea, width + circleHandleTouchArea) == initialX &&
             initialY.coerceIn(
-                halfHeight - circleHandleTouchArea,
-                halfHeight + circleHandleTouchArea
+                heightHalf - circleHandleTouchArea,
+                heightHalf + circleHandleTouchArea
             ) == initialY
         ) {
             selectedCircleHandleIndex = findNearestCircleIndex(initialX)
 
             if (selectedCircleHandleIndex == -1) {
-                circleHandles.add(CircleHandle(initialX, Color.RED))
+                circleHandles.add(CircleHandle(initialX.coerceIn(drawingStart, widthF), Color.RED))
                 selectedCircleHandleIndex = circleHandles.lastIndex
-                shouldChangeShader = true
+                isShaderDirty = true
                 isNewCircleCreated = true
                 invalidate()
             }
@@ -126,13 +136,11 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     override fun onMove(dx: Float, dy: Float, ex: Float, ey: Float): Boolean {
         if (selectedCircleHandleIndex != -1) {
             val circleX = circleHandles[selectedCircleHandleIndex].x
-            if (ex != circleX) {
-                val fc = (colorCircleStrokeWidth + colorCircleRadius)
-                val widthLimit = width - fc
-                circleHandles[selectedCircleHandleIndex].x =
-                    (if (ex < fc) fc else if (ex > widthLimit) widthLimit else ex)
 
-                shouldChangeShader = true
+            if (ex != circleX) {
+                circleHandles[selectedCircleHandleIndex].x = ex.coerceIn(drawingStart, widthF)
+
+                isShaderDirty = true
 
                 invalidate()
             }
@@ -172,7 +180,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     override fun onLongPress(p0: MotionEvent) {
         if (circleHandles.size > 2) {
             circleHandles.removeAt(selectedCircleHandleIndex)
-            shouldChangeShader = true
+            isShaderDirty = true
             selectedCircleHandleIndex = -1
             invalidate()
         }
@@ -192,70 +200,82 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         return if (event != null) {
             moveDetector.onTouchEvent(event).or(gestureDetector.onTouchEvent(event))
         } else {
-            super.onTouchEvent(event)
+            super.onTouchEvent(null)
         }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-
         val measureWidth = MeasureSpec.getSize(widthMeasureSpec)
         val measureHeight = MeasureSpec.getSize(heightMeasureSpec)
 
-        val finalWidth = when (MeasureSpec.getMode(widthMeasureSpec)) {
-            MeasureSpec.EXACTLY -> {
-                measureWidth
-            }
-            MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED -> {
-                val w = dp(96).toInt()
-                if (w > measureWidth) measureWidth else w
-            }
-            else -> {
-                suggestedMinimumWidth
-            }
-        }
+        isWrapContent = false
 
         val finalHeight = when (MeasureSpec.getMode(heightMeasureSpec)) {
             MeasureSpec.EXACTLY -> {
                 measureHeight
             }
+
             MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED -> {
-                val h = ((colorCircleRadius * 2) + gradientLineWidth).toInt()
-                if (h > measureHeight) measureHeight else h
+                isWrapContent = true
+                wrapContentSize
             }
+
             else -> {
                 suggestedMinimumHeight
             }
         }
 
-        setMeasuredDimension(finalWidth, finalHeight)
+        setMeasuredDimension(
+            max(measureWidth, suggestedMinimumWidth),
+            max(finalHeight, suggestedMinimumHeight)
+        )
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
+        calculateBounds(width.toFloat(), height.toFloat())
+    }
 
-        drawingBaseline = height * 0.5f
+    private fun calculateBounds(targetWidth: Float, targetHeight: Float) {
+        heightF = targetHeight - paddingBottom - paddingTop
+
+        if (isWrapContent) {
+            heightF -= (defaultPaddingVertical * 2f)
+        }
+
+        heightHalf = heightF * 0.5f
+        gradientLinePaint.strokeWidth = heightHalf
+
+        widthF = targetWidth - paddingEnd - heightHalf
+
+        drawingStart = heightHalf + paddingStart
+        drawingTop = heightHalf + paddingTop
+
+        if (isWrapContent) {
+            drawingTop += defaultPaddingVertical
+        }
+        strokeWidthHalf = if (gradientLinePaint.strokeCap != Paint.Cap.BUTT) {
+            // If paint cap is not BUTT then add half the width of stroke at start and end of line.
+            gradientLinePaint.strokeWidth * 0.5f
+        } else {
+            0f
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.also { c ->
 
-            if(!isFirstCirclesAdded && circleHandles.isEmpty()) {
-                circleHandles.add(CircleHandle(colorCircleStrokeWidth + colorCircleRadius, Color.WHITE))
-                circleHandles.add(
-                    CircleHandle(width - (colorCircleStrokeWidth + colorCircleRadius), Color.BLACK)
-                )
+            if (!isFirstCirclesAdded && circleHandles.isEmpty()) {
+                circleHandles.add(CircleHandle(drawingStart, Color.WHITE))
+                circleHandles.add(CircleHandle(widthF, Color.BLACK))
                 isFirstCirclesAdded = true
             }
 
-            if (shouldChangeShader) {
-
+            if (isShaderDirty) {
 
                 // Used to prevent listener invoking on the first time we're initializing shader.
                 val wasInitialized = this::gradientShader.isInitialized
-
-                val widthF = width.toFloat()
 
                 val sortedList = circleHandles.sortedBy { it.x }
 
@@ -264,28 +284,31 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
                 val positions =
                     sortedList.map { it.calculateRelativePosition(widthF) }.toFloatArray()
 
-
                 gradientShader = LinearGradient(
-                    0f,
-                    drawingBaseline,
-                    width.toFloat(),
-                    drawingBaseline,
+                    drawingStart,
+                    drawingTop,
+                    widthF,
+                    drawingTop,
                     colors,
                     positions,
                     Shader.TileMode.MIRROR
                 )
 
-
                 gradientLinePaint.shader = gradientShader
 
-                shouldChangeShader = false
+                isShaderDirty = false
 
                 if (wasInitialized) {
                     callColorAndPositionListeners(colors, positions)
                 }
             }
 
-            c.drawLine(0f, drawingBaseline, width.toFloat(), drawingBaseline, gradientLinePaint)
+            c.drawLine(
+                drawingStart,
+                drawingTop,
+                widthF,
+                drawingTop, gradientLinePaint
+            )
 
             val finalLowerCircleRadius = colorCircleStrokeWidth + colorCircleRadius
 
@@ -294,7 +317,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
                 c.drawCircle(
                     it.x,
-                    drawingBaseline,
+                    drawingTop,
                     finalLowerCircleRadius,
                     circlesPaint
                 )
@@ -303,7 +326,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
                 c.drawCircle(
                     it.x,
-                    drawingBaseline,
+                    drawingTop,
                     colorCircleRadius,
                     circlesPaint
                 )
@@ -349,7 +372,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
     private fun changeColorAt(@ColorInt color: Int, index: Int) {
         circleHandles[index].color = color
-        shouldChangeShader = true
+        isShaderDirty = true
         invalidate()
     }
 
@@ -363,7 +386,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
     fun getPositions(): FloatArray {
         return if (isFirstCirclesAdded) {
-            circleHandles.sortedBy { it.x }.map { it.calculateRelativePosition(width.toFloat()) }
+            circleHandles.sortedBy { it.x }.map { it.calculateRelativePosition(widthF) }
                 .toFloatArray()
         } else {
             floatArrayOf(0f, 1f)
@@ -388,13 +411,22 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
             colors.forEachIndexed { index, color ->
                 circleHandles.add(
                     CircleHandle(
-                        width.toFloat() * positions[index],
+                        widthF * positions[index],
                         color
                     )
                 )
             }
         }
 
+        isShaderDirty = true
+
+        invalidate()
+    }
+
+    fun resetSlider() {
+        circleHandles.clear()
+        isFirstCirclesAdded = false
+        isShaderDirty = true
         invalidate()
     }
 
