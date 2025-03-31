@@ -249,7 +249,6 @@ class CropperTool : Painter() {
         layerBounds: Rect,
         clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         this.context = context
         canvasMatrix = transformationMatrix
         this.fitInsideMatrix = fitInsideMatrix
@@ -291,6 +290,7 @@ class CropperTool : Painter() {
             }
 
         }
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
     }
 
     private fun normalizeCropper(finalWidth: Float, finalHeight: Float, targetRect: RectF) {
@@ -824,22 +824,28 @@ class CropperTool : Painter() {
         tempRectF.set(rect)
         inverseMatrix.mapRect(tempRectF)
         frameRect.set(tempRectF)
-        if (fit) {
-            fitCropperInsideLayer(animate = animate, setRect = !animate)
-            if (!animate) {
-                setDrawingDimensions()
-                onEnd.invoke()
-                sendMessage(PainterMessage.INVALIDATE)
-            } else {
+
+        when {
+            fit && animate -> {
+                fitCropperInsideLayer(animate = true, setRect = false)
                 animator.doOnEnd {
-                    onEnd.invoke()
+                    onEnd()
                     animator.listeners.clear()
                 }
             }
-        } else {
-            setDrawingDimensions()
-            onEnd.invoke()
-            sendMessage(PainterMessage.INVALIDATE)
+
+            fit && !animate -> {
+                fitCropperInsideLayer(animate = false, setRect = true)
+                setDrawingDimensions()
+                onEnd()
+                sendMessage(PainterMessage.INVALIDATE)
+            }
+
+            else -> {
+                setDrawingDimensions()
+                onEnd()
+                sendMessage(PainterMessage.INVALIDATE)
+            }
         }
     }
 

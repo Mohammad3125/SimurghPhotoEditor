@@ -13,6 +13,8 @@ import ir.manan.mananpic.utils.gesture.TouchData
 abstract class Painter {
     private var messageListener: MessageChannel? = null
 
+    private var onInitializedListener: () -> Unit = {}
+
     var isInitialized = false
         private set
 
@@ -32,6 +34,7 @@ abstract class Painter {
         clipBounds: Rect
     ) {
         isInitialized = true
+        onInitializedListener.invoke()
     }
 
     /**
@@ -119,6 +122,10 @@ abstract class Painter {
 
     open fun doesNeedTouchSlope(): Boolean {
         return true
+    }
+
+    open fun setOnPainterInitialized(onInitialized: () -> Unit) {
+        onInitializedListener = onInitialized
     }
 
     interface MessageChannel {
