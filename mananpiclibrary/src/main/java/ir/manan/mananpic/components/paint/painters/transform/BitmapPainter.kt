@@ -19,12 +19,14 @@ import ir.manan.mananpic.properties.Backgroundable
 import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.CornerRounder
 import ir.manan.mananpic.properties.Opacityable
+import ir.manan.mananpic.properties.Shadowable
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, Backgroundable,
-    CornerRounder {
+    CornerRounder, Shadowable {
 
-    private var cornerRoundness: Float = 0f
+    private var cornerRadius: Float = 0f
     private val bitmapPaint = Paint().apply {
         isFilterBitmap = true
         shader = BitmapShader(bitmap, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
@@ -42,6 +44,11 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
             bitmapPaint.shader = BitmapShader(value, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
             indicateBoundsChange()
         }
+
+    private var shadowRadius = 0f
+    private var shadowDx = 0f
+    private var shadowDy = 0f
+    private var shadowColor = Color.YELLOW
 
     private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
@@ -89,63 +96,128 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
     }
 
     override fun draw(canvas: Canvas) {
-        if (isTextBackgroundEnabled) {
-            canvas.withSave {
-                val opacityFactor = getOpacity() / 255f
+        canvas.apply {
+            val opacityFactor = getOpacity() / 255f
+            if (shadowRadius > 0) {
+                val currentPorterDuffMode = dstOutPaint.xfermode
 
-                backgroundPaint.color =
-                    backgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                dstOutPaint.xfermode = null
 
-                saveLayer(finalBounds, null)
+                val transformedColor =
+                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
-                drawRoundRect(
-                    0f,
-                    0f,
-                    finalWidth,
-                    finalHeight,
-                    backgroundRadius,
-                    backgroundRadius,
-                    backgroundPaint
+                dstOutPaint.color = transformedColor
+
+                dstOutPaint.setShadowLayer(
+                    shadowRadius,
+                    shadowDx,
+                    shadowDy,
+                    transformedColor
                 )
 
-                backgroundPaint.color = backgroundColor
+                val maxRoundness = max(backgroundRadius, cornerRadius)
 
-                translate(halfPadding, halfPadding)
-
-                canvas.drawRoundRect(
-                    0f,
-                    0f,
-                    bitmap.width.toFloat(),
-                    bitmap.height.toFloat(),
-                    cornerRoundness,
-                    cornerRoundness,
+                drawRoundRect(
+                    finalBounds,
+                    maxRoundness,
+                    maxRoundness,
                     dstOutPaint
                 )
 
-                canvas.drawRoundRect(
+                dstOutPaint.xfermode = currentPorterDuffMode
+                dstOutPaint.clearShadowLayer()
+                dstOutPaint.color = Color.BLACK
+            }
+            if (isTextBackgroundEnabled) {
+                withSave {
+
+                    backgroundPaint.color =
+                        backgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+
+                    saveLayer(finalBounds, null)
+
+                    drawRoundRect(
+                        0f,
+                        0f,
+                        finalWidth,
+                        finalHeight,
+                        backgroundRadius,
+                        backgroundRadius,
+                        backgroundPaint
+                    )
+
+                    backgroundPaint.color = backgroundColor
+
+                    translate(halfPadding, halfPadding)
+
+                    drawRoundRect(
+                        0f,
+                        0f,
+                        bitmap.width.toFloat(),
+                        bitmap.height.toFloat(),
+                        cornerRadius,
+                        cornerRadius,
+                        dstOutPaint
+                    )
+
+                    drawRoundRect(
+                        0f,
+                        0f,
+                        bitmap.width.toFloat(),
+                        bitmap.height.toFloat(),
+                        cornerRadius,
+                        cornerRadius,
+                        bitmapPaint
+                    )
+
+                    restore()
+
+                }
+            } else {
+                drawRoundRect(
                     0f,
                     0f,
                     bitmap.width.toFloat(),
                     bitmap.height.toFloat(),
-                    cornerRoundness,
-                    cornerRoundness,
+                    cornerRadius,
+                    cornerRadius,
                     bitmapPaint
                 )
-
-                restore()
-
             }
-        } else {
-            canvas.drawRoundRect(
-                0f,
-                0f,
-                bitmap.width.toFloat(),
-                bitmap.height.toFloat(),
-                cornerRoundness,
-                cornerRoundness,
-                bitmapPaint
-            )
         }
+    }
+
+    override fun getShadowDx(): Float {
+        return shadowDx
+    }
+
+    override fun getShadowDy(): Float {
+        return shadowDy
+    }
+
+    override fun getShadowRadius(): Float {
+        return shadowRadius
+    }
+
+    override fun getShadowColor(): Int {
+        return shadowColor
+    }
+
+    override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
+        shadowRadius = radius
+        shadowDx = dx
+        shadowDy = dy
+        this.shadowColor = shadowColor
+        invalidate()
+    }
+
+    override fun clearShadow() {
+        dstOutPaint.clearShadowLayer()
+        shadowRadius = 0f
+        shadowDx = 0f
+        shadowDy = 0f
+        shadowColor = Color.YELLOW
+        invalidate()
     }
 
     override fun setBlendMode(blendMode: PorterDuff.Mode) {
@@ -173,8 +245,8 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
                 getBackgroundColor()
             )
             it.setBackgroundState(getBackgroundState())
-
             it.setCornerRoundness(getCornerRoundness())
+            it.setShadow(getShadowRadius(), getShadowDx(), getShadowDy(), getShadowColor())
         }
     }
 
@@ -226,11 +298,11 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
     }
 
     override fun getCornerRoundness(): Float {
-        return cornerRoundness
+        return cornerRadius
     }
 
     override fun setCornerRoundness(roundness: Float) {
-        cornerRoundness = roundness
+        cornerRadius = roundness
         invalidate()
     }
 
