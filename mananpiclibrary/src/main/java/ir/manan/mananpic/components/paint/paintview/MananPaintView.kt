@@ -773,7 +773,11 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     open fun setClipRect(rect: Rect, animate: Boolean = true, func: () -> Unit = {}) {
-        if (animate && !clipAnimator.isRunning && rect != layerClipBounds) {
+        if (rect == layerClipBounds) {
+            func.invoke()
+            return
+        }
+        if (animate && !clipAnimator.isRunning) {
             startRect.set(layerClipBounds)
             endRect.set(rect)
             clipAnimator.start()
