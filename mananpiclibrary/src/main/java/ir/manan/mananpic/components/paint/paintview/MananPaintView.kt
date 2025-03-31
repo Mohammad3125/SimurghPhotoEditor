@@ -453,18 +453,12 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             if (isTranslationEnabled) {
                 if (painter?.doesTakeGestures() == true) {
-                    mapTouchPoints(dx, dy, true).let {
-                        painterTransformationMatrix.setTranslate(
-                            it[0],
-                            it[1]
-                        )
-
+                    painterTransformationMatrix.setTranslate(dx, dy)
                         if (isGestureDelegationEnabled) {
                             onDelegateTransform?.invoke(painterTransformationMatrix)
                         } else {
                             painter?.onTransformed(painterTransformationMatrix)
                         }
-                    }
                 } else {
                     canvasMatrix.postTranslate(dx, dy)
                     invalidate()
