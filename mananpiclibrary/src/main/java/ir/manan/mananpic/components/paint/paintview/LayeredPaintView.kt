@@ -148,9 +148,9 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
 
-    override fun callPainterOnMoveEnd(touchData: TouchData) {
+    override fun canCallPainterMoveEnd(touchData: TouchData) {
         checkForStateSave()
-        super.callPainterOnMoveEnd(touchData)
+        super.canCallPainterMoveEnd(touchData)
         saveState()
     }
 

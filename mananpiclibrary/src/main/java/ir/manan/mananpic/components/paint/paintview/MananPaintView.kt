@@ -103,7 +103,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     protected var onDelegateTransform: ((transformationMatrix: Matrix) -> Unit)? = null
 
-    open var shouldDelegateGesture: Boolean = false
+    open var isGestureDelegationEnabled: Boolean = false
 
     protected var totalRotated = 0f
 
@@ -459,7 +459,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
                             it[1]
                         )
 
-                        if (shouldDelegateGesture) {
+                        if (isGestureDelegationEnabled) {
                             onDelegateTransform?.invoke(painterTransformationMatrix)
                         } else {
                             painter?.onTransformed(painterTransformationMatrix)
@@ -487,11 +487,11 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     override fun onMoveEnded(detector: TranslationDetector) {
         val firstPointerTouchData = detector.getTouchData(0)
 
-        if (shouldCallDoubleTapListener()) {
+        if (canCallDoubleTapListeners()) {
             callOnDoubleTapListeners()
-        } else if (shouldEndMoveOnPainter()) {
+        } else if (canCallPainterOnMoveBegin()) {
             mapTouchData(firstPointerTouchData)
-            callPainterOnMoveEnd(firstPointerTouchData)
+            canCallPainterMoveEnd(firstPointerTouchData)
         }
 
         if (isMoved) {
@@ -516,12 +516,12 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         isFirstMove = false
     }
 
-    protected open fun shouldCallDoubleTapListener(): Boolean = isMatrixGesture && !isMoved
+    protected open fun canCallDoubleTapListeners(): Boolean = isMatrixGesture && !isMoved
 
-    protected open fun shouldEndMoveOnPainter(): Boolean =
+    protected open fun canCallPainterOnMoveBegin(): Boolean =
         selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
 
-    protected open fun callPainterOnMoveEnd(touchData: TouchData) {
+    protected open fun canCallPainterMoveEnd(touchData: TouchData) {
         painter!!.onMoveEnded(touchData)
     }
 
@@ -541,7 +541,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
         if (painter?.doesTakeGestures() == true) {
             painterTransformationMatrix.setRotate(rotationDelta, px, py)
-            if (shouldDelegateGesture) {
+            if (isGestureDelegationEnabled) {
                 onDelegateTransform?.invoke(painterTransformationMatrix)
             } else {
                 painter?.onTransformed(painterTransformationMatrix)
@@ -578,7 +578,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
                     painterTransformationMatrix.setScale(sf, sf, it[0], it[1])
                 }
 
-                if (shouldDelegateGesture) {
+                if (isGestureDelegationEnabled) {
                     onDelegateTransform?.invoke(painterTransformationMatrix)
                 } else {
                     painter?.onTransformed(painterTransformationMatrix)
@@ -602,13 +602,13 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     protected open fun mapTouchPoints(
         touchX: Float,
         touchY: Float,
-        shouldMapVector: Boolean = false
+        vectorMapping: Boolean = false
     ): FloatArray {
         touchPointMappedArray[0] = touchX
         touchPointMappedArray[1] = touchY
 
         canvasMatrix.invert(mappingMatrix)
-        if (shouldMapVector) {
+        if (vectorMapping) {
             mappingMatrix.mapVectors(touchPointMappedArray)
         } else {
             mappingMatrix.mapPoints(touchPointMappedArray)
@@ -617,7 +617,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         mappingMatrix.reset()
 
         imageviewMatrix.invert(mappingMatrix)
-        if (shouldMapVector) {
+        if (vectorMapping) {
             mappingMatrix.mapVectors(touchPointMappedArray)
         } else {
             mappingMatrix.mapPoints(touchPointMappedArray)
