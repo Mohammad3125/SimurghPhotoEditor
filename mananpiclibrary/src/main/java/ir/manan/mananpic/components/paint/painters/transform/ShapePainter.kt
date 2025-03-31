@@ -45,7 +45,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         }
 
     private var shadowRadius = 0f
-    private var trueShadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
     private var shadowColor = Color.YELLOW
@@ -121,7 +120,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
                 painter.setBlendMode(blendMode)
             }
             painter.setShadow(
-                trueShadowRadius,
+                shadowRadius,
                 shadowDx,
                 shadowDy,
                 shadowColor
@@ -371,7 +370,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     }
 
     override fun getShadowRadius(): Float {
-        return trueShadowRadius
+        return shadowRadius
     }
 
     override fun getShadowColor(): Int {
@@ -380,7 +379,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
         shadowRadius = radius
-        trueShadowRadius = radius
         shadowDx = dx
         shadowDy = dy
         this.shadowColor = shadowColor
@@ -453,17 +451,19 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
             if (shadowRadius > 0) {
                 save()
                 translate(half, half)
+                val transformedColor =
+                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
                 val currentStyle = shapePaint.style
                 val currentShader = shapePaint.shader
                 shapePaint.shader = null
                 shapePaint.style = Paint.Style.FILL_AND_STROKE
                 shapePaint.strokeWidth = strokeSize
-                shapePaint.color = Color.TRANSPARENT
+                shapePaint.color = transformedColor
                 shapePaint.setShadowLayer(
                     shadowRadius,
                     shadowDx,
                     shadowDy,
-                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                    transformedColor
                 )
 
                 shape.draw(canvas, shapePaint)
@@ -511,7 +511,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
         factor: Float
     ): Int =
-        Color.argb(
+        if (factor == 1f) this else Color.argb(
             (this.alpha * factor).roundToInt(),
             this.red,
             this.green,

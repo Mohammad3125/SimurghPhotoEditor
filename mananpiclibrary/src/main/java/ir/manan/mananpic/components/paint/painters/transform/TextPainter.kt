@@ -53,11 +53,9 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     private var shadowRadius = 0f
-    private var trueShadowRadius = 0f
     private var shadowDx = 0f
     private var shadowDy = 0f
-    private var shadowColor = Color.YELLOW
-    private var isShadowCleared = true
+    private var shadowColor = Color.argb(120, 255, 255, 0)
 
     private var rawWidth = 0f
     private var rawHeight = 0f
@@ -263,7 +261,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 textPainter.setBlendMode(blendMode)
             }
             textPainter.setShadow(
-                trueShadowRadius,
+                shadowRadius,
                 shadowDx,
                 shadowDy,
                 shadowColor
@@ -709,7 +707,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
         shiftTextureWithAlignment(strokeRadiusPx)
 
-        shadowRadius -= 0.00001f
         indicateBoundsChange()
     }
 
@@ -752,7 +749,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     override fun getShadowRadius(): Float {
-        return trueShadowRadius
+        return shadowRadius
     }
 
     override fun getShadowColor(): Int {
@@ -761,7 +758,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
         shadowRadius = radius
-        trueShadowRadius = radius
         shadowDx = dx
         shadowDy = dy
         this.shadowColor = shadowColor
@@ -774,7 +770,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         shadowDx = 0f
         shadowDy = 0f
         shadowColor = Color.YELLOW
-        isShadowCleared = true
         invalidate()
     }
 
@@ -993,24 +988,28 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             }
 
             if (shadowRadius > 0) {
+                val transformedColor =
+                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+
                 val currentStyle = textPaint.style
                 val currentShader = textPaint.shader
                 textPaint.shader = null
                 textPaint.style = Paint.Style.FILL_AND_STROKE
                 textPaint.strokeWidth = textStrokeWidth
-                textPaint.color = Color.TRANSPARENT
+                textPaint.color = transformedColor
 
                 textPaint.setShadowLayer(
                     shadowRadius,
                     shadowDx,
                     shadowDy,
-                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                    transformedColor
                 )
+
+                //TODO: dst-put
 
                 drawTexts()
 
                 textPaint.clearShadowLayer()
-                textPaint.color = textColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
                 textPaint.shader = currentShader
                 textPaint.style = currentStyle
                 textPaint.strokeWidth = 0f
@@ -1111,7 +1110,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
         factor: Float
     ): Int =
-        Color.argb(
+        if (factor == 1f) this else Color.argb(
             (this.alpha * factor).roundToInt(),
             this.red,
             this.green,
