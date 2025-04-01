@@ -14,7 +14,7 @@ import ir.manan.mananpic.utils.gesture.TouchData
 import ir.manan.mananpic.utils.gesture.detectors.translation.TranslationDetector
 import java.util.Stack
 
-class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
+open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     MananPaintView(context, attrSet) {
 
     constructor(context: Context) : this(context, null)
@@ -49,6 +49,27 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     private var isAllLayersCached: Boolean = false
 
     private var isFirstTimeToCallListener = false
+
+    var isCachingEnabled = false
+        set(value) {
+            field = value
+            if (value) {
+                if (isViewInitialized || isCacheLayerInitialized() && (partiallyCachedLayer.isRecycled || cachedLayer.isRecycled)) {
+                    createCacheLayers()
+                    cacheLayers()
+                }
+                invalidate()
+            } else {
+                if (isCacheLayerInitialized()) {
+                    partiallyCachedLayer.recycle()
+                    cachedLayer.recycle()
+                }
+            }
+        }
+
+    private fun isCacheLayerInitialized(): Boolean =
+        this::partiallyCachedLayer.isInitialized && this::cachedLayer.isInitialized
+
 
     var maximumHistorySize = 15
         set(value) {
@@ -96,15 +117,20 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         if (!isViewInitialized) {
             initializedPainter(painter)
 
-            cachedLayer = createLayerBitmap()
-
-            partiallyCachedLayer = createLayerBitmap()
+            createCacheLayers()
 
             bitmapReference = createLayerBitmap()
 
             cacheLayers()
 
             isViewInitialized = true
+        }
+    }
+
+    private fun createCacheLayers() {
+        if ((!isCacheLayerInitialized() || cachedLayer.isRecycled || partiallyCachedLayer.isRecycled) && isCachingEnabled) {
+            cachedLayer = createLayerBitmap()
+            partiallyCachedLayer = createLayerBitmap()
         }
     }
 
@@ -176,12 +202,17 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                 clipRect(layerClipBounds)
             }
 
+            if (!isCachingEnabled) {
+                drawLayers()
+                return
+            }
+
             if (isAllLayersCached && !isAnyLayerBlending()) {
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
                 drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
 
-                drawLayer(canvas)
+                drawPainterLayer()
 
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
@@ -194,43 +225,40 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                     drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
                 }
 
-                drawLayer(canvas)
+                drawPainterLayer()
 
-                for (i in layerHolder.indexOf(selectedLayer) + 1..layerHolder.lastIndex) {
-
-                    val layer = layerHolder[i]
-
-                    layersPaint.alpha = (255 * layer.opacity).toInt()
-
-                    layersPaint.xfermode = layer.blendingModeObject
-
-                    drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
-                }
-
+                mergeLayersAtIndex(layerHolder.indexOf(selectedLayer) + 1, layerHolder.lastIndex)
             }
-
         }
     }
 
     fun isAnyLayerBlending(): Boolean =
         layerHolder.any { it.blendingModeObject != null }
 
-    override fun drawLayer(canvas: Canvas) {
-        canvas.apply {
-            selectedLayer?.let { layer ->
-                if (layer === layerHolder.first() && isCheckerBoardEnabled) {
-                    drawPaint(checkerPatternPaint)
-                }
+    override fun Canvas.drawPainterLayer() {
+        selectedLayer?.let { layer ->
+            if (layer === layerHolder.first() && isCheckerBoardEnabled) {
+                drawPaint(checkerPatternPaint)
+            }
 
-                layersPaint.alpha = (255 * layer.opacity).toInt()
-                layersPaint.xfermode = layer.blendingModeObject
+            layer.draw(this)
 
-                drawBitmap(layer.bitmap, 0f, 0f, layersPaint)
+            painter?.draw(this)
+        }
+    }
 
+    protected open fun Canvas.drawLayers() {
+        layerHolder.forEach { layer ->
+            if (layer === layerHolder.first() && isCheckerBoardEnabled) {
+                drawPaint(checkerPatternPaint)
+            }
+
+            layer.draw(this)
+
+            if (layer === selectedLayer) {
                 painter?.draw(this)
             }
         }
-
     }
 
     override fun onSendMessage(message: Painter.PainterMessage) {
@@ -412,64 +440,66 @@ class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun cacheLayers() {
-        if (!this::partiallyCachedLayer.isInitialized || !this::bitmapReference.isInitialized || !this::cachedLayer.isInitialized) {
+        if (!this::bitmapReference.isInitialized) {
             return
         }
-        bitmap?.let { _ ->
-            selectedLayer?.let { sv ->
-
-                partiallyCachedLayer.eraseColor(Color.TRANSPARENT)
-
-                mergeCanvas.setBitmap(partiallyCachedLayer)
-
+        mergeCanvas.apply {
+            if (!isCachingEnabled) {
+                bitmapReference.eraseColor(Color.TRANSPARENT)
                 if (isCheckerBoardEnabled) {
-                    mergeCanvas.drawPaint(checkerPatternPaint)
+                    drawPaint(checkerPatternPaint)
                 }
-
-                val selectedLayerIndex = layerHolder.indexOf(sv)
-
-                mergeLayersAtIndex(0, selectedLayerIndex - 1)
-
-                cachedLayer.eraseColor(Color.TRANSPARENT)
-
-                mergeCanvas.setBitmap(cachedLayer)
-
-                mergeLayersAtIndex(selectedLayerIndex + 1, layerHolder.lastIndex)
-
-                mergeCanvas.setBitmap(bitmapReference)
-
-                mergeCanvas.drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
-
-                mergeCanvas.drawBitmap(cachedLayer, 0f, 0f, layersPaint)
-
-                drawLayer(mergeCanvas)
-
+                setBitmap(bitmapReference)
+                mergeLayersAtIndex(0, layerHolder.lastIndex)
                 painter?.onReferenceLayerCreated(bitmapReference)
+                return
+            }
 
-                isAllLayersCached = true
+            if (!isCacheLayerInitialized()) {
+                return
+            }
+            bitmap?.let { _ ->
+                selectedLayer?.let { sv ->
+                    partiallyCachedLayer.eraseColor(Color.TRANSPARENT)
+
+                    mergeCanvas.setBitmap(partiallyCachedLayer)
+
+                    if (isCheckerBoardEnabled) {
+                        mergeCanvas.drawPaint(checkerPatternPaint)
+                    }
+
+                    mergeLayersAtIndex(0, getIndexOfSelectedLayer() - 1)
+
+                    cachedLayer.eraseColor(Color.TRANSPARENT)
+
+                    setBitmap(cachedLayer)
+
+                    mergeLayersAtIndex(getIndexOfSelectedLayer() + 1, layerHolder.lastIndex)
+
+                    bitmapReference.eraseColor(Color.TRANSPARENT)
+
+                    setBitmap(bitmapReference)
+
+                    drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+
+                    drawBitmap(cachedLayer, 0f, 0f, layersPaint)
+
+                    drawPainterLayer()
+
+                    painter?.onReferenceLayerCreated(bitmapReference)
+
+                    isAllLayersCached = true
+                }
             }
         }
-
     }
 
-    private fun mergeLayersAtIndex(from: Int, to: Int) {
-        for (i in from..to) {
-
-            val layer = layerHolder[i]
-
-            layersPaint.alpha = (255 * layer.opacity).toInt()
-
-            layersPaint.xfermode = layer.blendingModeObject
-
-            mergeCanvas.drawBitmap(
-                layer.bitmap,
-                0f,
-                0f,
-                layersPaint
-            )
+    private fun Canvas.mergeLayersAtIndex(from: Int, to: Int) {
+        layerHolder.slice(from..to).forEach { layer ->
+            layer.draw(this)
 
             if (layer === selectedLayer) {
-                painter?.draw(mergeCanvas)
+                painter?.draw(this)
             }
         }
     }
