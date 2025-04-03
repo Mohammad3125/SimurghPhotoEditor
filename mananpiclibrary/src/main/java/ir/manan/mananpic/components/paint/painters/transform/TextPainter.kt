@@ -26,7 +26,6 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import ir.manan.mananpic.components.MananTextView
-import ir.manan.mananpic.properties.Backgroundable
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.Colorable
@@ -35,6 +34,7 @@ import ir.manan.mananpic.properties.Opacityable
 import ir.manan.mananpic.properties.Pathable
 import ir.manan.mananpic.properties.Shadowable
 import ir.manan.mananpic.properties.StrokeCapable
+import ir.manan.mananpic.properties.TextBackgroundable
 import ir.manan.mananpic.properties.Texturable
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.abs
@@ -44,8 +44,10 @@ import kotlin.math.roundToInt
 
 class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
     Blendable, Bitmapable,
-    Colorable, Shadowable, Opacityable, Backgroundable {
+    Colorable, Shadowable, Opacityable, TextBackgroundable {
 
+
+    private var isUnified: Boolean = false
 
     private var extraSpaceHalf: Float = 0f
 
@@ -1002,8 +1004,18 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 backgroundPaint.color =
                     backgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
-                drawTextBackground()
-
+                if (isUnified) {
+                    textBounds.offset(-finalTranslateX, -finalTranslateY)
+                    drawRoundRect(
+                        textBounds,
+                        backgroundRadius,
+                        backgroundRadius,
+                        backgroundPaint
+                    )
+                    textBounds.offset(finalTranslateX, finalTranslateY)
+                } else {
+                    drawTextBackground()
+                }
                 backgroundPaint.color = backgroundColor
                 backgroundPaint.alpha = opacityHolder
             }
@@ -1126,6 +1138,15 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     override fun setBackgroundState(isEnabled: Boolean) {
         isTextBackgroundEnabled = isEnabled
         indicateBoundsChange()
+    }
+
+    override fun setBackgroundUnifiedState(isUnified: Boolean) {
+        this.isUnified = isUnified
+        invalidate()
+    }
+
+    override fun isBackgroundUnified(): Boolean {
+        return isUnified
     }
 
     private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
