@@ -171,7 +171,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
     override fun canCallPainterMoveEnd(touchData: TouchData) {
         super.canCallPainterMoveEnd(touchData)
-        saveState(createState())
+        saveState(createState(), false)
     }
 
     fun undo() {
@@ -304,7 +304,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             }
 
             Painter.PainterMessage.SAVE_HISTORY -> {
-                saveState(createState(), true)
+                saveState(createState())
             }
 
             Painter.PainterMessage.CACHE_LAYERS -> {
@@ -333,16 +333,16 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
         layerHolder.add(selectedLayer!!)
 
-        saveState(createState(initialLayers), true)
+        saveState(createState(initialLayers))
 
         updateAfterStateChange()
     }
 
-    private fun saveState(state: State?, isMessage: Boolean = false) {
+    private fun saveState(state: State?, ignorePainterHandleHistoryFlag: Boolean = true) {
         if (state == null) {
             return
         }
-        if (painter?.doesHandleHistory() == true && !isMessage) {
+        if (painter?.doesHandleHistory() == true && !ignorePainterHandleHistoryFlag) {
             return
         }
 
@@ -719,6 +719,26 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         saveState(createState(initialLayers, bottomLayer))
     }
 
+    fun duplicateSelectedLayer() {
+        doOnSelectedLayer {
+            duplicateLayer()
+        }
+    }
+
+    fun duplicateLayerAt(index: Int) {
+        checkIndex(index)
+        layerHolder.getOrNull(index)?.duplicateLayer()
+    }
+
+    private fun PaintLayer.duplicateLayer() {
+        val initialLayers = layerHolder.toMutableList()
+        val cloned = clone(true)
+        layerHolder.add(cloned)
+        selectedLayer = cloned
+        saveState(createState(initialLayers))
+        updateAfterStateChange()
+    }
+
     private fun checkIndex(index: Int) {
         if (index < 0 || index >= layerHolder.size) {
             throw ArrayIndexOutOfBoundsException("provided index is out of bounds")
@@ -738,7 +758,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     override fun setSelectedLayerBitmap(bitmap: Bitmap) {
         doOnSelectedLayer {
             this.bitmap = bitmap
-            saveState(createState())
+            saveState(createState(), ignorePainterHandleHistoryFlag = true)
         }
         invalidate()
     }
