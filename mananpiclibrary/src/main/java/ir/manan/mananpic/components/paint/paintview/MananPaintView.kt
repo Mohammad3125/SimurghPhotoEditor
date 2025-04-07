@@ -73,7 +73,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
 
-    protected var selectedLayer: PaintLayer? = null
+    protected open var selectedLayer: PaintLayer? = null
 
     protected val canvasMatrix by lazy {
         MananMatrix()

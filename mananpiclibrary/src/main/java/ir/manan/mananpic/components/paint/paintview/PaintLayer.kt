@@ -22,9 +22,9 @@ data class PaintLayer(
         }
     var blendingModeObject: PorterDuffXfermode? = null
 
-    fun clone(shouldCloneBitmap: Boolean): PaintLayer {
+    fun clone(cloneBitmap: Boolean): PaintLayer {
         return PaintLayer(
-            if (shouldCloneBitmap) bitmap.copy(
+            if (cloneBitmap) bitmap.copy(
                 bitmap.config ?: Bitmap.Config.ARGB_8888,
                 true
             ) else bitmap,
@@ -41,15 +41,15 @@ data class PaintLayer(
         layerMatrix.set(otherLayer.layerMatrix)
         isLocked = otherLayer.isLocked
         opacity = otherLayer.opacity
-        blendingModeObject = otherLayer.blendingModeObject
+        blendingMode = otherLayer.blendingMode
     }
 
     override fun equals(other: Any?): Boolean {
         other as PaintLayer
-        return (bitmap.sameAs(other.bitmap)) &&
+        return (bitmap === other.bitmap) &&
                 (isLocked == other.isLocked) &&
                 (opacity == other.opacity) &&
-                (blendingModeObject == other.blendingModeObject)
+                (blendingMode == other.blendingMode)
     }
 
     override fun hashCode(): Int {
@@ -57,7 +57,7 @@ data class PaintLayer(
         result = 31 * result + layerMatrix.hashCode()
         result = 31 * result + isLocked.hashCode()
         result = 31 * result + opacity.hashCode()
-        result = 31 * result + blendingModeObject.hashCode()
+        result = 31 * result + blendingMode.hashCode()
         return result
     }
 }
