@@ -556,7 +556,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
         }
 
-        findAllGuidelines()
+        clearRotationSmartGuidelines()
 
         firstSelectedIndex = -1
         secondSelectedIndex = -1
@@ -1139,8 +1139,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     fun addChild(transformable: Transformable, targetRect: RectF?) {
-        eraseSmartGuidelines()
-        eraseRotationSmartGuidelines()
+        clearSmartGuidelineList()
+        clearSmartRotationArray()
 
         _selectedChild = Child(
             transformable, MananMatrix(), MananMatrix(), FloatArray(8),
@@ -1254,22 +1254,20 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     fun clearSmartGuidelines() {
-        smartGuidelineDashedLine.clear()
-        smartGuidelineHolder.clear()
+        clearSmartGuidelineList()
         invalidate()
     }
 
-    fun clearSmartGuidelineFlags() {
+    private fun clearSmartGuidelineList() {
+        smartGuidelineDashedLine.clear()
+        smartGuidelineHolder.clear()
+    }
+
+    fun resetSmartGuidelineFlag() {
         smartGuidelineFlags = 0
     }
 
-    fun eraseSmartGuidelines() {
-        smartGuidelineDashedLine.clear()
-        smartGuidelineHolder.clear()
-        invalidate()
-    }
-
-    fun eraseRotationSmartGuidelines() {
+    fun clearRotationSmartGuidelines() {
         clearSmartRotationArray()
         invalidate()
     }
@@ -1284,7 +1282,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     /**
      * Returns smart guidelines flags.
      * @see setSmartGuidelineFlags
-     * @see clearSmartGuidelineFlags
+     * @see resetSmartGuidelineFlag
      */
     fun getSmartGuidelineFlags(): Int = smartGuidelineFlags
 
