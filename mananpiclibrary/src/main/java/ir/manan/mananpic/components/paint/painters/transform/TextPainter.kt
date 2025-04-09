@@ -127,7 +127,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     private var isTextBackgroundEnabled = false
 
-    private var backgroundPaddingSize = 50f
+    private var backgroundPaddingSize = 0f
 
     private var backgroundRadius = 12f
 

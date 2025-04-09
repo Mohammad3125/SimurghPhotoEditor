@@ -5,6 +5,7 @@ import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
@@ -15,26 +16,40 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.graphics.withSave
+import androidx.core.graphics.withTranslation
 import ir.manan.mananpic.properties.Backgroundable
 import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.CornerRounder
 import ir.manan.mananpic.properties.Opacityable
 import ir.manan.mananpic.properties.Shadowable
+import ir.manan.mananpic.properties.StrokeCapable
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, Backgroundable,
-    CornerRounder, Shadowable {
+class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable(), Blendable,
+    Opacityable, Backgroundable,
+    CornerRounder, Shadowable, StrokeCapable {
 
+    private var strokeWidth: Float = 0f
+
+    @ColorInt
+    private var strokeColor: Int = Color.BLACK
     private var cornerRadius: Float = 0f
     private val bitmapPaint = Paint().apply {
         isFilterBitmap = true
         shader = BitmapShader(bitmap, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
     }
 
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = strokeColor
+        strokeWidth = this@BitmapPainter.strokeWidth
+        style = Paint.Style.FILL_AND_STROKE
+    }
+
     private val dstOutPaint by lazy {
         Paint().apply {
             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+            style = Paint.Style.FILL_AND_STROKE
         }
     }
 
@@ -54,7 +69,7 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
 
     private var isTextBackgroundEnabled = false
 
-    private var backgroundPaddingSize = 50f
+    private var backgroundPaddingSize = 0f
 
     private var backgroundRadius = 12f
 
@@ -78,8 +93,15 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
         RectF()
     }
 
+    var customBackgroundPath: Path? = complexPath
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     override fun getBounds(bounds: RectF) {
-        val extraSpace = if (isTextBackgroundEnabled) backgroundPaddingSize else 0f
+        val extraSpace =
+            max(strokeWidth, if (isTextBackgroundEnabled) backgroundPaddingSize else 0f)
 
         halfPadding = extraSpace * 0.5f
         finalWidth = bitmap.width + extraSpace
@@ -98,39 +120,8 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
     override fun draw(canvas: Canvas) {
         canvas.apply {
             val opacityFactor = getOpacity() / 255f
-            if (shadowRadius > 0) {
-                val currentPorterDuffMode = dstOutPaint.xfermode
-
-                dstOutPaint.xfermode = null
-
-                val transformedColor =
-                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
-
-                dstOutPaint.color = transformedColor
-
-                dstOutPaint.setShadowLayer(
-                    shadowRadius,
-                    shadowDx,
-                    shadowDy,
-                    transformedColor
-                )
-
-                val maxRoundness = max(backgroundRadius, cornerRadius)
-
-                drawRoundRect(
-                    finalBounds,
-                    maxRoundness,
-                    maxRoundness,
-                    dstOutPaint
-                )
-
-                dstOutPaint.xfermode = currentPorterDuffMode
-                dstOutPaint.clearShadowLayer()
-                dstOutPaint.color = Color.BLACK
-            }
             if (isTextBackgroundEnabled) {
                 withSave {
-
                     backgroundPaint.color =
                         backgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
@@ -150,30 +141,89 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
 
                     translate(halfPadding, halfPadding)
 
-                    drawRoundRect(
-                        0f,
-                        0f,
-                        bitmap.width.toFloat(),
-                        bitmap.height.toFloat(),
-                        cornerRadius,
-                        cornerRadius,
-                        dstOutPaint
-                    )
+                    if (customBackgroundPath != null) {
+                        drawPath(customBackgroundPath!!, dstOutPaint)
+                    } else {
+                        drawRoundRect(
+                            0f,
+                            0f,
+                            bitmap.width.toFloat(),
+                            bitmap.height.toFloat(),
+                            cornerRadius,
+                            cornerRadius,
+                            dstOutPaint
+                        )
 
-                    drawRoundRect(
-                        0f,
-                        0f,
-                        bitmap.width.toFloat(),
-                        bitmap.height.toFloat(),
-                        cornerRadius,
-                        cornerRadius,
-                        bitmapPaint
-                    )
+                    }
 
                     restore()
-
                 }
-            } else {
+            }
+            if (shadowRadius > 0) {
+                val currentPorterDuffMode = dstOutPaint.xfermode
+
+                dstOutPaint.xfermode = null
+
+                val transformedColor =
+                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+
+                dstOutPaint.color = transformedColor
+
+                dstOutPaint.strokeWidth = strokeWidth
+
+                dstOutPaint.setShadowLayer(
+                    shadowRadius,
+                    shadowDx,
+                    shadowDy,
+                    transformedColor
+                )
+
+                val maxRoundness = max(backgroundRadius, cornerRadius)
+
+                withTranslation(halfPadding, halfPadding) {
+                    if (customBackgroundPath != null) {
+                        drawPath(customBackgroundPath!!, dstOutPaint)
+                    } else {
+                        drawRoundRect(
+                            0f,
+                            0f,
+                            bitmap.width.toFloat(),
+                            bitmap.height.toFloat(),
+                            maxRoundness,
+                            maxRoundness,
+                            dstOutPaint
+                        )
+                    }
+                }
+
+                dstOutPaint.xfermode = currentPorterDuffMode
+                dstOutPaint.clearShadowLayer()
+                dstOutPaint.strokeWidth = 0f
+                dstOutPaint.color = Color.BLACK
+            }
+
+
+            withTranslation(halfPadding, halfPadding) {
+                if (strokeWidth > 0f) {
+
+                    strokePaint.color =
+                        strokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+
+                    if (customBackgroundPath != null) {
+                        drawPath(customBackgroundPath!!, strokePaint)
+                    } else {
+                        drawRoundRect(
+                            0f,
+                            0f,
+                            bitmap.width.toFloat(),
+                            bitmap.height.toFloat(),
+                            cornerRadius,
+                            cornerRadius,
+                            strokePaint
+                        )
+                    }
+                }
+
                 drawRoundRect(
                     0f,
                     0f,
@@ -247,6 +297,8 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
             it.setBackgroundState(getBackgroundState())
             it.setCornerRoundness(getCornerRoundness())
             it.setShadow(getShadowRadius(), getShadowDx(), getShadowDy(), getShadowColor())
+            it.customBackgroundPath = Path(customBackgroundPath)
+            it.setStroke(strokeWidth, strokeColor)
         }
     }
 
@@ -264,7 +316,8 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
     }
 
     override fun setBackground(padding: Float, radius: Float, @ColorInt color: Int) {
-        val shouldChangeBounds = (backgroundPaddingSize != padding || backgroundRadius != radius)
+        val shouldChangeBounds =
+            (backgroundPaddingSize != padding || backgroundRadius != radius || backgroundPaddingSize < strokeWidth)
         backgroundPaddingSize = padding
         backgroundColor = color
         backgroundRadius = radius
@@ -304,6 +357,22 @@ class BitmapPainter(bitmap: Bitmap) : Transformable(), Blendable, Opacityable, B
     override fun setCornerRoundness(roundness: Float) {
         cornerRadius = roundness
         invalidate()
+    }
+
+    override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
+        strokeWidth = strokeRadiusPx
+        this.strokeColor = strokeColor
+        strokePaint.color = strokeColor
+        strokePaint.strokeWidth = strokeWidth
+        indicateBoundsChange()
+    }
+
+    override fun getStrokeColor(): Int {
+        return strokeColor
+    }
+
+    override fun getStrokeWidth(): Float {
+        return strokeWidth
     }
 
     private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
