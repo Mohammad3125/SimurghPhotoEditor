@@ -43,6 +43,11 @@ fun View.mm(number: Number): Float {
 }
 
 
+fun View.dpInt(number: Number): Int {
+    return dp(number).toInt()
+}
+
+
 /**
  * This method returns DisplayMetric of current device.
  * If Context is null the default system display metric would be returned which has default
@@ -63,6 +68,10 @@ fun Context?.dp(number: Number): Float {
         getDisplayMetric(this)
 
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, number.toFloat(), metric)
+}
+
+fun Context?.dpInt(number: Number): Int {
+    return dp(number).toInt()
 }
 
 /**
@@ -93,6 +102,10 @@ fun Fragment.dp(number: Number): Float {
     val metric =
         getDisplayMetric(context)
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, number.toFloat(), metric)
+}
+
+fun Fragment.dpInt(number: Number): Int {
+    return dp(number).toInt()
 }
 
 fun Fragment.sp(number: Number): Float {
