@@ -192,8 +192,8 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         fun createBrushSnapshot(
             targetWidth: Int,
             targetHeight: Int,
-            paddingHorizontal: Float,
-            paddingVertical: Float,
+            paddingHorizontal: Float = 0f,
+            paddingVertical: Float = 0f,
             brush: Brush,
             resolution: Int = 320,
             lineSmoother: LineSmoother = BezierLineSmoother(),
