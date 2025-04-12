@@ -5,7 +5,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
-import android.graphics.RectF
 import androidx.core.graphics.scale
 import kotlin.math.max
 import kotlin.random.Random
@@ -30,10 +29,6 @@ class SpriteBrush(var bitmaps: List<Bitmap>?) : Brush() {
     private val scaledStamps = mutableListOf<Bitmap>()
 
     private var lastSize = 0
-
-    private val dstRect by lazy {
-        RectF()
-    }
 
     var isRandom = true
         set(value) {
