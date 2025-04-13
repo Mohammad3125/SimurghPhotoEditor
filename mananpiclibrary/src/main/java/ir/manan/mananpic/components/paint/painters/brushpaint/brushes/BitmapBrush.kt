@@ -3,9 +3,9 @@ package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LightingColorFilter
 import android.graphics.Paint
 import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuffXfermode
 import androidx.core.graphics.scale
 import kotlin.math.max
@@ -15,7 +15,7 @@ class BitmapBrush(
 ) : Brush() {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        colorFilter = LightingColorFilter(Color.BLACK, Color.BLACK)
+        colorFilter = PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN)
     }
 
     private var stampWidth = 0f
@@ -48,7 +48,7 @@ class BitmapBrush(
     override var color: Int = Color.BLACK
         set(value) {
             field = value
-            paint.colorFilter = LightingColorFilter(field, field)
+            paint.colorFilter = PorterDuffColorFilter(field, PorterDuff.Mode.SRC_IN)
         }
 
     private lateinit var scaledStamp: Bitmap

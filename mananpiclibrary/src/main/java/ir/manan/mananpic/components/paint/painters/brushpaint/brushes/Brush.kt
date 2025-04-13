@@ -69,7 +69,7 @@ abstract class Brush {
 
     open var hueDistance: Int = 0
 
-    open var startTaperSpeed = 0f
+    open var startTaperSpeed = 0.03f
 
     open var startTaperSize: Float = 1f
 
