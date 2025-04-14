@@ -13,6 +13,13 @@ import kotlinx.coroutines.withContext
 class BitmapPathConverter {
     private val defaultDispatcher = Dispatchers.Default
 
+    private val region by lazy {
+        Region()
+    }
+    private val tempRect by lazy {
+        Rect()
+    }
+
     suspend fun bitmapToPath(bitmap: Bitmap, alphaThreshold: Int = 128): Path =
         withContext(defaultDispatcher) {
             val width = bitmap.width
@@ -21,8 +28,8 @@ class BitmapPathConverter {
 
             bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
-            val region = Region()
-            val tempRect = Rect()
+            tempRect.setEmpty()
+            region.setEmpty()
 
             val deferredResults = (0 until height).map { y ->
                 async {
