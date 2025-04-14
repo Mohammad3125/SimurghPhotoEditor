@@ -1,37 +1,16 @@
 package ir.manan.mananpic.components.paint.painters.coloring.flood
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Rect
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
-import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.TouchData
 
-class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
+class FloodFillPainter : Painter() {
 
     private var layerBitmap: Bitmap? = null
 
-    var fillColor = Color.BLACK
-
-    var threshold = 0.6f
-
-    var thresholdStep = 0.1f
-
-    private var currentThreshold = 0f
-
-    override fun initialize(
-        context: Context,
-        transformationMatrix: MananMatrix,
-        fitInsideMatrix: MananMatrix,
-        layerBounds: Rect,
-        clipBounds: Rect
-    ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
-        currentThreshold = threshold
-    }
+    private var onFloodFillRequest: ((bitmap: Bitmap, ex: Int, ey: Int) -> Unit)? = null
 
     override fun onMoveBegin(touchData: TouchData) {
 
@@ -43,21 +22,15 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
     override fun onMoveEnded(touchData: TouchData) {
         layerBitmap?.let { bitmap ->
-            val xI = touchData.ex.toInt()
-            val xY = touchData.ey.toInt()
+            val ex = touchData.ex.toInt()
+            val ey = touchData.ey.toInt()
 
-            if (!isValid(bitmap, xI, xY)) {
+            if (!isValid(bitmap, ex, ey)) {
                 return
             }
 
-            if (bitmap.getPixel(xI, xY) == fillColor) {
-                currentThreshold += thresholdStep
-                currentThreshold = currentThreshold.coerceIn(0f, 1f)
-            } else {
-                currentThreshold = threshold
-            }
+            onFloodFillRequest?.invoke(bitmap, ex, ey)
 
-            floodFiller.fill(bitmap, xI, xY, fillColor, currentThreshold)
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -72,6 +45,10 @@ class FloodFillPainter(var floodFiller: FloodFill) : Painter() {
 
     override fun resetPaint() {
 
+    }
+
+    fun setOnFloodFillRequest(func: (bitmap: Bitmap, ex: Int, ey: Int) -> Unit) {
+        onFloodFillRequest = func
     }
 
     override fun onLayerChanged(layer: PaintLayer?) {
