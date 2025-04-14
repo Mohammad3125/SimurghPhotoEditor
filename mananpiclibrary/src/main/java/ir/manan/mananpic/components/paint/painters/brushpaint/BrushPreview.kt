@@ -127,6 +127,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
     ) {
 
         brush?.let { finalBrush ->
+
             calculatePoints(
                 width.toFloat(),
                 height.toFloat(),
@@ -170,7 +171,21 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             PathMeasure()
         }
         private val engine by lazy { CachedCanvasEngine() }
-        private lateinit var lineSmoother: LineSmoother
+        private var lineSmoother: LineSmoother = BezierLineSmoother().apply {
+            onDrawPoint = object : LineSmoother.OnDrawPoint {
+                override fun onDrawPoint(
+                    ex: Float,
+                    ey: Float,
+                    angleDirection: Float,
+                    totalDrawCount: Int,
+                    isLastPoint: Boolean
+                ) {
+                    cachePointHolder.add(ex)
+                    cachePointHolder.add(ey)
+                    cacheDirectionAngleHolder.add(angleDirection)
+                }
+            }
+        }
 
         private val rotationCache = mutableListOf<Float>()
         private val scaleCache = mutableListOf<Float>()
@@ -183,7 +198,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         private var cachePointHolder = mutableListOf<Float>()
         private var cacheDirectionAngleHolder = mutableListOf<Float>()
 
-        private lateinit var points: FloatArray
+        private var points = FloatArray(320)
 
         private val pathPointHolder = FloatArray(2)
 
@@ -208,29 +223,29 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
                 throw IllegalArgumentException("resolution should be more than 2")
             }
 
-            if (!(this::points.isInitialized && points.size == resolution)) {
+            if (points.size != resolution) {
                 points = FloatArray(resolution)
             }
 
-            this.lineSmoother = lineSmoother
+            if (this.lineSmoother != lineSmoother) {
+                this.lineSmoother = lineSmoother
 
-            this.lineSmoother.apply {
-                onDrawPoint = object : LineSmoother.OnDrawPoint {
-                    override fun onDrawPoint(
-                        ex: Float,
-                        ey: Float,
-                        angleDirection: Float,
-                        totalDrawCount: Int,
-                        isLastPoint: Boolean
-                    ) {
-                        cachePointHolder.add(ex)
-                        cachePointHolder.add(ey)
-                        cacheDirectionAngleHolder.add(angleDirection)
+                this.lineSmoother.apply {
+                    onDrawPoint = object : LineSmoother.OnDrawPoint {
+                        override fun onDrawPoint(
+                            ex: Float,
+                            ey: Float,
+                            angleDirection: Float,
+                            totalDrawCount: Int,
+                            isLastPoint: Boolean
+                        ) {
+                            cachePointHolder.add(ex)
+                            cachePointHolder.add(ey)
+                            cacheDirectionAngleHolder.add(angleDirection)
+                        }
                     }
                 }
             }
-
-
 
             calculatePoints(
                 targetWidth.toFloat(),
