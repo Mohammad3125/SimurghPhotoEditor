@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
@@ -11,6 +13,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.annotation.ColorInt
+import androidx.annotation.FloatRange
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -23,6 +26,7 @@ import ir.manan.mananpic.properties.CornerRounder
 import ir.manan.mananpic.properties.Opacityable
 import ir.manan.mananpic.properties.Shadowable
 import ir.manan.mananpic.properties.StrokeCapable
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -38,6 +42,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
     private val bitmapPaint = Paint().apply {
         isFilterBitmap = true
         shader = BitmapShader(bitmap, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
+        colorFilter = colorMatrixFilter
     }
 
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -52,6 +57,16 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
             style = Paint.Style.FILL_AND_STROKE
         }
     }
+
+    private val colorMatrix = ColorMatrix()
+    private val colorMatrixTemp = ColorMatrix()
+    private var colorMatrixFilter = ColorMatrixColorFilter(colorMatrix)
+        set(value) {
+            field = value
+            bitmapPaint.colorFilter = value
+        }
+
+    val imageAdjustments = ImageAdjustment(0f, 1f, 1f, 0f, 0f, 0f)
 
     var bitmap: Bitmap = bitmap
         set(value) {
@@ -297,8 +312,12 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
             it.setBackgroundState(getBackgroundState())
             it.setCornerRoundness(getCornerRoundness())
             it.setShadow(getShadowRadius(), getShadowDx(), getShadowDy(), getShadowColor())
-            it.customBackgroundPath = Path(customBackgroundPath)
+            customBackgroundPath?.let { path ->
+                it.customBackgroundPath = Path(path)
+            }
             it.setStroke(strokeWidth, strokeColor)
+            it.imageAdjustments.set(imageAdjustments)
+            it.adjustImageValues()
         }
     }
 
@@ -375,6 +394,112 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
         return strokeWidth
     }
 
+    fun setHue(@FloatRange(0.0, 360.0) degree: Float) {
+        imageAdjustments.hue = degree
+        adjustImageValues()
+    }
+
+    fun setContrast(@FloatRange(0.0, 2.0) contrast: Float) {
+        imageAdjustments.contrast = contrast
+        adjustImageValues()
+    }
+
+    fun setSaturation(@FloatRange(0.0, 2.0) saturation: Float) {
+        imageAdjustments.saturation = saturation
+        adjustImageValues()
+    }
+
+    fun setBrightness(@FloatRange(-1.0, 1.0) brightness: Float) {
+        imageAdjustments.brightness = brightness
+        adjustImageValues()
+    }
+
+    fun setTint(@FloatRange(-1.0, 1.0) tint: Float) {
+        imageAdjustments.tint = tint
+        adjustImageValues()
+    }
+
+    fun setTemperature(@FloatRange(-1.0, 1.0) warmth: Float) {
+        imageAdjustments.temperature = warmth
+        adjustImageValues()
+    }
+
+    fun resetAdjustments() {
+        colorMatrixFilter = ColorMatrixColorFilter(colorMatrix.apply {
+            reset()
+        })
+        invalidate()
+    }
+
+    private fun adjustImageValues() {
+        colorMatrix.reset()
+
+        imageAdjustments.apply {
+            if (hue != 0f) {
+                colorMatrix.postConcat(colorMatrixTemp.apply {
+                    reset()
+                    setRotate(0, imageAdjustments.hue)
+                    setRotate(1, imageAdjustments.hue)
+                    setRotate(2, imageAdjustments.hue)
+                })
+            }
+
+            if (saturation != 1f) {
+                colorMatrix.postConcat(colorMatrixTemp.apply {
+                    reset()
+                    setSaturation(saturation)
+                })
+            }
+
+            if (contrast != 1f) {
+                val translate = (-0.5f * contrast + 0.5f) * 255f
+
+                colorMatrix.postConcat(colorMatrixTemp.apply {
+                    set(
+                        floatArrayOf(
+                            contrast, 0f, 0f, 0f, translate,
+                            0f, contrast, 0f, 0f, translate,
+                            0f, 0f, contrast, 0f, translate,
+                            0f, 0f, 0f, 1f, 0f
+                        )
+                    )
+                })
+            }
+
+            if (brightness != 1f) {
+                val translate = brightness * 255f
+
+                colorMatrix.postConcat(colorMatrixTemp.apply {
+                    set(
+                        floatArrayOf(
+                            1f, 0f, 0f, 0f, translate,
+                            0f, 1f, 0f, 0f, translate,
+                            0f, 0f, 1f, 0f, translate,
+                            0f, 0f, 0f, 1f, 0f
+                        )
+                    )
+                })
+            }
+
+            if (imageAdjustments.tint != 0f || imageAdjustments.temperature != 0f) {
+                colorMatrix.postConcat(colorMatrixTemp.apply {
+                    set(
+                        floatArrayOf(
+                            1f + temperature * 0.5f, tint * 0.2f, 0f, 0f, 0f,
+                            0f, 1f - abs(tint) * 0.3f, 0f, 0f, 0f,
+                            0f, 0f, 1f - temperature * 0.5f + tint * 0.3f, 0f, 0f,
+                            0f, 0f, 0f, 1f, 0f
+                        )
+                    )
+                })
+            }
+        }
+
+        colorMatrixFilter = ColorMatrixColorFilter(colorMatrix)
+
+        invalidate()
+    }
+
     private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
         factor: Float
     ): Int =
@@ -384,5 +509,26 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
             this.green,
             this.blue,
         )
+
+    data class ImageAdjustment(
+        var brightness: Float,
+        var contrast: Float,
+        var saturation: Float,
+        var hue: Float,
+        var tint: Float,
+        var temperature: Float
+    ) {
+        fun clone(): ImageAdjustment =
+            ImageAdjustment(brightness, contrast, saturation, hue, tint, temperature)
+
+        fun set(adjustment: ImageAdjustment) {
+            brightness = adjustment.brightness
+            contrast = adjustment.contrast
+            saturation = adjustment.saturation
+            hue = adjustment.hue
+            tint = adjustment.tint
+            temperature = adjustment.temperature
+        }
+    }
 
 }
