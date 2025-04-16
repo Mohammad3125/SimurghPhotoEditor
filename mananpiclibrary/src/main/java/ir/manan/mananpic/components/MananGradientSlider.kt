@@ -29,6 +29,9 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
     private var isShaderDirty = true
 
+    private var isMoved = false
+    private var isOnMoveCalled = false
+
     private var isNewCircleCreated = false
 
     private var onCircleHandleClicked: ((index: Int) -> Unit)? = null
@@ -37,6 +40,8 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     private var onColorsAndPositionsChanged: ((colors: IntArray, positions: FloatArray) -> Unit)? =
         null
     private var onColorsAndPositionsChangedListener: OnColorsAndPositionsChanged? = null
+
+    private var onColorsOrPositionsChangeEnded: (() -> Unit)? = null
 
     var gradientLineWidth = dp(8)
         set(value) {
@@ -103,11 +108,13 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         ) {
             selectedCircleHandleIndex = findNearestCircleIndex(initialX)
 
+
             if (selectedCircleHandleIndex == -1) {
                 circleHandles.add(CircleHandle(initialX.coerceIn(drawingStart, widthF), Color.RED))
                 selectedCircleHandleIndex = circleHandles.lastIndex
                 isShaderDirty = true
                 isNewCircleCreated = true
+                isMoved = true
                 invalidate()
             }
 
@@ -141,6 +148,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
                 circleHandles[selectedCircleHandleIndex].x = ex.coerceIn(drawingStart, widthF)
 
                 isShaderDirty = true
+                isOnMoveCalled = true
 
                 invalidate()
             }
@@ -149,7 +157,11 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun onMoveEnded(lastX: Float, lastY: Float) {
-
+        if (isMoved || isOnMoveCalled) {
+            onColorsOrPositionsChangeEnded?.invoke()
+            isMoved = false
+            isOnMoveCalled = false
+        }
     }
 
     override fun onDown(p0: MotionEvent): Boolean {
@@ -182,6 +194,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
             circleHandles.removeAt(selectedCircleHandleIndex)
             isShaderDirty = true
             selectedCircleHandleIndex = -1
+            isMoved = true
             invalidate()
         }
     }
@@ -300,6 +313,11 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
 
                 if (wasInitialized) {
                     callColorAndPositionListeners(colors, positions)
+
+                    if (isMoved) {
+                        onColorsOrPositionsChangeEnded?.invoke()
+                        isMoved = false
+                    }
                 }
             }
 
@@ -355,6 +373,10 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         onColorsAndPositionsChanged = listener
     }
 
+    fun setOnColorOrPositionsChangeEnded(listener: () -> Unit) {
+        onColorsOrPositionsChangeEnded = listener
+    }
+
     private fun callColorAndPositionListeners(colors: IntArray, positions: FloatArray) {
         onColorsAndPositionsChangedListener?.onChanged(colors, positions)
         onColorsAndPositionsChanged?.invoke(colors, positions)
@@ -373,6 +395,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     private fun changeColorAt(@ColorInt color: Int, index: Int) {
         circleHandles[index].color = color
         isShaderDirty = true
+        isMoved = true
         invalidate()
     }
 
