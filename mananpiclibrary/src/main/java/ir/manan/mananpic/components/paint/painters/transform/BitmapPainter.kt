@@ -26,7 +26,6 @@ import ir.manan.mananpic.properties.CornerRounder
 import ir.manan.mananpic.properties.Opacityable
 import ir.manan.mananpic.properties.Shadowable
 import ir.manan.mananpic.properties.StrokeCapable
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -487,15 +486,28 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
                 })
             }
 
-            if (imageAdjustments.tint != 0f || imageAdjustments.temperature != 0f) {
+            if (tint != 0f || temperature != 0f) {
                 colorMatrix.postConcat(colorMatrixTemp.apply {
                     set(
-                        floatArrayOf(
-                            1f + temperature * 0.5f, tint * 0.2f, 0f, 0f, 0f,
-                            0f, 1f - abs(tint) * 0.3f, 0f, 0f, 0f,
-                            0f, 0f, 1f - temperature * 0.5f + tint * 0.3f, 0f, 0f,
-                            0f, 0f, 0f, 1f, 0f
-                        )
+                        when {
+                            tint > 0f -> {
+                                floatArrayOf(
+                                    1f + temperature * 0.5f, 0f, 0f, 0f, 0f,
+                                    0f, 1f - tint, 0f, 0f, 0f,
+                                    0f, 0f, 1f - temperature * 0.5f, 0f, 0f,
+                                    0f, 0f, 0f, 1f, 0f
+                                )
+                            }
+
+                            else -> {
+                                floatArrayOf(
+                                    (1f + temperature * 0.5f) + tint, 0f, 0f, 0f, 0f,
+                                    0f, 1f, 0f, 0f, 0f,
+                                    0f, 0f, (1f - temperature * 0.5f) + tint, 0f, 0f,
+                                    0f, 0f, 0f, 1f, 0f
+                                )
+                            }
+                        }
                     )
                 })
             }
