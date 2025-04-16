@@ -26,6 +26,7 @@ import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
 import ir.manan.mananpic.utils.gesture.TouchData
 import java.util.LinkedList
+import java.util.Stack
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -44,7 +45,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
         set(value) {
             field = value
-            invalidate()
+            onInvalidate()
         }
 
     lateinit var handleDrawable: Drawable
@@ -53,10 +54,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private val mappingMatrix by lazy {
         MananMatrix()
-    }
-
-    override fun invalidate() {
-        sendMessage(PainterMessage.INVALIDATE)
     }
 
     private val basePoints by lazy {
@@ -124,7 +121,21 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
 
 
+    private var initialChildState: Child? = null
+
     private var _selectedChild: Child? = null
+        set(value) {
+            field = value
+            initialChildState = value?.clone(true)
+        }
+
+    private val undoStack by lazy {
+        Stack<State>()
+    }
+
+    private val redoStack by lazy {
+        Stack<State>()
+    }
 
     val selectedChild: Transformable?
         get() {
@@ -254,8 +265,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 basePoints.copyInto(meshPoints)
             }
 
-            mergeMatrices(child)
-
+            child.mergeMatrices()
         }
     }
 
@@ -269,9 +279,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 Matrix.ScaleToFit.CENTER
             )
 
-            mergeMatrices(child)
+            child.mergeMatrices()
 
-            invalidate()
+            onInvalidate()
         }
     }
 
@@ -494,21 +504,19 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             }
 
             makePolyToPoly()
-            invalidate()
+            onInvalidate()
         }
     }
 
-    private fun mapFinalPointsForDraw(child: Child) {
-        child.apply {
-            mappingMatrix.set(transformationMatrix)
+    private fun Child.mapFinalPointsForDraw() {
+        mappingMatrix.set(transformationMatrix)
 
-            meshPoints.copyInto(mappedMeshPoints)
-            mappingMatrix.mapPoints(mappedMeshPoints)
+        meshPoints.copyInto(mappedMeshPoints)
+        mappingMatrix.mapPoints(mappedMeshPoints)
 
-            mappingMatrix.preConcat(polyMatrix)
-            baseSizeChangeArray.copyInto(mappedBaseSizeChangePoints)
-            mappingMatrix.mapPoints(mappedBaseSizeChangePoints)
-        }
+        mappingMatrix.preConcat(polyMatrix)
+        baseSizeChangeArray.copyInto(mappedBaseSizeChangePoints)
+        mappingMatrix.mapPoints(mappedBaseSizeChangePoints)
     }
 
     override fun onMoveEnded(touchData: TouchData) {
@@ -543,7 +551,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             if (lastSelected !== _selectedChild) {
                 _selectedChild?.let {
-                    selectChild(it, true)
+                    it.select(true)
                     onChildSelected?.invoke(it.transformable, false)
                 }
             }
@@ -552,8 +560,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 onChildDeselected?.invoke()
             }
 
-            invalidate()
+            onInvalidate()
 
+        } else {
+            saveState(_selectedChild.createState())
         }
 
         clearRotationSmartGuidelines()
@@ -596,7 +606,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     override fun draw(canvas: Canvas) {
         _children.forEach { child ->
 
-            mergeMatrices(child, false)
+            child.mergeMatrices(false)
 
             drawChild(canvas, child)
 
@@ -612,7 +622,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             if (child === _selectedChild) {
 
-                selectChild(child)
+                child.select()
 
                 canvas.apply {
                     drawLine(
@@ -745,6 +755,12 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     override fun resetPaint() {
+        undoStack.clear()
+        redoStack.clear()
+        initialChildState = null
+        _selectedChild = null
+        _children.clear()
+        onInvalidate()
     }
 
     override fun onLayerChanged(layer: PaintLayer?) {
@@ -760,12 +776,16 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     override fun onTransformed(transformMatrix: Matrix) {
-        _selectedChild?.let {
-            it.transformationMatrix.postConcat(transformMatrix)
+        _selectedChild?.apply {
+            transformationMatrix.postConcat(transformMatrix)
             findAllGuidelines()
-            mergeMatrices(it)
+            mergeMatrices()
             sendMessage(PainterMessage.INVALIDATE)
         }
+    }
+
+    override fun onTransformEnded() {
+        saveState(_selectedChild.createState())
     }
 
     /**
@@ -809,7 +829,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             val isCenterXEnabled = smartGuidelineFlags.and(Guidelines.CENTER_X) != 0
             val isCenterYEnabled = smartGuidelineFlags.and(Guidelines.CENTER_Y) != 0
 
-            mergeMatrices(child, true)
+            child.mergeMatrices(true)
             calculateMaximumRect(child, tempRect, mappedMeshPoints)
 
             val floutBounds = bounds.toRectF()
@@ -818,7 +838,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             // location of points and then add page's bounds to get smart guidelines for page too.
             _children.minus(child).map { c ->
                 RectF().apply {
-                    mergeMatrices(c, true)
+                    c.mergeMatrices(true)
                     calculateMaximumRect(c, this, mappedMeshPoints)
                 }
             }.plus(floutBounds).forEach { childBounds ->
@@ -939,7 +959,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 }
 
                 child.transformationMatrix.postTranslate(totalToShiftX, totalToShiftY)
-                mergeMatrices(child)
+                child.mergeMatrices()
                 calculateMaximumRect(child, tempRect, mappedMeshPoints)
 
                 // Calculate the minimum and maximum amount of two axes
@@ -1072,14 +1092,12 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    private fun mergeMatrices(child: Child, shouldMap: Boolean = true) {
+    private fun Child.mergeMatrices(shouldMap: Boolean = true) {
         if (shouldMap) {
-            mapFinalPointsForDraw(child)
+            mapFinalPointsForDraw()
         }
-        child.apply {
-            mappingMatrix.set(transformationMatrix)
-            mappingMatrix.preConcat(polyMatrix)
-        }
+        mappingMatrix.set(transformationMatrix)
+        mappingMatrix.preConcat(polyMatrix)
     }
 
     fun applyComponentOnLayer() {
@@ -1088,21 +1106,21 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             finalCanvas.setBitmap(layer.bitmap)
 
             _children.forEach { child ->
-                selectChild(child)
+                child.select()
                 drawChild(finalCanvas, child)
             }
 
             sendMessage(PainterMessage.SAVE_HISTORY)
-            invalidate()
+            onInvalidate()
 
         }
     }
 
-    override fun indicateBoundsChange() {
+    override fun onBoundsChange() {
         _selectedChild?.let { child ->
             tempRect.set(targetComponentBounds)
 
-            selectChild(child, true)
+            child.select(true)
 
             val tw = targetComponentBounds.width()
             val th = targetComponentBounds.height()
@@ -1121,17 +1139,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             }
             makePolyToPoly()
-            mergeMatrices(child)
-            invalidate()
+            child.mergeMatrices()
+            onInvalidate()
         }
-    }
-
-    override fun undo() {
-        resetPaint()
-    }
-
-    override fun redo() {
-        resetPaint()
     }
 
     fun addChild(transformable: Transformable) {
@@ -1147,14 +1157,18 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             FloatArray(8), targetRect
         )
 
+        val initialChildren = LinkedList(_children)
+
         _children.add(_selectedChild!!)
 
         onChildSelected?.invoke(_selectedChild!!.transformable, true)
 
         if (isInitialized) {
             initializeChild(_selectedChild!!, shouldCalculateBounds = true)
-            invalidate()
+            onInvalidate()
         }
+
+        saveState(_selectedChild.createState(initialChildren))
     }
 
     fun bringSelectedChildUp() {
@@ -1190,21 +1204,25 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             if (selectedChildIndex != compareIndex) {
                 operation(child, selectedChildIndex)
-                invalidate()
+                onInvalidate()
             }
         }
     }
 
     private fun swap(firstIndex: Int, secondIndex: Int, child: Child) {
-        val temp = _children.get(firstIndex)
+        val initialChildren = LinkedList(_children)
+        val temp = _children[firstIndex]
         _children[firstIndex] = child
         _children[secondIndex] = temp
+        saveState(_selectedChild.createState(initialChildren))
     }
 
     private fun bringFromIndexToIndex(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) {
             return
         }
+
+        val initialChildren = LinkedList(_children)
 
         val temp = _children[fromIndex]
         _children.removeAt(fromIndex)
@@ -1214,27 +1232,37 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         } else {
             _children.addFirst(temp)
         }
+
+        saveState(_selectedChild.createState(initialChildren))
     }
 
     fun removeSelectedChild() {
-        _selectedChild?.let {
-            _children.remove(it)
-            invalidate()
+        _selectedChild?.apply {
+            val initialChildren = LinkedList(_children)
+            _children.remove(this)
+            saveState(createState(initialChildren))
+            _selectedChild = null
+            onInvalidate()
         }
     }
 
     fun removeChildAt(index: Int) {
+        val initialChildren = LinkedList(_children)
         _children.removeAt(index)
-        invalidate()
+        saveState(_selectedChild.createState(initialChildren))
+        onInvalidate()
     }
 
     fun removeAllChildren() {
+        val initialChildren = LinkedList(_children)
         _children.clear()
-        invalidate()
+        _selectedChild = null
+        saveState(_selectedChild.createState(initialChildren))
+        onInvalidate()
     }
 
-    private fun selectChild(child: Child, shouldCalculateBounds: Boolean = false) {
-        initializeChild(child, true, shouldCalculateBounds)
+    private fun Child.select(shouldCalculateBounds: Boolean = false) {
+        initializeChild(this, true, shouldCalculateBounds)
     }
 
     /**
@@ -1255,7 +1283,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     fun clearSmartGuidelines() {
         clearSmartGuidelineList()
-        invalidate()
+        onInvalidate()
     }
 
     private fun clearSmartGuidelineList() {
@@ -1269,7 +1297,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     fun clearRotationSmartGuidelines() {
         clearSmartRotationArray()
-        invalidate()
+        onInvalidate()
     }
 
     private fun clearSmartRotationArray() {
@@ -1298,7 +1326,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             smartRotationDegreeHolder?.forEach { snapDegree ->
 
-                mapFinalPointsForDraw(child)
+                child.mapFinalPointsForDraw()
 
                 val imageRotation =
                     child.transformationMatrix.run {
@@ -1368,7 +1396,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     fun clearRotationSmartGuideline() {
         smartRotationDegreeHolder = null
         originalRotationHolder = null
-        invalidate()
+        onInvalidate()
     }
 
     /**
@@ -1390,8 +1418,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                 tempRect.centerY()
             )
             transformationMatrix.preConcat(mappingMatrix)
-            mergeMatrices(this)
+            mergeMatrices()
             findAllGuidelines()
+            saveState(createState())
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -1406,7 +1435,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         _selectedChild?.apply {
             transformable.getBounds(tempRect)
             mappingMatrix.setScale(1f, -1f, tempRect.centerX(), tempRect.centerY())
-            preConcatTransformationMatrix(this, mappingMatrix)
+            preConcatTransformationMatrix(mappingMatrix)
         }
     }
 
@@ -1414,14 +1443,15 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         _selectedChild?.apply {
             transformable.getBounds(tempRect)
             mappingMatrix.setScale(-1f, 1f, tempRect.centerX(), tempRect.centerY())
-            preConcatTransformationMatrix(this, mappingMatrix)
+            preConcatTransformationMatrix(mappingMatrix)
         }
     }
 
-    private fun preConcatTransformationMatrix(child: Child, matrix: Matrix) {
-        child.transformationMatrix.preConcat(mappingMatrix)
-        mergeMatrices(child)
+    private fun Child.preConcatTransformationMatrix(matrix: Matrix) {
+        transformationMatrix.preConcat(matrix)
+        mergeMatrices()
         findAllGuidelines()
+        saveState(createState())
         sendMessage(PainterMessage.INVALIDATE)
     }
 
@@ -1429,6 +1459,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         _selectedChild?.apply {
             initializeChild(this, false, false, resetToBounds)
             findAllGuidelines()
+            saveState(createState())
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -1437,9 +1468,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         _selectedChild?.apply {
             transformationMatrix.set(matrix)
             findAllGuidelines()
-            mergeMatrices(this)
-            sendMessage(PainterMessage.INVALIDATE)
-            invalidate()
+            mergeMatrices()
+            saveState(createState())
+            onInvalidate()
         }
     }
 
@@ -1449,7 +1480,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     fun getSelectedChildBounds(rect: RectF): Boolean {
         _selectedChild?.let { child ->
-            mapFinalPointsForDraw(child)
+            child.mapFinalPointsForDraw()
             calculateMaximumRect(child, rect, mappedMeshPoints)
             return true
         }
@@ -1475,6 +1506,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             applyMatrix(mappingMatrix)
 
+            saveState(it.createState())
         }
     }
 
@@ -1483,18 +1515,148 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         findRotationSmartGuidelines()
     }
 
+    override fun onInvalidate() {
+        sendMessage(PainterMessage.INVALIDATE)
+    }
+
     override fun release() {
         // Do not reinitialize child
     }
 
+    private fun saveState(state: State) {
+        redoStack.clear()
+        undoStack.push(state)
+        initialChildState = _selectedChild?.clone(true)
+    }
+
+    fun saveSelectedChildState() {
+        _selectedChild?.apply {
+            saveState(createState())
+            onInvalidate()
+        }
+    }
+
+    override fun undo() {
+        if (undoStack.size > 1) {
+            val poppedState = undoStack.pop()
+            poppedState.undo()
+            redoStack.push(poppedState)
+        }
+    }
+
+    override fun redo() {
+        if (redoStack.isNotEmpty()) {
+            val poppedState = redoStack.pop()
+            poppedState.redo()
+            undoStack.push(poppedState)
+        }
+    }
+
+    private fun Child?.createState(
+        initialChildren: LinkedList<Child>? = null,
+        reference: Child? = this,
+    ): State = State(initialChildState, initialChildren, reference)
+
+    private inner class State(
+        val initialChildState: Child?,
+        val initialChildren: LinkedList<Child>? = null,
+        val reference: Child?,
+    ) {
+        private val clonedChildren = LinkedList(_children)
+        private val clonedChild = reference?.clone(true)
+
+        fun undo() {
+            restoreState(initialChildState, initialChildren)
+        }
+
+        fun redo() {
+            restoreState(clonedChild, clonedChildren)
+        }
+
+        private fun restoreState(targetChild: Child?, targetChildren: MutableList<Child>?) {
+            targetChild?.clone(true)?.let {
+                reference?.set(it)
+            }
+
+            targetChildren?.let {
+                _children.clear()
+                _children.addAll(LinkedList(it))
+            }
+
+            _selectedChild = reference
+
+            _selectedChild?.apply {
+                select(true)
+                onChildSelected?.invoke(transformable, false)
+            }
+
+            findAllGuidelines()
+
+            onInvalidate()
+        }
+    }
+
     private data class Child(
-        val transformable: Transformable,
+        var transformable: Transformable,
         val transformationMatrix: MananMatrix,
         val polyMatrix: MananMatrix,
-        val baseSizeChangeArray: FloatArray,
-        val meshPoints: FloatArray,
+        var baseSizeChangeArray: FloatArray,
+        var meshPoints: FloatArray,
         val targetRect: RectF?
-    )
+    ) {
+        fun clone(cloneTransformable: Boolean = false): Child {
+            return Child(
+                if (cloneTransformable) transformable.clone() else transformable,
+                MananMatrix().apply {
+                    set(transformationMatrix)
+                },
+                MananMatrix().apply {
+                    set(polyMatrix)
+                },
+                baseSizeChangeArray.clone(),
+                meshPoints.clone(),
+                targetRect
+            )
+        }
+
+        fun set(otherChild: Child) {
+            transformable = otherChild.transformable
+            transformationMatrix.set(otherChild.transformationMatrix)
+            polyMatrix.set(otherChild.polyMatrix)
+            baseSizeChangeArray = otherChild.baseSizeChangeArray.clone()
+            meshPoints = otherChild.meshPoints
+
+            otherChild.targetRect?.let {
+                targetRect?.set(it)
+            }
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Child
+
+            if (transformable != other.transformable) return false
+            if (transformationMatrix != other.transformationMatrix) return false
+            if (polyMatrix != other.polyMatrix) return false
+            if (!baseSizeChangeArray.contentEquals(other.baseSizeChangeArray)) return false
+            if (!meshPoints.contentEquals(other.meshPoints)) return false
+            if (targetRect != other.targetRect) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = transformable.hashCode()
+            result = 31 * result + transformationMatrix.hashCode()
+            result = 31 * result + polyMatrix.hashCode()
+            result = 31 * result + baseSizeChangeArray.contentHashCode()
+            result = 31 * result + meshPoints.contentHashCode()
+            result = 31 * result + (targetRect?.hashCode() ?: 0)
+            return result
+        }
+    }
 
     /**
      * A class holding static flags for smart guideline. User should

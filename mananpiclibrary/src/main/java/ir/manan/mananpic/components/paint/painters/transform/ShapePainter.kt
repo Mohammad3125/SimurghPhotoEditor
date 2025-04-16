@@ -104,7 +104,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
             painter.shapePaint.style = shapePaint.style
             painter.shapePaint.strokeWidth = shapePaint.strokeWidth
             painter.shapePaint.pathEffect = shapePaint.pathEffect
-
+            painter.shapePaint.shader = shapePaint.shader
             painter.strokeSize = strokeSize
             painter.strokeColor = strokeColor
             painter.shaderRotationHolder = shaderRotationHolder
@@ -125,12 +125,13 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
                 shadowDy,
                 shadowColor
             )
-            if (gradientColors != null) {
-                painter.gradientColors = gradientColors!!.clone()
+            gradientColors?.let {
+                painter.gradientColors = it.clone()
             }
-            if (gradientPositions != null) {
-                painter.gradientPositions = gradientPositions!!.clone()
+            gradientPositions?.let {
+                painter.gradientPositions = it.clone()
             }
+
             painter.setOpacity(getOpacity())
         }
     }
@@ -139,7 +140,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
         strokeSize = strokeRadiusPx
         this.strokeColor = strokeColor
-        indicateBoundsChange()
+        notifyBoundsChanged()
     }
 
     override fun getStrokeColor(): Int {
@@ -161,6 +162,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
+        removeGradient()
         currentTexture = bitmap
         paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
             setLocalMatrix(shaderMatrix)
@@ -278,6 +280,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         position: FloatArray?,
         tileMode: Shader.TileMode
     ) {
+        removeTexture()
         gradientColors = colors
         gradientPositions = position
 
@@ -301,6 +304,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         stops: FloatArray?,
         tileMode: Shader.TileMode
     ) {
+        removeTexture()
         gradientColors = colors
         gradientPositions = stops
 
@@ -335,6 +339,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         colors: IntArray,
         positions: FloatArray?
     ) {
+        removeTexture()
         gradientColors = colors
         gradientPositions = positions
 

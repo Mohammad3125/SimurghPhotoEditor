@@ -12,18 +12,18 @@ abstract class Transformable {
     abstract fun draw(canvas: Canvas)
 
     interface OnInvalidate {
-        fun invalidate()
+        fun onInvalidate()
 
-        fun indicateBoundsChange()
+        fun onBoundsChange()
     }
 
     fun invalidate() {
-        onInvalidateListener?.invalidate()
+        onInvalidateListener?.onInvalidate()
     }
 
-    fun indicateBoundsChange() {
-        onInvalidateListener?.indicateBoundsChange()
+    fun notifyBoundsChanged() {
+        onInvalidateListener?.onBoundsChange()
     }
 
-    abstract fun clone() : Transformable
+    abstract fun clone(): Transformable
 }

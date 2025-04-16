@@ -72,7 +72,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
         set(value) {
             field = value
             bitmapPaint.shader = BitmapShader(value, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
-            indicateBoundsChange()
+            notifyBoundsChanged()
         }
 
     private var shadowRadius = 0f
@@ -298,7 +298,13 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
     }
 
     override fun clone(): Transformable {
-        val clonedBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+        return clone(true)
+    }
+
+    fun clone(cloneBitmap: Boolean = false): BitmapPainter {
+        val clonedBitmap =
+            if (cloneBitmap) bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true) else bitmap
+
         return BitmapPainter(clonedBitmap).also {
             if (blendMode != PorterDuff.Mode.SRC) {
                 it.setBlendMode(blendMode)
@@ -342,7 +348,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
         backgroundRadius = radius
 
         if (shouldChangeBounds) {
-            indicateBoundsChange()
+            notifyBoundsChanged()
         } else {
             invalidate()
         }
@@ -366,7 +372,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
 
     override fun setBackgroundState(isEnabled: Boolean) {
         isTextBackgroundEnabled = isEnabled
-        indicateBoundsChange()
+        notifyBoundsChanged()
     }
 
     override fun getCornerRoundness(): Float {
@@ -383,7 +389,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
         this.strokeColor = strokeColor
         strokePaint.color = strokeColor
         strokePaint.strokeWidth = strokeWidth
-        indicateBoundsChange()
+        notifyBoundsChanged()
     }
 
     override fun getStrokeColor(): Int {

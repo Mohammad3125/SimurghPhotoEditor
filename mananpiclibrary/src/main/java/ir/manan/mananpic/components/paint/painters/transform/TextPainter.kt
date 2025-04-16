@@ -92,7 +92,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var text = ""
         set(value) {
             field = value
-            indicateBoundsChange()
+            notifyBoundsChanged()
         }
 
 
@@ -152,7 +152,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         set(value) {
             field = value
             textPaint.letterSpacing = field
-            indicateBoundsChange()
+            notifyBoundsChanged()
         }
 
     @Transient
@@ -162,7 +162,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var lineSpacing = textPaint.fontMetrics.bottom
         set(value) {
             field = value
-            indicateBoundsChange()
+            notifyBoundsChanged()
         }
 
     /**
@@ -174,7 +174,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var alignmentText: Alignment = Alignment.CENTER
         set(value) {
             field = value
-            indicateBoundsChange()
+            notifyBoundsChanged()
             invalidate()
         }
 
@@ -202,14 +202,14 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     var underlineSize = 0f
         set(value) {
             field = value
-            indicateBoundsChange()
+            notifyBoundsChanged()
         }
 
     var isStrikethrough = false
         set(value) {
             field = value
             textPaint.isStrikeThruText = field
-            indicateBoundsChange()
+            notifyBoundsChanged()
         }
 
     private var currentTexture: Bitmap? = null
@@ -229,16 +229,21 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textPaint.style = textPaint.style
             textPainter.textPaint.strokeWidth = textPaint.strokeWidth
             textPainter.textPaint.pathEffect = textPaint.pathEffect
+            textPainter.textPaint.shader = textPaint.shader
             textPainter.letterSpacing = letterSpacing
             textPainter.underlineSize = underlineSize
+            textPainter.isStrikethrough = isStrikethrough
             textPainter.extraSpace = extraSpace
             textPainter.textBaseLineY = textBaseLineY
             textPainter.textBaseLineX = textBaseLineX
-            textPainter.textStrokeColor = textStrokeColor
-            textPainter.textStrokeWidth = textStrokeWidth
-            textPainter.isTextBackgroundEnabled = isTextBackgroundEnabled
-            textPainter.backgroundRadius = backgroundRadius
-            textPainter.backgroundColor = backgroundColor
+            textPainter.setStroke(getStrokeWidth(), getStrokeColor())
+            textPainter.setBackground(
+                getBackgroundPadding(),
+                getBackgroundRadius(),
+                getBackgroundColor()
+            )
+            textPainter.setBackgroundState(getBackgroundState())
+            textPainter.setBackgroundUnifiedState(isUnified)
             textPainter.shaderRotationHolder = shaderRotationHolder
 
             getTexture()?.let { t ->
@@ -558,6 +563,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
      * @param tileMode The bitmap mode [Shader.TileMode]
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
+        removeGradient()
         currentTexture = bitmap
         paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
             setLocalMatrix(shaderMatrix)
@@ -643,7 +649,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         position: FloatArray?,
         tileMode: Shader.TileMode
     ) {
-
+        removeTexture()
         gradientColors = colors
         gradientPositions = position
 
@@ -667,7 +673,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         stops: FloatArray?,
         tileMode: Shader.TileMode
     ) {
-
+        removeTexture()
         gradientColors = colors
         gradientPositions = stops
 
@@ -702,6 +708,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         colors: IntArray,
         positions: FloatArray?
     ) {
+        removeTexture()
         gradientColors = colors
         gradientPositions = positions
 
@@ -724,7 +731,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
         shiftTextureWithAlignment(strokeRadiusPx)
 
-        indicateBoundsChange()
+        notifyBoundsChanged()
     }
 
     override fun getStrokeColor(): Int {
@@ -1113,7 +1120,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         backgroundRadius = radius
         firstBackgroundRadiusArray.fill(backgroundRadius)
         if (shouldChangeBounds) {
-            indicateBoundsChange()
+            notifyBoundsChanged()
         } else {
             invalidate()
         }
@@ -1137,7 +1144,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
     override fun setBackgroundState(isEnabled: Boolean) {
         isTextBackgroundEnabled = isEnabled
-        indicateBoundsChange()
+        notifyBoundsChanged()
     }
 
     override fun setBackgroundUnifiedState(isUnified: Boolean) {
