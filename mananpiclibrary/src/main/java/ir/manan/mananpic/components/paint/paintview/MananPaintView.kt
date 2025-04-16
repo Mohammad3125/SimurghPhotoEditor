@@ -414,6 +414,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     override fun onMoveBegin(detector: TranslationDetector): Boolean {
         isFirstMove = true
+        isMoved = false
 
         onMoveBeginTouchData.set(detector.getTouchData(0))
 
@@ -454,11 +455,11 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             if (isTranslationEnabled) {
                 if (painter?.doesTakeGestures() == true) {
                     painterTransformationMatrix.setTranslate(dx, dy)
-                        if (isGestureDelegationEnabled) {
-                            onDelegateTransform?.invoke(painterTransformationMatrix)
-                        } else {
-                            painter?.onTransformed(painterTransformationMatrix)
-                        }
+                    if (isGestureDelegationEnabled) {
+                        onDelegateTransform?.invoke(painterTransformationMatrix)
+                    } else {
+                        painter?.onTransformed(painterTransformationMatrix)
+                    }
                 } else {
                     canvasMatrix.postTranslate(dx, dy)
                     invalidate()
@@ -510,7 +511,8 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         isFirstMove = false
     }
 
-    protected open fun canCallDoubleTapListeners(): Boolean = isMatrixGesture && !isMoved
+    protected open fun canCallDoubleTapListeners(): Boolean =
+        isMatrixGesture && !isMoved && painter?.doesHandleHistory() == false
 
     protected open fun canCallPainterOnMoveBegin(): Boolean =
         selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
@@ -527,6 +529,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
+        isMoved = false
         return true
     }
 
@@ -559,6 +562,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onScaleBegin(p0: ScaleGestureDetector): Boolean {
+        isMoved = false
         return !matrixAnimator.isAnimationRunning()
     }
 
@@ -641,13 +645,13 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     protected open fun Canvas.drawPainterLayer() {
-            selectedLayer?.let { layer ->
-                if (isCheckerBoardEnabled) {
-                    drawPaint(checkerPatternPaint)
-                }
-                layer.draw(this)
-                painter?.draw(this)
+        selectedLayer?.let { layer ->
+            if (isCheckerBoardEnabled) {
+                drawPaint(checkerPatternPaint)
             }
+            layer.draw(this)
+            painter?.draw(this)
+        }
     }
 
     protected open fun PaintLayer.draw(canvas: Canvas) {
