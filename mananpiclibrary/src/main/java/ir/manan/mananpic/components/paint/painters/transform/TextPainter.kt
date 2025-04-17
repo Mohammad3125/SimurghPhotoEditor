@@ -225,7 +225,8 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textPaint.textSize = textPaint.textSize
             textPainter.alignmentText = alignmentText
             textPainter.textColor = textColor
-            textPainter.setTypeface(typeface, typefaceStyle)
+            textPainter.typeface = Typeface.create(typeface, typefaceStyle)
+            textPainter.typefaceStyle = typefaceStyle
             textPainter.textPaint.style = textPaint.style
             textPainter.textPaint.strokeWidth = textPaint.strokeWidth
             textPainter.textPaint.pathEffect = textPaint.pathEffect
