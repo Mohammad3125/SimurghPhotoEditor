@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.PorterDuff
+import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.ScaleGestureDetector
 import ir.manan.mananpic.components.paint.Painter
@@ -175,6 +176,9 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     fun undo() {
+        if (clipAnimator.isRunning) {
+            return
+        }
         painter?.let { p ->
             if (p.doesHandleHistory()) {
                 p.undo()
@@ -191,6 +195,9 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     fun redo() {
+        if (clipAnimator.isRunning) {
+            return
+        }
         painter?.let { p ->
             if (p.doesHandleHistory()) {
                 p.redo()
@@ -785,6 +792,18 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         return finalBitmap
     }
 
+    fun setClipRectWithStateSave(
+        rect: Rect,
+        initialClip: Rect,
+        animate: Boolean = true,
+        func: () -> Unit = {}
+    ) {
+        super.setClipRect(rect, animate, func)
+        doOnSelectedLayer {
+            saveState(createState(initialClip = Rect(initialClip), clonedClip = rect))
+        }
+    }
+
 
     private fun callListenerForFirstTime() {
         if (isViewInitialized && isFirstTimeToCallListener) {
@@ -804,22 +823,24 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         val initialLayer: PaintLayer?,
         val initialLayers: MutableList<PaintLayer>?,
         val reference: PaintLayer? = selectedLayer,
+        val initialClip: Rect? = null,
+        val clonedClip: Rect? = null
     ) {
         val clonedLayer = reference?.clone(true)
         val clonedLayers = layerHolder.toMutableList()
 
-
         fun undo() {
-            restoreState(initialLayer, initialLayers)
+            restoreState(initialLayer, initialLayers, initialClip)
         }
 
         fun redo() {
-            restoreState(clonedLayer, clonedLayers)
+            restoreState(clonedLayer, clonedLayers, clonedClip)
         }
 
         private fun restoreState(
             targetLayer: PaintLayer?,
             targetLayers: MutableList<PaintLayer>?,
+            targetClip: Rect?,
         ) {
             targetLayer?.clone(true)?.let {
                 reference?.set(it)
@@ -829,6 +850,12 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
             targetLayers?.let {
                 layerHolder = targetLayers.toMutableList()
+            }
+
+            targetClip?.let {
+                if (it != layerClipBounds) {
+                    setClipRect(it, true)
+                }
             }
 
             selectedLayer = when {
@@ -849,9 +876,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun createState(
         initialLayers: MutableList<PaintLayer>? = null,
-        referenceLayer: PaintLayer? = selectedLayer
+        referenceLayer: PaintLayer? = selectedLayer,
+        initialClip: Rect? = null,
+        clonedClip: Rect? = null,
     ) =
-        State(initialPaintLayer, initialLayers, referenceLayer)
+        State(initialPaintLayer, initialLayers, referenceLayer, initialClip, clonedClip)
 
     private fun doOnSelectedLayer(function: PaintLayer.() -> Unit) {
         selectedLayer?.let(function)
