@@ -53,7 +53,7 @@ abstract class Brush {
 
     open var sizeVarianceSensitivity: Float = 0.1f
 
-    open var sizeVarianceEasing: Float = 0.05f
+    open var sizeVarianceEasing: Float = 0.08f
 
     open var squish: Float = 0f
 
