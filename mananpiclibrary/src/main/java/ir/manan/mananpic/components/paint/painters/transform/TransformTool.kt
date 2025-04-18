@@ -120,6 +120,13 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             return _children.map { it.transformable }
         }
 
+    var isTransformationLocked = false
+
+    var isBoundsEnabled = true
+        set(value) {
+            field = value
+            onInvalidate()
+        }
 
     private var initialChildState: Child? = null
 
@@ -471,7 +478,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     override fun onMove(touchData: TouchData) {
-
+        if (isTransformationLocked) {
+            return
+        }
         _selectedChild?.apply {
             mapMeshPoints(this, touchData.ex, touchData.ey)
 
@@ -620,7 +629,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             boundPaint.strokeWidth = finalBoundWidth
             smartGuidePaint.strokeWidth = finalGuidelineWidth
 
-            if (child === _selectedChild) {
+            if (child === _selectedChild && isBoundsEnabled) {
 
                 child.select()
 
@@ -772,10 +781,13 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     override fun doesTakeGestures(): Boolean {
-        return _selectedChild != null
+        return _selectedChild != null && !isTransformationLocked
     }
 
     override fun onTransformed(transformMatrix: Matrix) {
+        if (isTransformationLocked) {
+            return
+        }
         _selectedChild?.apply {
             transformationMatrix.postConcat(transformMatrix)
             findAllGuidelines()
@@ -1524,6 +1536,9 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     private fun saveState(state: State) {
+        if (isTransformationLocked) {
+            return
+        }
         redoStack.clear()
         undoStack.push(state)
         initialChildState = _selectedChild?.clone(true)
