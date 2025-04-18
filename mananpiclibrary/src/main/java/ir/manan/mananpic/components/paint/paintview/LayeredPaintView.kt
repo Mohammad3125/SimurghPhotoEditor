@@ -619,7 +619,8 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             selectedLayer = when {
                 layerHolder.isEmpty() -> null
                 index > 0 -> layerHolder[index - 1]
-                else -> layerHolder[1]
+                layerHolder.size == 1 -> layerHolder.first()
+                else -> null
             }
             painter?.onLayerChanged(selectedLayer)
         }
