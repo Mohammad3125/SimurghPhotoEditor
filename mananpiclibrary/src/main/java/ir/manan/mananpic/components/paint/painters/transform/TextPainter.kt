@@ -232,6 +232,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.textPaint.pathEffect = textPaint.pathEffect
             textPainter.textPaint.shader = textPaint.shader
             textPainter.letterSpacing = letterSpacing
+            textPainter.lineSpacing = lineSpacing
             textPainter.underlineSize = underlineSize
             textPainter.isStrikethrough = isStrikethrough
             textPainter.extraSpace = extraSpace
