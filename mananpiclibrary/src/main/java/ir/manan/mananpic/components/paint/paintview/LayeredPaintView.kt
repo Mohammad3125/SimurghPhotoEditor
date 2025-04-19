@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.util.AttributeSet
@@ -91,31 +90,6 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             super.painter = value
             field = value
         }
-
-    override var bitmap: Bitmap? = null
-        set(value) {
-            field = value
-            if (value != null) {
-
-                if (!value.isMutable) {
-                    throw IllegalStateException("Bitmap should be mutable")
-                }
-
-                isNewBitmap = true
-                bitmapWidth = value.width
-                bitmapHeight = value.height
-                isViewInitialized = false
-
-                layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
-                identityClip.set(layerClipBounds)
-
-                addNewLayer(value)
-
-                requestLayout()
-                invalidate()
-            }
-        }
-
 
     override fun onImageLaidOut() {
         rectAlloc.set(boundsRectangle)
@@ -327,13 +301,38 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         undoStack.removeAt(0)
     }
 
+    /**
+     * Creates a new PaintLayer based on previous layers and adds it to list of layers.
+     * @throws IllegalStateException If previous call to [addNewLayer(bitmap)] hasn't been made yet.
+     */
     fun addNewLayer() {
-        addNewLayer(createLayerBitmap())
+        if (!isViewInitialized) {
+            throw IllegalStateException("Cannot make new layer based on previous layers. Did you call `addNewLayer(bitmap)` first?")
+        }
+        addNewLayerWithoutLayoutReset(createLayerBitmap())
     }
 
-    private fun addNewLayer(bitmap: Bitmap) {
+    override fun addNewLayer(bitmap: Bitmap?) {
+        if (bitmap != null) {
+            if (!bitmap.isMutable) {
+                throw IllegalStateException("Bitmap should be mutable")
+            }
+
+            layerHolder.clear()
+
+            isNewLayer = true
+            bitmapWidth = bitmap.width
+            bitmapHeight = bitmap.height
+            layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
+            identityClip.set(layerClipBounds)
+
+            addNewLayerWithoutLayoutReset(bitmap)
+        }
+    }
+
+    private fun addNewLayerWithoutLayoutReset(bitmap: Bitmap) {
         selectedLayer = PaintLayer(
-            bitmap, Matrix(), false, 1f
+            bitmap, false, 1f
         )
 
         val initialLayers = layerHolder.toMutableList()
@@ -341,6 +340,10 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         layerHolder.add(selectedLayer!!)
 
         saveState(createState(initialLayers))
+
+        if (!isViewInitialized) {
+            requestLayout()
+        }
 
         updateAfterStateChange()
     }
@@ -374,9 +377,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun addNewLayerWithoutSavingHistory(bitmap: Bitmap) {
-        selectedLayer = PaintLayer(
-            bitmap, Matrix(), false, 1f
-        )
+        selectedLayer = PaintLayer(bitmap, false, 1f)
 
         layerHolder.add(selectedLayer!!)
 
@@ -410,7 +411,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             if (!isCacheLayerInitialized()) {
                 return
             }
-            bitmap?.let { _ ->
+            if (layerHolder.isNotEmpty()) {
                 doOnSelectedLayer {
                     partiallyCachedLayer.eraseColor(Color.TRANSPARENT)
 
@@ -745,6 +746,15 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         selectedLayer = cloned
         saveState(createState(initialLayers))
         updateAfterStateChange()
+    }
+
+    /**
+     * Returns all [PaintLayer] in the [LayeredPaintView].
+     * Do not change content of [PaintLayer] directly, this leads to unsaved states unless if that's what you want.
+     * @return a list containing [PaintLayer]
+     */
+    fun getPaintLayers(): List<PaintLayer> {
+        return layerHolder.toMutableList()
     }
 
     private fun checkIndex(index: Int) {

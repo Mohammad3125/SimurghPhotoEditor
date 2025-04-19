@@ -191,31 +191,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     /**
      * Later will be used to notify if imageview's bitmap has been changed.
      */
-    protected var isNewBitmap = true
-
-    open var bitmap: Bitmap? = null
-        set(value) {
-            field = value
-            if (value != null) {
-
-                if (!value.isMutable) {
-                    throw IllegalStateException("Bitmap should be mutable")
-                }
-
-                isNewBitmap = true
-                bitmapWidth = value.width
-                bitmapHeight = value.height
-                isViewInitialized = false
-
-                layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
-                identityClip.set(layerClipBounds)
-
-                selectedLayer = PaintLayer(value, Matrix(), false, 1f)
-
-                requestLayout()
-                invalidate()
-            }
-        }
+    protected var isNewLayer = true
 
     open var isRotatingEnabled = true
     open var isScalingEnabled = true
@@ -321,13 +297,13 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        if (isNewBitmap && bitmap != null) {
+        if (isNewLayer && bitmapWidth != 0 && bitmapHeight != 0) {
 
             resizeCanvas(width.toFloat(), height.toFloat())
 
             onImageLaidOut()
 
-            isNewBitmap = false
+            isNewLayer = false
         }
     }
 
@@ -822,6 +798,27 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun setOnDoubleTapListener(listener: OnDoubleTap) {
         onDoubleTappedListener = listener
+    }
+
+    open fun addNewLayer(bitmap: Bitmap?) {
+        if (bitmap != null) {
+            if (!bitmap.isMutable) {
+                throw IllegalStateException("Bitmap should be mutable")
+            }
+
+            isNewLayer = true
+            bitmapWidth = bitmap.width
+            bitmapHeight = bitmap.height
+            isViewInitialized = false
+
+            layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
+            identityClip.set(layerClipBounds)
+
+            selectedLayer = PaintLayer(bitmap, false, 1f)
+
+            requestLayout()
+            invalidate()
+        }
     }
 
     private fun callDoubleTapListeners(event: MotionEvent): Boolean {
