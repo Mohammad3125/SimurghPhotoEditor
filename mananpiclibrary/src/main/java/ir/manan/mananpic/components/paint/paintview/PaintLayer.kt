@@ -1,13 +1,11 @@
 package ir.manan.mananpic.components.paint.paintview
 
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 
 data class PaintLayer(
     var bitmap: Bitmap,
-    val layerMatrix: Matrix,
     var isLocked: Boolean = false,
     var opacity: Float,
 ) {
@@ -28,7 +26,6 @@ data class PaintLayer(
                 bitmap.config ?: Bitmap.Config.ARGB_8888,
                 true
             ) else bitmap,
-            Matrix(layerMatrix),
             isLocked,
             opacity
         ).also { copied ->
@@ -38,7 +35,6 @@ data class PaintLayer(
 
     fun set(otherLayer: PaintLayer) {
         bitmap = otherLayer.bitmap
-        layerMatrix.set(otherLayer.layerMatrix)
         isLocked = otherLayer.isLocked
         opacity = otherLayer.opacity
         blendingMode = otherLayer.blendingMode
@@ -54,7 +50,6 @@ data class PaintLayer(
 
     override fun hashCode(): Int {
         var result = bitmap.hashCode()
-        result = 31 * result + layerMatrix.hashCode()
         result = 31 * result + isLocked.hashCode()
         result = 31 * result + opacity.hashCode()
         result = 31 * result + blendingMode.hashCode()
