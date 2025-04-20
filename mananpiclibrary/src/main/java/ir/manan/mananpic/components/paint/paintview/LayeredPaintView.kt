@@ -309,7 +309,8 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         if (!isViewInitialized) {
             throw IllegalStateException("Cannot make new layer based on previous layers. Did you call `addNewLayer(bitmap)` first?")
         }
-        addNewLayerWithoutLayoutReset(createLayerBitmap())
+
+        addNewLayerWithoutLayoutReset(PaintLayer(createLayerBitmap()))
     }
 
     override fun addNewLayer(bitmap: Bitmap?) {
@@ -318,22 +319,29 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                 throw IllegalStateException("Bitmap should be mutable")
             }
 
-            layerHolder.clear()
+            initializeBitmap(bitmap)
 
-            isNewLayer = true
-            bitmapWidth = bitmap.width
-            bitmapHeight = bitmap.height
-            layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
-            identityClip.set(layerClipBounds)
-
-            addNewLayerWithoutLayoutReset(bitmap)
+            addNewLayerWithoutLayoutReset(PaintLayer(bitmap))
         }
     }
 
-    private fun addNewLayerWithoutLayoutReset(bitmap: Bitmap) {
-        selectedLayer = PaintLayer(
-            bitmap, false, 1f
-        )
+    fun addNewLayer(layer: PaintLayer) {
+        initializeBitmap(layer.bitmap)
+
+        addNewLayerWithoutLayoutReset(layer)
+    }
+
+    private fun initializeBitmap(bitmap: Bitmap) {
+        layerHolder.clear()
+        isNewLayer = true
+        bitmapWidth = bitmap.width
+        bitmapHeight = bitmap.height
+        layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
+        identityClip.set(layerClipBounds)
+    }
+
+    private fun addNewLayerWithoutLayoutReset(layer: PaintLayer) {
+        selectedLayer = layer
 
         val initialLayers = layerHolder.toMutableList()
 
@@ -377,7 +385,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun addNewLayerWithoutSavingHistory(bitmap: Bitmap) {
-        selectedLayer = PaintLayer(bitmap, false, 1f)
+        addNewLayerWithoutSavingHistory(PaintLayer(bitmap, false, 1f))
+    }
+
+    fun addNewLayerWithoutSavingHistory(layer: PaintLayer) {
+        selectedLayer = layer
 
         layerHolder.add(selectedLayer!!)
 
@@ -779,6 +791,13 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             saveState(createState(), ignorePainterHandleHistoryFlag = true)
         }
         invalidate()
+    }
+
+    open fun clearLayers() {
+        layerHolder.clear()
+        undoStack.clear()
+        redoStack.clear()
+        selectedLayer = null
     }
 
     override fun convertToBitmap(): Bitmap? {
