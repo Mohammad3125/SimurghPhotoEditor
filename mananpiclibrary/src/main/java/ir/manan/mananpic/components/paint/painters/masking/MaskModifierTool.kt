@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LightingColorFilter
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
@@ -96,7 +95,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
                 layerBounds.width(),
                 layerBounds.height(),
                 Bitmap.Config.ARGB_8888
-            ), Matrix(), false, 1f
+            )
         )
 
         maskTool?.let { initializeTool(it) }

@@ -7,7 +7,7 @@ import android.graphics.PorterDuffXfermode
 data class PaintLayer(
     var bitmap: Bitmap,
     var isLocked: Boolean = false,
-    var opacity: Float,
+    var opacity: Float = 1f,
 ) {
     var blendingMode = PorterDuff.Mode.SRC
         set(value) {
