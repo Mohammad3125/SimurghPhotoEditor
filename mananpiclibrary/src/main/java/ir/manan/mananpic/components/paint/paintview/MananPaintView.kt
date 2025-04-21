@@ -679,8 +679,20 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         return selectedLayer?.opacity ?: 1f
     }
 
-    open fun getSelectedLayerBitmap(): Bitmap? {
-        return selectedLayer?.bitmap
+    open fun getSelectedLayerBitmap(isClipped: Boolean = true): Bitmap? {
+        return selectedLayer?.bitmap?.run {
+            if (layerClipBounds == identityClip || !isClipped) {
+                this
+            } else {
+                Bitmap.createBitmap(
+                    this,
+                    layerClipBounds.left,
+                    layerClipBounds.top,
+                    layerClipBounds.width(),
+                    layerClipBounds.height(),
+                )
+            }
+        }
     }
 
     open fun setOnDoubleFingerTapUpListener(onDoubleFingerTapUp: OnDoubleFingerTapUp) {
@@ -696,7 +708,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     open fun convertToBitmap(): Bitmap? {
-        return selectedLayer?.bitmap
+        return getSelectedLayerBitmap(true)
     }
 
     open fun resetTransformationMatrix(animate: Boolean = true) {

@@ -819,7 +819,13 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             layer.draw(mergeCanvas)
         }
 
-        return finalBitmap
+        return Bitmap.createBitmap(
+            finalBitmap,
+            layerClipBounds.left,
+            layerClipBounds.top,
+            layerClipBounds.width(),
+            layerClipBounds.height()
+        )
     }
 
     fun setClipRectWithStateSave(
