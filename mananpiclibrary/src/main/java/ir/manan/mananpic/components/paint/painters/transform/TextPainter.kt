@@ -155,10 +155,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             notifyBoundsChanged()
         }
 
-    @Transient
-    private var paintShader: Shader? = null
-
-
     var lineSpacing = textPaint.fontMetrics.bottom
         set(value) {
             field = value
@@ -248,6 +244,41 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
             textPainter.setBackgroundUnifiedState(isUnified)
             textPainter.shaderRotationHolder = shaderRotationHolder
 
+            val childBounds = RectF()
+            getBounds(childBounds)
+
+            when (textPaint.shader) {
+                is LinearGradient -> {
+                    textPainter.applyLinearGradient(
+                        0f,
+                        childBounds.height() * 0.5f,
+                        childBounds.width(),
+                        childBounds.height() * 0.5f,
+                        gradientColors!!,
+                        gradientPositions!!,
+                    )
+                }
+
+                is RadialGradient -> {
+                    textPainter.applyRadialGradient(
+                        childBounds.width() * 0.5f,
+                        childBounds.height() * 0.5f,
+                        childBounds.width() * 0.5f,
+                        gradientColors!!,
+                        gradientPositions!!,
+                    )
+                }
+
+                is SweepGradient -> {
+                    textPainter.applySweepGradient(
+                        childBounds.width() * 0.5f,
+                        childBounds.height() * 0.5f,
+                        gradientColors!!,
+                        gradientPositions!!,
+                    )
+                }
+            }
+
             getTexture()?.let { t ->
                 textPainter.applyTexture(t)
             }
@@ -268,13 +299,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
                 shadowDy,
                 shadowColor
             )
-
-            gradientColors?.let {
-                textPainter.gradientColors = it.clone()
-            }
-            gradientPositions?.let {
-                textPainter.gradientPositions = it.clone()
-            }
 
             textPainter.text = text
 
@@ -567,9 +591,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
         removeGradient()
         currentTexture = bitmap
-        paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
-            setLocalMatrix(shaderMatrix)
-        }
 
         textPaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
             setLocalMatrix(shaderMatrix)
@@ -628,14 +649,12 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
     }
 
     override fun removeTexture() {
-        paintShader = null
         currentTexture = null
         textPaint.shader = null
         invalidate()
     }
 
     override fun removeGradient() {
-        paintShader = null
         textPaint.shader = null
         gradientColors = null
         gradientPositions = null
@@ -654,10 +673,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         removeTexture()
         gradientColors = colors
         gradientPositions = position
-
-        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
-            setLocalMatrix(shaderMatrix)
-        }
 
         textPaint.shader =
             LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
@@ -678,17 +693,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         removeTexture()
         gradientColors = colors
         gradientPositions = stops
-
-        paintShader = RadialGradient(
-            centerX,
-            centerY,
-            radius,
-            colors,
-            stops,
-            tileMode
-        ).apply {
-            setLocalMatrix(shaderMatrix)
-        }
 
         textPaint.shader =
             RadialGradient(
@@ -713,10 +717,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         removeTexture()
         gradientColors = colors
         gradientPositions = positions
-
-        paintShader = SweepGradient(cx, cy, colors, positions).apply {
-            setLocalMatrix(shaderMatrix)
-        }
 
         textPaint.shader =
             SweepGradient(cx, cy, colors, positions).apply {

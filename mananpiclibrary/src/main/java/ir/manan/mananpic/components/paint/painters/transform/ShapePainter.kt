@@ -58,8 +58,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
 
     private val shapePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private var paintShader: Shader? = null
-
     private var shaderRotationHolder = 0f
 
     var shapeColor = Color.BLACK
@@ -105,6 +103,41 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
             painter.shapePaint.strokeWidth = shapePaint.strokeWidth
             painter.shapePaint.pathEffect = shapePaint.pathEffect
             painter.shapePaint.shader = shapePaint.shader
+
+            val childBounds = RectF()
+            getBounds(childBounds)
+
+            when (shapePaint.shader) {
+                is LinearGradient -> {
+                    painter.applyLinearGradient(
+                        0f,
+                        childBounds.height() * 0.5f,
+                        childBounds.width(),
+                        childBounds.height() * 0.5f,
+                        gradientColors!!,
+                        gradientPositions!!,
+                    )
+                }
+
+                is RadialGradient -> {
+                    painter.applyRadialGradient(
+                        childBounds.width() * 0.5f,
+                        childBounds.height() * 0.5f,
+                        childBounds.width() * 0.5f,
+                        gradientColors!!,
+                        gradientPositions!!,
+                    )
+                }
+
+                is SweepGradient -> {
+                    painter.applySweepGradient(
+                        childBounds.width() * 0.5f,
+                        childBounds.height() * 0.5f,
+                        gradientColors!!,
+                        gradientPositions!!,
+                    )
+                }
+            }
             painter.strokeSize = strokeSize
             painter.strokeColor = strokeColor
             painter.shaderRotationHolder = shaderRotationHolder
@@ -125,12 +158,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
                 shadowDy,
                 shadowColor
             )
-            gradientColors?.let {
-                painter.gradientColors = it.clone()
-            }
-            gradientPositions?.let {
-                painter.gradientPositions = it.clone()
-            }
+
 
             painter.setOpacity(getOpacity())
         }
@@ -164,10 +192,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
         removeGradient()
         currentTexture = bitmap
-        paintShader = BitmapShader(bitmap, tileMode, tileMode).apply {
-            setLocalMatrix(shaderMatrix)
-        }
-
         shapePaint.shader = BitmapShader(bitmap, tileMode, tileMode).apply {
             setLocalMatrix(shaderMatrix)
         }
@@ -231,7 +255,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
 
     override fun removeTexture() {
         currentTexture = null
-        paintShader = null
         shapePaint.shader = null
         invalidate()
     }
@@ -284,10 +307,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         gradientColors = colors
         gradientPositions = position
 
-        paintShader = LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
-            setLocalMatrix(shaderMatrix)
-        }
-
         shapePaint.shader =
             LinearGradient(x0, y0, x1, y1, colors, position, tileMode).apply {
                 setLocalMatrix(shaderMatrix)
@@ -307,17 +326,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         removeTexture()
         gradientColors = colors
         gradientPositions = stops
-
-        paintShader = RadialGradient(
-            centerX,
-            centerY,
-            radius,
-            colors,
-            stops,
-            tileMode
-        ).apply {
-            setLocalMatrix(shaderMatrix)
-        }
 
         shapePaint.shader =
             RadialGradient(
@@ -343,10 +351,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         gradientColors = colors
         gradientPositions = positions
 
-        paintShader = SweepGradient(cx, cy, colors, positions).apply {
-            setLocalMatrix(shaderMatrix)
-        }
-
         shapePaint.shader =
             SweepGradient(cx, cy, colors, positions).apply {
                 setLocalMatrix(shaderMatrix)
@@ -355,7 +359,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     }
 
     override fun removeGradient() {
-        paintShader = null
         shapePaint.shader = null
         gradientColors = null
         gradientPositions = null
