@@ -342,17 +342,16 @@ class CanvasDrawingEngine : DrawingEngine {
         squish: Float
     ) {
         when {
+            sizeJitter > 0f || squish != 1f -> {
+                val randomJitterNumber = if (sizeJitter == 0f) {
+                    0f
+                } else {
+                    Random.nextInt(
+                        0,
+                        (100f * sizeJitter).toInt()
+                    ) / 100f
+                }
 
-            squish != 1f -> {
-                val s = lastSizePressure * finalTaperSize * finalSizeVariance
-                canvas.scale(
-                    squish * s,
-                    s
-                )
-            }
-
-            sizeJitter > 0f -> {
-                val randomJitterNumber = Random.nextInt(0, (100f * sizeJitter).toInt()) / 100f
                 val finalScale =
                     (1f + randomJitterNumber) * finalTaperSize * finalSizeVariance * lastSizePressure
 
