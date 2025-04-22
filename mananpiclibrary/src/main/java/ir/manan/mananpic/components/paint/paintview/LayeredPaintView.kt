@@ -35,7 +35,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         null
     private var onLayersChangedListener: OnLayersChanged? = null
 
-    private val mergeCanvas = Canvas()
+    private var onStateChanged: (() -> Unit)? = null
+
+    private val mergeCanvas by lazy {
+        Canvas()
+    }
 
     private lateinit var bitmapReference: Bitmap
 
@@ -357,12 +361,14 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun saveState(state: State?, ignorePainterHandleHistoryFlag: Boolean = true) {
-        if (state == null) {
+        if (state == null || maximumHistorySize == 0) {
             return
         }
         if (painter?.doesHandleHistory() == true && !ignorePainterHandleHistoryFlag) {
             return
         }
+
+        onStateChanged?.invoke()
 
         redoStack.clear()
         undoStack.push(state)
@@ -853,6 +859,10 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         val selectedLayerIndex = getSelectedLayerIndex()
         onLayersChangedListener?.onLayersChanged(layers, selectedLayerIndex)
         onLayersChanged?.invoke(layers, selectedLayerIndex)
+    }
+
+    fun setOnStateChanged(callback: () -> Unit) {
+        onStateChanged = callback
     }
 
     private inner class State(
