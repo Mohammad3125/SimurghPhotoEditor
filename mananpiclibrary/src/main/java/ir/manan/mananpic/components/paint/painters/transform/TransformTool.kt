@@ -510,6 +510,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                     meshPoints[firstSelectedIndex] = pointHolder[0]
                     meshPoints[secondSelectedIndex] = pointHolder[1]
                 }
+            } else if (_selectedChild?.isPointInChildRect(touchData) == true) {
+                mapVectors(touchData)
+                mappingMatrix.setTranslate(pointHolder[0], pointHolder[1])
+                onTransformed(mappingMatrix)
             }
 
             makePolyToPoly()
@@ -535,26 +539,8 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             _selectedChild = null
 
             _children.forEach { child ->
-
-                mapMeshPoints(child, touchData.ex, touchData.ey)
-
-                val x = pointHolder[0]
-                val y = pointHolder[1]
-
-                child.apply {
-
-                    calculateMaximumRect(child, tempRect, meshPoints)
-
-                    if (x.coerceIn(
-                            tempRect.left,
-                            tempRect.right
-                        ) == x && y.coerceIn(
-                            tempRect.top,
-                            tempRect.bottom
-                        ) == y
-                    ) {
-                        _selectedChild = child
-                    }
+                if (child.isPointInChildRect(touchData)) {
+                    _selectedChild = child
                 }
             }
 
@@ -586,6 +572,27 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     }
 
+    private fun Child.isPointInChildRect(touchData: TouchData): Boolean {
+        mapMeshPoints(this, touchData.ex, touchData.ey)
+
+        val x = pointHolder[0]
+        val y = pointHolder[1]
+
+        this.apply {
+
+            calculateMaximumRect(this, tempRect, meshPoints)
+
+            return (x.coerceIn(
+                tempRect.left,
+                tempRect.right
+            ) == x && y.coerceIn(
+                tempRect.top,
+                tempRect.bottom
+            ) == y
+                    )
+        }
+    }
+
     private fun makePolyToPoly() {
         _selectedChild!!.apply {
             polyMatrix.setPolyToPoly(basePoints, 0, meshPoints, 0, 4)
@@ -610,6 +617,13 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             polyMatrix.mapPoints(array)
             transformationMatrix.mapPoints(array)
         }
+    }
+
+    private fun mapVectors(touchData: TouchData) {
+        pointHolder[0] = touchData.dx
+        pointHolder[1] = touchData.dy
+        matrix.invert(mappingMatrix)
+        mappingMatrix.mapVectors(pointHolder)
     }
 
     override fun draw(canvas: Canvas) {
