@@ -14,15 +14,14 @@ import android.graphics.Shader
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.engines.DrawingEngine
 import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.Brush
-import ir.manan.mananpic.components.paint.painters.masking.MaskTool
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
+import ir.manan.mananpic.properties.MaskTool
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.gesture.TouchData
 
-@MaskTool
-class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint {
+class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint, MaskTool {
 
     private var layerPaint = Paint().apply {
         isFilterBitmap = true
@@ -245,5 +244,9 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     fun changeBrushTextureBlending(blendMode: PorterDuff.Mode) {
         texturePaint.xfermode = PorterDuffXfermode(blendMode)
         sendMessage(PainterMessage.INVALIDATE)
+    }
+
+    override fun setEraserMode(isEnabled: Boolean) {
+        engine.setEraserMode(isEnabled)
     }
 }

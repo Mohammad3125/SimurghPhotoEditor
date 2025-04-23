@@ -29,7 +29,6 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         Paint()
     }
 
-    @MaskTool
     var maskTool: Painter? = null
         set(value) {
             field = value

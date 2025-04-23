@@ -396,4 +396,12 @@ class CanvasDrawingEngine : DrawingEngine {
             (opacity * 255f).toInt()
         }
     }
+
+    override fun isEraserModeEnabled(): Boolean {
+        return isInEraserMode
+    }
+
+    override fun setEraserMode(isEnabled: Boolean) {
+        isInEraserMode = isEnabled
+    }
 }

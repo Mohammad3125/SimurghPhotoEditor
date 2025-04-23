@@ -103,4 +103,12 @@ class CachedCanvasEngine : DrawingEngine {
             canvas.restore()
         }
     }
+
+    override fun isEraserModeEnabled(): Boolean {
+        return false
+    }
+
+    override fun setEraserMode(isEnabled: Boolean) {
+
+    }
 }

@@ -15,11 +15,12 @@ import android.view.animation.LinearInterpolator
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.shapes.MananShape
+import ir.manan.mananpic.properties.MaskTool
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.TouchData
 
-class MaskShapeTool(shape: MananShape?) : Painter() {
+class MaskShapeTool(shape: MananShape?) : Painter(), MaskTool {
 
     constructor() : this(null)
 
@@ -53,7 +54,7 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
         Canvas()
     }
 
-    var isEraser = false
+    private var isEraser = false
         set(value) {
             field = value
             if (isEraser) {
@@ -167,5 +168,9 @@ class MaskShapeTool(shape: MananShape?) : Painter() {
     override fun resetPaint() {
         shapeBounds.setEmpty()
         resizeShape(0f, 0f)
+    }
+
+    override fun setEraserMode(isEnabled: Boolean) {
+        isEraser = isEnabled
     }
 }

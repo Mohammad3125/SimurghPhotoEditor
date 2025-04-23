@@ -19,4 +19,8 @@ interface DrawingEngine {
     fun onMove(touchData: TouchData, brush: Brush)
 
     fun onMoveEnded(touchData: TouchData, brush: Brush)
+
+    fun setEraserMode(isEnabled: Boolean)
+
+    fun isEraserModeEnabled(): Boolean
 }

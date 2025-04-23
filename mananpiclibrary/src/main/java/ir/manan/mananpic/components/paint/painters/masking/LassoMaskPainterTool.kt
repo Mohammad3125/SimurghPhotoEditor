@@ -17,12 +17,12 @@ import ir.manan.mananpic.components.paint.painters.brushpaint.brushes.NativeBrus
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.components.paint.smoothers.BezierLineSmoother
 import ir.manan.mananpic.components.paint.smoothers.LineSmoother
+import ir.manan.mananpic.properties.MaskTool
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.TouchData
 
-@MaskTool
-open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
+open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint, MaskTool {
 
     protected val lassoPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -47,7 +47,7 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    var isEraseMode = false
+    private var isEraseMode = false
         set(value) {
             field = value
             if (isEraseMode) {
@@ -171,5 +171,9 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint {
 
     override fun onLayerChanged(layer: PaintLayer?) {
         selectedLayer = layer
+    }
+
+    override fun setEraserMode(isEnabled: Boolean) {
+        isEraseMode = isEnabled
     }
 }
