@@ -780,8 +780,6 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         rectAlloc.set(boundsRectangle)
 
         layerClipBounds.set(rect)
-        bitmapWidth = layerClipBounds.width()
-        bitmapHeight = layerClipBounds.height()
 
         resizeCanvas(width.toFloat(), height.toFloat())
 
