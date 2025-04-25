@@ -29,7 +29,7 @@ abstract class Brush {
 
     open var maximumPressureSize: Float = 1f
 
-    open var isSizePressureSensitive = true
+    open var isSizePressureSensitive = false
 
     open var opacityPressureSensitivity: Float = 0.5f
 

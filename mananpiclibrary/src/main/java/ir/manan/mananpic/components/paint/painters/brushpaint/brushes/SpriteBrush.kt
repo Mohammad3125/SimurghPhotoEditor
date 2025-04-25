@@ -2,18 +2,38 @@ package ir.manan.mananpic.components.paint.painters.brushpaint.brushes
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuffXfermode
 import androidx.core.graphics.scale
 import kotlin.math.max
 import kotlin.random.Random
 
-class SpriteBrush(var bitmaps: List<Bitmap>?) : Brush() {
+class SpriteBrush(var bitmaps: List<Bitmap>? = null) : Brush() {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
+
+    var isColoringEnabled = false
+        set(value) {
+            field = value
+            if (value) {
+                paint.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
+            } else {
+                paint.colorFilter = null
+            }
+        }
+
+    override var color: Int = Color.BLACK
+        set(value) {
+            field = value
+            if (isColoringEnabled) {
+                paint.colorFilter = PorterDuffColorFilter(field, PorterDuff.Mode.SRC_IN)
+            }
+        }
 
     private var stampWidth = 0f
     private var stampHeight = 0f
@@ -71,7 +91,7 @@ class SpriteBrush(var bitmaps: List<Bitmap>?) : Brush() {
 
     }
 
-    fun changeBrushes(newBitmaps : List<Bitmap>?, recycleCurrentBitmaps: Boolean) {
+    fun changeBrushes(newBitmaps: List<Bitmap>?, recycleCurrentBitmaps: Boolean) {
         if (recycleCurrentBitmaps) {
             bitmaps?.forEach { it.recycle() }
         }
@@ -98,12 +118,12 @@ class SpriteBrush(var bitmaps: List<Bitmap>?) : Brush() {
 
             paint.alpha = opacity
 
-            val finalBitmap = if(isRandom) {
-                scaledStamps[Random.nextInt(0,bitmaps.size)]
+            val finalBitmap = if (isRandom) {
+                scaledStamps[Random.nextInt(0, bitmaps.size)]
             } else {
                 val b = scaledStamps[counter]
 
-                if(++counter >= bitmaps.size) {
+                if (++counter >= bitmaps.size) {
                     counter = 0
                 }
 
