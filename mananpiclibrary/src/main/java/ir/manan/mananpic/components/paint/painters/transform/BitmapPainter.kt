@@ -471,7 +471,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
                 })
             }
 
-            if (brightness != 1f) {
+            if (brightness != 0f) {
                 val translate = brightness * 255f
 
                 colorMatrix.postConcat(colorMatrixTemp.apply {
