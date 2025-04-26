@@ -2,6 +2,7 @@ package ir.manan.mananpic.components.paint.painters.selection.clippers
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
@@ -31,6 +32,9 @@ class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitm
         val copiedBitmap = copy()
 
         doIfBitmapAndMaskNotNull { bit, mask ->
+            if (isMaskEmpty(mask)) {
+                return null
+            }
             changePaintPorterDuffMode(PorterDuff.Mode.DST_OUT) {
                 drawMaskLayer(bit, mask)
             }
@@ -41,6 +45,9 @@ class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitm
 
     override fun copy(): Bitmap? {
         doIfBitmapAndMaskNotNull { bit, mask ->
+            if (isMaskEmpty(mask)) {
+                return null
+            }
 
             val copy = bit.copy(bit.config ?: Bitmap.Config.ARGB_8888, true)
 
@@ -51,6 +58,15 @@ class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitm
             return copy
         }
         return null
+    }
+
+    private fun isMaskEmpty(mask: Bitmap): Boolean {
+        //Quickly check if mask is empty.
+        mask.copy(mask.config ?: Bitmap.Config.ARGB_8888, true).apply {
+            eraseColor(Color.TRANSPARENT)
+        }.also { emptyMask ->
+            return emptyMask.sameAs(mask)
+        }
     }
 
     private fun drawMaskLayer(targetBitmap: Bitmap, mask: Bitmap) {
