@@ -2,6 +2,7 @@ package ir.manan.mananpic.components.paint.painters.coloring.flood
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import androidx.core.graphics.get
 import java.util.LinkedList
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -19,7 +20,7 @@ class FloodFillScanline : FloodFill {
         val height = bitmap.height
 
         // Get the target color at the starting point
-        val targetColor = bitmap.getPixel(ex, ey)
+        val targetColor = bitmap[ex, ey]
 
         // If we're already the right color, return
         if (colorsEqual(targetColor, replaceColor, tolerance)) return

@@ -12,6 +12,8 @@ class FloodFillPainter : Painter() {
 
     private var onFloodFillRequest: ((bitmap: Bitmap, ex: Int, ey: Int) -> Unit)? = null
 
+    private var preventHistorySave = true
+
     override fun onMoveBegin(touchData: TouchData) {
 
     }
@@ -30,9 +32,9 @@ class FloodFillPainter : Painter() {
             }
 
             onFloodFillRequest?.invoke(bitmap, ex, ey)
-
-            sendMessage(PainterMessage.INVALIDATE)
         }
+
+        preventHistorySave = true
     }
 
     private fun isValid(bitmap: Bitmap, ex: Int, ey: Int): Boolean {
@@ -57,6 +59,12 @@ class FloodFillPainter : Painter() {
         }
 
         layerBitmap = layer.bitmap
+    }
+
+    override fun doesHandleHistory(): Boolean {
+        val toReturn = preventHistorySave
+        preventHistorySave = false
+        return toReturn
     }
 
 }
