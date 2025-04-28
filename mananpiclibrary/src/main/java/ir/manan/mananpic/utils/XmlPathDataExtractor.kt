@@ -1,6 +1,8 @@
 package ir.manan.mananpic.utils
 
 import android.content.res.Resources
+import android.graphics.Path
+import androidx.core.graphics.PathParser
 import org.xmlpull.v1.XmlPullParser
 
 /**
@@ -14,24 +16,36 @@ class XmlPathDataExtractor {
          * @param drawableId Id of vector drawable that contains path data.
          * @return Extracted path data from given drawable id.
          */
-        fun getPathDataFromXml(resources: Resources, drawableId: Int): String {
-            resources.getXml(drawableId).use { parser ->
+        fun getVectorFromXml(resources: Resources, drawableId: Int): XmlVector {
+            var width = 0f
+            var height = 0f
+            var pathData = ""
+            return resources.getXml(drawableId).use { parser ->
                 var event = parser.eventType
                 while (event != XmlPullParser.END_DOCUMENT) {
                     if (event == XmlPullParser.START_TAG) {
                         if (parser.name == "path") {
-                            return parser.getAttributeValue(
+                            pathData = parser.getAttributeValue(
                                 findAttributePosition(
                                     "pathData",
                                     parser
                                 )
                             )
                         }
+                        if (parser.name == "vector") {
+                            width = parser.getAttributeValue(
+                                findAttributePosition("viewportWidth", parser)
+                            ).toFloat()
+
+                            height = parser.getAttributeValue(
+                                findAttributePosition("viewportHeight", parser)
+                            ).toFloat()
+                        }
                     }
                     event = parser.next()
                 }
+                XmlVector(PathParser.createPathFromPathData(pathData), width, height)
             }
-            throw IllegalStateException("couldn't find any path data")
         }
 
         /**
@@ -49,4 +63,6 @@ class XmlPathDataExtractor {
                 ?: -1
         }
     }
+
+    data class XmlVector(val path: Path, val viewportWidth: Float, val viewportHeight: Float)
 }
