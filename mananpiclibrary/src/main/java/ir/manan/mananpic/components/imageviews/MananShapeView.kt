@@ -16,6 +16,7 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.SweepGradient
 import android.view.View
+import androidx.core.graphics.createBitmap
 import androidx.core.view.doOnPreDraw
 import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.properties.Bitmapable
@@ -26,7 +27,6 @@ import ir.manan.mananpic.properties.MananComponent
 import ir.manan.mananpic.properties.Shadowable
 import ir.manan.mananpic.properties.StrokeCapable
 import ir.manan.mananpic.properties.Texturable
-import ir.manan.mananpic.utils.MananFactory
 import ir.manan.mananpic.utils.MananMatrix
 import kotlin.math.min
 
@@ -135,8 +135,7 @@ class MananShapeView(
     }
 
     override fun clone(): View {
-        return MananFactory.createShapeView(context, shape, shapeWidth, shapeHeight)
-            .also { shapeView ->
+        return MananShapeView(context, shape, shapeWidth, shapeHeight).also { shapeView ->
                 shapeView.setLayerType(layerType, null)
                 shapeView.scaleX = scaleX
                 shapeView.scaleY = scaleY
@@ -384,11 +383,7 @@ class MananShapeView(
     }
 
     override fun toBitmap(config: Bitmap.Config): Bitmap? {
-        return Bitmap.createBitmap(
-            rawWidth.toInt(),
-            rawHeight.toInt(),
-            config
-        ).also { bitmap ->
+        return createBitmap(rawWidth.toInt(), rawHeight.toInt(), config).also { bitmap ->
             draw(Canvas(bitmap))
         }
     }
@@ -402,7 +397,7 @@ class MananShapeView(
         val ws = (wStroke * scale)
         val hs = (hStroke * scale)
 
-        val outputBitmap = Bitmap.createBitmap(width, height, config)
+        val outputBitmap = createBitmap(width, height, config)
 
         val extraWidth = width - ws
         val extraHeight = height - hs

@@ -1,9 +1,8 @@
-package ir.manan.mananpic.components.cropper.aspect_ratios
+package ir.manan.mananpic.components.paint.painters.cropper.aspect_ratios
 
 import android.graphics.RectF
-import ir.manan.mananpic.components.cropper.AspectRatio
-import ir.manan.mananpic.components.cropper.HandleBar
-import kotlin.math.min
+import ir.manan.mananpic.components.paint.painters.cropper.AspectRatio
+import ir.manan.mananpic.components.paint.painters.cropper.HandleBar
 
 /**
  * Class representing aspect-ratio-free resizing.
@@ -55,11 +54,6 @@ class AspectRatioFree : AspectRatio() {
             var finalTop = dirtyRect.top
             var finalRight = dirtyRect.right
             var finalBottom = dirtyRect.bottom
-
-            val minSize = min(limitRect.width(), limitRect.height()) / 4.5f
-
-            val frameWidth = width()
-            val frameHeight = height()
 
             // If resized rectangle's right side exceeds maximum width don't let it go further.
             if (dirtyRect.right > limitRect.right) finalRight = limitRect.right

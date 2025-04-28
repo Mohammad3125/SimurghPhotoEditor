@@ -13,9 +13,9 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
+import androidx.core.graphics.toColorInt
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
-import ir.manan.mananpic.components.selection.selectors.PenSelector
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
 import ir.manan.mananpic.utils.gesture.GestureUtils
@@ -108,7 +108,7 @@ abstract class PenToolBase : Painter() {
      * Value should be a [ColorInt].
      */
     @ColorInt
-    var circlesColor = Color.parseColor("#69a2ff")
+    var circlesColor = "#69a2ff".toColorInt()
         set(value) {
             field = value
             circlesPaint.color = value
@@ -119,7 +119,7 @@ abstract class PenToolBase : Painter() {
      * Values should be a [ColorInt].
      */
     @ColorInt
-    var unselectedCirclesColor = Color.parseColor("#7888a1")
+    var unselectedCirclesColor = "#7888a1".toColorInt()
 
     protected val helperLinesPath by lazy {
         Path()

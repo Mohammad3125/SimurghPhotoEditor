@@ -1,8 +1,8 @@
-package ir.manan.mananpic.components.cropper.aspect_ratios
+package ir.manan.mananpic.components.paint.painters.cropper.aspect_ratios
 
 import android.graphics.RectF
-import ir.manan.mananpic.components.cropper.AspectRatio
-import ir.manan.mananpic.components.cropper.HandleBar
+import ir.manan.mananpic.components.paint.painters.cropper.AspectRatio
+import ir.manan.mananpic.components.paint.painters.cropper.HandleBar
 
 /**
  * This class represents an aspect-ratio with locked ratio.

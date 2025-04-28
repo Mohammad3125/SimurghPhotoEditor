@@ -14,9 +14,6 @@ import android.graphics.Shader
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
-import ir.manan.mananpic.components.MananDropper
-import ir.manan.mananpic.components.MananDropper.OnColorDetected
-import ir.manan.mananpic.components.MananDropper.OnLastColorDetected
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
@@ -139,12 +136,12 @@ class ColorDropper : Painter() {
     /**
      * Interface for last color that get detected.
      */
-    private var interfaceOnLastColorDetected: MananDropper.OnLastColorDetected? = null
+    private var interfaceOnLastColorDetected: OnLastColorDetected? = null
 
     /**
      * Interface that get invoked when any color change happen.
      */
-    private var interfaceOnColorDetected: MananDropper.OnColorDetected? = null
+    private var interfaceOnColorDetected: OnColorDetected? = null
 
     private val clipBounds by lazy {
         RectF()
@@ -451,6 +448,23 @@ class ColorDropper : Painter() {
 
     override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
         this.clipBounds.set(clipBounds)
+    }
+
+    /**
+     * Interface definition of a callback that get invoked when any color changes by
+     * dropper get detected.
+     */
+    interface OnColorDetected {
+        fun onColorDetected(color: Int)
+    }
+
+    /**
+     * Interface definition of a callback that get invoked when user lifts his/her finger
+     * up. This callback should be used when you want to get the last color that was
+     * detected by dropper.
+     */
+    interface OnLastColorDetected {
+        fun onLastColorDetected(color: Int)
     }
 
 }

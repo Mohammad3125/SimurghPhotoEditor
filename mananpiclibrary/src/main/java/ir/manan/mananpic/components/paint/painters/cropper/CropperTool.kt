@@ -16,11 +16,9 @@ import android.graphics.RectF
 import android.graphics.Region
 import androidx.core.animation.doOnEnd
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
-import ir.manan.mananpic.components.cropper.AspectRatio
-import ir.manan.mananpic.components.cropper.HandleBar
-import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioFree
-import ir.manan.mananpic.components.cropper.aspect_ratios.AspectRatioLocked
 import ir.manan.mananpic.components.paint.Painter
+import ir.manan.mananpic.components.paint.painters.cropper.aspect_ratios.AspectRatioFree
+import ir.manan.mananpic.components.paint.painters.cropper.aspect_ratios.AspectRatioLocked
 import ir.manan.mananpic.components.paint.paintview.PaintLayer
 import ir.manan.mananpic.utils.MananMatrix
 import ir.manan.mananpic.utils.dp
@@ -858,10 +856,13 @@ class CropperTool : Painter() {
     }
 
     override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
+//        println("OnSizeChangeeeeeeeeeeeeeeeeee $newBounds")
+//        canvasMatrix.postConcat(changeMatrix)
+//        fitCropperInsideLayer(animate = false, setRect = true, setMatrix = true)
         tempRectF.set(clipBounds)
         fitInsideMatrix.mapRect(tempRectF)
         limitRect.set(tempRectF)
-        fitCropperInsideLayer(animate = false, setRect = true, setMatrix = true)
+        changeMatrix.mapRect(frameRect)
         setDrawingDimensions()
         sendMessage(PainterMessage.INVALIDATE)
     }

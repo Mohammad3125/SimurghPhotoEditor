@@ -1,4 +1,4 @@
-package ir.manan.mananpic.components.cropper
+package ir.manan.mananpic.components.paint.painters.cropper
 
 /**
  * This class represents the location of bars in frame.
