@@ -18,8 +18,8 @@ class MananRectangle : MananBaseShape() {
     }
 
     override fun clone(): MananRectangle {
-        val r = MananRectangle()
-        r.resize(desiredWidth, desiredHeight)
-        return r
+        return MananRectangle().apply {
+            resize(desiredWidth, desiredHeight)
+        }
     }
 }
