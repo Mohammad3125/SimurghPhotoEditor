@@ -11,6 +11,7 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.toRectF
+import androidx.core.graphics.withSave
 import ir.manan.mananpic.R
 import ir.manan.mananpic.components.paint.Painter
 import ir.manan.mananpic.components.paint.painters.transform.TransformTool.TransformableAlignment.BOTTOM
@@ -303,7 +304,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         val range = touchRange / matrix.getRealScaleX()
 
         child.baseSizeChangeArray.copyInto(cc)
-        mapMeshPoints(child, cc)
+        child.mapMeshPoints(cc)
 
         var nearest = range
 
@@ -403,7 +404,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
 
         if (firstSizeChangeIndex > -1 && secondSizeChangeIndex > -1) {
-            map(child, cc)
+            child.map(cc)
             lastX = cc[firstSizeChangeIndex]
             lastY = cc[secondSizeChangeIndex]
         }
@@ -413,7 +414,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
 
         basePoints.copyInto(cc)
-        mapMeshPoints(child, cc)
+        child.mapMeshPoints(cc)
 
         if (GestureUtils.isNearTargetPoint(
                 ex,
@@ -482,7 +483,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             return
         }
         _selectedChild?.apply {
-            mapMeshPoints(this, touchData.ex, touchData.ey)
+            mapMeshPoints(touchData.ex, touchData.ey)
 
             if (firstSelectedIndex > -1 && secondSelectedIndex > -1) {
                 if (thirdSelectedIndex > -1 && forthSelectedIndex > -1) {
@@ -511,8 +512,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
                     meshPoints[secondSelectedIndex] = pointHolder[1]
                 }
             } else if (_selectedChild?.isPointInChildRect(touchData) == true) {
-                mapVectors(touchData)
-                mappingMatrix.setTranslate(pointHolder[0], pointHolder[1])
+                mappingMatrix.setTranslate(touchData.dx, touchData.dy)
                 onTransformed(mappingMatrix)
             }
 
@@ -573,24 +573,20 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     private fun Child.isPointInChildRect(touchData: TouchData): Boolean {
-        mapMeshPoints(this, touchData.ex, touchData.ey)
+        mapMeshPoints(touchData.ex, touchData.ey)
 
         val x = pointHolder[0]
         val y = pointHolder[1]
 
-        this.apply {
+        tempRect.calculateMaximumRect(meshPoints)
 
-            calculateMaximumRect(this, tempRect, meshPoints)
-
-            return (x.coerceIn(
-                tempRect.left,
-                tempRect.right
-            ) == x && y.coerceIn(
-                tempRect.top,
-                tempRect.bottom
-            ) == y
-                    )
-        }
+        return (x.coerceIn(
+            tempRect.left,
+            tempRect.right
+        ) == x && y.coerceIn(
+            tempRect.top,
+            tempRect.bottom
+        ) == y)
     }
 
     private fun makePolyToPoly() {
@@ -599,24 +595,20 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    private fun mapMeshPoints(child: Child, ex: Float, ey: Float) {
+    private fun Child.mapMeshPoints(ex: Float, ey: Float) {
         pointHolder[0] = ex
         pointHolder[1] = ey
-        map(child, pointHolder)
+        map(pointHolder)
     }
 
-    private fun map(child: Child, array: FloatArray) {
-        child.apply {
-            transformationMatrix.invert(mappingMatrix)
-            mappingMatrix.mapPoints(array)
-        }
+    private fun Child.map(array: FloatArray) {
+        transformationMatrix.invert(mappingMatrix)
+        mappingMatrix.mapPoints(array)
     }
 
-    private fun mapMeshPoints(child: Child, array: FloatArray) {
-        child.apply {
-            polyMatrix.mapPoints(array)
-            transformationMatrix.mapPoints(array)
-        }
+    private fun Child.mapMeshPoints(array: FloatArray) {
+        polyMatrix.mapPoints(array)
+        transformationMatrix.mapPoints(array)
     }
 
     private fun mapVectors(touchData: TouchData) {
@@ -766,13 +758,13 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private fun drawChild(canvas: Canvas, child: Child) {
         canvas.apply {
-            save()
+            withSave {
 
-            concat(mappingMatrix)
+                concat(mappingMatrix)
 
-            child.transformable.draw(this)
+                child.transformable.draw(this)
 
-            restore()
+            }
 
         }
     }
@@ -856,7 +848,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             val isCenterYEnabled = smartGuidelineFlags.and(Guidelines.CENTER_Y) != 0
 
             child.mergeMatrices(true)
-            calculateMaximumRect(child, tempRect, mappedMeshPoints)
+            tempRect.calculateMaximumRect(mappedMeshPoints)
 
             val floutBounds = bounds.toRectF()
             // Remove selected component from list of children (because we don't need to find smart guideline for
@@ -865,7 +857,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             _children.minus(child).map { c ->
                 RectF().apply {
                     c.mergeMatrices(true)
-                    calculateMaximumRect(c, this, mappedMeshPoints)
+                    calculateMaximumRect(mappedMeshPoints)
                 }
             }.plus(floutBounds).forEach { childBounds ->
 
@@ -986,7 +978,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 child.transformationMatrix.postTranslate(totalToShiftX, totalToShiftY)
                 child.mergeMatrices()
-                calculateMaximumRect(child, tempRect, mappedMeshPoints)
+                tempRect.calculateMaximumRect(mappedMeshPoints)
 
                 // Calculate the minimum and maximum amount of two axes
                 // because we want to draw a line from leftmost to rightmost
@@ -1100,22 +1092,20 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         }
     }
 
-    private fun calculateMaximumRect(child: Child, rect: RectF, array: FloatArray) {
-        child.apply {
-            val minX =
-                min(min(array[0], array[2]), min(array[4], array[6]))
+    private fun RectF.calculateMaximumRect(array: FloatArray) {
+        val minX =
+            min(min(array[0], array[2]), min(array[4], array[6]))
 
-            val minY =
-                min(min(array[1], array[3]), min(array[5], array[7]))
+        val minY =
+            min(min(array[1], array[3]), min(array[5], array[7]))
 
-            val maxX =
-                max(max(array[0], array[2]), max(array[4], array[6]))
+        val maxX =
+            max(max(array[0], array[2]), max(array[4], array[6]))
 
-            val maxY =
-                max(max(array[1], array[3]), max(array[5], array[7]))
+        val maxY =
+            max(max(array[1], array[3]), max(array[5], array[7]))
 
-            rect.set(minX, minY, maxX, maxY)
-        }
+        set(minX, minY, maxX, maxY)
     }
 
     private fun Child.mergeMatrices(shouldMap: Boolean = true) {
@@ -1156,7 +1146,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
             child.apply {
 
-                calculateMaximumRect(child, tempRect, meshPoints)
+                tempRect.calculateMaximumRect(meshPoints)
 
                 mappingMatrix.apply {
                     setScale(tw / lw, th / lh, tempRect.centerX(), tempRect.centerY())
@@ -1366,7 +1356,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
                 if (imageRotation in (snapDegree - rangeForSmartRotationGuideline)..(snapDegree + rangeForSmartRotationGuideline)
                 ) {
-                    calculateMaximumRect(child, tempRect, mappedMeshPoints)
+                    tempRect.calculateMaximumRect(mappedMeshPoints)
 
                     child.transformationMatrix.postRotate(
                         snapDegree - imageRotation,
@@ -1507,7 +1497,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     fun getSelectedChildBounds(rect: RectF): Boolean {
         _selectedChild?.let { child ->
             child.mapFinalPointsForDraw()
-            calculateMaximumRect(child, rect, mappedMeshPoints)
+            rect.calculateMaximumRect(mappedMeshPoints)
             return true
         }
         return false
@@ -1566,7 +1556,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     override fun undo() {
-        if (undoStack.size > 1) {
+        if (undoStack.isNotEmpty()) {
             val poppedState = undoStack.pop()
             poppedState.undo()
             redoStack.push(poppedState)

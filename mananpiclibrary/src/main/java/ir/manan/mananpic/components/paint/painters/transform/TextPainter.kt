@@ -25,7 +25,6 @@ import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
-import ir.manan.mananpic.components.MananTextView
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
 import ir.manan.mananpic.properties.Colorable

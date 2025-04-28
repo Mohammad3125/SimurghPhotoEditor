@@ -380,11 +380,11 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             event.transform(mappingMatrix)
         }
 
-        gestureDetector.onTouchEvent(event)
-
         if (isRotatingEnabled) {
             rotationDetector.onTouchEvent(event)
         }
+
+        gestureDetector.onTouchEvent(event)
         return true
     }
 
@@ -430,7 +430,9 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
             if (isTranslationEnabled) {
                 if (painter?.doesTakeGestures() == true) {
-                    painterTransformationMatrix.setTranslate(dx, dy)
+                    mapTouchPoints(dx, dy, true).let { points ->
+                        painterTransformationMatrix.setTranslate(points[0], points[1])
+                    }
                     if (isGestureDelegationEnabled) {
                         onDelegateTransform?.invoke(painterTransformationMatrix)
                     } else {
@@ -480,6 +482,10 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             touchData.ex = points[0]
             touchData.ey = points[1]
         }
+        mapTouchPoints(touchData.dx, touchData.dy, true).let { points ->
+            touchData.dx = points[0]
+            touchData.dy = points[1]
+        }
     }
 
     protected open fun callPainterOnMoveBegin(touchData: TouchData) {
@@ -491,7 +497,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
         isMatrixGesture && !isMoved && painter?.doesHandleHistory() == false
 
     protected open fun canCallPainterOnMoveBegin(): Boolean =
-        selectedLayer != null && (!isMatrixGesture || !isFirstMove) && !selectedLayer!!.isLocked
+        selectedLayer != null && (!isMatrixGesture || !isFirstMove) && selectedLayer?.isLocked == false
 
     protected open fun canCallPainterMoveEnd(touchData: TouchData) {
         painter!!.onMoveEnded(touchData)
