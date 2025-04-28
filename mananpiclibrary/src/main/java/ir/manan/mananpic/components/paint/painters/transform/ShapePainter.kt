@@ -16,8 +16,10 @@ import android.graphics.SweepGradient
 import androidx.annotation.ColorInt
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import androidx.core.graphics.withSave
 import ir.manan.mananpic.components.shapes.MananShape
 import ir.manan.mananpic.properties.Bitmapable
 import ir.manan.mananpic.properties.Blendable
@@ -40,8 +42,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     var shape = shape
         set(value) {
             field = value
-            strokeShape = field.clone()
-            invalidate()
+            notifyBoundsChanged()
         }
 
     private var shadowRadius = 0f
@@ -50,8 +51,6 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     private var shadowColor = Color.YELLOW
 
     private var opacityHolder: Int = 255
-
-    private var strokeShape = shape.clone()
 
     private var rawWidth = 0f
     private var rawHeight = 0f
@@ -75,7 +74,13 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
             invalidate()
         }
 
-    private val shaderMatrix = MananMatrix()
+    private val shaderMatrix by lazy {
+        MananMatrix()
+    }
+
+    private val saveLayerPaint by lazy {
+        Paint()
+    }
 
     private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
@@ -87,6 +92,10 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     private var pivotY = 0f
 
     private var currentTexture: Bitmap? = null
+
+    private val dstOutMode by lazy {
+        PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+    }
 
     override fun changeColor(color: Int) {
         shapeColor = color
@@ -259,17 +268,13 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         invalidate()
     }
 
-    override fun toBitmap(config: Bitmap.Config): Bitmap? {
-        return Bitmap.createBitmap(
-            rawWidth.toInt(),
-            rawHeight.toInt(),
-            config
-        ).also { bitmap ->
+    override fun toBitmap(config: Bitmap.Config): Bitmap {
+        return createBitmap(rawWidth.toInt(), rawHeight.toInt(), config).also { bitmap ->
             draw(Canvas(bitmap))
         }
     }
 
-    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap? {
+    override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap {
         val wStroke = rawWidth
         val hStroke = rawHeight
 
@@ -278,7 +283,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         val ws = (wStroke * scale)
         val hs = (hStroke * scale)
 
-        val outputBitmap = Bitmap.createBitmap(width, height, config)
+        val outputBitmap = createBitmap(width, height, config)
 
         val extraWidth = width - ws
         val extraHeight = height - hs
@@ -431,9 +436,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         rawWidth = shapeWidth.toFloat()
         rawHeight = shapeHeight.toFloat()
 
-        shape.resize(rawWidth, rawHeight)
-
-        strokeShape.resize(rawWidth + strokeSize, rawHeight + strokeSize)
+        shape.resize(rawWidth + strokeSize, rawHeight + strokeSize)
 
         val finalS = strokeSize * 2f
 
@@ -449,61 +452,66 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
     override fun draw(canvas: Canvas) {
         canvas.run {
             val half = strokeSize * 0.5f
+            withSave {
 
-            save()
-
-            translate(half, half)
-
-            val opacityFactor = opacityHolder / 255f
-
-            if (shadowRadius > 0) {
-                save()
                 translate(half, half)
-                val transformedColor =
-                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
-                val currentStyle = shapePaint.style
-                val currentShader = shapePaint.shader
-                shapePaint.shader = null
-                shapePaint.style = Paint.Style.FILL_AND_STROKE
-                shapePaint.strokeWidth = strokeSize
-                shapePaint.color = transformedColor
-                shapePaint.setShadowLayer(
-                    shadowRadius,
-                    shadowDx,
-                    shadowDy,
-                    transformedColor
-                )
 
+                val opacityFactor = opacityHolder / 255f
+
+                if (shadowRadius > 0) {
+                    val transformedColor =
+                        shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                    val currentStyle = shapePaint.style
+                    val currentShader = shapePaint.shader
+                    shapePaint.shader = null
+                    shapePaint.style = Paint.Style.FILL_AND_STROKE
+                    shapePaint.strokeWidth = strokeSize
+                    shapePaint.color = transformedColor
+                    shapePaint.setShadowLayer(
+                        shadowRadius,
+                        shadowDx,
+                        shadowDy,
+                        transformedColor
+                    )
+
+                    shape.draw(canvas, shapePaint)
+
+                    shapePaint.clearShadowLayer()
+                    shapePaint.shader = currentShader
+                    shapePaint.style = currentStyle
+                    shapePaint.strokeWidth = 0f
+                }
+
+                if (strokeSize > 0f) {
+                    val currentStyle = shapePaint.style
+                    shapePaint.style = Paint.Style.STROKE
+                    shapePaint.strokeWidth = strokeSize
+                    val currentShader = shapePaint.shader
+                    shapePaint.shader = null
+                    shapePaint.color =
+                        strokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+
+                    saveLayer(-half, -half, rawWidth, rawHeight, saveLayerPaint)
+
+                    shape.draw(canvas, shapePaint)
+
+                    shapePaint.xfermode = dstOutMode
+                    shapePaint.color = Color.BLACK
+                    shapePaint.style = Paint.Style.FILL
+
+                    shape.draw(canvas, shapePaint)
+
+                    shapePaint.xfermode = null
+                    shapePaint.shader = currentShader
+                    shapePaint.style = currentStyle
+                    shapePaint.strokeWidth = 0f
+
+                    restore()
+                }
+
+                shapePaint.color = shapeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
                 shape.draw(canvas, shapePaint)
-
-                shapePaint.clearShadowLayer()
-                shapePaint.shader = currentShader
-                shapePaint.style = currentStyle
-                shapePaint.strokeWidth = 0f
-                restore()
             }
-
-            if (strokeSize > 0f) {
-                val currentStyle = shapePaint.style
-                shapePaint.style = Paint.Style.STROKE
-                shapePaint.strokeWidth = strokeSize
-                val currentShader = shapePaint.shader
-                shapePaint.shader = null
-                shapePaint.color = strokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
-
-                strokeShape.draw(canvas, shapePaint)
-
-                shapePaint.shader = currentShader
-                shapePaint.style = currentStyle
-                shapePaint.strokeWidth = 0f
-            }
-
-            restore()
-
-            translate(strokeSize, strokeSize)
-
-            shapePaint.color = shapeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
-            shape.draw(canvas, shapePaint)
         }
     }
 
