@@ -734,6 +734,8 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         val lowerIndex = layersIndex.min()
         val bottomLayer = layerHolder[lowerIndex]
 
+        val clonedBottomLayer = bottomLayer.clone(true)
+
         mergeCanvas.setBitmap(bottomLayer.bitmap)
 
         val sortedMinusBottomIndex = layersIndex.sorted().minus(lowerIndex)
@@ -747,6 +749,9 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
 
         removeLayersWithoutStateSave(sortedMinusBottomIndex.toIntArray())
+
+        initialPaintLayer = clonedBottomLayer
+
         saveState(createState(initialLayers, bottomLayer))
     }
 
