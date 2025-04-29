@@ -8,6 +8,7 @@ import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.ScaleGestureDetector
+import androidx.core.graphics.createBitmap
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.gesture.detectors.translation.TranslationDetector
@@ -35,7 +36,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         null
     private var onLayersChangedListener: OnLayersChanged? = null
 
-    private var onStateChanged: (() -> Unit)? = null
+    private var onStateChanged: ((layers: List<PaintLayer>?, clip: Rect?) -> Unit)? = null
 
     private val mergeCanvas by lazy {
         Canvas()
@@ -361,14 +362,17 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun saveState(state: State?, ignorePainterHandleHistoryFlag: Boolean = true) {
-        if (state == null || maximumHistorySize == 0) {
-            return
-        }
+
         if (painter?.doesHandleHistory() == true && !ignorePainterHandleHistoryFlag) {
             return
         }
 
-        onStateChanged?.invoke()
+
+        onStateChanged?.invoke(state?.clonedLayers, state?.clonedClip)
+
+        if (state == null || maximumHistorySize == 0) {
+            return
+        }
 
         redoStack.clear()
         undoStack.push(state)
@@ -812,11 +816,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
 
         val finalBitmap = layerHolder.first().bitmap.let { layer ->
-            Bitmap.createBitmap(
-                layer.width,
-                layer.height,
-                layer.config ?: Bitmap.Config.ARGB_8888
-            )
+            createBitmap(layer.width, layer.height, layer.config ?: Bitmap.Config.ARGB_8888)
         }
 
         mergeCanvas.setBitmap(finalBitmap)
@@ -861,7 +861,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         onLayersChanged?.invoke(layers, selectedLayerIndex)
     }
 
-    fun setOnStateChanged(callback: () -> Unit) {
+    fun setOnStateChanged(callback: (layers: List<PaintLayer>?, clip: Rect?) -> Unit) {
         onStateChanged = callback
     }
 
