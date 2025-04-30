@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
+import androidx.core.graphics.createBitmap
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.painters.selection.clippers.BitmapMaskClipper
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
@@ -90,11 +91,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         this.clipBounds.set(clipBounds)
 
         maskLayer = PaintLayer(
-            Bitmap.createBitmap(
-                layerBounds.width(),
-                layerBounds.height(),
-                Bitmap.Config.ARGB_8888
-            )
+            createBitmap(layerBounds.width(), layerBounds.height())
         )
 
         maskTool?.let { initializeTool(it) }
@@ -118,7 +115,6 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     override fun onMoveEnded(touchData: TouchData) {
         maskTool?.onMoveEnded(touchData)
         saveState()
-        // TODO: Fix undo
     }
 
     override fun draw(canvas: Canvas) {
@@ -199,11 +195,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
 
         if (undoStack.isEmpty()) {
             undoStack.push(
-                Bitmap.createBitmap(
-                    boundsRect.width().toInt(),
-                    boundsRect.height().toInt(),
-                    Bitmap.Config.ARGB_8888
-                )
+                createBitmap(boundsRect.width(), boundsRect.height())
             )
         }
 
