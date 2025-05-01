@@ -384,6 +384,14 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
+    fun popLastState() {
+        undoStack.apply {
+            if (isNotEmpty()) {
+                pop()
+            }
+        }
+    }
+
     fun addNewLayerWithoutSavingHistory() {
         addNewLayerWithoutSavingHistory(createLayerBitmap())
 
