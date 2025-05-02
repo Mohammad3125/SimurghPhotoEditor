@@ -23,6 +23,7 @@ import android.text.TextPaint
 import androidx.annotation.ColorInt
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import ir.baboomeh.photolib.properties.Bitmapable
@@ -729,9 +730,6 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
         if (strokeRadiusPx < 0f) throw IllegalStateException("Stroke width should be a positive number")
         textStrokeWidth = strokeRadiusPx
         this.textStrokeColor = strokeColor
-
-        shiftTextureWithAlignment(strokeRadiusPx)
-
         notifyBoundsChanged()
     }
 
@@ -800,11 +798,7 @@ class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeC
 
 
     override fun toBitmap(config: Bitmap.Config): Bitmap? {
-        return Bitmap.createBitmap(
-            rawWidth.toInt(),
-            rawHeight.toInt(),
-            config
-        ).also { bitmap ->
+        return createBitmap(rawWidth.toInt(), rawHeight.toInt(), config).also { bitmap ->
             draw(Canvas(bitmap))
         }
     }
