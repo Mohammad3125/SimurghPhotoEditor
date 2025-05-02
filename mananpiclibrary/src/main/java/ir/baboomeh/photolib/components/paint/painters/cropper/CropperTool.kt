@@ -339,12 +339,23 @@ class CropperTool : Painter() {
         canvasMatrix.mapVectors(array)
     }
 
+    private fun mapInverseVector(touchData: TouchData) {
+        inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
+        pointHolder[0] = touchData.dx
+        pointHolder[1] = touchData.dy
+        inverseMatrix.mapVectors(pointHolder)
+        touchData.dx = pointHolder[0]
+        touchData.dy = pointHolder[1]
+    }
+
     override fun onMove(touchData: TouchData) {
         if (animator.isRunning) {
             return
         }
         // Create a new rectangle to change it's dimensions indirectly to later be able to validate it's size.
         if (handleBar != null) {
+
+            mapInverseVector(touchData)
 
             val changedRect = aspectRatio.resize(allocRectF.apply {
                 set(frameRect)
