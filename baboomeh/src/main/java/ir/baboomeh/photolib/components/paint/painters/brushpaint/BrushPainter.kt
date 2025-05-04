@@ -11,6 +11,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
+import androidx.core.graphics.createBitmap
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.engines.DrawingEngine
 import ir.baboomeh.photolib.components.paint.painters.brushpaint.brushes.Brush
@@ -21,7 +22,7 @@ import ir.baboomeh.photolib.properties.MaskTool
 import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint, MaskTool {
+class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint, MaskTool {
 
     private var layerPaint = Paint().apply {
         isFilterBitmap = true
@@ -55,13 +56,13 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     private val alphaBlendCanvas by lazy {
         Canvas()
     }
-    private var shouldBlend = false
+    private var isAlphaBlending = false
 
     private var viewBounds = RectF()
 
     private var isLayerNull = true
     private var isBrushNull = false
-    private var shouldBlendTexture = false
+    private var isBlendingTexture = false
 
     private lateinit var finalCanvasToDraw: Canvas
 
@@ -102,7 +103,7 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
 
         createAlphaBitmapIfNeeded()
 
-        if (shouldBlendTexture) {
+        if (isBlendingTexture) {
             texturePaint.shader =
                 BitmapShader(
                     finalBrush.texture!!,
@@ -116,17 +117,17 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     private fun createAlphaBitmapIfNeeded() {
-        blendPaint.alpha = if (shouldBlend) (finalBrush.opacity * 255f).toInt() else 255
+        blendPaint.alpha = if (isAlphaBlending) (finalBrush.opacity * 255f).toInt() else 255
 
         if (shouldCreateAlphaBitmap()) {
             alphaBlendBitmap =
-                Bitmap.createBitmap(ccBitmap.width, ccBitmap.height, Bitmap.Config.ARGB_8888)
+                createBitmap(ccBitmap.width, ccBitmap.height)
             alphaBlendCanvas.setBitmap(alphaBlendBitmap)
         }
     }
 
     private fun shouldCreateAlphaBitmap(): Boolean {
-        return (shouldBlend || shouldBlendTexture) && (!this::alphaBlendBitmap.isInitialized || (alphaBlendBitmap.width != ccBitmap.width || alphaBlendBitmap.height != ccBitmap.height))
+        return (isAlphaBlending || isBlendingTexture) && (!this::alphaBlendBitmap.isInitialized || (alphaBlendBitmap.width != ccBitmap.width || alphaBlendBitmap.height != ccBitmap.height))
     }
 
     override fun onMove(touchData: TouchData) {
@@ -171,10 +172,11 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
                 finalBrush
             )
 
-            if (shouldBlendTexture) {
-                drawTextureOnBrush(paintCanvas)
+            if (isBlendingTexture) {
+                alphaBlendCanvas.drawRect(viewBounds, texturePaint)
+                paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
                 alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
-            } else if (shouldBlend) {
+            } else if (isAlphaBlending) {
                 paintCanvas.drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
                 alphaBlendBitmap.eraseColor(Color.TRANSPARENT)
             }
@@ -184,13 +186,12 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
     }
 
     private fun chooseCanvasToDraw() {
-        shouldBlend = finalBrush.alphaBlend
+        isAlphaBlending = finalBrush.alphaBlend
 
-        shouldBlendTexture = finalBrush.texture != null
+        isBlendingTexture = finalBrush.texture != null
 
         finalCanvasToDraw =
-            if (shouldBlend || shouldBlendTexture) alphaBlendCanvas else paintCanvas
-
+            if (isAlphaBlending || isBlendingTexture) alphaBlendCanvas else paintCanvas
     }
 
     override fun onLayerChanged(layer: PaintLayer?) {
@@ -211,18 +212,18 @@ class BrushPaint(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoin
             return
         }
 
-        if (shouldBlendTexture) {
-            drawTextureOnBrush(canvas)
-        } else if (shouldBlend) {
+        if (isBlendingTexture) {
+            canvas.drawTextureOnBrush()
+        } else if (isAlphaBlending) {
             canvas.drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
         }
     }
 
-    private fun drawTextureOnBrush(canvas: Canvas) {
-        canvas.saveLayer(viewBounds, layerPaint)
-        canvas.drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
-        canvas.drawRect(viewBounds, texturePaint)
-        canvas.restore()
+    private fun Canvas.drawTextureOnBrush() {
+        saveLayer(viewBounds, layerPaint)
+        drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
+        drawRect(viewBounds, texturePaint)
+        restore()
     }
 
     private fun shouldDraw(): Boolean =
