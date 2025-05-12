@@ -415,11 +415,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun createLayerBitmap(): Bitmap {
-        return Bitmap.createBitmap(
-            bitmapWidth,
-            bitmapHeight,
-            Bitmap.Config.ARGB_8888
-        )
+        return createBitmap(bitmapWidth, bitmapHeight)
     }
 
     private fun cacheLayers() {
