@@ -1,38 +1,52 @@
 package ir.baboomeh.photolib.utils.history
 
-interface HistoryHandler {
+abstract class HistoryHandler {
 
     class Options {
-        var maximumHistorySize: Int = 15
+        var maximumHistorySize: Int = 40
     }
 
-    var options: Options
+    fun interface OnHistoryStateChanged {
+        fun onStateChanged()
+    }
+
+    protected var onHistoryStateChanged: OnHistoryStateChanged? = null
+
+    internal fun setOnHistoryChanged(callback: OnHistoryStateChanged) {
+        onHistoryStateChanged = callback
+    }
+
+    protected fun callOnHistoryChanged() {
+        onHistoryStateChanged?.onStateChanged()
+    }
+
+    abstract var options: Options
 
     /**
      * Undoes the changes in stack.
      * @return current [HistoryState] that has been undone. Might be null.
      */
-    fun undo(): HistoryState?
+    internal abstract fun undo(): HistoryState?
 
     /**
      * Redoes the changes in stack.
      * @return current [HistoryState] that has been redone. Might be null.
      */
-    fun redo(): HistoryState?
+    internal abstract fun redo(): HistoryState?
 
     /**
      * Adds an [HistoryState] to stacks that later will be used to undo/redo the state.
      * @param state a [HistoryState] class.
      */
-    fun addState(state: HistoryState)
+    internal abstract fun addState(state: HistoryState)
 
-    fun reset()
+    internal abstract fun reset()
 
-    fun popLastState(): Boolean
+    abstract fun popLastState(): Boolean
 
-    fun popFirstState(): Boolean
+    abstract fun popFirstState(): Boolean
 
-    fun getUndoSize(): Int
+    abstract fun getUndoSize(): Int
 
-    fun getRedoSize(): Int
+    abstract fun getRedoSize(): Int
 }

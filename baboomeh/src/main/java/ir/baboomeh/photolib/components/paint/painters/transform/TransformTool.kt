@@ -26,8 +26,9 @@ import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.GestureUtils
 import ir.baboomeh.photolib.utils.gesture.TouchData
+import ir.baboomeh.photolib.utils.history.HistoryState
+import ir.baboomeh.photolib.utils.history.handlers.StackHistoryHandler
 import java.util.LinkedList
-import java.util.Stack
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -137,14 +138,6 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             initialChildState = value?.clone(true)
         }
 
-    private val undoStack by lazy {
-        Stack<State>()
-    }
-
-    private val redoStack by lazy {
-        Stack<State>()
-    }
-
     val selectedChild: Transformable?
         get() {
             return _selectedChild?.transformable
@@ -182,6 +175,10 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     var onChildSelected: ((Transformable, isInitialization: Boolean) -> Unit)? = null
     var onChildDeselected: (() -> Unit)? = null
+
+    init {
+        historyHandler = StackHistoryHandler()
+    }
 
     override fun initialize(
         context: Context,
@@ -770,8 +767,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     override fun resetPaint() {
-        undoStack.clear()
-        redoStack.clear()
+        historyHandler!!.reset()
         initialChildState = null
         _selectedChild = null
         _children.clear()
@@ -1543,8 +1539,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         if (isTransformationLocked) {
             return
         }
-        redoStack.clear()
-        undoStack.push(state)
+        historyHandler!!.addState(state)
         initialChildState = _selectedChild?.clone(true)
     }
 
@@ -1556,19 +1551,11 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
     }
 
     override fun undo() {
-        if (undoStack.isNotEmpty()) {
-            val poppedState = undoStack.pop()
-            poppedState.undo()
-            redoStack.push(poppedState)
-        }
+        historyHandler!!.undo()
     }
 
     override fun redo() {
-        if (redoStack.isNotEmpty()) {
-            val poppedState = redoStack.pop()
-            poppedState.redo()
-            undoStack.push(poppedState)
-        }
+        historyHandler!!.redo()
     }
 
     private fun Child?.createState(
@@ -1580,15 +1567,15 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         val initialChildState: Child?,
         val initialChildren: LinkedList<Child>? = null,
         val reference: Child?,
-    ) {
+    ) : HistoryState {
         private val clonedChildren = LinkedList(_children)
         private val clonedChild = reference?.clone(true)
 
-        fun undo() {
+        override fun undo() {
             restoreState(initialChildState, initialChildren)
         }
 
-        fun redo() {
+        override fun redo() {
             restoreState(clonedChild, clonedChildren)
         }
 

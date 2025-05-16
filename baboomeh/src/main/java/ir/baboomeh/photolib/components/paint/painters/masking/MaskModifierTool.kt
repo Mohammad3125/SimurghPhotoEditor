@@ -15,7 +15,8 @@ import ir.baboomeh.photolib.components.paint.painters.selection.clippers.BitmapM
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
-import java.util.Stack
+import ir.baboomeh.photolib.utils.history.HistoryState
+import ir.baboomeh.photolib.utils.history.handlers.StackFullRestoreHistoryHandler
 
 class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.MessageChannel {
 
@@ -44,7 +45,13 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         Canvas()
     }
 
-    private lateinit var maskLayer: PaintLayer
+    protected var initialMaskLayerState: PaintLayer? = null
+
+    private var maskLayer: PaintLayer? = null
+        set(value) {
+            field = value
+            initialMaskLayerState = value?.clone(true)
+        }
 
     private lateinit var context: Context
     private lateinit var transformationMatrix: MananMatrix
@@ -57,10 +64,6 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
     private var selectedLayer: PaintLayer? = null
-
-    protected val undoStack = Stack<Bitmap>()
-
-    protected val redoStack = Stack<Bitmap>()
 
     var maskColor = Color.BLACK
         set(value) {
@@ -75,6 +78,10 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
             maskPaint.alpha = field
             sendMessage(PainterMessage.INVALIDATE)
         }
+
+    init {
+        historyHandler = StackFullRestoreHistoryHandler()
+    }
 
     override fun initialize(
         context: Context,
@@ -118,23 +125,25 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
     override fun draw(canvas: Canvas) {
-        canvas.drawBitmap(maskLayer.bitmap, 0f, 0f, maskPaint)
-        maskTool?.draw(canvas)
+        maskLayer?.let { layer ->
+            canvas.drawBitmap(layer.bitmap, 0f, 0f, maskPaint)
+            maskTool?.draw(canvas)
+        }
     }
 
     fun invertMaskLayer() {
-        if (this::maskLayer.isInitialized) {
+        maskLayer?.let { layer ->
             val invert =
-                maskLayer.bitmap.copy(maskLayer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+                layer.bitmap.copy(layer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
             invert.eraseColor(Color.BLACK)
 
             canvasOperation.setBitmap(invert)
             bitmapPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
-            canvasOperation.drawBitmap(maskLayer.bitmap, 0f, 0f, bitmapPaint)
+            canvasOperation.drawBitmap(layer.bitmap, 0f, 0f, bitmapPaint)
             bitmapPaint.xfermode = null
 
-            maskLayer.bitmap.recycle()
-            maskLayer.bitmap = invert
+            layer.bitmap.recycle()
+            layer.bitmap = invert
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -148,10 +157,10 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
     fun getMaskLayer(): Bitmap {
-        if (!this::maskLayer.isInitialized) {
+        if (maskLayer == null) {
             throw IllegalStateException("Mask layer isn't created yet")
         }
-        return maskLayer.bitmap
+        return maskLayer!!.bitmap
     }
 
     fun getSelectedLayerBitmap(): Bitmap? {
@@ -159,9 +168,8 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
     override fun resetPaint() {
-        maskLayer.bitmap.eraseColor(Color.TRANSPARENT)
-        redoStack.clear()
-        undoStack.clear()
+        maskLayer?.bitmap?.eraseColor(Color.TRANSPARENT)
+        historyHandler!!.reset()
         sendMessage(PainterMessage.INVALIDATE)
     }
 
@@ -191,47 +199,26 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
     }
 
     private fun saveState() {
-        redoStack.clear()
-
-        if (undoStack.isEmpty()) {
-            undoStack.push(
-                createBitmap(boundsRect.width(), boundsRect.height())
-            )
+        initialMaskLayerState?.let { initialLayer ->
+            historyHandler!!.addState(State(initialLayer))
         }
 
-        maskLayer.bitmap.let { layer ->
-            undoStack.push(layer.copy(layer.config ?: Bitmap.Config.ARGB_8888, true))
-        }
-
+        initialMaskLayerState = maskLayer?.clone(true)
     }
 
     private fun setClipper() {
-        clipper.maskBitmap = maskLayer.bitmap
+        clipper.maskBitmap = maskLayer?.bitmap
         clipper.bitmap = selectedLayer?.bitmap
     }
 
     override fun undo() {
-        swapStacks(undoStack, redoStack)
+        historyHandler!!.undo()?.let {
+            sendMessage(PainterMessage.INVALIDATE)
+        }
     }
 
     override fun redo() {
-        swapStacks(redoStack, undoStack)
-    }
-
-    private fun swapStacks(popStack: Stack<Bitmap>, pushStack: Stack<Bitmap>) {
-        if (popStack.isNotEmpty()) {
-            val poppedState = popStack.pop()
-
-            if (popStack.isNotEmpty() && pushStack.isEmpty()) {
-                val newPopped = popStack.pop()
-                restoreBitmapState(newPopped)
-                pushStack.push(poppedState)
-                pushStack.push(newPopped)
-            } else {
-                restoreBitmapState(poppedState)
-                pushStack.push(poppedState)
-            }
-
+        historyHandler!!.redo()?.let {
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -244,9 +231,21 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         return maskTool?.doesNeedTouchSlope() == true
     }
 
-    private fun restoreBitmapState(bitmap: Bitmap) {
-        maskLayer.bitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
-        maskTool?.onLayerChanged(maskLayer)
+    private inner class State(val initialLayer: PaintLayer) : HistoryState {
+        private val clonedLayer = maskLayer?.clone(true)
+
+        override fun undo() {
+            restoreState(initialLayer)
+        }
+
+        override fun redo() {
+            restoreState(clonedLayer)
+        }
+
+        private fun restoreState(targetLayer: PaintLayer?) {
+            maskLayer = targetLayer?.clone(true)
+            maskTool?.onLayerChanged(maskLayer)
+        }
     }
 
 }

@@ -637,6 +637,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     protected open fun PaintLayer.draw(canvas: Canvas) {
+        //TODO: move draw call to PaintLayer
         layersPaint.alpha = (255 * opacity).toInt()
         layersPaint.xfermode = blendingModeObject
         canvas.drawBitmap(this.bitmap, 0f, 0f, layersPaint)

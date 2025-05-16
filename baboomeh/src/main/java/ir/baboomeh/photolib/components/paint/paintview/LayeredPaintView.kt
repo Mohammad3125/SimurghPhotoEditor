@@ -14,7 +14,7 @@ import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.gesture.detectors.translation.TranslationDetector
 import ir.baboomeh.photolib.utils.history.HistoryHandler
 import ir.baboomeh.photolib.utils.history.HistoryState
-import ir.baboomeh.photolib.utils.history.StackHistoryHandler
+import ir.baboomeh.photolib.utils.history.handlers.StackHistoryHandler
 
 open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     MananPaintView(context, attrSet) {
@@ -28,8 +28,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             invalidate()
         }
 
-    private val historyHandler: HistoryHandler = StackHistoryHandler()
-    val historyHandlerOptions = historyHandler.options
+    val historyHandler: HistoryHandler = StackHistoryHandler().apply {
+        setOnHistoryChanged {
+            callUndoRedoListener()
+        }
+    }
 
     private var layerHolder = mutableListOf<PaintLayer>()
 
@@ -89,7 +92,24 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         set(value) {
             cacheLayers()
             super.painter = value
+
             field = value
+
+            if (value == null) {
+                historyHandler.apply {
+                    setOnHistoryChanged {
+                        callUndoRedoListener()
+                    }
+                    callUndoRedoListener()
+                }
+            } else {
+                value.historyHandler?.apply {
+                    setOnHistoryChanged {
+                        callUndoRedoListener()
+                    }
+                    callUndoRedoListener()
+                }
+            }
         }
 
     override fun onImageLaidOut() {
@@ -188,12 +208,10 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.onLayerChanged(selectedLayer)
 
         invalidate()
-
-        historyHandler.callUndoRedoListener()
     }
 
     private fun HistoryHandler.callUndoRedoListener() {
-        onUndoOrRedoStateChanged?.invoke(getUndoSize() > 1, getRedoSize() != 0)
+        onUndoOrRedoStateChanged?.invoke(getUndoSize() != 0, getRedoSize() != 0)
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
@@ -350,7 +368,6 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
     private fun saveState(state: State?, ignorePainterHandleHistoryFlag: Boolean = true) {
         if (painter?.doesHandleHistory() == true && !ignorePainterHandleHistoryFlag) {
-//            painter.historyHandler.callUndoRedoListener()
             return
         }
 
@@ -362,10 +379,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
         initialPaintLayer = selectedLayer?.clone(true)
 
-        historyHandler.apply {
-            addState(state)
-            callUndoRedoListener()
-        }
+        historyHandler.addState(state)
     }
 
     fun addNewLayerWithoutSavingHistory() {

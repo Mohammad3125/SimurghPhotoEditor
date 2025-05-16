@@ -1,20 +1,21 @@
-package ir.baboomeh.photolib.utils.history
+package ir.baboomeh.photolib.utils.history.handlers
 
+import ir.baboomeh.photolib.utils.history.HistoryHandler
+import ir.baboomeh.photolib.utils.history.HistoryState
 import java.util.Stack
 
-class StackHistoryHandler : HistoryHandler {
+open class StackHistoryHandler : HistoryHandler() {
+    protected val undoStack = Stack<HistoryState>()
+    protected val redoStack = Stack<HistoryState>()
 
-
-    private val undoStack = Stack<HistoryState>()
-    private val redoStack = Stack<HistoryState>()
-
-    override var options = HistoryHandler.Options()
+    override var options = Options()
 
     override fun undo(): HistoryState? {
         undoStack.takeIf { it.size > 1 }?.apply {
             return pop().also { state ->
                 state.undo()
                 redoStack.push(state)
+                callOnHistoryChanged()
             }
         }
         return null
@@ -25,6 +26,7 @@ class StackHistoryHandler : HistoryHandler {
             return pop().also { state ->
                 state.redo()
                 undoStack.push(state)
+                callOnHistoryChanged()
             }
         }
         return null
@@ -41,11 +43,14 @@ class StackHistoryHandler : HistoryHandler {
         if (isHistorySizeExceeded()) {
             popFirstState()
         }
+
+        callOnHistoryChanged()
     }
 
     override fun reset() {
         undoStack.clear()
         redoStack.clear()
+        callOnHistoryChanged()
     }
 
     override fun popLastState(): Boolean {
@@ -62,10 +67,10 @@ class StackHistoryHandler : HistoryHandler {
         return undoStack.removeAt(0) != null
     }
 
-    private fun isHistorySizeExceeded() = undoStack.size > options.maximumHistorySize
+    protected open fun isHistorySizeExceeded() = undoStack.size > options.maximumHistorySize
 
     override fun getUndoSize(): Int {
-        return undoStack.size
+        return (undoStack.size - 1).coerceIn(0, undoStack.size)
     }
 
     override fun getRedoSize(): Int {

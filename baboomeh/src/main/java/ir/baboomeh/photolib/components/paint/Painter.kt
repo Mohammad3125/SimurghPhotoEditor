@@ -9,9 +9,12 @@ import android.graphics.RectF
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
+import ir.baboomeh.photolib.utils.history.HistoryHandler
 
 abstract class Painter {
     private var messageListener: MessageChannel? = null
+
+    var historyHandler: HistoryHandler? = null
 
     private var onInitializedListener: () -> Unit = {}
 
