@@ -12,7 +12,9 @@ import androidx.core.graphics.createBitmap
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.gesture.detectors.translation.TranslationDetector
-import java.util.Stack
+import ir.baboomeh.photolib.utils.history.HistoryHandler
+import ir.baboomeh.photolib.utils.history.HistoryState
+import ir.baboomeh.photolib.utils.history.StackHistoryHandler
 
 open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     MananPaintView(context, attrSet) {
@@ -26,17 +28,19 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             invalidate()
         }
 
-    private val undoStack = Stack<State>()
-    private val redoStack = Stack<State>()
+    private val historyHandler: HistoryHandler = StackHistoryHandler()
+    val historyHandlerOptions = historyHandler.options
 
     private var layerHolder = mutableListOf<PaintLayer>()
-
 
     private var onLayersChanged: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)? =
         null
     private var onLayersChangedListener: OnLayersChanged? = null
 
     private var onStateChanged: ((layers: List<PaintLayer>?, clip: Rect?) -> Unit)? = null
+
+    private var onUndoOrRedoStateChanged: ((isUndoEnabled: Boolean, isRedoEnabled: Boolean) -> Unit)? =
+        null
 
     private val mergeCanvas by lazy {
         Canvas()
@@ -80,14 +84,6 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     private fun isCacheLayerInitialized(): Boolean =
         this::partiallyCachedLayer.isInitialized && this::cachedLayer.isInitialized
 
-
-    var maximumHistorySize = 15
-        set(value) {
-            field = value
-            while (isHistorySizeExceeded()) {
-                removeFirstState()
-            }
-        }
 
     override var painter: Painter? = null
         set(value) {
@@ -164,11 +160,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                 return
             }
         }
-        if (undoStack.size > 1) {
-            val poppedState = undoStack.pop()
-            poppedState.undo()
-            redoStack.push(poppedState)
-
+        historyHandler.undo()?.let {
             updateAfterStateChange()
         }
     }
@@ -183,11 +175,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                 return
             }
         }
-        if (redoStack.isNotEmpty()) {
-            val poppedState = redoStack.pop()
-            poppedState.redo()
-            undoStack.push(poppedState)
-
+        historyHandler.redo()?.let {
             updateAfterStateChange()
         }
     }
@@ -200,6 +188,12 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         painter?.onLayerChanged(selectedLayer)
 
         invalidate()
+
+        historyHandler.callUndoRedoListener()
+    }
+
+    private fun HistoryHandler.callUndoRedoListener() {
+        onUndoOrRedoStateChanged?.invoke(getUndoSize() > 1, getRedoSize() != 0)
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
@@ -299,13 +293,6 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-
-    private fun isHistorySizeExceeded() = undoStack.size > maximumHistorySize
-
-    private fun removeFirstState() {
-        undoStack.removeAt(0)
-    }
-
     /**
      * Creates a new PaintLayer based on previous layers and adds it to list of layers.
      * @throws IllegalStateException If previous call to [addNewLayer(bitmap)] hasn't been made yet.
@@ -362,33 +349,22 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     private fun saveState(state: State?, ignorePainterHandleHistoryFlag: Boolean = true) {
-
         if (painter?.doesHandleHistory() == true && !ignorePainterHandleHistoryFlag) {
+//            painter.historyHandler.callUndoRedoListener()
             return
         }
-
 
         onStateChanged?.invoke(state?.clonedLayers, state?.clonedClip)
 
-        if (state == null || maximumHistorySize == 0) {
+        if (state == null) {
             return
         }
 
-        redoStack.clear()
-        undoStack.push(state)
-
         initialPaintLayer = selectedLayer?.clone(true)
 
-        if (isHistorySizeExceeded()) {
-            removeFirstState()
-        }
-    }
-
-    fun popLastState() {
-        undoStack.apply {
-            if (isNotEmpty()) {
-                pop()
-            }
+        historyHandler.apply {
+            addState(state)
+            callUndoRedoListener()
         }
     }
 
@@ -814,8 +790,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
     open fun clearLayers() {
         layerHolder.clear()
-        undoStack.clear()
-        redoStack.clear()
+        historyHandler.reset()
         selectedLayer = null
     }
 
@@ -874,21 +849,25 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         onStateChanged = callback
     }
 
+    fun setOnUndoOrRedoListener(func: (isUndoEnabled: Boolean, isRedoEnabled: Boolean) -> Unit) {
+        onUndoOrRedoStateChanged = func
+    }
+
     private inner class State(
         val initialLayer: PaintLayer?,
         val initialLayers: MutableList<PaintLayer>?,
         val reference: PaintLayer? = selectedLayer,
         val initialClip: Rect? = null,
         val clonedClip: Rect? = null
-    ) {
+    ) : HistoryState {
         val clonedLayer = reference?.clone(true)
         val clonedLayers = layerHolder.toMutableList()
 
-        fun undo() {
+        override fun undo() {
             restoreState(initialLayer, initialLayers, initialClip)
         }
 
-        fun redo() {
+        override fun redo() {
             restoreState(clonedLayer, clonedLayers, clonedClip)
         }
 
