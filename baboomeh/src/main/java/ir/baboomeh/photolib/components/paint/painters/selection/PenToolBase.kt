@@ -23,7 +23,7 @@ import ir.baboomeh.photolib.utils.gesture.TouchData
 import java.util.Stack
 import kotlin.math.abs
 
-abstract class PenToolBase : Painter() {
+abstract class PenToolBase(context: Context) : Painter() {
     // A path used by other paths in drawings operation to maintain
     // the previous state of a path.
     protected val path by lazy {
@@ -77,14 +77,14 @@ abstract class PenToolBase : Painter() {
      * This range will later determine the range of acceptance for current touch
      * location to close the path in pixels. Default value is 10dp (later will be transformed to pixel after selector is initialized.)
      */
-    var touchRange = 0f
+    var touchRange = context.dp(10)
 
     /**
      * Acceptable range for handle bars in bezier mode to be accepted that
      * user has touched the handle bar (range is in pixels).
      * Default is 24dp (later will be transformed to pixel after selector is initialized.)
      */
-    var handleTouchRange = 0f
+    var handleTouchRange = context.dp(24)
 
     /**
      * Type of line that is going to be drawn in the next touch down.
@@ -131,7 +131,9 @@ abstract class PenToolBase : Painter() {
     protected var pointCounter = 0
 
     /** Path effect for corner of path. */
-    protected lateinit var cornerPathEffect: CornerPathEffect
+    protected val cornerPathEffect by lazy {
+        CornerPathEffect(context.dp(2))
+    }
 
     /** Animator for when a path is closed. This animator basically shifts the
     phase of path effect to create a cool animation. */
@@ -159,6 +161,7 @@ abstract class PenToolBase : Painter() {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
             style = Paint.Style.STROKE
+            strokeWidth = context.dp(3)
         }
     }
 
@@ -179,13 +182,16 @@ abstract class PenToolBase : Painter() {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
             style = Paint.Style.STROKE
+            strokeWidth = context.dp(3)
+            val intervals = context.dp(2)
+            pathEffect = DashPathEffect(floatArrayOf(intervals, intervals), 0f)
         }
     }
 
     /**
      * Radius of circles which will be initialized after current selector has been initialized.
      */
-    protected var circlesRadius = 0f
+    var circlesRadius = context.dp(4)
 
     /**
      * Stroke width of lines drawn.
@@ -194,10 +200,11 @@ abstract class PenToolBase : Painter() {
      *
      * Values are interpreted as pixels.
      */
-    var linesStrokeWidth: Float = 0.0f
+    var linesStrokeWidth: Float = linesPaint.strokeWidth
         set(value) {
             field = value
             linesPaint.strokeWidth = field
+            helperLinesPaint.strokeWidth = field
             sendMessage(PainterMessage.INVALIDATE)
         }
 
@@ -232,28 +239,6 @@ abstract class PenToolBase : Painter() {
     ) {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         canvasMatrix = transformationMatrix
-
-        context.run {
-            cornerPathEffect = CornerPathEffect(dp(2))
-
-            if (touchRange == 0f)
-                touchRange = dp(10)
-
-            if (handleTouchRange == 0f)
-                handleTouchRange = dp(24)
-
-            if (linesStrokeWidth == 0f) {
-                linesStrokeWidth = dp(3)
-            }
-
-            val intervals = dp(2)
-
-            helperLinesPaint.strokeWidth = dp(2)
-
-            helperLinesPaint.pathEffect = DashPathEffect(floatArrayOf(intervals, intervals), 0f)
-
-            circlesRadius = dp(4)
-        }
     }
 
     override fun onMoveBegin(touchData: TouchData) {

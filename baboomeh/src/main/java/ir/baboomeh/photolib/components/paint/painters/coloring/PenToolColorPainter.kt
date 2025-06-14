@@ -1,5 +1,6 @@
 package ir.baboomeh.photolib.components.paint.painters.coloring
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -9,7 +10,7 @@ import android.graphics.PorterDuffXfermode
 import androidx.annotation.ColorInt
 import ir.baboomeh.photolib.components.paint.painters.selection.PenToolBase
 
-class PenToolColorPainter : PenToolBase() {
+class PenToolColorPainter(context: Context) : PenToolBase(context) {
     private val canvasApply by lazy {
         Canvas()
     }

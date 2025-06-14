@@ -1,12 +1,13 @@
 package ir.baboomeh.photolib.components.paint.painters.masking
 
+import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import ir.baboomeh.photolib.components.paint.painters.selection.PenToolBase
 
-class PenToolMaskTool : PenToolBase() {
+class PenToolMaskTool(context: Context) : PenToolBase(context) {
 
     protected val canvasApply by lazy {
         Canvas()
