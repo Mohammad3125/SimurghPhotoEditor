@@ -35,24 +35,39 @@ import kotlin.math.atan2
 import kotlin.math.max
 import kotlin.math.min
 
-class TransformTool : Painter(), Transformable.OnInvalidate {
+class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
 
     private var selectedLayer: PaintLayer? = null
 
-    var boundPaint =
+    private val boundPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             color = Color.BLACK
-            strokeWidth = 10f
+            strokeWidth = context.dp(2)
         }
+
+    var boundStrokeWidth = boundPaint.strokeWidth
         set(value) {
             field = value
+            boundPaint.strokeWidth = field
             onInvalidate()
         }
 
-    lateinit var handleDrawable: Drawable
+    var boundColor = boundPaint.color
+        set(value) {
+            field = value
+            boundPaint.color = field
+            onInvalidate()
+        }
 
-    var touchRange = 0f
+
+    var handleDrawable: Drawable = ResourcesCompat.getDrawable(
+        context.resources,
+        R.drawable.defualt_transform_tool_handles,
+        null
+    )!!
+
+    var touchRange = context.dp(24)
 
     private val mappingMatrix by lazy {
         MananMatrix()
@@ -143,12 +158,26 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
             return _selectedChild?.transformable
         }
 
-    val smartGuidePaint by lazy {
+    private val smartGuidePaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            strokeWidth = 5f
+            strokeWidth = context.dp(2)
             color = Color.MAGENTA
         }
     }
+
+    var smartGuidelineStrokeWidth = smartGuidePaint.strokeWidth
+        set(value) {
+            field = value
+            smartGuidePaint.strokeWidth = field
+            onInvalidate()
+        }
+
+    var smartGuidelineColor = smartGuidePaint.color
+        set(value) {
+            field = value
+            smartGuidePaint.color = field
+            onInvalidate()
+        }
 
     /**
      * Holds lines for smart guidelines.
@@ -163,7 +192,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
 
     private var smartRotationLineHolder = FloatArray(4)
 
-    var acceptableDistanceForSmartGuideline = 0f
+    var acceptableDistanceForSmartGuideline = context.dp(1)
 
     var rangeForSmartRotationGuideline = 2f
         set(value) {
@@ -188,21 +217,7 @@ class TransformTool : Painter(), Transformable.OnInvalidate {
         clipBounds: Rect
     ) {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
-        if (acceptableDistanceForSmartGuideline == 0f) {
-            acceptableDistanceForSmartGuideline = context.dp(1)
-        }
 
-        if (!this::handleDrawable.isInitialized) {
-            handleDrawable = ResourcesCompat.getDrawable(
-                context.resources,
-                R.drawable.defualt_transform_tool_handles,
-                null
-            )!!
-        }
-
-        if (touchRange == 0f) {
-            touchRange = context.dp(24)
-        }
         matrix = transformationMatrix
         fitMatrix = fitInsideMatrix
         bounds = clipBounds
