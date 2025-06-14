@@ -33,67 +33,67 @@ import ir.baboomeh.photolib.utils.MananMatrix
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int) : Transformable(),
+open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int) : Transformable(),
     Bitmapable, StrokeCapable, Colorable,
     Texturable, Gradientable,
     Shadowable, Blendable, Opacityable {
 
 
-    var shape = shape
+    open var shape = shape
         set(value) {
             field = value
             notifyBoundsChanged()
         }
 
-    private var shadowRadius = 0f
-    private var shadowDx = 0f
-    private var shadowDy = 0f
-    private var shadowColor = Color.YELLOW
+    protected var shadowRadius = 0f
+    protected var shadowDx = 0f
+    protected var shadowDy = 0f
+    protected var shadowColor = Color.YELLOW
 
-    private var opacityHolder: Int = 255
+    protected var opacityHolder: Int = 255
 
-    private var rawWidth = 0f
-    private var rawHeight = 0f
+    protected var rawWidth = 0f
+    protected var rawHeight = 0f
 
-    private val shapePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    protected val shapePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private var shaderRotationHolder = 0f
+    protected var shaderRotationHolder = 0f
 
-    var shapeColor = Color.BLACK
+    open var shapeColor = Color.BLACK
         set(value) {
             field = value
             shapePaint.color = value
             invalidate()
         }
 
-    private var strokeSize = 0f
+    protected var strokeSize = 0f
 
-    private var strokeColor = Color.BLACK
+    protected var strokeColor = Color.BLACK
         set(value) {
             field = value
             invalidate()
         }
 
-    private val shaderMatrix by lazy {
+    protected val shaderMatrix by lazy {
         MananMatrix()
     }
 
-    private val saveLayerPaint by lazy {
+    protected val saveLayerPaint by lazy {
         Paint()
     }
 
-    private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
+    protected var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
-    private var gradientColors: IntArray? = null
+    protected var gradientColors: IntArray? = null
 
-    private var gradientPositions: FloatArray? = null
+    protected var gradientPositions: FloatArray? = null
 
-    private var pivotX = 0f
-    private var pivotY = 0f
+    protected var pivotX = 0f
+    protected var pivotY = 0f
 
-    private var currentTexture: Bitmap? = null
+    protected var currentTexture: Bitmap? = null
 
-    private val dstOutMode by lazy {
+    protected val dstOutMode by lazy {
         PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
     }
 
@@ -524,7 +524,7 @@ class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight: Int)
         invalidate()
     }
 
-    private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
+    protected fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
         factor: Float
     ): Int =
         if (factor == 1f) this else Color.argb(
