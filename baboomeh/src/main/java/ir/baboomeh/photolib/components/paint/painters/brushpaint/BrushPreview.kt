@@ -22,20 +22,21 @@ import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import kotlin.random.Random
 
-class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context, attributeSet) {
+open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
+    View(context, attributeSet) {
     constructor(context: Context) : this(context, null)
 
     init {
         setLayerType(LAYER_TYPE_HARDWARE, null)
     }
 
-    var isCheckerBoardEnabled = true
+    open var isCheckerBoardEnabled = true
         set(value) {
             field = value
             invalidate()
         }
 
-    var brush: Brush? = null
+    open var brush: Brush? = null
         set(value) {
             field = value
 
@@ -53,7 +54,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             requestRender()
         }
 
-    private val checkerPatternPaint by lazy {
+    protected val checkerPatternPaint by lazy {
         Paint().apply {
             shader = BitmapShader(
                 BitmapFactory.decodeResource(resources, R.drawable.checker),
@@ -118,7 +119,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         }
     }
 
-    private fun initialize(
+    protected open fun initialize(
         width: Int,
         height: Int,
         paddingLeft: Float,
@@ -153,7 +154,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         }
     }
 
-    fun requestRender() {
+    open fun requestRender() {
         brush?.let { b ->
             doOnLayout {
                 callPoints(b)
@@ -162,17 +163,18 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
         }
     }
 
+    //TODO: Encapsulate the whole companion object implementation to a class.
     companion object {
 
-        private val path = Path()
-        private val canvasBitmap by lazy {
+        protected val path = Path()
+        protected val canvasBitmap by lazy {
             Canvas()
         }
-        private val pathMeasure by lazy {
+        protected val pathMeasure by lazy {
             PathMeasure()
         }
-        private val engine by lazy { CachedCanvasEngine() }
-        private var lineSmoother: LineSmoother = BezierLineSmoother().apply {
+        protected val engine by lazy { CachedCanvasEngine() }
+        protected var lineSmoother: LineSmoother = BezierLineSmoother().apply {
             onDrawPoint = object : LineSmoother.OnDrawPoint {
                 override fun onDrawPoint(
                     ex: Float,
@@ -188,22 +190,22 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             }
         }
 
-        private val rotationCache = mutableListOf<Float>()
-        private val scaleCache = mutableListOf<Float>()
-        private val scatterXCache = mutableListOf<Float>()
-        private val scatterYCache = mutableListOf<Float>()
+        protected val rotationCache = mutableListOf<Float>()
+        protected val scaleCache = mutableListOf<Float>()
+        protected val scatterXCache = mutableListOf<Float>()
+        protected val scatterYCache = mutableListOf<Float>()
 
-        private var cacheCounter = 0
-        private var cacheSizeInByte = 2000
+        protected var cacheCounter = 0
+        protected var cacheSizeInByte = 2000
 
-        private var cachePointHolder = mutableListOf<Float>()
-        private var cacheDirectionAngleHolder = mutableListOf<Float>()
+        protected var cachePointHolder = mutableListOf<Float>()
+        protected var cacheDirectionAngleHolder = mutableListOf<Float>()
 
-        private var points = FloatArray(320)
+        protected var points = FloatArray(320)
 
-        private val pathPointHolder = FloatArray(2)
+        protected val pathPointHolder = FloatArray(2)
 
-        private val touchData = TouchData()
+        protected val touchData = TouchData()
 
         fun createBrushSnapshot(
             targetWidth: Int,
@@ -271,7 +273,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             return snapshot
         }
 
-        private fun calculatePoints(
+        protected fun calculatePoints(
             targetWidth: Float,
             targetHeight: Float,
             paddingLeft: Float,
@@ -317,7 +319,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             points[points.lastIndex] = pathPointHolder[1]
         }
 
-        private fun callPoints(brush: Brush) {
+        protected fun callPoints(brush: Brush) {
 
             cacheCounter = 0
             cachePointHolder.clear()
@@ -372,7 +374,7 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             brush.smoothness = brushSmoothness
         }
 
-        private fun drawPoints(canvas: Canvas, brush: Brush) {
+        protected fun drawPoints(canvas: Canvas, brush: Brush) {
             cacheCounter = 0
 
             for (i in cachePointHolder.indices step 2) {
@@ -398,8 +400,9 @@ class BrushPreview(context: Context, attributeSet: AttributeSet?) : View(context
             }
         }
 
-        private fun initializeCachedProperties() {
-            if (rotationCache.size == 0) {
+        protected fun initializeCachedProperties() {
+            if (rotationCache.isEmpty()) {
+
                 rotationCache.clear()
                 scaleCache.clear()
                 scatterXCache.clear()
