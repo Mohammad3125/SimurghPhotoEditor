@@ -12,7 +12,7 @@ import ir.baboomeh.photolib.components.paint.painters.brushpaint.BrushPreview
 import ir.baboomeh.photolib.components.paint.painters.brushpaint.brushes.Brush
 import ir.baboomeh.photolib.components.paint.smoothers.BasicSmoother
 
-class PathBitmapClipper(
+open class PathBitmapClipper(
     var path: Path? = null,
     bitmap: Bitmap? = null,
     var isInverse: Boolean = false,
@@ -21,31 +21,31 @@ class PathBitmapClipper(
 
     constructor(edgeBrush: Brush) : this(null, null, false, edgeBrush)
 
-    private val canvas by lazy {
+    protected val canvas by lazy {
         Canvas()
     }
 
-    private val pathCopy by lazy {
+    protected  val pathCopy by lazy {
         Path()
     }
 
-    private val lassoFillPaint by lazy {
+    protected  val lassoFillPaint by lazy {
         Paint().apply {
             style = Paint.Style.FILL
         }
     }
 
-    private val basicLineSmoother by lazy {
+    protected  val basicLineSmoother by lazy {
         BasicSmoother()
     }
 
-    private val dstOutBitmapPaint by lazy {
+    protected  val dstOutBitmapPaint by lazy {
         Paint().apply {
             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
         }
     }
 
-    private val bitmapRectangle by lazy {
+    protected  val bitmapRectangle by lazy {
         RectF()
     }
 
@@ -79,7 +79,7 @@ class PathBitmapClipper(
         return null
     }
 
-    private inline fun doIfPathAndBitmapNotNull(function: (bitmap: Bitmap, path: Path) -> Unit) {
+    protected inline fun doIfPathAndBitmapNotNull(function: (bitmap: Bitmap, path: Path) -> Unit) {
         bitmap?.let { bit ->
             path?.let { p ->
                 function(bit, p)
@@ -87,7 +87,7 @@ class PathBitmapClipper(
         }
     }
 
-    private fun drawBitmapOnMask(bitmap: Bitmap): Bitmap {
+    protected fun drawBitmapOnMask(bitmap: Bitmap): Bitmap {
         setRectangleBounds(bitmap)
 
         val maskedBitmap = createMaskedBitmap(bitmap)
@@ -112,14 +112,14 @@ class PathBitmapClipper(
         )
     }
 
-    private fun clip(targetBitmap: Bitmap) {
+    protected fun clip(targetBitmap: Bitmap) {
         val smoothEdgesBitmap =
             createSmoothEdgesBitmap(targetBitmap.width, targetBitmap.height)
 
         maskOutBitmap(smoothEdgesBitmap, targetBitmap)
     }
 
-    private fun setRectangleBounds(bitmap: Bitmap) {
+    protected fun setRectangleBounds(bitmap: Bitmap) {
         if (isInverse) {
             bitmapRectangle.set(
                 0f,
@@ -146,11 +146,11 @@ class PathBitmapClipper(
         throw IllegalStateException("path and/or bitmap is null; cannot get the clipping bounds")
     }
 
-    private fun createMaskedBitmap(bitmap: Bitmap): Bitmap {
+    protected open fun createMaskedBitmap(bitmap: Bitmap): Bitmap {
         return bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
     }
 
-    private fun createSmoothEdgesBitmap(width: Int, height: Int): Bitmap {
+    protected open fun createSmoothEdgesBitmap(width: Int, height: Int): Bitmap {
         pathCopy.set(path!!)
 
         pathCopy.close()
@@ -168,7 +168,7 @@ class PathBitmapClipper(
         return b
     }
 
-    private fun maskOutBitmap(smoothEdgesBitmap: Bitmap, bitmap: Bitmap) {
+    protected open fun maskOutBitmap(smoothEdgesBitmap: Bitmap, bitmap: Bitmap) {
         canvas.apply {
             setBitmap(smoothEdgesBitmap)
 
