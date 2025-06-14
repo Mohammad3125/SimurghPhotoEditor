@@ -9,10 +9,10 @@ import kotlin.math.round
  * A gesture class for rotation gesture with two fingers.
  * @param listener A [OnRotateListener] that gets called in appropriate situations.
  */
-class TwoFingerRotationDetector(private var listener: OnRotateListener) : RotationDetectorGesture {
+open class TwoFingerRotationDetector(protected var listener: OnRotateListener) : RotationDetectorGesture {
 
     // Later will be used for calculations.
-    private var initialRotation = 0f
+    protected var initialRotation = 0f
 
     /**
      * If greater than 0 then rotation snaps to steps of current number for example
@@ -20,20 +20,20 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
      * Default value is 0f meaning no stepping is applied on rotation.
      * @throws IllegalStateException if step is less than 0.
      */
-    private var step = 0f
+    protected var step = 0f
 
-    private var x0 = 0f
-    private var y0 = 0f
+    protected var x0 = 0f
+    protected var y0 = 0f
 
-    private var x1 = 0f
-    private var y1 = 0f
+    protected var x1 = 0f
+    protected var y1 = 0f
 
-    private var dx = 0f
-    private var dy = 0f
+    protected var dx = 0f
+    protected var dy = 0f
 
-    private var shouldProgress = false
+    protected var shouldProgress = false
 
-    private var wasTouchedWithTwoPointers = false
+    protected var wasTouchedWithTwoPointers = false
 
     override fun setRotationStep(rotationStep: Float) {
         if (rotationStep < 0) throw IllegalStateException("step value should be equal or greater than 0")
@@ -116,7 +116,7 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
         }
     }
 
-    private fun calculatePoints(event: MotionEvent) {
+    protected open fun calculatePoints(event: MotionEvent) {
         x0 = event.getX(0)
         y0 = event.getY(0)
 
@@ -132,7 +132,7 @@ class TwoFingerRotationDetector(private var listener: OnRotateListener) : Rotati
     }
 
 
-    private fun calculateAngle(dx: Double, dy: Double): Float {
+    protected open fun calculateAngle(dx: Double, dy: Double): Float {
         return GestureUtils.calculateAngle(
             dx,
             dy
