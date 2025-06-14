@@ -18,20 +18,20 @@ import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.history.HistoryState
 import ir.baboomeh.photolib.utils.history.handlers.StackFullRestoreHistoryHandler
 
-class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.MessageChannel {
+open class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.MessageChannel {
 
-    private val maskPaint by lazy {
+    protected val maskPaint by lazy {
         Paint().apply {
             isFilterBitmap = true
             LightingColorFilter(Color.BLACK, Color.BLACK)
         }
     }
 
-    private val bitmapPaint by lazy {
+    protected val bitmapPaint by lazy {
         Paint()
     }
 
-    var maskTool: Painter? = null
+    open var maskTool: Painter? = null
         set(value) {
             field = value
             value?.let { p ->
@@ -41,38 +41,38 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
             }
         }
 
-    private val canvasOperation by lazy {
+    protected  val canvasOperation by lazy {
         Canvas()
     }
 
     protected var initialMaskLayerState: PaintLayer? = null
 
-    private var maskLayer: PaintLayer? = null
+    protected  var maskLayer: PaintLayer? = null
         set(value) {
             field = value
             initialMaskLayerState = value?.clone(true)
         }
 
-    private lateinit var context: Context
-    private lateinit var transformationMatrix: MananMatrix
-    private lateinit var fitInsideMatrix: MananMatrix
-    private val boundsRect by lazy {
+    protected  lateinit var context: Context
+    protected  lateinit var transformationMatrix: MananMatrix
+    protected  lateinit var fitInsideMatrix: MananMatrix
+    protected  val boundsRect by lazy {
         Rect()
     }
-    private val clipBounds by lazy {
+    protected  val clipBounds by lazy {
         Rect()
     }
 
-    private var selectedLayer: PaintLayer? = null
+    protected  var selectedLayer: PaintLayer? = null
 
-    var maskColor = Color.BLACK
+    open var maskColor = Color.BLACK
         set(value) {
             field = value
             maskPaint.colorFilter = LightingColorFilter(field, field)
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    var maskOpacity = 255
+    open var maskOpacity = 255
         set(value) {
             field = value
             maskPaint.alpha = field
@@ -104,7 +104,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         maskTool?.let { initializeTool(it) }
     }
 
-    private fun initializeTool(tool: Painter) {
+    protected open fun initializeTool(tool: Painter) {
         tool.initialize(context, transformationMatrix, fitInsideMatrix, boundsRect, clipBounds)
         tool.onLayerChanged(maskLayer)
         tool.setOnMessageListener(this)
@@ -131,7 +131,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         }
     }
 
-    fun invertMaskLayer() {
+    open fun invertMaskLayer() {
         maskLayer?.let { layer ->
             val invert =
                 layer.bitmap.copy(layer.bitmap.config ?: Bitmap.Config.ARGB_8888, true)
@@ -156,15 +156,11 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         selectedLayer = layer
     }
 
-    fun getMaskLayer(): Bitmap {
+    open fun getMaskLayer(): Bitmap {
         if (maskLayer == null) {
             throw IllegalStateException("Mask layer isn't created yet")
         }
         return maskLayer!!.bitmap
-    }
-
-    fun getSelectedLayerBitmap(): Bitmap? {
-        return selectedLayer?.bitmap
     }
 
     override fun resetPaint() {
@@ -173,7 +169,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    fun clip(shouldSaveHistory: Boolean = true) {
+    open fun clip(shouldSaveHistory: Boolean = true) {
         setClipper()
         clipper.clip()
 
@@ -182,7 +178,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         }
     }
 
-    fun cut(shouldSaveHistory: Boolean = true): Bitmap? {
+    open fun cut(shouldSaveHistory: Boolean = true): Bitmap? {
         setClipper()
         val cutBitmap = clipper.cut()
 
@@ -193,12 +189,12 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         return cutBitmap
     }
 
-    fun copy(): Bitmap? {
+    open fun copy(): Bitmap? {
         setClipper()
         return clipper.copy()
     }
 
-    private fun saveState() {
+    protected open fun saveState() {
         initialMaskLayerState?.let { initialLayer ->
             historyHandler!!.addState(State(initialLayer))
         }
@@ -206,7 +202,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         initialMaskLayerState = maskLayer?.clone(true)
     }
 
-    private fun setClipper() {
+    protected fun setClipper() {
         clipper.maskBitmap = maskLayer?.bitmap
         clipper.bitmap = selectedLayer?.bitmap
     }
@@ -231,7 +227,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
         return maskTool?.doesNeedTouchSlope() == true
     }
 
-    private inner class State(val initialLayer: PaintLayer) : HistoryState {
+    protected open inner class State(val initialLayer: PaintLayer) : HistoryState {
         private val clonedLayer = maskLayer?.clone(true)
 
         override fun undo() {
@@ -242,7 +238,7 @@ class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.Mess
             restoreState(clonedLayer)
         }
 
-        private fun restoreState(targetLayer: PaintLayer?) {
+        protected open fun restoreState(targetLayer: PaintLayer?) {
             maskLayer = targetLayer?.clone(true)
             maskTool?.onLayerChanged(maskLayer)
         }
