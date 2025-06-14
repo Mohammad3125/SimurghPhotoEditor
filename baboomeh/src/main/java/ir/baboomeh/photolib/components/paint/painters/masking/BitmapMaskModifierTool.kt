@@ -16,22 +16,17 @@ import ir.baboomeh.photolib.components.paint.smoothers.LineSmoother
 import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: DrawingEngine) :
+open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, var engine: DrawingEngine) :
     Painter(),
     LineSmoother.OnDrawPoint {
 
-    var bitmap: Bitmap = bitmap
-        set(value) {
-            field = value
-        }
-
-    var maskBitmap: Bitmap = maskBitmap
+    open var maskBitmap: Bitmap = maskBitmap
         set(value) {
             field = value
             paintCanvas.setBitmap(field)
         }
 
-    var brush: Brush? = null
+    open var brush: Brush? = null
         set(value) {
             field = value
             if (value != null) {
@@ -39,28 +34,28 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
             }
         }
 
-    private lateinit var finalBrush: Brush
+    protected lateinit var finalBrush: Brush
 
-    var lineSmoother: LineSmoother = BezierLineSmoother()
+    open var lineSmoother: LineSmoother = BezierLineSmoother()
         set(value) {
             field = value
             field.onDrawPoint = this
         }
 
-    private val paintCanvas by lazy {
+    protected val paintCanvas by lazy {
         Canvas()
     }
 
-    private val dstOutBitmapPaint by lazy {
+    protected val dstOutBitmapPaint by lazy {
         Paint().apply {
             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
         }
     }
-    private val bitmapPaint by lazy {
+    protected val bitmapPaint by lazy {
         Paint()
     }
 
-    private val layerBound = RectF()
+    protected val layerBound = RectF()
 
     override fun initialize(
         context: Context,
@@ -112,7 +107,7 @@ class BitmapMaskModifierTool(bitmap: Bitmap, maskBitmap: Bitmap, var engine: Dra
         }
     }
 
-    private fun shouldDraw(): Boolean {
+    protected open fun shouldDraw(): Boolean {
         return this::finalBrush.isInitialized
     }
 
