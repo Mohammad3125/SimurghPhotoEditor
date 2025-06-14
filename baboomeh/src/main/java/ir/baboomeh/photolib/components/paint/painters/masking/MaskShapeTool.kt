@@ -20,9 +20,9 @@ import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-class MaskShapeTool(shape: MananShape?) : Painter(), MaskTool {
+class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool {
 
-    constructor() : this(null)
+    constructor(context: Context) : this(context, null)
 
 
     private val shapePaint by lazy {
@@ -37,7 +37,7 @@ class MaskShapeTool(shape: MananShape?) : Painter(), MaskTool {
             resetPaint()
         }
 
-    var strokeWidth = 0f
+    var strokeWidth = context.dp(3)
         set(value) {
             field = value
             shapePaint.strokeWidth = field
@@ -64,7 +64,9 @@ class MaskShapeTool(shape: MananShape?) : Painter(), MaskTool {
             }
         }
 
-    private lateinit var cornerPathEffect: CornerPathEffect
+    private val cornerPathEffect by lazy {
+        CornerPathEffect(context.dp(2))
+    }
 
     private val pathEffectAnimator = ValueAnimator().apply {
         duration = 500
@@ -96,15 +98,7 @@ class MaskShapeTool(shape: MananShape?) : Painter(), MaskTool {
         clipBounds: Rect
     ) {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
-        context.apply {
-            if (strokeWidth == 0f) {
-                strokeWidth = dp(3)
-            }
-            cornerPathEffect = CornerPathEffect(dp(2))
-        }
-
         this.transformationMatrix = transformationMatrix
-
         pathEffectAnimator.start()
     }
 
