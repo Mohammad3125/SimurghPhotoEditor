@@ -13,28 +13,28 @@ import android.graphics.RectF
  * @param animationDuration Duration of animation.
  * @param animationInterpolator Interpolator of animation [TimeInterpolator]
  */
-class MananMatrixAnimator(
-    private var targetMatrix: MananMatrix,
-    private var initialBounds: RectF,
+open class MananMatrixAnimator(
+    protected var targetMatrix: MananMatrix,
+    protected var initialBounds: RectF,
     animationDuration: Long,
     animationInterpolator: TimeInterpolator
 ) {
-    private var onMatrixUpdateCallback: ((MananMatrix) -> Unit)? = null
-    private var onMatrixUpdateListener: OnMatrixUpdateListener? = null
+    protected var onMatrixUpdateCallback: ((MananMatrix) -> Unit)? = null
+    protected var matrixUpdateListener: OnMatrixUpdateListener? = null
 
-    private val zoomWindow by lazy {
+    protected val zoomWindow by lazy {
         RectF()
     }
 
-    private val mappingMatrix by lazy {
+    protected val mappingMatrix by lazy {
         Matrix()
     }
 
-    private val animationPropertyHolderList by lazy {
+    protected val animationPropertyHolderList by lazy {
         mutableListOf<PropertyValuesHolder>()
     }
 
-    private val canvasMatrixAnimator by lazy {
+    protected val canvasMatrixAnimator by lazy {
         ValueAnimator().apply {
             duration = animationDuration
             interpolator = animationInterpolator
@@ -78,15 +78,15 @@ class MananMatrixAnimator(
         }
     }
 
-    private fun callCallbacks() {
+    protected open fun callCallbacks() {
         onMatrixUpdateCallback?.invoke(targetMatrix)
-        onMatrixUpdateListener?.onMatrixUpdated(targetMatrix)
+        matrixUpdateListener?.onMatrixUpdated(targetMatrix)
     }
 
     /**
      * Returns true if matrix is currently being animated, false otherwise.
      */
-    fun isAnimationRunning(): Boolean {
+    open fun isAnimationRunning(): Boolean {
         return canvasMatrixAnimator.isRunning
     }
 
@@ -96,7 +96,7 @@ class MananMatrixAnimator(
      * @param maximumScaleFactorAllowed Maximum scale factor that is allowed for user to zoom in.
      * @param extraSpaceAroundAxes Extra space around axes in case it is needed for special purpose.
      */
-    fun startAnimation(maximumScaleFactorAllowed: Float, extraSpaceAroundAxes: Float) {
+    open fun startAnimation(maximumScaleFactorAllowed: Float, extraSpaceAroundAxes: Float) {
         if (!canvasMatrixAnimator.isRunning) {
 
             // Get matrix values.
@@ -172,15 +172,15 @@ class MananMatrixAnimator(
     /**
      * Register a callback for when matrix is updated.
      */
-    fun setOnMatrixUpdateListener(callback: (MananMatrix) -> Unit) {
+    open fun setOnMatrixUpdateListener(callback: (MananMatrix) -> Unit) {
         onMatrixUpdateCallback = callback
     }
 
     /**
      * Register a listener for when matrix is updated.
      */
-    fun setOnMatrixUpdateListener(listener: OnMatrixUpdateListener) {
-        onMatrixUpdateListener = listener
+    open fun setOnMatrixUpdateListener(listener: OnMatrixUpdateListener) {
+        matrixUpdateListener = listener
     }
 
 
