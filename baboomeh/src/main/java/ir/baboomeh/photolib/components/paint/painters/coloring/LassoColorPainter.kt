@@ -10,7 +10,7 @@ import ir.baboomeh.photolib.utils.gesture.TouchData
 open class LassoColorPainter(context: Context) : LassoMaskPainterTool(context) {
 
     @ColorInt
-    var fillingColor = Color.BLACK
+    open var fillingColor = Color.BLACK
         set(value) {
             field = value
             lassoPaint.color = field
