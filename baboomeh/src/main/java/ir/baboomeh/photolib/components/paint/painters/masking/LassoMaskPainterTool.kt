@@ -57,7 +57,7 @@ open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDr
             }
         }
 
-    protected  lateinit var cornerPathEffect: CornerPathEffect
+    protected val cornerPathEffect = CornerPathEffect(context.dp(2))
 
     protected val pathEffectAnimator = ValueAnimator().apply {
         duration = 500
@@ -104,14 +104,9 @@ open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDr
         layerBounds: Rect,
         clipBounds: Rect
     ) {
-        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
-        context.apply {
-            cornerPathEffect = CornerPathEffect(dp(2))
-        }
-
         this.transformationMatrix = transformationMatrix
-
         pathEffectAnimator.start()
+        super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
     }
 
     override fun onMoveBegin(touchData: TouchData) {
