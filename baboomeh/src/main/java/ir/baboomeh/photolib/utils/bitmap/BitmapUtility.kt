@@ -1,4 +1,4 @@
-package ir.baboomeh.photolib.utils
+package ir.baboomeh.photolib.utils.bitmap
 
 import android.graphics.Bitmap
 import android.graphics.Rect

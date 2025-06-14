@@ -36,7 +36,7 @@ import ir.baboomeh.photolib.properties.Shadowable
 import ir.baboomeh.photolib.properties.StrokeCapable
 import ir.baboomeh.photolib.properties.TextBackgroundable
 import ir.baboomeh.photolib.properties.Texturable
-import ir.baboomeh.photolib.utils.MananMatrix
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min

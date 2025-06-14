@@ -19,8 +19,8 @@ import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.baboomeh.photolib.components.paint.smoothers.LineSmoother
 import ir.baboomeh.photolib.properties.MaskTool
-import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 
 open class BrushPainter(
     var engine: DrawingEngine,

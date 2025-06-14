@@ -29,7 +29,7 @@ import ir.baboomeh.photolib.properties.Opacityable
 import ir.baboomeh.photolib.properties.Shadowable
 import ir.baboomeh.photolib.properties.StrokeCapable
 import ir.baboomeh.photolib.properties.Texturable
-import ir.baboomeh.photolib.utils.MananMatrix
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 import kotlin.math.min
 import kotlin.math.roundToInt
 

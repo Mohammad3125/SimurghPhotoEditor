@@ -2,7 +2,7 @@ package ir.baboomeh.photolib.utils.evaluators
 
 import android.animation.TypeEvaluator
 import android.graphics.Matrix
-import ir.baboomeh.photolib.utils.MananMatrix
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 
 
 /**

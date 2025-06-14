@@ -27,8 +27,6 @@ import androidx.core.graphics.toRectF
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.baboomeh.photolib.R
 import ir.baboomeh.photolib.components.paint.Painter
-import ir.baboomeh.photolib.utils.MananMatrix
-import ir.baboomeh.photolib.utils.MananMatrixAnimator
 import ir.baboomeh.photolib.utils.evaluators.MatrixEvaluator
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.gesture.detectors.rotation.OnRotateListener
@@ -36,6 +34,8 @@ import ir.baboomeh.photolib.utils.gesture.detectors.rotation.RotationDetectorGes
 import ir.baboomeh.photolib.utils.gesture.detectors.rotation.TwoFingerRotationDetector
 import ir.baboomeh.photolib.utils.gesture.detectors.translation.OnTranslationDetector
 import ir.baboomeh.photolib.utils.gesture.detectors.translation.TranslationDetector
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
+import ir.baboomeh.photolib.utils.matrix.MananMatrixAnimator
 import kotlin.math.abs
 
 open class MananPaintView(context: Context, attrSet: AttributeSet?) :

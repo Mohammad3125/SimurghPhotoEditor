@@ -13,10 +13,10 @@ import androidx.core.graphics.createBitmap
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.painters.selection.clippers.BitmapMaskClipper
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
-import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.history.HistoryState
 import ir.baboomeh.photolib.utils.history.handlers.StackFullRestoreHistoryHandler
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 
 open class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.MessageChannel {
 

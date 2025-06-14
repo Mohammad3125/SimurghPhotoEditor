@@ -16,9 +16,9 @@ import androidx.core.graphics.get
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import ir.baboomeh.photolib.components.paint.Painter
-import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 import kotlin.math.min
 
 open class ColorDropper : Painter() {

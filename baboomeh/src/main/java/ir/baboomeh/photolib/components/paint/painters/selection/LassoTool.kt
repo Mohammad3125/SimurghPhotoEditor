@@ -10,8 +10,8 @@ import android.graphics.RectF
 import ir.baboomeh.photolib.components.paint.painters.coloring.LassoColorPainter
 import ir.baboomeh.photolib.components.paint.painters.selection.clippers.PathBitmapClipper
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
-import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 
 open class LassoTool(context:Context, var clipper: PathBitmapClipper) : LassoColorPainter(context) {
 

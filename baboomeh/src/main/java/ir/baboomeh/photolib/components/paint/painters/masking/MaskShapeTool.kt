@@ -17,9 +17,9 @@ import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.components.shapes.MananShape
 import ir.baboomeh.photolib.properties.MaskTool
-import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 
 open class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool {
 

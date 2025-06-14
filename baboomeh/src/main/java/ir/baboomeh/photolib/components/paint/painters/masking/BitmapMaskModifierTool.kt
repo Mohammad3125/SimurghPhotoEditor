@@ -13,8 +13,8 @@ import ir.baboomeh.photolib.components.paint.engines.DrawingEngine
 import ir.baboomeh.photolib.components.paint.painters.brushpaint.brushes.Brush
 import ir.baboomeh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.baboomeh.photolib.components.paint.smoothers.LineSmoother
-import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
+import ir.baboomeh.photolib.utils.matrix.MananMatrix
 
 open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, var engine: DrawingEngine) :
     Painter(),
