@@ -16,8 +16,6 @@ abstract class Painter {
 
     var historyHandler: HistoryHandler? = null
 
-    private var onInitializedListener: () -> Unit = {}
-
     var isInitialized = false
         private set
 
@@ -37,7 +35,6 @@ abstract class Painter {
         clipBounds: Rect
     ) {
         isInitialized = true
-        onInitializedListener.invoke()
     }
 
     /**
@@ -125,10 +122,6 @@ abstract class Painter {
 
     open fun doesNeedTouchSlope(): Boolean {
         return true
-    }
-
-    open fun setOnPainterInitialized(onInitialized: () -> Unit) {
-        onInitializedListener = onInitialized
     }
 
     interface MessageChannel {

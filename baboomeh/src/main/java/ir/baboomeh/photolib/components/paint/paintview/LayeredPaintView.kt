@@ -136,20 +136,26 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     override fun initializedPainter(pp: Painter?) {
-        pp?.let { p ->
+        pp?.apply {
             rectAlloc.set(layerBounds)
-            if (!pp.isInitialized) {
-                p.initialize(
+
+            if (!isInitialized) {
+
+                initialize(
                     context,
                     canvasMatrix,
                     imageviewMatrix,
                     identityClip,
                     layerClipBounds
                 )
+
+                onPainterInitializedListener.invoke()
             }
-            p.onLayerChanged(selectedLayer)
-            if (this::bitmapReference.isInitialized) {
-                p.onReferenceLayerCreated(bitmapReference)
+
+            onLayerChanged(selectedLayer)
+
+            if (this@LayeredPaintView::bitmapReference.isInitialized) {
+                onReferenceLayerCreated(bitmapReference)
             }
         }
     }

@@ -42,7 +42,6 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     View(context, attrSet), Painter.MessageChannel,
     ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnTranslationDetector {
-
     constructor(context: Context) : this(context, null)
 
     protected val layersPaint by lazy {
@@ -131,6 +130,8 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             }
             requestLayout()
         }
+
+    protected var onPainterInitializedListener: () -> Unit = {}
 
     /**
      * Matrix that we later modify and assign to image matrix.
@@ -340,22 +341,26 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
     protected open fun initializedPainter(pp: Painter?) {
-        pp?.let { p ->
+        pp?.apply {
             rectAlloc.set(layerBounds)
-            if (!pp.isInitialized) {
-                p.initialize(
+
+            if (!isInitialized) {
+
+                initialize(
                     context,
                     canvasMatrix,
                     imageviewMatrix,
                     identityClip,
                     layerClipBounds
                 )
+
+                onPainterInitializedListener.invoke()
             }
 
-            p.onLayerChanged(selectedLayer)
+            onLayerChanged(selectedLayer)
 
             selectedLayer?.let { layer ->
-                p.onReferenceLayerCreated(layer.bitmap)
+                onReferenceLayerCreated(layer.bitmap)
             }
         }
     }
@@ -815,6 +820,10 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     fun setOnDoubleTapListener(listener: OnDoubleTap) {
         onDoubleTappedListener = listener
+    }
+
+    open fun setOnPainterInitialized(onInitialized: () -> Unit) {
+        onPainterInitializedListener = onInitialized
     }
 
     open fun addNewLayer(bitmap: Bitmap?) {
