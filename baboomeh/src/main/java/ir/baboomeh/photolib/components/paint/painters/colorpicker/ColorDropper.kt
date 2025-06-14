@@ -125,12 +125,12 @@ open class ColorDropper : Painter() {
     /**
      * Last color selected before user lifts his/her finger from screen.
      */
-    protected var onLastColorDetected: ((color: Int) -> Unit)? = null
+    protected var lastColorDetectedCallback: ((color: Int) -> Unit)? = null
 
     /**
      * Called everytime a new color get detected by dropper.
      */
-    protected var onColorDetected: ((color: Int) -> Unit)? = null
+    protected var colorDetectedCallback: ((color: Int) -> Unit)? = null
 
     /**
      * Interface for last color that get detected.
@@ -196,7 +196,7 @@ open class ColorDropper : Painter() {
     override fun onMoveEnded(touchData: TouchData) {
         calculateToShowDropperAt(touchData.ex, touchData.ey)
         // Call interfaces.
-        onLastColorDetected?.invoke(lastSelectedColor)
+        lastColorDetectedCallback?.invoke(lastSelectedColor)
         interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)
 
         // If user lifts his/her finger then don't show the circle anymore.
@@ -239,7 +239,7 @@ open class ColorDropper : Painter() {
 
             // Call interfaces.
             interfaceOnColorDetected?.onColorDetected(lastSelectedColor)
-            onColorDetected?.invoke(lastSelectedColor)
+            colorDetectedCallback?.invoke(lastSelectedColor)
 
             // If center cross color is white (meaning user didn't choose any preferred color)
             // then change the color of to black if it's on a white pixel.
@@ -403,7 +403,7 @@ open class ColorDropper : Painter() {
      * Set listener that get invoked everytime that color by color dropper get changed.
      */
     open fun setOnColorDetected(listener: (Int) -> Unit) {
-        onColorDetected = listener
+        colorDetectedCallback = listener
     }
 
     /**
@@ -420,7 +420,7 @@ open class ColorDropper : Painter() {
      * up from screen.
      */
     open fun setOnLastColorDetected(listener: (Int) -> Unit) {
-        onLastColorDetected = listener
+        lastColorDetectedCallback = listener
     }
 
     /**

@@ -10,7 +10,7 @@ open class FloodFillPainter : Painter() {
 
     protected var layerBitmap: Bitmap? = null
 
-    protected var onFloodFillRequest: ((bitmap: Bitmap, ex: Int, ey: Int) -> Unit)? = null
+    protected var floodFillRequestCallback: ((bitmap: Bitmap, ex: Int, ey: Int) -> Unit)? = null
 
     protected var preventHistorySave = true
 
@@ -31,7 +31,7 @@ open class FloodFillPainter : Painter() {
                 return
             }
 
-            onFloodFillRequest?.invoke(bitmap, ex, ey)
+            floodFillRequestCallback?.invoke(bitmap, ex, ey)
         }
 
         preventHistorySave = true
@@ -50,7 +50,7 @@ open class FloodFillPainter : Painter() {
     }
 
     open fun setOnFloodFillRequest(func: (bitmap: Bitmap, ex: Int, ey: Int) -> Unit) {
-        onFloodFillRequest = func
+        floodFillRequestCallback = func
     }
 
     override fun onLayerChanged(layer: PaintLayer?) {
