@@ -8,8 +8,8 @@ import kotlin.math.sqrt
 /**
  * A class that extends [Matrix] and provides custom function and cleaner interface for retrieving matrix values.
  */
-class MananMatrix : Matrix() {
-    private val matrixValueHolder by lazy {
+open class MananMatrix : Matrix() {
+    protected val matrixValueHolder by lazy {
         FloatArray(9)
     }
 
@@ -18,7 +18,7 @@ class MananMatrix : Matrix() {
      * @throws IllegalStateException If provided axis is not [Matrix.MSCALE_X] or [Matrix.MSCALE_Y]
      * @param axis Represents scale in specific axis.
      */
-    fun getOppositeScale(axis: Int = MSCALE_X): Float {
+    open fun getOppositeScale(axis: Int = MSCALE_X): Float {
         if (axis != MSCALE_X && axis != MSCALE_Y) throw IllegalStateException("Provided axis should be either x or y to be able to retrieve scale")
 
         getValues(matrixValueHolder)
@@ -29,7 +29,7 @@ class MananMatrix : Matrix() {
      * Returns scale x inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getScaleX(refresh: Boolean = false): Float {
+    open fun getScaleX(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -37,7 +37,7 @@ class MananMatrix : Matrix() {
         return matrixValueHolder[MSCALE_X]
     }
 
-    fun getMatrixRotation(): Float {
+    open fun getMatrixRotation(): Float {
         getValues(matrixValueHolder)
 
         val scaleX = sqrt(matrixValueHolder[MSCALE_X].toDouble().pow(2.0) + matrixValueHolder[MSKEW_Y].toDouble().pow(2.0)).toFloat()
@@ -53,7 +53,7 @@ class MananMatrix : Matrix() {
     /**
      * Returns real scale. If rotation is applied to matrix the scale value will change; this method returns the true unaffected scale value.
      */
-    fun getRealScaleX(): Float {
+    open fun getRealScaleX(): Float {
         val sx = getScaleX(true)
         val skewY = getSkewY()
         return sqrt(sx * sx + skewY * skewY)
@@ -62,7 +62,7 @@ class MananMatrix : Matrix() {
     /**
      * Returns real scale. If rotation is applied to matrix the scale value will change; this method returns the true unaffected scale value.
      */
-    fun getRealScaleY() : Float{
+    open fun getRealScaleY() : Float{
         val sy = getScaleY(true)
         val skewX = getSkewX()
         return sqrt(sy * sy + skewX * skewX)
@@ -72,7 +72,7 @@ class MananMatrix : Matrix() {
      * Returns scale y inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getScaleY(refresh: Boolean = false): Float {
+    open fun getScaleY(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -84,7 +84,7 @@ class MananMatrix : Matrix() {
      * Returns translation x inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getTranslationX(refresh: Boolean = false): Float {
+    open fun getTranslationX(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -96,7 +96,7 @@ class MananMatrix : Matrix() {
      * Returns translation y inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getTranslationY(refresh: Boolean = false): Float {
+    open fun getTranslationY(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -108,7 +108,7 @@ class MananMatrix : Matrix() {
      * Returns skew x inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getSkewX(refresh: Boolean = false): Float {
+    open fun getSkewX(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -120,7 +120,7 @@ class MananMatrix : Matrix() {
      * Returns skew y inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getSkewY(refresh: Boolean = false): Float {
+    open fun getSkewY(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -132,7 +132,7 @@ class MananMatrix : Matrix() {
      * Returns perspective 0 inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getPerspective0(refresh: Boolean = false): Float {
+    open fun getPerspective0(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -144,7 +144,7 @@ class MananMatrix : Matrix() {
      * Returns perspective 1 inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getPerspective1(refresh: Boolean = false): Float {
+    open fun getPerspective1(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
@@ -156,7 +156,7 @@ class MananMatrix : Matrix() {
      * Returns perspective 2 inside matrix.
      * @param refresh Determines if this call should retrieve the newest value.
      */
-    fun getPerspective2(refresh: Boolean = false): Float {
+    open fun getPerspective2(refresh: Boolean = false): Float {
         if (refresh) {
             getValues(matrixValueHolder)
         }
