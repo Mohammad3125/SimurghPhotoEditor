@@ -22,7 +22,7 @@ import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint, MaskTool {
+open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDrawPoint, MaskTool {
 
     protected val lassoPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -40,7 +40,7 @@ open class LassoMaskPainterTool : Painter(), LineSmoother.OnDrawPoint, MaskTool 
         Canvas()
     }
 
-    var lassoStrokeWidth = 0f
+    var lassoStrokeWidth = context.dp(4)
         set(value) {
             field = value
             lassoPaint.strokeWidth = field

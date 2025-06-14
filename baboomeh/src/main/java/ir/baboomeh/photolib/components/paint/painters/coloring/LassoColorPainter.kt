@@ -1,12 +1,13 @@
 package ir.baboomeh.photolib.components.paint.painters.coloring
 
+import android.content.Context
 import android.graphics.Color
 import android.graphics.Paint
 import androidx.annotation.ColorInt
 import ir.baboomeh.photolib.components.paint.painters.masking.LassoMaskPainterTool
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-open class LassoColorPainter : LassoMaskPainterTool() {
+open class LassoColorPainter(context: Context) : LassoMaskPainterTool(context) {
 
     @ColorInt
     var fillingColor = Color.BLACK

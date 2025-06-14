@@ -19,7 +19,7 @@ import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
+class LassoTool(context:Context, var clipper: PathBitmapClipper) : LassoColorPainter(context) {
 
     private val lassoCopy by lazy {
         Path()
@@ -27,7 +27,9 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
 
     private val viewBounds = RectF()
 
-    private lateinit var cornerPathEffect: CornerPathEffect
+    private val cornerPathEffect by lazy {
+        CornerPathEffect(context.dp(2))
+    }
 
     private val pathEffectAnimator = ValueAnimator().apply {
         duration = 500
@@ -68,10 +70,6 @@ class LassoTool(var clipper: PathBitmapClipper) : LassoColorPainter() {
     ) {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
         canvasMatrix = transformationMatrix
-        context.apply {
-            cornerPathEffect = CornerPathEffect(dp(2))
-            lassoStrokeWidth = dp(4)
-        }
         pathEffectAnimator.start()
         viewBounds.set(layerBounds)
     }
