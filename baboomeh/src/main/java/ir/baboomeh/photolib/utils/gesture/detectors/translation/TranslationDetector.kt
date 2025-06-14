@@ -28,7 +28,7 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
 
     var isTouchEventHistoryEnabled = false
 
-    private var shouldProgress = false
+    protected var shouldProgress = false
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return event?.run {
@@ -165,7 +165,7 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
     }
 
 
-    private fun calculateFirstPointer(ex: Float, ey: Float, eventTime: Long, pressure: Float) {
+    protected open fun calculateFirstPointer(ex: Float, ey: Float, eventTime: Long, pressure: Float) {
         val dx = ex - initialX
         val dy = ey - initialY
 
@@ -187,7 +187,7 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
         initialY = ey
     }
 
-    private fun calculateSecondPointer(ex: Float, ey: Float, eventTime: Long, pressure: Float) {
+    protected open fun calculateSecondPointer(ex: Float, ey: Float, eventTime: Long, pressure: Float) {
         val dx = ex - secondPointerInitialX
         val dy = ey - secondPointerInitialY
 
@@ -216,7 +216,7 @@ open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
         return touchHolder[pointerIndex]
     }
 
-    private fun TouchData.setTouchData(
+    protected fun TouchData.setTouchData(
         ex: Float,
         ey: Float,
         dx: Float,
