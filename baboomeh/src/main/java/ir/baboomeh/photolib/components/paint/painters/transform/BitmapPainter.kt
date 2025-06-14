@@ -29,85 +29,86 @@ import ir.baboomeh.photolib.properties.StrokeCapable
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable(), Blendable,
+open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable(), Blendable,
     Opacityable, Backgroundable,
     CornerRounder, Shadowable, StrokeCapable {
 
-    private var strokeWidth: Float = 0f
+    protected var strokeWidth: Float = 0f
 
     @ColorInt
-    private var strokeColor: Int = Color.BLACK
-    private var cornerRadius: Float = 0f
-    private val bitmapPaint = Paint().apply {
-        isFilterBitmap = true
-        shader = BitmapShader(bitmap, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
-        colorFilter = colorMatrixFilter
-    }
+    protected  var strokeColor: Int = Color.BLACK
+    protected  var cornerRadius: Float = 0f
 
-    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    protected val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = strokeColor
         strokeWidth = this@BitmapPainter.strokeWidth
         style = Paint.Style.FILL_AND_STROKE
     }
 
-    private val dstOutPaint by lazy {
+    protected val dstOutPaint by lazy {
         Paint().apply {
             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
             style = Paint.Style.FILL_AND_STROKE
         }
     }
 
-    private val colorMatrix = ColorMatrix()
-    private val colorMatrixTemp = ColorMatrix()
-    private var colorMatrixFilter = ColorMatrixColorFilter(colorMatrix)
+    protected val colorMatrix = ColorMatrix()
+    protected val colorMatrixTemp = ColorMatrix()
+    protected open var colorMatrixFilter = ColorMatrixColorFilter(colorMatrix)
         set(value) {
             field = value
             bitmapPaint.colorFilter = value
         }
 
-    val imageAdjustments = ImageAdjustment(0f, 1f, 1f, 0f, 0f, 0f)
+    protected val bitmapPaint = Paint().apply {
+        isFilterBitmap = true
+        shader = BitmapShader(bitmap, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
+        colorFilter = colorMatrixFilter
+    }
 
-    var bitmap: Bitmap = bitmap
+    open val imageAdjustments = ImageAdjustment(0f, 1f, 1f, 0f, 0f, 0f)
+
+    open var bitmap: Bitmap = bitmap
         set(value) {
             field = value
             bitmapPaint.shader = BitmapShader(value, Shader.TileMode.MIRROR, Shader.TileMode.MIRROR)
             notifyBoundsChanged()
         }
 
-    private var shadowRadius = 0f
-    private var shadowDx = 0f
-    private var shadowDy = 0f
-    private var shadowColor = Color.YELLOW
+    protected var shadowRadius = 0f
+    protected  var shadowDx = 0f
+    protected  var shadowDy = 0f
+    protected  var shadowColor = Color.YELLOW
 
-    private var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
+    protected  var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
-    private var isTextBackgroundEnabled = false
+    protected  var isTextBackgroundEnabled = false
 
-    private var backgroundPaddingSize = 0f
+    protected  var backgroundPaddingSize = 0f
 
-    private var backgroundRadius = 12f
+    protected  var backgroundRadius = 12f
 
     @ColorInt
-    private var backgroundColor: Int = Color.GRAY
+    protected  var backgroundColor: Int = Color.GRAY
 
-    private val backgroundPaint by lazy {
+    protected  val backgroundPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             color = backgroundColor
         }
     }
 
-    private var halfPadding = 0f
+    protected  var halfPadding = 0f
 
-    private var finalWidth = 0f
+    protected  var finalWidth = 0f
 
-    private var finalHeight = 0f
+    protected  var finalHeight = 0f
 
-    private val finalBounds by lazy {
+    protected  val finalBounds by lazy {
         RectF()
     }
 
-    var customBackgroundPath: Path? = complexPath
+    open var customBackgroundPath: Path? = complexPath
         set(value) {
             field = value
             invalidate()
@@ -300,7 +301,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
         return clone(true)
     }
 
-    fun clone(cloneBitmap: Boolean = false): BitmapPainter {
+    open fun clone(cloneBitmap: Boolean = false): BitmapPainter {
         val clonedBitmap =
             if (cloneBitmap) bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true) else bitmap
 
@@ -399,44 +400,44 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
         return strokeWidth
     }
 
-    fun setHue(@FloatRange(0.0, 360.0) degree: Float) {
+    open fun setHue(@FloatRange(0.0, 360.0) degree: Float) {
         imageAdjustments.hue = degree
         adjustImageValues()
     }
 
-    fun setContrast(@FloatRange(0.0, 2.0) contrast: Float) {
+    open fun setContrast(@FloatRange(0.0, 2.0) contrast: Float) {
         imageAdjustments.contrast = contrast
         adjustImageValues()
     }
 
-    fun setSaturation(@FloatRange(0.0, 2.0) saturation: Float) {
+    open fun setSaturation(@FloatRange(0.0, 2.0) saturation: Float) {
         imageAdjustments.saturation = saturation
         adjustImageValues()
     }
 
-    fun setBrightness(@FloatRange(-1.0, 1.0) brightness: Float) {
+    open fun setBrightness(@FloatRange(-1.0, 1.0) brightness: Float) {
         imageAdjustments.brightness = brightness
         adjustImageValues()
     }
 
-    fun setTint(@FloatRange(-1.0, 1.0) tint: Float) {
+    open fun setTint(@FloatRange(-1.0, 1.0) tint: Float) {
         imageAdjustments.tint = tint
         adjustImageValues()
     }
 
-    fun setTemperature(@FloatRange(-1.0, 1.0) warmth: Float) {
+    open fun setTemperature(@FloatRange(-1.0, 1.0) warmth: Float) {
         imageAdjustments.temperature = warmth
         adjustImageValues()
     }
 
-    fun resetAdjustments() {
+    open fun resetAdjustments() {
         colorMatrixFilter = ColorMatrixColorFilter(colorMatrix.apply {
             reset()
         })
         invalidate()
     }
 
-    private fun adjustImageValues() {
+    protected open fun adjustImageValues() {
         colorMatrix.reset()
 
         imageAdjustments.apply {
@@ -518,7 +519,7 @@ class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable()
         invalidate()
     }
 
-    private fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
+    protected fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
         factor: Float
     ): Int =
         Color.argb(
