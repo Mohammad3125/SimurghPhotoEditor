@@ -3,6 +3,8 @@ package ir.baboomeh.photolib.components.paint.engines
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
+import androidx.annotation.ColorInt
+import androidx.core.graphics.withSave
 import ir.baboomeh.photolib.components.paint.painters.brushpaint.brushes.Brush
 import ir.baboomeh.photolib.utils.MathUtils
 import ir.baboomeh.photolib.utils.gesture.GestureUtils
@@ -12,36 +14,36 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
 
-class CanvasDrawingEngine : DrawingEngine {
+open class CanvasDrawingEngine : DrawingEngine {
 
-    private val hsvHolder = FloatArray(3)
-    private var hueDegreeHolder = 0f
-    private var hueFlip = true
+    protected val hsvHolder = FloatArray(3)
+    protected var hueDegreeHolder = 0f
+    protected var hueFlip = true
 
-    var isInEraserMode = false
-    private var taperSizeHolder = 0f
+    open var isInEraserMode = false
+    protected var taperSizeHolder = 0f
 
-    private var sizeVarianceEasingStep = 0.005f
-    private var targetSizeVarianceHolder = 0f
-    private var sizeVarianceHolder = 0f
+    protected var sizeVarianceEasingStep = 0.005f
+    protected var targetSizeVarianceHolder = 0f
+    protected var sizeVarianceHolder = 0f
 
 
-    private var opacityVarianceEasingStep = 0.1f
-    private var targetOpacityVariance = 0f
-    private var opacityVarianceHolder = 0
+    protected var opacityVarianceEasingStep = 0.1f
+    protected var targetOpacityVariance = 0f
+    protected var opacityVarianceHolder = 0
 
-    private var lastVtrSizeVariance = 0f
-    private var lastVtrOpacityVariance = 0f
+    protected var lastVtrSizeVariance = 0f
+    protected var lastVtrOpacityVariance = 0f
 
-    private var lastSizeVariance = 1f
+    protected var lastSizeVariance = 1f
 
-    private var lastSizePressure = 0f
-    private var currentSizePressure = 0f
+    protected var lastSizePressure = 0f
+    protected var currentSizePressure = 0f
 
-    private var lastOpacityPressure = 0f
-    private var currentOpacityPressure = 0f
+    protected var lastOpacityPressure = 0f
+    protected var currentOpacityPressure = 0f
 
-    private var currentSpacing = 0f
+    protected var currentSpacing = 0f
     override fun onMoveBegin(touchData: TouchData, brush: Brush) {
         taperSizeHolder = brush.startTaperSize
 
@@ -108,7 +110,7 @@ class CanvasDrawingEngine : DrawingEngine {
         brush.spacing = currentSpacing
     }
 
-    private fun calculatePressureSensitivity(
+    protected open fun calculatePressureSensitivity(
         pressure: Float,
         isSensitive: Boolean,
         sensitivity: Float,
@@ -127,14 +129,14 @@ class CanvasDrawingEngine : DrawingEngine {
     }
 
 
-    private fun mapPressure(
+    protected open fun mapPressure(
         pressure: Float, minimumPressure: Float, maximumPressure: Float
     ): Float = MathUtils.convertFloatRange(
         0f, 1f, minimumPressure, maximumPressure, pressure
     )
 
 
-    private fun calculateSizeVariance(touchData: TouchData, brush: Brush) {
+    protected open fun calculateSizeVariance(touchData: TouchData, brush: Brush) {
         if (brush.sizeVariance == 1f) {
             return
         }
@@ -161,7 +163,12 @@ class CanvasDrawingEngine : DrawingEngine {
 
     }
 
-    private fun calculateSpeed(dx: Float, dy: Float, lastSpeed: Float, sensitivity: Float): Float {
+    protected open fun calculateSpeed(
+        dx: Float,
+        dy: Float,
+        lastSpeed: Float,
+        sensitivity: Float
+    ): Float {
         val sensitivityInverse = 1f - sensitivity
 
         val vtr = sqrt(
@@ -171,7 +178,7 @@ class CanvasDrawingEngine : DrawingEngine {
         return abs(vtr - lastSpeed)
     }
 
-    private fun calculateOpacityVariance(touchData: TouchData, brush: Brush) {
+    protected open fun calculateOpacityVariance(touchData: TouchData, brush: Brush) {
         if (brush.opacityVariance == 0f) {
             return
         }
@@ -198,89 +205,94 @@ class CanvasDrawingEngine : DrawingEngine {
         ex: Float, ey: Float, directionalAngle: Float, canvas: Canvas, brush: Brush, drawCount: Int
     ) {
         brush.apply {
-            canvas.save()
+            canvas.withSave {
 
-            calculateAndTranslate(canvas, ex, ey)
+                translateCanvasByBrush(brush, canvas, ex, ey)
 
-            calculateAndRotate(directionalAngle, canvas)
+                rotateCanvasByBrush(brush, canvas, directionalAngle)
 
-            if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
-                if (startTaperSize < 1f) {
-                    taperSizeHolder += startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtMost(1f)
-                } else {
-                    taperSizeHolder -= startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtLeast(1f)
+                if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
+                    if (startTaperSize < 1f) {
+                        taperSizeHolder += startTaperSpeed
+                        taperSizeHolder = taperSizeHolder.coerceAtMost(1f)
+                    } else {
+                        taperSizeHolder -= startTaperSpeed
+                        taperSizeHolder = taperSizeHolder.coerceAtLeast(1f)
+                    }
                 }
+
+                if (targetSizeVarianceHolder < sizeVarianceHolder) {
+                    targetSizeVarianceHolder += sizeVarianceEasingStep
+                } else {
+                    targetSizeVarianceHolder -= sizeVarianceEasingStep
+                }
+
+                val finalTaperSize =
+                    if (taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
+
+                val finalSizeVariance = if (sizeVariance != 1f) targetSizeVarianceHolder else 1f
+
+                if (isSizePressureSensitive) {
+                    lastSizePressure += ((currentSizePressure - lastSizePressure) / drawCount)
+                }
+
+                if (isOpacityPressureSensitive) {
+                    lastOpacityPressure += ((currentOpacityPressure - lastOpacityPressure) / drawCount)
+                }
+
+                scaleCanvasByBrush(brush, finalTaperSize, finalSizeVariance, canvas, 1f - squish)
+
+                val lastColor = color
+
+                color = calculateColorHue(brush)
+
+                if (targetOpacityVariance < opacityVarianceHolder) {
+                    targetOpacityVariance += opacityVarianceEasingStep
+                } else {
+                    targetOpacityVariance -= opacityVarianceEasingStep
+                }
+
+                draw(this, calculateBrushOpacity(brush))
+
+                if (color != lastColor) {
+                    color = lastColor
+                }
+
             }
-
-            if (targetSizeVarianceHolder < sizeVarianceHolder) {
-                targetSizeVarianceHolder += sizeVarianceEasingStep
-            } else {
-                targetSizeVarianceHolder -= sizeVarianceEasingStep
-            }
-
-            val finalTaperSize =
-                if (taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
-
-            val finalSizeVariance = if (sizeVariance != 1f) targetSizeVarianceHolder else 1f
-
-            if (isSizePressureSensitive) {
-                lastSizePressure += ((currentSizePressure - lastSizePressure) / drawCount)
-            }
-
-            if (isOpacityPressureSensitive) {
-                lastOpacityPressure += ((currentOpacityPressure - lastOpacityPressure) / drawCount)
-            }
-
-            calculateAndScale(finalTaperSize, finalSizeVariance, canvas, 1f - squish)
-
-            val lastColor = color
-
-            calculateColorHue()
-
-            if (targetOpacityVariance < opacityVarianceHolder) {
-                targetOpacityVariance += opacityVarianceEasingStep
-            } else {
-                targetOpacityVariance -= opacityVarianceEasingStep
-            }
-
-            draw(canvas, calculateBrushOpacity())
-
-            if (color != lastColor) {
-                color = lastColor
-            }
-
-            canvas.restore()
         }
     }
 
-    private fun Brush.calculateAndRotate(
+    protected open fun rotateCanvasByBrush(
+        brush: Brush,
+        canvas: Canvas,
         directionalAngle: Float,
-        canvas: Canvas
     ) {
-        if (angleJitter > 0f && (angle > 0f || directionalAngle > 0f) || angleJitter > 0f && angle == 0f) {
-            val rot = GestureUtils.mapTo360(
-                angle + Random.nextInt(
-                    0,
-                    (360f * angleJitter).toInt()
-                ).toFloat() + directionalAngle
-            )
-            canvas.rotate(rot)
-        } else if (angleJitter == 0f && (angle > 0f || directionalAngle > 0f)) {
-            canvas.rotate(angle + directionalAngle)
+        brush.run {
+            if (angleJitter > 0f && (angle > 0f || directionalAngle > 0f) || angleJitter > 0f && angle == 0f) {
+                canvas.rotate(
+                    GestureUtils.mapTo360(
+                        angle + Random.nextInt(
+                            0,
+                            (360f * angleJitter).toInt()
+                        ).toFloat() + directionalAngle
+                    )
+                )
+            } else if (angleJitter == 0f && (angle > 0f || directionalAngle > 0f)) {
+                canvas.rotate(angle + directionalAngle)
+            }
         }
     }
 
-    private fun Brush.calculateAndTranslate(
+    protected open fun translateCanvasByBrush(
+        brush: Brush,
         canvas: Canvas,
         ex: Float,
         ey: Float
     ) {
         when {
-            scatter > 0f -> {
+            brush.scatter > 0f -> {
 
-                val r = (size * scatter).toInt()
+                val r = (brush.size * brush.scatter).toInt()
 
                 if (r != 0) {
                     val randomScatterX = Random.nextInt(-r, r).toFloat()
@@ -299,102 +311,116 @@ class CanvasDrawingEngine : DrawingEngine {
         }
     }
 
-    private fun Brush.calculateColorHue() {
-        when {
-            hueJitter > 0 -> {
-                Color.colorToHSV(color, hsvHolder)
-                hsvHolder[0] += Random.nextInt(0, hueJitter).toFloat()
-                hsvHolder[0] = GestureUtils.mapTo360(hsvHolder[0])
-                color = Color.HSVToColor(hsvHolder)
-            }
-
-            hueFlow > 0f && hueDistance > 0f -> {
-                Color.colorToHSV(color, hsvHolder)
-
-                if (hueFlip) {
-                    hueDegreeHolder += (1f / hueFlow)
-                } else {
-                    hueDegreeHolder -= (1f / hueFlow)
+    @ColorInt
+    protected open fun calculateColorHue(brush: Brush): Int =
+        brush.run {
+            when {
+                hueJitter > 0 -> {
+                    Color.colorToHSV(color, hsvHolder)
+                    hsvHolder[0] += Random.nextInt(0, hueJitter).toFloat()
+                    hsvHolder[0] = GestureUtils.mapTo360(hsvHolder[0])
+                    Color.HSVToColor(hsvHolder)
                 }
 
-                if (hueDegreeHolder >= hueDistance) {
-                    hueDegreeHolder = hueDistance.toFloat()
-                    hueFlip = false
+                hueFlow > 0f && hueDistance > 0f -> {
+                    Color.colorToHSV(color, hsvHolder)
+
+                    if (hueFlip) {
+                        hueDegreeHolder += (1f / hueFlow)
+                    } else {
+                        hueDegreeHolder -= (1f / hueFlow)
+                    }
+
+                    if (hueDegreeHolder >= hueDistance) {
+                        hueDegreeHolder = hueDistance.toFloat()
+                        hueFlip = false
+                    }
+                    if (hueDegreeHolder <= 0f) {
+                        hueDegreeHolder = 0f
+                        hueFlip = true
+                    }
+
+                    hsvHolder[0] += hueDegreeHolder
+
+                    hsvHolder[0] = GestureUtils.mapTo360(hsvHolder[0])
+
+                    Color.HSVToColor(hsvHolder)
                 }
-                if (hueDegreeHolder <= 0f) {
-                    hueDegreeHolder = 0f
-                    hueFlip = true
+
+                else -> {
+                    color
                 }
-
-                hsvHolder[0] += hueDegreeHolder
-
-                hsvHolder[0] = GestureUtils.mapTo360(hsvHolder[0])
-
-                color = Color.HSVToColor(hsvHolder)
             }
         }
-    }
 
-    private fun Brush.calculateAndScale(
+
+    protected open fun scaleCanvasByBrush(
+        brush: Brush,
         finalTaperSize: Float,
         finalSizeVariance: Float,
         canvas: Canvas,
         squish: Float
     ) {
-        when {
-            sizeJitter > 0f || squish != 1f -> {
-                val randomJitterNumber = if (sizeJitter == 0f) {
-                    0f
-                } else {
-                    Random.nextInt(
-                        0,
-                        (100f * sizeJitter).toInt()
-                    ) / 100f
+        brush.apply {
+            when {
+                sizeJitter > 0f || squish != 1f -> {
+                    val randomJitterNumber = if (sizeJitter == 0f) {
+                        0f
+                    } else {
+                        Random.nextInt(
+                            0,
+                            (100f * sizeJitter).toInt()
+                        ) / 100f
+                    }
+
+                    val finalScale =
+                        (1f + randomJitterNumber) * finalTaperSize * finalSizeVariance * lastSizePressure
+
+                    canvas.scale(finalScale * squish, finalScale)
                 }
 
-                val finalScale =
-                    (1f + randomJitterNumber) * finalTaperSize * finalSizeVariance * lastSizePressure
+                isSizePressureSensitive -> {
+                    canvas.scale(lastSizePressure, lastSizePressure)
+                }
 
-                canvas.scale(finalScale * squish, finalScale)
+                taperSizeHolder != 1f && startTaperSpeed > 0 -> {
+                    val s = finalTaperSize * finalSizeVariance
+                    canvas.scale(s, s)
+                }
+
+                sizeVariance != 1f -> {
+                    canvas.scale(finalSizeVariance, finalSizeVariance)
+                }
             }
-
-            isSizePressureSensitive -> {
-                canvas.scale(lastSizePressure, lastSizePressure)
-            }
-
-            taperSizeHolder != 1f && startTaperSpeed > 0 -> {
-                val s = finalTaperSize * finalSizeVariance
-                canvas.scale(s, s)
-            }
-
-            sizeVariance != 1f -> {
-                canvas.scale(finalSizeVariance, finalSizeVariance)
-            }
-
         }
     }
 
 
-    private fun Brush.calculateBrushOpacity() = when {
-        isOpacityPressureSensitive -> {
-            ((opacity * 255f) * lastOpacityPressure).toInt()
+    protected open fun calculateBrushOpacity(brush: Brush): Int {
+        return brush.run {
+            when {
+                isOpacityPressureSensitive -> {
+                    ((opacity * 255f) * lastOpacityPressure).toInt()
+                }
+
+                opacityVariance != 0f -> {
+                    targetOpacityVariance.toInt()
+                }
+
+                opacityJitter > 0f -> {
+                    Random.nextInt(0, (255f * opacityJitter).toInt())
+                }
+
+                alphaBlend -> {
+                    255
+                }
+
+                else -> {
+                    (opacity * 255f).toInt()
+                }
+            }
         }
 
-        opacityVariance != 0f -> {
-            targetOpacityVariance.toInt()
-        }
-
-        opacityJitter > 0f -> {
-            Random.nextInt(0, (255f * opacityJitter).toInt())
-        }
-
-        alphaBlend -> {
-            255
-        }
-
-        else -> {
-            (opacity * 255f).toInt()
-        }
     }
 
     override fun isEraserModeEnabled(): Boolean {

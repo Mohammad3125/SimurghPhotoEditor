@@ -1,17 +1,18 @@
 package ir.baboomeh.photolib.components.paint.engines
 
 import android.graphics.Canvas
+import androidx.core.graphics.withSave
 import ir.baboomeh.photolib.components.paint.painters.brushpaint.brushes.Brush
 import ir.baboomeh.photolib.utils.gesture.GestureUtils
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import kotlin.random.Random
 
-class CachedCanvasEngine : DrawingEngine {
+open class CachedCanvasEngine : DrawingEngine {
 
-    var cachedScatterX = 0f
-    var cachedScatterY = 0f
-    var cachedScale = 0f
-    var cachedRotation = 0f
+    open var cachedScatterX = 0f
+    open var cachedScatterY = 0f
+    open var cachedScale = 0f
+    open var cachedRotation = 0f
 
     private var taperSizeHolder = 0f
 
@@ -34,73 +35,69 @@ class CachedCanvasEngine : DrawingEngine {
         drawCount: Int
     ) {
         brush.apply {
-            canvas.save()
+            canvas.withSave {
 
-            val scatterSize = scatter
+                val scatterSize = scatter
 
-            if (scatterSize > 0f) {
-                val brushSize = size
+                if (scatterSize > 0f) {
+                    val brushSize = size
 
-                val rx = (brushSize * (scatterSize * cachedScatterX)).toInt()
-                val ry = (brushSize * (scatterSize * cachedScatterY)).toInt()
+                    val rx = (brushSize * (scatterSize * cachedScatterX)).toInt()
+                    val ry = (brushSize * (scatterSize * cachedScatterY)).toInt()
 
-                canvas.translate(
-                    ex + rx,
-                    ey + ry
-                )
-            } else {
-                canvas.translate(ex, ey)
-            }
-
-            val angleJitter = angleJitter
-
-            val fixedAngle = angle
-
-            if (angleJitter > 0f && (fixedAngle > 0f || directionalAngle > 0f) || angleJitter > 0f && fixedAngle == 0f) {
-
-                val rot = GestureUtils.mapTo360(
-                    fixedAngle + (360f * (angleJitter * cachedRotation)) + directionalAngle
-                )
-
-                canvas.rotate(rot)
-            } else if (angleJitter == 0f && (fixedAngle > 0f || directionalAngle > 0f)) {
-                canvas.rotate(fixedAngle + directionalAngle)
-            }
-
-            if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
-                if (startTaperSize < 1f) {
-                    taperSizeHolder += startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtMost(1f)
+                    translate(ex + rx, ey + ry)
                 } else {
-                    taperSizeHolder -= startTaperSpeed
-                    taperSizeHolder = taperSizeHolder.coerceAtLeast(1f)
+                    translate(ex, ey)
                 }
+
+                val angleJitter = angleJitter
+
+                val fixedAngle = angle
+
+                if (angleJitter > 0f && (fixedAngle > 0f || directionalAngle > 0f) || angleJitter > 0f && fixedAngle == 0f) {
+
+                    val rot = GestureUtils.mapTo360(
+                        fixedAngle + (360f * (angleJitter * cachedRotation)) + directionalAngle
+                    )
+
+                    rotate(rot)
+                } else if (angleJitter == 0f && (fixedAngle > 0f || directionalAngle > 0f)) {
+                    rotate(fixedAngle + directionalAngle)
+                }
+
+                if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
+                    if (startTaperSize < 1f) {
+                        taperSizeHolder += startTaperSpeed
+                        taperSizeHolder = taperSizeHolder.coerceAtMost(1f)
+                    } else {
+                        taperSizeHolder -= startTaperSpeed
+                        taperSizeHolder = taperSizeHolder.coerceAtLeast(1f)
+                    }
+                }
+
+
+                val squish = 1f - squish
+
+                val sizeJitter = sizeJitter
+
+                val jitterNumber = sizeJitter * cachedScale
+
+                val finalTaperSize =
+                    if (taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
+
+                val finalScale = (1f + jitterNumber) * finalTaperSize
+
+                scale(finalScale * squish, finalScale)
+
+                val brushOpacity = if (opacityJitter > 0f) {
+                    Random.nextInt(0, (255f * opacityJitter).toInt())
+                } else {
+                    (opacity * 255).toInt()
+                }
+
+
+                draw(this, brushOpacity)
             }
-
-
-            val squish = 1f - squish
-
-            val sizeJitter = sizeJitter
-
-            val jitterNumber = sizeJitter * cachedScale
-
-            val finalTaperSize =
-                if (taperSizeHolder != 1f && startTaperSpeed > 0) taperSizeHolder else 1f
-
-            val finalScale = (1f + jitterNumber) * finalTaperSize
-
-            canvas.scale(finalScale * squish, finalScale)
-
-            val brushOpacity = if (opacityJitter > 0f) {
-                Random.nextInt(0, (255f * opacityJitter).toInt())
-            } else {
-                (opacity * 255).toInt()
-            }
-
-
-            draw(canvas, brushOpacity)
-
-            canvas.restore()
         }
     }
 
