@@ -33,15 +33,15 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
     Opacityable, Backgroundable,
     CornerRounder, Shadowable, StrokeCapable {
 
-    protected var strokeWidth: Float = 0f
+    protected var bitmapStrokeWidth: Float = 0f
 
     @ColorInt
-    protected  var strokeColor: Int = Color.BLACK
+    protected  var bitmapStrokeColor: Int = Color.BLACK
     protected  var cornerRadius: Float = 0f
 
     protected val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = strokeColor
-        strokeWidth = this@BitmapPainter.strokeWidth
+        color = bitmapStrokeColor
+        strokeWidth = this@BitmapPainter.bitmapStrokeWidth
         style = Paint.Style.FILL_AND_STROKE
     }
 
@@ -75,26 +75,26 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
             notifyBoundsChanged()
         }
 
-    protected var shadowRadius = 0f
-    protected  var shadowDx = 0f
-    protected  var shadowDy = 0f
-    protected  var shadowColor = Color.YELLOW
+    protected var bitmapShadowRadius = 0f
+    protected  var bitmapShadowDx = 0f
+    protected  var bitmapShadowDy = 0f
+    protected  var bitmapShadowColor = Color.YELLOW
 
-    protected  var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
+    protected  var bitmapBlendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
     protected  var isTextBackgroundEnabled = false
 
     protected  var backgroundPaddingSize = 0f
 
-    protected  var backgroundRadius = 12f
+    protected  var bitmapBackgroundRadius = 12f
 
     @ColorInt
-    protected  var backgroundColor: Int = Color.GRAY
+    protected  var bitmapBackgroundColor: Int = Color.GRAY
 
     protected  val backgroundPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = backgroundColor
+            color = bitmapBackgroundColor
         }
     }
 
@@ -116,7 +116,7 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
 
     override fun getBounds(bounds: RectF) {
         val extraSpace =
-            max(strokeWidth, if (isTextBackgroundEnabled) backgroundPaddingSize else 0f)
+            max(bitmapStrokeWidth, if (isTextBackgroundEnabled) backgroundPaddingSize else 0f)
 
         halfPadding = extraSpace * 0.5f
         finalWidth = bitmap.width + extraSpace
@@ -138,7 +138,7 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
             if (isTextBackgroundEnabled) {
                 withSave {
                     backgroundPaint.color =
-                        backgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                        bitmapBackgroundColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
                     saveLayer(finalBounds, null)
 
@@ -147,12 +147,12 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
                         0f,
                         finalWidth,
                         finalHeight,
-                        backgroundRadius,
-                        backgroundRadius,
+                        bitmapBackgroundRadius,
+                        bitmapBackgroundRadius,
                         backgroundPaint
                     )
 
-                    backgroundPaint.color = backgroundColor
+                    backgroundPaint.color = bitmapBackgroundColor
 
                     translate(halfPadding, halfPadding)
 
@@ -174,26 +174,26 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
                     restore()
                 }
             }
-            if (shadowRadius > 0) {
+            if (bitmapShadowRadius > 0) {
                 val currentPorterDuffMode = dstOutPaint.xfermode
 
                 dstOutPaint.xfermode = null
 
                 val transformedColor =
-                    shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                    bitmapShadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
                 dstOutPaint.color = transformedColor
 
-                dstOutPaint.strokeWidth = strokeWidth
+                dstOutPaint.strokeWidth = bitmapStrokeWidth
 
                 dstOutPaint.setShadowLayer(
-                    shadowRadius,
-                    shadowDx,
-                    shadowDy,
+                    bitmapShadowRadius,
+                    bitmapShadowDx,
+                    bitmapShadowDy,
                     transformedColor
                 )
 
-                val maxRoundness = max(backgroundRadius, cornerRadius)
+                val maxRoundness = max(bitmapBackgroundRadius, cornerRadius)
 
                 withTranslation(halfPadding, halfPadding) {
                     if (customBackgroundPath != null) {
@@ -219,10 +219,10 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
 
 
             withTranslation(halfPadding, halfPadding) {
-                if (strokeWidth > 0f) {
+                if (bitmapStrokeWidth > 0f) {
 
                     strokePaint.color =
-                        strokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                        bitmapStrokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
                     if (customBackgroundPath != null) {
                         drawPath(customBackgroundPath!!, strokePaint)
@@ -253,47 +253,47 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
     }
 
     override fun getShadowDx(): Float {
-        return shadowDx
+        return bitmapShadowDx
     }
 
     override fun getShadowDy(): Float {
-        return shadowDy
+        return bitmapShadowDy
     }
 
     override fun getShadowRadius(): Float {
-        return shadowRadius
+        return bitmapShadowRadius
     }
 
     override fun getShadowColor(): Int {
-        return shadowColor
+        return bitmapShadowColor
     }
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
-        shadowRadius = radius
-        shadowDx = dx
-        shadowDy = dy
-        this.shadowColor = shadowColor
+        bitmapShadowRadius = radius
+        bitmapShadowDx = dx
+        bitmapShadowDy = dy
+        this.bitmapShadowColor = shadowColor
         invalidate()
     }
 
     override fun clearShadow() {
         dstOutPaint.clearShadowLayer()
-        shadowRadius = 0f
-        shadowDx = 0f
-        shadowDy = 0f
-        shadowColor = Color.YELLOW
+        bitmapShadowRadius = 0f
+        bitmapShadowDx = 0f
+        bitmapShadowDy = 0f
+        bitmapShadowColor = Color.YELLOW
         invalidate()
     }
 
     override fun setBlendMode(blendMode: PorterDuff.Mode) {
         bitmapPaint.xfermode = PorterDuffXfermode(blendMode)
-        this.blendMode = blendMode
+        this.bitmapBlendMode = blendMode
         invalidate()
     }
 
     override fun clearBlend() {
         bitmapPaint.xfermode = null
-        blendMode = PorterDuff.Mode.SRC
+        bitmapBlendMode = PorterDuff.Mode.SRC
         invalidate()
     }
 
@@ -306,8 +306,8 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
             if (cloneBitmap) bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true) else bitmap
 
         return BitmapPainter(clonedBitmap).also {
-            if (blendMode != PorterDuff.Mode.SRC) {
-                it.setBlendMode(blendMode)
+            if (bitmapBlendMode != PorterDuff.Mode.SRC) {
+                it.setBlendMode(bitmapBlendMode)
             }
             it.setOpacity(getOpacity())
             it.setBackground(
@@ -321,14 +321,14 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
             customBackgroundPath?.let { path ->
                 it.customBackgroundPath = Path(path)
             }
-            it.setStroke(strokeWidth, strokeColor)
+            it.setStroke(bitmapStrokeWidth, bitmapStrokeColor)
             it.imageAdjustments.set(imageAdjustments)
             it.adjustImageValues()
         }
     }
 
     override fun getBlendMode(): PorterDuff.Mode {
-        return blendMode
+        return bitmapBlendMode
     }
 
     override fun getOpacity(): Int {
@@ -342,10 +342,10 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
 
     override fun setBackground(padding: Float, radius: Float, @ColorInt color: Int) {
         val shouldChangeBounds =
-            (backgroundPaddingSize != padding || backgroundRadius != radius || backgroundPaddingSize < strokeWidth)
+            (backgroundPaddingSize != padding || bitmapBackgroundRadius != radius || backgroundPaddingSize < bitmapStrokeWidth)
         backgroundPaddingSize = padding
-        backgroundColor = color
-        backgroundRadius = radius
+        bitmapBackgroundColor = color
+        bitmapBackgroundRadius = radius
 
         if (shouldChangeBounds) {
             notifyBoundsChanged()
@@ -359,11 +359,11 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
     }
 
     override fun getBackgroundRadius(): Float {
-        return backgroundRadius
+        return bitmapBackgroundRadius
     }
 
     override fun getBackgroundColor(): Int {
-        return backgroundColor
+        return bitmapBackgroundColor
     }
 
     override fun getBackgroundState(): Boolean {
@@ -385,19 +385,19 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
     }
 
     override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
-        strokeWidth = strokeRadiusPx
-        this.strokeColor = strokeColor
+        bitmapStrokeWidth = strokeRadiusPx
+        this.bitmapStrokeColor = strokeColor
         strokePaint.color = strokeColor
-        strokePaint.strokeWidth = strokeWidth
+        strokePaint.strokeWidth = bitmapStrokeWidth
         notifyBoundsChanged()
     }
 
     override fun getStrokeColor(): Int {
-        return strokeColor
+        return bitmapStrokeColor
     }
 
     override fun getStrokeWidth(): Float {
-        return strokeWidth
+        return bitmapStrokeWidth
     }
 
     open fun setHue(@FloatRange(0.0, 360.0) degree: Float) {

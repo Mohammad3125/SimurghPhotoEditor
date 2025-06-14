@@ -45,10 +45,10 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
             notifyBoundsChanged()
         }
 
-    protected var shadowRadius = 0f
-    protected var shadowDx = 0f
-    protected var shadowDy = 0f
-    protected var shadowColor = Color.YELLOW
+    protected var shapeShadowRadius = 0f
+    protected var shapeShadowDx = 0f
+    protected var shapeShadowDy = 0f
+    protected var shapeShadowColor = Color.YELLOW
 
     protected var opacityHolder: Int = 255
 
@@ -68,7 +68,7 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
 
     protected var strokeSize = 0f
 
-    protected var strokeColor = Color.BLACK
+    protected var shapeStrokeColor = Color.BLACK
         set(value) {
             field = value
             invalidate()
@@ -82,7 +82,7 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
         Paint()
     }
 
-    protected var blendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
+    protected var shapeBlendMode: PorterDuff.Mode = PorterDuff.Mode.SRC
 
     protected var gradientColors: IntArray? = null
 
@@ -148,7 +148,7 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
                 }
             }
             painter.strokeSize = strokeSize
-            painter.strokeColor = strokeColor
+            painter.shapeStrokeColor = shapeStrokeColor
             painter.shaderRotationHolder = shaderRotationHolder
             getTexture()?.let { t ->
                 painter.applyTexture(t)
@@ -158,14 +158,14 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
                 painter.shapePaint.shader.setLocalMatrix(shaderMatrix)
             }
             painter.shapePaint.maskFilter = shapePaint.maskFilter
-            if (blendMode != PorterDuff.Mode.SRC) {
-                painter.setBlendMode(blendMode)
+            if (shapeBlendMode != PorterDuff.Mode.SRC) {
+                painter.setBlendMode(shapeBlendMode)
             }
             painter.setShadow(
-                shadowRadius,
-                shadowDx,
-                shadowDy,
-                shadowColor
+                shapeShadowRadius,
+                shapeShadowDx,
+                shapeShadowDy,
+                shapeShadowColor
             )
 
 
@@ -176,12 +176,12 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
 
     override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
         strokeSize = strokeRadiusPx
-        this.strokeColor = strokeColor
+        this.shapeStrokeColor = strokeColor
         notifyBoundsChanged()
     }
 
     override fun getStrokeColor(): Int {
-        return strokeColor
+        return shapeStrokeColor
     }
 
     override fun getStrokeWidth(): Float {
@@ -375,52 +375,52 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
     }
 
     override fun getShadowDx(): Float {
-        return shadowDx
+        return shapeShadowDx
     }
 
     override fun getShadowDy(): Float {
-        return shadowDy
+        return shapeShadowDy
     }
 
     override fun getShadowRadius(): Float {
-        return shadowRadius
+        return shapeShadowRadius
     }
 
     override fun getShadowColor(): Int {
-        return shadowColor
+        return shapeShadowColor
     }
 
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
-        shadowRadius = radius
-        shadowDx = dx
-        shadowDy = dy
-        this.shadowColor = shadowColor
+        shapeShadowRadius = radius
+        shapeShadowDx = dx
+        shapeShadowDy = dy
+        this.shapeShadowColor = shadowColor
         invalidate()
     }
 
     override fun clearShadow() {
         shapePaint.clearShadowLayer()
-        shadowRadius = 0f
-        shadowDx = 0f
-        shadowDy = 0f
-        shadowColor = Color.YELLOW
+        shapeShadowRadius = 0f
+        shapeShadowDx = 0f
+        shapeShadowDy = 0f
+        shapeShadowColor = Color.YELLOW
         invalidate()
     }
 
     override fun setBlendMode(blendMode: PorterDuff.Mode) {
         shapePaint.xfermode = PorterDuffXfermode(blendMode)
-        this.blendMode = blendMode
+        this.shapeBlendMode = blendMode
         invalidate()
     }
 
     override fun clearBlend() {
         shapePaint.xfermode = null
-        blendMode = PorterDuff.Mode.SRC
+        shapeBlendMode = PorterDuff.Mode.SRC
         invalidate()
     }
 
     override fun getBlendMode(): PorterDuff.Mode {
-        return blendMode
+        return shapeBlendMode
     }
 
     override fun reportPositions(): FloatArray? {
@@ -458,9 +458,9 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
 
                 val opacityFactor = opacityHolder / 255f
 
-                if (shadowRadius > 0) {
+                if (shapeShadowRadius > 0) {
                     val transformedColor =
-                        shadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                        shapeShadowColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
                     val currentStyle = shapePaint.style
                     val currentShader = shapePaint.shader
                     shapePaint.shader = null
@@ -468,9 +468,9 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
                     shapePaint.strokeWidth = strokeSize
                     shapePaint.color = transformedColor
                     shapePaint.setShadowLayer(
-                        shadowRadius,
-                        shadowDx,
-                        shadowDy,
+                        shapeShadowRadius,
+                        shapeShadowDx,
+                        shapeShadowDy,
                         transformedColor
                     )
 
@@ -489,7 +489,7 @@ open class ShapePainter(shape: MananShape, var shapeWidth: Int, var shapeHeight:
                     val currentShader = shapePaint.shader
                     shapePaint.shader = null
                     shapePaint.color =
-                        strokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
+                        shapeStrokeColor.calculateColorAlphaWithOpacityFactor(opacityFactor)
 
                     saveLayer(-half, -half, rawWidth, rawHeight, saveLayerPaint)
 
