@@ -627,25 +627,28 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
                 clipRect(layerClipBounds)
             }
 
-            drawPainterLayer()
+            drawPainterLayer(canvas)
         }
     }
 
-    protected open fun Canvas.drawPainterLayer() {
-        selectedLayer?.let { layer ->
-            if (isCheckerBoardEnabled) {
-                drawPaint(checkerPatternPaint)
+    protected open fun drawPainterLayer(canvas: Canvas) {
+        canvas.apply {
+            selectedLayer?.let { layer ->
+                if (isCheckerBoardEnabled) {
+                    drawPaint(checkerPatternPaint)
+                }
+                drawPaintLayer(canvas, layer)
+                painter?.draw(this)
             }
-            layer.draw(this)
-            painter?.draw(this)
         }
     }
 
-    protected open fun PaintLayer.draw(canvas: Canvas) {
-        //TODO: move draw call to PaintLayer
-        layersPaint.alpha = (255 * opacity).toInt()
-        layersPaint.xfermode = blendingModeObject
-        canvas.drawBitmap(this.bitmap, 0f, 0f, layersPaint)
+    protected open fun drawPaintLayer(canvas: Canvas, paintLayer: PaintLayer) {
+        paintLayer.apply {
+            layersPaint.alpha = (255 * opacity).toInt()
+            layersPaint.xfermode = blendingModeObject
+            canvas.drawBitmap(this.bitmap, 0f, 0f, layersPaint)
+        }
     }
 
     override fun onSendMessage(message: Painter.PainterMessage) {

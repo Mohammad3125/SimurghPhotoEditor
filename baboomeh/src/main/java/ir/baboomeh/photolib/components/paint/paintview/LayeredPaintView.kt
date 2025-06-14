@@ -34,30 +34,30 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private var layerHolder = mutableListOf<PaintLayer>()
+    protected var layerHolder = mutableListOf<PaintLayer>()
 
-    private var onLayersChanged: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)? =
+    protected var onLayersChanged: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)? =
         null
-    private var onLayersChangedListener: OnLayersChanged? = null
+    protected var layerChangedCallback: OnLayersChanged? = null
 
-    private var onStateChanged: ((layers: List<PaintLayer>?, clip: Rect?) -> Unit)? = null
+    protected var stateChangedCallback: ((layers: List<PaintLayer>?, clip: Rect?) -> Unit)? = null
 
-    private var onUndoOrRedoStateChanged: ((isUndoEnabled: Boolean, isRedoEnabled: Boolean) -> Unit)? =
+    protected var onUndoOrRedoStateChanged: ((isUndoEnabled: Boolean, isRedoEnabled: Boolean) -> Unit)? =
         null
 
-    private val mergeCanvas by lazy {
+    protected val mergeCanvas by lazy {
         Canvas()
     }
 
-    private lateinit var bitmapReference: Bitmap
+    protected lateinit var bitmapReference: Bitmap
 
-    private lateinit var cachedLayer: Bitmap
+    protected lateinit var cachedLayer: Bitmap
 
-    private lateinit var partiallyCachedLayer: Bitmap
+    protected lateinit var partiallyCachedLayer: Bitmap
 
-    private var isAllLayersCached: Boolean = false
+    protected var isAllLayersCached: Boolean = false
 
-    private var isFirstTimeToCallListener = false
+    protected var isFirstTimeToCallListener = false
 
     protected var initialPaintLayer: PaintLayer? = null
 
@@ -67,7 +67,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             initialPaintLayer = value?.clone(true)
         }
 
-    var isCachingEnabled = false
+    open var isCachingEnabled = false
         set(value) {
             field = value
             if (value) {
@@ -84,7 +84,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             }
         }
 
-    private fun isCacheLayerInitialized(): Boolean =
+    protected fun isCacheLayerInitialized(): Boolean =
         this::partiallyCachedLayer.isInitialized && this::cachedLayer.isInitialized
 
 
@@ -128,7 +128,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun createCacheLayers() {
+    protected open fun createCacheLayers() {
         if ((!isCacheLayerInitialized() || cachedLayer.isRecycled || partiallyCachedLayer.isRecycled) && isCachingEnabled) {
             cachedLayer = createLayerBitmap()
             partiallyCachedLayer = createLayerBitmap()
@@ -176,7 +176,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         saveState(createState(), false)
     }
 
-    fun undo() {
+    open fun undo() {
         if (clipAnimator.isRunning) {
             return
         }
@@ -191,7 +191,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun redo() {
+    open fun redo() {
         if (clipAnimator.isRunning) {
             return
         }
@@ -206,7 +206,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun updateAfterStateChange() {
+    protected open fun updateAfterStateChange() {
         cacheLayers()
 
         callOnLayerChangedListeners()
@@ -216,8 +216,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    private fun HistoryHandler.callUndoRedoListener() {
-        onUndoOrRedoStateChanged?.invoke(getUndoSize() != 0, getRedoSize() != 0)
+    protected open fun callUndoRedoListener() {
+        onUndoOrRedoStateChanged?.invoke(
+            historyHandler.getUndoSize() != 0,
+            historyHandler.getRedoSize() != 0
+        )
     }
 
     override fun onRotateBegin(initialDegree: Float, px: Float, py: Float): Boolean {
@@ -243,7 +246,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             }
 
             if (!isCachingEnabled) {
-                drawLayers()
+                drawLayers(canvas)
                 return
             }
 
@@ -252,7 +255,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                 layersPaint.alpha = 255
                 drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
 
-                drawPainterLayer()
+                drawPainterLayer(canvas)
 
                 layersPaint.xfermode = null
                 layersPaint.alpha = 255
@@ -265,38 +268,46 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                     drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
                 }
 
-                drawPainterLayer()
+                drawPainterLayer(canvas)
 
-                mergeLayersAtIndex(layerHolder.indexOf(selectedLayer) + 1, layerHolder.lastIndex)
+                mergeLayersAtIndex(
+                    canvas,
+                    layerHolder.indexOf(selectedLayer) + 1,
+                    layerHolder.lastIndex
+                )
             }
         }
     }
 
-    fun isAnyLayerBlending(): Boolean =
+    open fun isAnyLayerBlending(): Boolean =
         layerHolder.any { it.blendingModeObject != null }
 
-    override fun Canvas.drawPainterLayer() {
-        doOnSelectedLayer {
-            if (this === layerHolder.first() && isCheckerBoardEnabled) {
-                drawPaint(checkerPatternPaint)
+    override fun drawPainterLayer(canvas: Canvas) {
+        canvas.apply {
+            doOnSelectedLayer {
+                if (this === layerHolder.first() && isCheckerBoardEnabled) {
+                    drawPaint(checkerPatternPaint)
+                }
+
+                drawPaintLayer(canvas, this)
+
+                painter?.draw(canvas)
             }
-
-            this.draw(this@drawPainterLayer)
-
-            painter?.draw(this@drawPainterLayer)
         }
     }
 
-    protected open fun Canvas.drawLayers() {
-        layerHolder.forEach { layer ->
-            if (layer === layerHolder.first() && isCheckerBoardEnabled) {
-                drawPaint(checkerPatternPaint)
-            }
+    protected open fun drawLayers(canvas: Canvas) {
+        canvas.apply {
+            layerHolder.forEach { layer ->
+                if (layer === layerHolder.first() && isCheckerBoardEnabled) {
+                    drawPaint(checkerPatternPaint)
+                }
 
-            layer.draw(this)
+                drawPaintLayer(canvas, layer)
 
-            if (layer === selectedLayer) {
-                painter?.draw(this)
+                if (layer === selectedLayer) {
+                    painter?.draw(this)
+                }
             }
         }
     }
@@ -321,7 +332,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
      * Creates a new PaintLayer based on previous layers and adds it to list of layers.
      * @throws IllegalStateException If previous call to [addNewLayer(bitmap)] hasn't been made yet.
      */
-    fun addNewLayer() {
+    open fun addNewLayer() {
         if (!isViewInitialized) {
             throw IllegalStateException("Cannot make new layer based on previous layers. Did you call `addNewLayer(bitmap)` first?")
         }
@@ -341,13 +352,13 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun addNewLayer(layer: PaintLayer) {
+    open fun addNewLayer(layer: PaintLayer) {
         initializeBitmap(layer.bitmap)
 
         addNewLayerWithoutLayoutReset(layer)
     }
 
-    private fun initializeBitmap(bitmap: Bitmap) {
+    protected open fun initializeBitmap(bitmap: Bitmap) {
         layerHolder.clear()
         isNewLayer = true
         bitmapWidth = bitmap.width
@@ -356,7 +367,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         identityClip.set(layerClipBounds)
     }
 
-    private fun addNewLayerWithoutLayoutReset(layer: PaintLayer) {
+    protected open fun addNewLayerWithoutLayoutReset(layer: PaintLayer) {
         selectedLayer = layer
 
         val initialLayers = layerHolder.toMutableList()
@@ -372,12 +383,12 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         updateAfterStateChange()
     }
 
-    private fun saveState(state: State?, ignorePainterHandleHistoryFlag: Boolean = true) {
+    protected open fun saveState(state: State?, ignorePainterHandleHistoryFlag: Boolean = true) {
         if (painter?.doesHandleHistory() == true && !ignorePainterHandleHistoryFlag) {
             return
         }
 
-        onStateChanged?.invoke(state?.clonedLayers, state?.clonedClip)
+        stateChangedCallback?.invoke(state?.clonedLayers, state?.clonedClip)
 
         if (state == null) {
             return
@@ -388,7 +399,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         historyHandler.addState(state)
     }
 
-    fun addNewLayerWithoutSavingHistory() {
+    open fun addNewLayerWithoutSavingHistory() {
         addNewLayerWithoutSavingHistory(createLayerBitmap())
 
         if (isViewInitialized) {
@@ -398,11 +409,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    private fun addNewLayerWithoutSavingHistory(bitmap: Bitmap) {
+    protected open fun addNewLayerWithoutSavingHistory(bitmap: Bitmap) {
         addNewLayerWithoutSavingHistory(PaintLayer(bitmap, false, 1f))
     }
 
-    fun addNewLayerWithoutSavingHistory(layer: PaintLayer) {
+    open fun addNewLayerWithoutSavingHistory(layer: PaintLayer) {
         selectedLayer = layer
 
         layerHolder.add(selectedLayer!!)
@@ -410,11 +421,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         callOnLayerChangedListeners()
     }
 
-    private fun createLayerBitmap(): Bitmap {
+    protected open fun createLayerBitmap(): Bitmap {
         return createBitmap(bitmapWidth, bitmapHeight)
     }
 
-    private fun cacheLayers() {
+    protected open fun cacheLayers() {
         if (!this::bitmapReference.isInitialized) {
             return
         }
@@ -425,7 +436,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                     drawPaint(checkerPatternPaint)
                 }
                 setBitmap(bitmapReference)
-                mergeLayersAtIndex(0, layerHolder.lastIndex)
+                mergeLayersAtIndex(mergeCanvas, 0, layerHolder.lastIndex)
                 painter?.onReferenceLayerCreated(bitmapReference)
                 return
             }
@@ -443,13 +454,17 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
                         drawPaint(checkerPatternPaint)
                     }
 
-                    mergeLayersAtIndex(0, getSelectedLayerIndex() - 1)
+                    mergeLayersAtIndex(mergeCanvas, 0, getSelectedLayerIndex() - 1)
 
                     cachedLayer.eraseColor(Color.TRANSPARENT)
 
                     setBitmap(cachedLayer)
 
-                    mergeLayersAtIndex(getSelectedLayerIndex() + 1, layerHolder.lastIndex)
+                    mergeLayersAtIndex(
+                        mergeCanvas,
+                        getSelectedLayerIndex() + 1,
+                        layerHolder.lastIndex
+                    )
 
                     bitmapReference.eraseColor(Color.TRANSPARENT)
 
@@ -459,7 +474,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
                     drawBitmap(cachedLayer, 0f, 0f, layersPaint)
 
-                    drawPainterLayer()
+                    drawPainterLayer(mergeCanvas)
 
                     painter?.onReferenceLayerCreated(bitmapReference)
 
@@ -469,22 +484,23 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun Canvas.mergeLayersAtIndex(from: Int, to: Int) {
+    protected open fun mergeLayersAtIndex(canvas: Canvas, from: Int, to: Int) {
         layerHolder.slice(from..to).forEach { layer ->
-            layer.draw(this)
+
+            drawPaintLayer(canvas, layer)
 
             if (layer === selectedLayer) {
-                painter?.draw(this)
+                painter?.draw(canvas)
             }
         }
     }
 
-    fun getLayerOpacityAt(index: Int): Float {
+    open fun getLayerOpacityAt(index: Int): Float {
         checkIndex(index)
         return layerHolder[index].opacity
     }
 
-    fun changeLayerOpacityAt(index: Int, opacity: Float) {
+    open fun changeLayerOpacityAt(index: Int, opacity: Float) {
         checkIndex(index)
 
         layerHolder[index].apply {
@@ -496,7 +512,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    fun changeLayerOpacityAtWithoutStateSave(index: Int, opacity: Float) {
+    open fun changeLayerOpacityAtWithoutStateSave(index: Int, opacity: Float) {
         checkIndex(index)
 
         layerHolder[index].apply {
@@ -518,7 +534,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    fun setLayerBlendingModeAt(index: Int, blendingMode: PorterDuff.Mode) {
+    open fun setLayerBlendingModeAt(index: Int, blendingMode: PorterDuff.Mode) {
         checkIndex(index)
 
         layerHolder[index].apply {
@@ -532,7 +548,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
 
-    fun moveLayer(from: Int, to: Int) {
+    open fun moveLayer(from: Int, to: Int) {
         if (cantMoveLayers(from, to)) {
             return
         }
@@ -552,11 +568,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    private fun cantMoveLayers(from: Int, to: Int): Boolean {
+    protected open fun cantMoveLayers(from: Int, to: Int): Boolean {
         return from == to || from < 0 || to < 0 || from > layerHolder.lastIndex || to > layerHolder.lastIndex
     }
 
-    fun moveSelectedLayerDown() {
+    open fun moveSelectedLayerDown() {
         doOnSelectedLayer {
             val index = getSelectedLayerIndex()
 
@@ -578,7 +594,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun moveSelectedLayerUp() {
+    open fun moveSelectedLayerUp() {
         doOnSelectedLayer {
             val index = getSelectedLayerIndex()
 
@@ -600,16 +616,16 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun lockLayer(index: Int) {
+    open fun lockLayer(index: Int) {
         changeLayerLockState(index, true)
     }
 
 
-    fun unlockLayer(index: Int) {
+    open fun unlockLayer(index: Int) {
         changeLayerLockState(index, false)
     }
 
-    private fun changeLayerLockState(index: Int, shouldLock: Boolean) {
+    protected open fun changeLayerLockState(index: Int, shouldLock: Boolean) {
         checkIndex(index)
 
         layerHolder[index].apply {
@@ -622,12 +638,12 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         callOnLayerChangedListeners()
     }
 
-    fun isLayerAtIndexLocked(index: Int): Boolean {
+    open fun isLayerAtIndexLocked(index: Int): Boolean {
         checkIndex(index)
         return layerHolder[index].isLocked
     }
 
-    fun removeLayerAt(index: Int) {
+    open fun removeLayerAt(index: Int) {
         checkIndex(index)
 
         val initialLayers = layerHolder.toMutableList()
@@ -656,13 +672,13 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
     }
 
-    fun removeLayers(layersIndex: IntArray) {
+    open fun removeLayers(layersIndex: IntArray) {
         val initialLayers = layerHolder.toMutableList()
         removeLayersWithoutStateSave(layersIndex)
         saveState(createState(initialLayers))
     }
 
-    private fun removeLayersWithoutStateSave(layersIndex: IntArray) {
+    protected open fun removeLayersWithoutStateSave(layersIndex: IntArray) {
         layersIndex.forEach { checkIndex(it) }
 
         if (layersIndex.contains(getSelectedLayerIndex())) {
@@ -686,11 +702,11 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    fun getLayerCount(): Int {
+    open fun getLayerCount(): Int {
         return layerHolder.size
     }
 
-    fun selectLayer(index: Int) {
+    open fun selectLayer(index: Int) {
         checkIndex(index)
         selectedLayer = layerHolder[index]
         painter?.onLayerChanged(selectedLayer)
@@ -699,7 +715,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         invalidate()
     }
 
-    fun selectLayer(paintLayer: PaintLayer) {
+    open fun selectLayer(paintLayer: PaintLayer) {
         if (layerHolder.contains(paintLayer) && selectedLayer !== paintLayer) {
             selectedLayer = paintLayer
             painter?.onLayerChanged(selectedLayer)
@@ -709,17 +725,17 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    fun getSelectedLayerIndex(): Int {
+    open fun getSelectedLayerIndex(): Int {
         return layerHolder.indexOf(selectedLayer)
     }
 
-    fun getLayersBitmap(): List<Bitmap> {
+    open fun getLayersBitmap(): List<Bitmap> {
         return layerHolder.map {
             it.bitmap
         }
     }
 
-    fun mergeLayers(layersIndex: IntArray) {
+    open fun mergeLayers(layersIndex: IntArray) {
         if (layersIndex.size < 2) {
             throw IllegalStateException("you need at least two layers to merge")
         }
@@ -741,7 +757,8 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         val sortedMinusBottomIndex = layersIndex.sorted().minus(lowerIndex)
 
         sortedMinusBottomIndex.map { layerHolder[it] }.forEach { layer ->
-            layer.draw(mergeCanvas)
+
+            drawPaintLayer(mergeCanvas, layer)
 
             if (layer === selectedLayer) {
                 painter?.draw(mergeCanvas)
@@ -755,18 +772,18 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         saveState(createState(initialLayers, bottomLayer))
     }
 
-    fun duplicateSelectedLayer() {
+    open fun duplicateSelectedLayer() {
         doOnSelectedLayer {
             duplicateLayer()
         }
     }
 
-    fun duplicateLayerAt(index: Int) {
+    open fun duplicateLayerAt(index: Int) {
         checkIndex(index)
         layerHolder.getOrNull(index)?.duplicateLayer()
     }
 
-    private fun PaintLayer.duplicateLayer() {
+    protected fun PaintLayer.duplicateLayer() {
         val initialLayers = layerHolder.toMutableList()
         val cloned = clone(true)
         layerHolder.add(cloned)
@@ -780,22 +797,22 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
      * Do not change content of [PaintLayer] directly, this leads to unsaved states unless if that's what you want.
      * @return a list containing [PaintLayer]
      */
-    fun getPaintLayers(): List<PaintLayer> {
+    open fun getPaintLayers(): List<PaintLayer> {
         return layerHolder.toMutableList()
     }
 
-    private fun checkIndex(index: Int) {
+    protected open fun checkIndex(index: Int) {
         if (index < 0 || index >= layerHolder.size) {
             throw ArrayIndexOutOfBoundsException("provided index is out of bounds")
         }
     }
 
-    fun setOnLayersChangedListener(onLayersChanged: OnLayersChanged) {
-        onLayersChangedListener = onLayersChanged
+    open fun setOnLayersChangedListener(onLayersChanged: OnLayersChanged) {
+        layerChangedCallback = onLayersChanged
         callListenerForFirstTime()
     }
 
-    fun setOnLayersChangedListener(callback: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)) {
+    open fun setOnLayersChangedListener(callback: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)) {
         onLayersChanged = callback
         callListenerForFirstTime()
     }
@@ -826,7 +843,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         mergeCanvas.setBitmap(finalBitmap)
 
         layerHolder.forEach { layer ->
-            layer.draw(mergeCanvas)
+            drawPaintLayer(mergeCanvas, layer)
         }
 
         return Bitmap.createBitmap(
@@ -838,7 +855,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         )
     }
 
-    fun setClipRectWithStateSave(
+    open fun setClipRectWithStateSave(
         rect: Rect,
         initialClip: Rect,
         animate: Boolean = true,
@@ -851,29 +868,29 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     }
 
 
-    private fun callListenerForFirstTime() {
+    protected open fun callListenerForFirstTime() {
         if (isViewInitialized && isFirstTimeToCallListener) {
             callOnLayerChangedListeners()
             isFirstTimeToCallListener = false
         }
     }
 
-    private fun callOnLayerChangedListeners() {
+    protected open fun callOnLayerChangedListeners() {
         val layers = layerHolder.toList()
         val selectedLayerIndex = getSelectedLayerIndex()
-        onLayersChangedListener?.onLayersChanged(layers, selectedLayerIndex)
+        layerChangedCallback?.onLayersChanged(layers, selectedLayerIndex)
         onLayersChanged?.invoke(layers, selectedLayerIndex)
     }
 
-    fun setOnStateChanged(callback: (layers: List<PaintLayer>?, clip: Rect?) -> Unit) {
-        onStateChanged = callback
+    open fun setOnStateChanged(callback: (layers: List<PaintLayer>?, clip: Rect?) -> Unit) {
+        stateChangedCallback = callback
     }
 
-    fun setOnUndoOrRedoListener(func: (isUndoEnabled: Boolean, isRedoEnabled: Boolean) -> Unit) {
+    open fun setOnUndoOrRedoListener(func: (isUndoEnabled: Boolean, isRedoEnabled: Boolean) -> Unit) {
         onUndoOrRedoStateChanged = func
     }
 
-    private inner class State(
+    protected open inner class State(
         val initialLayer: PaintLayer?,
         val initialLayers: MutableList<PaintLayer>?,
         val reference: PaintLayer? = selectedLayer,
@@ -891,7 +908,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
             restoreState(clonedLayer, clonedLayers, clonedClip)
         }
 
-        private fun restoreState(
+        protected open fun restoreState(
             targetLayer: PaintLayer?,
             targetLayers: MutableList<PaintLayer>?,
             targetClip: Rect?,
@@ -928,7 +945,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
         }
     }
 
-    private fun createState(
+    protected open fun createState(
         initialLayers: MutableList<PaintLayer>? = null,
         referenceLayer: PaintLayer? = selectedLayer,
         initialClip: Rect? = null,
@@ -936,7 +953,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     ) =
         State(initialPaintLayer, initialLayers, referenceLayer, initialClip, clonedClip)
 
-    private fun doOnSelectedLayer(function: PaintLayer.() -> Unit) {
+    protected inline fun doOnSelectedLayer(function: PaintLayer.() -> Unit) {
         selectedLayer?.let(function)
     }
 
