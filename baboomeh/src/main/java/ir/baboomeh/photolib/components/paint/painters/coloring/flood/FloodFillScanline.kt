@@ -7,8 +7,8 @@ import java.util.LinkedList
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-class FloodFillScanline : FloodFill {
-    private val queue by lazy {
+open class FloodFillScanline : FloodFill {
+    protected val queue by lazy {
         LinkedList<Int>()
     }
 
@@ -90,7 +90,7 @@ class FloodFillScanline : FloodFill {
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
     }
 
-    private fun colorsEqual(c1: Int, c2: Int, tolerance: Int): Boolean {
+    protected open fun colorsEqual(c1: Int, c2: Int, tolerance: Int): Boolean {
         if (tolerance == 0) return c1 == c2
 
         val alpha1 = Color.alpha(c1)

@@ -6,13 +6,13 @@ import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-class FloodFillPainter : Painter() {
+open class FloodFillPainter : Painter() {
 
-    private var layerBitmap: Bitmap? = null
+    protected var layerBitmap: Bitmap? = null
 
-    private var onFloodFillRequest: ((bitmap: Bitmap, ex: Int, ey: Int) -> Unit)? = null
+    protected var onFloodFillRequest: ((bitmap: Bitmap, ex: Int, ey: Int) -> Unit)? = null
 
-    private var preventHistorySave = true
+    protected var preventHistorySave = true
 
     override fun onMoveBegin(touchData: TouchData) {
 
@@ -27,7 +27,7 @@ class FloodFillPainter : Painter() {
             val ex = touchData.ex.toInt()
             val ey = touchData.ey.toInt()
 
-            if (!isValid(bitmap, ex, ey)) {
+            if (!isPointValidInBitmap(bitmap, ex, ey)) {
                 return
             }
 
@@ -37,7 +37,7 @@ class FloodFillPainter : Painter() {
         preventHistorySave = true
     }
 
-    private fun isValid(bitmap: Bitmap, ex: Int, ey: Int): Boolean {
+    protected fun isPointValidInBitmap(bitmap: Bitmap, ex: Int, ey: Int): Boolean {
         return (ex.coerceIn(0, bitmap.width - 1) == ex) && (ey.coerceIn(0, bitmap.height - 1) == ey)
     }
 
@@ -49,7 +49,7 @@ class FloodFillPainter : Painter() {
 
     }
 
-    fun setOnFloodFillRequest(func: (bitmap: Bitmap, ex: Int, ey: Int) -> Unit) {
+    open fun setOnFloodFillRequest(func: (bitmap: Bitmap, ex: Int, ey: Int) -> Unit) {
         onFloodFillRequest = func
     }
 
