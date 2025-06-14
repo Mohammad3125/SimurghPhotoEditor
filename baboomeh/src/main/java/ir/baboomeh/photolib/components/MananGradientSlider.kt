@@ -20,30 +20,30 @@ import ir.baboomeh.photolib.utils.gesture.gestures.OnMoveListener
 import kotlin.math.abs
 import kotlin.math.max
 
-class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
+open class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
     View(context, attributeSet), OnMoveListener, OnGestureListener {
     constructor(context: Context) : this(context, null)
 
-    private var strokeWidthHalf = 0f
-    private var isWrapContent = false
+    protected var strokeWidthHalf = 0f
+    protected var isWrapContent = false
 
-    private var isShaderDirty = true
+    protected var isShaderDirty = true
 
-    private var isMoved = false
-    private var isOnMoveCalled = false
+    protected var isMoved = false
+    protected var isOnMoveCalled = false
 
-    private var isNewCircleCreated = false
+    protected var isNewCircleCreated = false
 
-    private var onCircleHandleClicked: ((index: Int) -> Unit)? = null
-    private var onCircleHandleClickedListener: OnCircleClickListener? = null
+    protected var onCircleHandleClicked: ((index: Int) -> Unit)? = null
+    protected var onCircleHandleClickedListener: OnCircleClickListener? = null
 
-    private var onColorsAndPositionsChanged: ((colors: IntArray, positions: FloatArray) -> Unit)? =
+    protected var onColorsAndPositionsChanged: ((colors: IntArray, positions: FloatArray) -> Unit)? =
         null
-    private var onColorsAndPositionsChangedListener: OnColorsAndPositionsChanged? = null
+    protected var colorsAndPositionsChangedCallback: OnColorsAndPositionsChanged? = null
 
-    private var onColorsOrPositionsChangeEnded: (() -> Unit)? = null
+    protected var onColorsOrPositionsChangeEnded: (() -> Unit)? = null
 
-    var gradientLineWidth = dp(8)
+    open var gradientLineWidth = dp(8)
         set(value) {
             field = value
             gradientLinePaint.strokeWidth = field
@@ -51,53 +51,53 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
             invalidate()
         }
 
-    private val moveDetector = MoveDetector(1, this)
+    protected val moveDetector = MoveDetector(1, this)
 
-    private val gestureDetector = GestureDetector(context, this)
+    protected val gestureDetector = GestureDetector(context, this)
 
-    private val gradientLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    protected val gradientLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
         strokeCap = Paint.Cap.ROUND
         strokeWidth = gradientLineWidth
     }
 
-    var colorCircleStrokeWidth = dp(1)
+    open var colorCircleStrokeWidth = dp(1)
 
-    private val circlesPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    protected val circlesPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
 
-    private val circleHandles = mutableListOf<CircleHandle>()
+    protected val circleHandles = mutableListOf<CircleHandle>()
 
-    var colorCircleRadius = dp(8)
+    open var colorCircleRadius = dp(8)
         set(value) {
             field = value
             requestLayout()
             invalidate()
         }
 
-    var circlesStrokeColor = Color.BLACK
+    open var circlesStrokeColor = Color.BLACK
         set(value) {
             field = value
             invalidate()
         }
 
-    var circleHandleTouchArea = dp(24)
+    open var circleHandleTouchArea = dp(24)
 
-    private lateinit var gradientShader: Shader
+    protected lateinit var gradientShader: Shader
 
-    private var selectedCircleHandleIndex = -1
+    protected var selectedCircleHandleIndex = -1
 
-    private var isFirstCirclesAdded = false
+    protected var isFirstCirclesAdded = false
 
-    private var widthF = 0f
-    private var heightF = 0f
-    private var drawingStart = 0f
-    private var drawingTop = 0f
-    private var heightHalf = 0f
+    protected var widthF = 0f
+    protected var heightF = 0f
+    protected var drawingStart = 0f
+    protected var drawingTop = 0f
+    protected var heightHalf = 0f
 
-    private var defaultPaddingVertical = dp(12)
-    private var wrapContentSize = dp(48).toInt()
+    protected var defaultPaddingVertical = dp(12)
+    protected var wrapContentSize = dp(48).toInt()
 
     override fun onMoveBegin(initialX: Float, initialY: Float): Boolean {
         if (initialX.coerceIn(-circleHandleTouchArea, width + circleHandleTouchArea) == initialX &&
@@ -123,7 +123,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         return false
     }
 
-    private fun findNearestCircleIndex(initialX: Float): Int {
+    protected open fun findNearestCircleIndex(initialX: Float): Int {
         return circleHandles.filter {
             (initialX.coerceIn(
                 it.x - circleHandleTouchArea,
@@ -249,7 +249,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         calculateBounds(width.toFloat(), height.toFloat())
     }
 
-    private fun calculateBounds(targetWidth: Float, targetHeight: Float) {
+    protected open fun calculateBounds(targetWidth: Float, targetHeight: Float) {
         heightF = targetHeight - paddingBottom - paddingTop
 
         if (isWrapContent) {
@@ -352,54 +352,54 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
-    fun setOnCircleClickedListener(listener: (index: Int) -> Unit) {
+    open fun setOnCircleClickedListener(listener: (index: Int) -> Unit) {
         onCircleHandleClicked = listener
     }
 
-    fun setOnCircleClickedListener(listener: OnCircleClickListener) {
+    open fun setOnCircleClickedListener(listener: OnCircleClickListener) {
         onCircleHandleClickedListener = listener
     }
 
-    private fun callCircleListeners(index: Int) {
+    protected open fun callCircleListeners(index: Int) {
         onCircleHandleClicked?.invoke(index)
         onCircleHandleClickedListener?.onClicked(index)
     }
 
-    fun setOnColorsAndPositionsChangedListener(listener: OnColorsAndPositionsChanged) {
-        onColorsAndPositionsChangedListener = listener
+    open fun setOnColorsAndPositionsChangedListener(listener: OnColorsAndPositionsChanged) {
+        colorsAndPositionsChangedCallback = listener
     }
 
-    fun setOnColorsAndPositionsChangedListener(listener: (colors: IntArray, positions: FloatArray) -> Unit) {
+    open fun setOnColorsAndPositionsChangedListener(listener: (colors: IntArray, positions: FloatArray) -> Unit) {
         onColorsAndPositionsChanged = listener
     }
 
-    fun setOnColorOrPositionsChangeEnded(listener: () -> Unit) {
+    open fun setOnColorOrPositionsChangeEnded(listener: () -> Unit) {
         onColorsOrPositionsChangeEnded = listener
     }
 
-    private fun callColorAndPositionListeners(colors: IntArray, positions: FloatArray) {
-        onColorsAndPositionsChangedListener?.onChanged(colors, positions)
+    protected open fun callColorAndPositionListeners(colors: IntArray, positions: FloatArray) {
+        colorsAndPositionsChangedCallback?.onChanged(colors, positions)
         onColorsAndPositionsChanged?.invoke(colors, positions)
     }
 
-    fun changeColorOfCircleAt(@ColorInt color: Int, index: Int) {
+    open fun changeColorOfCircleAt(@ColorInt color: Int, index: Int) {
         if (index < 0 || index > circleHandles.size) throw IllegalStateException("current index is out of bounds of circle handles")
         changeColorAt(color, index)
 
     }
 
-    fun changeColorOfSelectedCircle(@ColorInt color: Int) {
+    open fun changeColorOfSelectedCircle(@ColorInt color: Int) {
         changeColorAt(color, selectedCircleHandleIndex)
     }
 
-    private fun changeColorAt(@ColorInt color: Int, index: Int) {
+    protected open fun changeColorAt(@ColorInt color: Int, index: Int) {
         circleHandles[index].color = color
         isShaderDirty = true
         isMoved = true
         invalidate()
     }
 
-    fun getCurrentColors(): IntArray {
+    open fun getCurrentColors(): IntArray {
         return if (isFirstCirclesAdded) {
             circleHandles.sortedBy { it.x }.map { it.color }.toIntArray()
         } else {
@@ -407,7 +407,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
-    fun getPositions(): FloatArray {
+    open fun getPositions(): FloatArray {
         return if (isFirstCirclesAdded) {
             circleHandles.sortedBy { it.x }.map { it.calculateRelativePosition(widthF) }
                 .toFloatArray()
@@ -416,7 +416,7 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
-    fun setColorsAndPositions(colors: IntArray, positions: FloatArray) {
+    open fun setColorsAndPositions(colors: IntArray, positions: FloatArray) {
         if (colors.size < 2) {
             throw IllegalStateException("colors array size should be equal or more than 2")
         }
@@ -446,14 +446,14 @@ class MananGradientSlider(context: Context, attributeSet: AttributeSet?) :
         invalidate()
     }
 
-    fun resetSlider() {
+    open fun resetSlider() {
         circleHandles.clear()
         isFirstCirclesAdded = false
         isShaderDirty = true
         invalidate()
     }
 
-    private data class CircleHandle(var x: Float, @ColorInt var color: Int) {
+    protected data class CircleHandle(var x: Float, @ColorInt var color: Int) {
         fun calculateRelativePosition(fromPosition: Float): Float = x / fromPosition
     }
 
