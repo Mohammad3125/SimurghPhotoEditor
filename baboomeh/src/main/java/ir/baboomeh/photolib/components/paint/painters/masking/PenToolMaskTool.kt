@@ -7,13 +7,13 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import ir.baboomeh.photolib.components.paint.painters.selection.PenToolBase
 
-class PenToolMaskTool(context: Context) : PenToolBase(context) {
+open class PenToolMaskTool(context: Context) : PenToolBase(context) {
 
     protected val canvasApply by lazy {
         Canvas()
     }
 
-    fun applyOnMaskLayer() {
+    open fun applyOnMaskLayer() {
         drawLinesIntoPath(path)
         selectedLayer?.let { maskLayer ->
             canvasApply.setBitmap(maskLayer.bitmap)
@@ -23,13 +23,13 @@ class PenToolMaskTool(context: Context) : PenToolBase(context) {
         }
     }
 
-    fun cutFromMaskLayer() {
+    open fun cutFromMaskLayer() {
         linesPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
         applyOnMaskLayer()
         linesPaint.xfermode = null
     }
 
-    fun removeLastLine() {
+    open fun removeLastLine() {
         lines.run {
             if (isNotEmpty()) {
                 // Remove last line in stack.

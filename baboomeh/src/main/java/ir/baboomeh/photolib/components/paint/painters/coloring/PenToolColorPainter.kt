@@ -10,18 +10,18 @@ import android.graphics.PorterDuffXfermode
 import androidx.annotation.ColorInt
 import ir.baboomeh.photolib.components.paint.painters.selection.PenToolBase
 
-class PenToolColorPainter(context: Context) : PenToolBase(context) {
-    private val canvasApply by lazy {
+open class PenToolColorPainter(context: Context) : PenToolBase(context) {
+    protected val canvasApply by lazy {
         Canvas()
     }
 
     @ColorInt
-    var fillingColor = Color.BLACK
+    open var fillingColor = Color.BLACK
 
 
-    private lateinit var coloringBitmap: Bitmap
+    protected lateinit var coloringBitmap: Bitmap
 
-    fun applyColoring(isInverse: Boolean) {
+    open fun applyColoring(isInverse: Boolean) {
 
         selectedLayer?.let { layer ->
             if (!this::coloringBitmap.isInitialized && layer.bitmap.config != null) {
