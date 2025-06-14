@@ -1,7 +1,6 @@
 package ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios
 
 import android.graphics.RectF
-import ir.baboomeh.photolib.components.paint.painters.cropper.AspectRatio
 import ir.baboomeh.photolib.components.paint.painters.cropper.HandleBar
 
 /**

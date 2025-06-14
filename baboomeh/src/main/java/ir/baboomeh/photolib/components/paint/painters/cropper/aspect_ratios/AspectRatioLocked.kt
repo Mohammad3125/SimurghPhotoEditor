@@ -1,7 +1,6 @@
 package ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios
 
 import android.graphics.RectF
-import ir.baboomeh.photolib.components.paint.painters.cropper.AspectRatio
 import ir.baboomeh.photolib.components.paint.painters.cropper.HandleBar
 
 /**
@@ -9,7 +8,7 @@ import ir.baboomeh.photolib.components.paint.painters.cropper.HandleBar
  * @param widthRatio Ratio of width to height.
  * @param heightRatio Ratio of height to width.
  */
-class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: Float) :
+open class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: Float) :
     AspectRatio() {
 
     override fun resize(rect: RectF, handleBar: HandleBar?, dx: Float, dy: Float): RectF {
@@ -125,7 +124,7 @@ class AspectRatioLocked(private val widthRatio: Float, private val heightRatio: 
      * Divides width to height to find ratio.
      * @return ratio of division of width to height.
      */
-    fun getRatio(): Float = widthRatio / heightRatio
+    open fun getRatio(): Float = widthRatio / heightRatio
 
     override fun normalizeAspectRatio(
         maxWidth: Float,

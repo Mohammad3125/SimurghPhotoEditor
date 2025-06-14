@@ -15,8 +15,10 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Region
 import androidx.core.animation.doOnEnd
+import androidx.core.graphics.createBitmap
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.baboomeh.photolib.components.paint.Painter
+import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatio
 import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatioFree
 import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatioLocked
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
@@ -29,43 +31,43 @@ import ir.baboomeh.photolib.utils.perimeter
 import kotlin.math.max
 import kotlin.math.min
 
-class CropperTool(context: Context) : Painter() {
+open class CropperTool(context: Context) : Painter() {
 
-    private var selectedLayer: PaintLayer? = null
+    protected var selectedLayer: PaintLayer? = null
 
-    private val limitRect = RectF()
+    protected val limitRect = RectF()
 
     // Paint used for drawing the frame.
-    private val framePaint by lazy {
+    protected val framePaint by lazy {
         Paint().apply {
             style = Paint.Style.STROKE
         }
     }
 
-    var frameColor = Color.DKGRAY
+    open var frameColor = Color.DKGRAY
         set(value) {
             framePaint.color = value
             field = value
         }
-    var frameStrokeWidth = context.dp(2)
+    open var frameStrokeWidth = context.dp(2)
         set(value) {
             framePaint.strokeWidth = value
             field = value
         }
 
     // Paint used for drawing guidelines.
-    private val frameGuidelinePaint by lazy {
+    protected val frameGuidelinePaint by lazy {
         Paint().apply {
             style = Paint.Style.STROKE
         }
     }
 
-    var guidelineStrokeWidth = context.dp(1)
+    open var guidelineStrokeWidth = context.dp(1)
         set(value) {
             frameGuidelinePaint.strokeWidth = value
             field = value
         }
-    var guidelineColor = Color.DKGRAY
+    open var guidelineColor = Color.DKGRAY
         set(value) {
             frameGuidelinePaint.color = value
             field = value
@@ -76,42 +78,42 @@ class CropperTool(context: Context) : Painter() {
 
 
     // Paint used for drawing the shadows around frame.
-    private val frameShadowsPaint by lazy {
+    protected val frameShadowsPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
         }
     }
 
-    var backgroundShadowColor = Color.BLACK
+    open var backgroundShadowColor = Color.BLACK
         set(value) {
             frameShadowsPaint.color = value
             field = value
         }
-    var backgroundShadowAlpha = 255 / 3
+    open var backgroundShadowAlpha = 85
         set(value) {
             frameShadowsPaint.alpha = value
             field = value
         }
 
     // Paint used for drawing handle bars.
-    private val handleBarPaint by lazy {
+    protected val handleBarPaint by lazy {
         Paint().apply {
             style = Paint.Style.STROKE
 
         }
     }
 
-    var handleBarStrokeWidth = context.dp(3)
+    open var handleBarStrokeWidth = context.dp(3)
         set(value) {
             handleBarPaint.strokeWidth = value
             field = value
         }
-    var handleBarColor = Color.DKGRAY
+    open var handleBarColor = Color.DKGRAY
         set(value) {
             handleBarPaint.color = value
             field = value
         }
-    var handleBarCornerType = Paint.Cap.ROUND
+    open var handleBarCornerType = Paint.Cap.ROUND
         set(value) {
             handleBarPaint.strokeCap = value
             // If corners are round turn on anti-aliasing.
@@ -123,14 +125,14 @@ class CropperTool(context: Context) : Painter() {
      * Determines color of handle bars when they are selected.
      * By default this value is same as [handleBarColor].
      */
-    var selectedHandleBarColor = handleBarColor
+    open var selectedHandleBarColor = handleBarColor
 
     // Rectangle that represents the crop frame.
-    private val frameRect by lazy {
+    protected val frameRect by lazy {
         RectF()
     }
 
-    val cropperDimensions: Rect
+    open val cropperDimensions: Rect
         get() {
             inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
             inverseMatrix.invert(inverseMatrix)
@@ -140,90 +142,90 @@ class CropperTool(context: Context) : Painter() {
             return tempRect
         }
 
-    private val allocRectF by lazy {
+    protected val allocRectF by lazy {
         RectF()
     }
 
-    private val pointHolder = FloatArray(2)
+    protected val pointHolder = FloatArray(2)
 
     // Handle bar dimensions for drawing.
-    private var frameHandleBar = FloatArray(48)
+    protected var frameHandleBar = FloatArray(48)
 
     // Dimension of guidelines.
-    private var guideLineDimension = FloatArray(16)
+    protected var guideLineDimension = FloatArray(16)
 
     // Map of points on frame that represents each handle bar like LEFT, TOP-LEFT and etc...
-    private lateinit var mapOfHandleBars: MutableMap<Pair<PointF, PointF>, HandleBar>
+    protected lateinit var mapOfHandleBars: MutableMap<Pair<PointF, PointF>, HandleBar>
 
     // Later in code determines which handle bar has been pressed.
-    private var handleBar: HandleBar? = null
+    protected var handleBar: HandleBar? = null
 
     // Variable to save aspect ratio of cropper.
-    private var aspectRatio: AspectRatio = AspectRatioFree()
+    protected var aspectRatio: AspectRatio = AspectRatioFree()
 
-    private var excessTouchArea = context.dp(40)
-    private var excessTouchAreaHalf = excessTouchArea * 0.5f
+    protected var excessTouchArea = context.dp(40)
+    protected var excessTouchAreaHalf = excessTouchArea * 0.5f
 
-    private lateinit var context: Context
+    protected lateinit var context: Context
 
-    private lateinit var canvasMatrix: MananMatrix
-    private lateinit var fitInsideMatrix: MananMatrix
+    protected lateinit var canvasMatrix: MananMatrix
+    protected lateinit var fitInsideMatrix: MananMatrix
 
-    private val inverseMatrix = MananMatrix()
+    protected val inverseMatrix = MananMatrix()
 
     // Used to animate the matrix in MatrixEvaluator
-    private val endMatrix = MananMatrix()
-    private val startMatrix = MananMatrix()
+    protected val endMatrix = MananMatrix()
+    protected val startMatrix = MananMatrix()
 
-    private val tempMatrix by lazy {
+    protected val tempMatrix by lazy {
         Matrix()
     }
 
-    private val tempRectF by lazy {
+    protected val tempRectF by lazy {
         RectF()
     }
 
-    private val tempRect by lazy {
+    protected val tempRect by lazy {
         Rect()
     }
 
-    private val startRect by lazy {
+    protected val startRect by lazy {
         RectF()
     }
 
-    private val endRect by lazy {
+    protected val endRect by lazy {
         RectF()
     }
 
-    private val basePoints by lazy {
+    protected val basePoints by lazy {
         FloatArray(8)
     }
 
-    private val cc by lazy {
+    protected val cc by lazy {
         FloatArray(8)
     }
 
-    private val cropCanvas by lazy {
+    protected val cropCanvas by lazy {
         Canvas()
     }
 
-    private val startingRect by lazy {
+    protected val startingRect by lazy {
         RectF()
     }
 
-    var animationDuration: Long = 500
+    open var animationDuration: Long = 500
         set(value) {
             field = value
             animator.duration = field
         }
 
-    var animationInterpolator: TimeInterpolator = FastOutSlowInInterpolator()
+    open var animationInterpolator: TimeInterpolator = FastOutSlowInInterpolator()
         set(value) {
             field = value
             animator.interpolator = field
         }
 
-    private val animator by lazy {
+    protected val animator by lazy {
         ValueAnimator.ofObject(MatrixEvaluator(), startMatrix, endMatrix).apply {
             interpolator = animationInterpolator
             duration = animationDuration
@@ -236,7 +238,7 @@ class CropperTool(context: Context) : Painter() {
         }
     }
 
-    private val rectEvaluator by lazy {
+    protected val rectEvaluator by lazy {
         RectFloatEvaluator()
     }
 
@@ -276,7 +278,7 @@ class CropperTool(context: Context) : Painter() {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
     }
 
-    private fun normalizeCropper(finalWidth: Float, finalHeight: Float, targetRect: RectF) {
+    protected open fun normalizeCropper(finalWidth: Float, finalHeight: Float, targetRect: RectF) {
         // Initialize drawing objects after the width and height has been determined.
         val pair = aspectRatio.normalizeAspectRatio(
             finalWidth, finalHeight
@@ -307,7 +309,7 @@ class CropperTool(context: Context) : Painter() {
 
     }
 
-    private fun mapPoints(ex: Float, ey: Float): FloatArray {
+    protected open fun mapPoints(ex: Float, ey: Float): FloatArray {
         pointHolder[0] = ex
         pointHolder[1] = ey
         inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
@@ -315,16 +317,16 @@ class CropperTool(context: Context) : Painter() {
         return pointHolder
     }
 
-    private fun mapArray(array: FloatArray) {
+    protected open fun mapArray(array: FloatArray) {
         canvasMatrix.invert(inverseMatrix)
         inverseMatrix.mapPoints(array)
     }
 
-    private fun mapVectorPoints(array: FloatArray) {
+    protected open fun mapVectorPoints(array: FloatArray) {
         canvasMatrix.mapVectors(array)
     }
 
-    private fun mapInverseVector(touchData: TouchData) {
+    protected open fun mapInverseVector(touchData: TouchData) {
         inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
         pointHolder[0] = touchData.dx
         pointHolder[1] = touchData.dy
@@ -377,7 +379,7 @@ class CropperTool(context: Context) : Painter() {
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    private fun getOffsetValues(rect: RectF): FloatArray {
+    protected open fun getOffsetValues(rect: RectF): FloatArray {
         // Validate that the rectangle is inside the view's bounds.
         val finalX = when {
             rect.right > limitRect.right -> limitRect.right - rect.right
@@ -397,7 +399,7 @@ class CropperTool(context: Context) : Painter() {
         return pointHolder
     }
 
-    private fun mapRectToMatrix(changedRect: RectF) {
+    protected open fun mapRectToMatrix(changedRect: RectF) {
         setBoundsVariablesFromRect(changedRect, basePoints)
 
         basePoints.copyInto(cc)
@@ -406,7 +408,7 @@ class CropperTool(context: Context) : Painter() {
         calculateMaximumBounds(cc, tempRectF)
     }
 
-    private fun calculateMaximumBounds(cc: FloatArray, tempRect: RectF) {
+    protected open fun calculateMaximumBounds(cc: FloatArray, tempRect: RectF) {
         val minX = min(min(cc[0], cc[2]), min(cc[4], cc[6]))
         val maxX = max(max(cc[0], cc[2]), max(cc[4], cc[6]))
         val minY = min(min(cc[1], cc[3]), min(cc[5], cc[7]))
@@ -422,7 +424,7 @@ class CropperTool(context: Context) : Painter() {
         fitCropperInsideLayer()
     }
 
-    private fun fitCropperInsideLayer(
+    protected open fun fitCropperInsideLayer(
         setStartRect: Boolean = true,
         animate: Boolean = true,
         setMatrix: Boolean = false,
@@ -485,7 +487,7 @@ class CropperTool(context: Context) : Painter() {
         }
     }
 
-    private fun calculateRectScaleDifference(rect: RectF): Float {
+    protected open fun calculateRectScaleDifference(rect: RectF): Float {
         return min(limitRect.width() / rect.width(), limitRect.height() / rect.height())
     }
 
@@ -528,7 +530,7 @@ class CropperTool(context: Context) : Painter() {
         animator.start()
     }
 
-    private fun setDrawingDimensions() {
+    protected open fun setDrawingDimensions() {
         createHandleBarsDimensions(frameRect)
 
         mapOfHandleBars = createHandleBarPointMap(frameRect)
@@ -540,7 +542,7 @@ class CropperTool(context: Context) : Painter() {
      * This method creates guidelines in given rectangle.
      * @param frame The frame that guidelines will be drawn inside it.
      */
-    private fun createGuideLines(frame: RectF) {
+    protected open fun createGuideLines(frame: RectF) {
         return frame.run {
             val offsetFromCenterX = (width() * 0.165f)
             val frameCenterX = centerX()
@@ -572,7 +574,7 @@ class CropperTool(context: Context) : Painter() {
      * @param point Represents the points that's been touched.
      * @return Returns the handle bar responsible for given point (nullable).
      */
-    private fun figureOutWhichHandleIsInRangeOfEvent(point: PointF): HandleBar? {
+    protected open fun figureOutWhichHandleIsInRangeOfEvent(point: PointF): HandleBar? {
         // Iterate over handle bar points and figure where the touch is located and which handle bar is touched.
         for (pair in mapOfHandleBars.keys) if ((point.x in pair.first.x..pair.second.x) && (point.y in pair.first.y..pair.second.y)) return mapOfHandleBars[pair]
         return null
@@ -583,7 +585,7 @@ class CropperTool(context: Context) : Painter() {
      * @param frame The rectangle the represents the overlay window.
      * @return Returns a [FloatArray] representing the location of lines that should be drawn on screen.
      */
-    private fun createHandleBarsDimensions(frame: RectF) {
+    protected open fun createHandleBarsDimensions(frame: RectF) {
         frame.run {
 
             val frameCenterX = centerX()
@@ -653,7 +655,7 @@ class CropperTool(context: Context) : Painter() {
      * @param frame The rectangle the represents the overlay window.
      * @return Returns a map of handle bar area range and [HandleBar] itself.
      */
-    private fun createHandleBarPointMap(
+    protected open fun createHandleBarPointMap(
         frame: RectF
     ): MutableMap<Pair<PointF, PointF>, HandleBar> {
 
@@ -715,7 +717,7 @@ class CropperTool(context: Context) : Painter() {
         }
     }
 
-    fun setAspectRatio(newAspectRatio: AspectRatio, force: Boolean = false) {
+    open fun setAspectRatio(newAspectRatio: AspectRatio, force: Boolean = false) {
         if (!force && newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked && (aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio()) {
             return
         }
@@ -736,7 +738,7 @@ class CropperTool(context: Context) : Painter() {
 
     }
 
-    fun crop(): Bitmap? {
+    open fun crop(): Bitmap? {
         selectedLayer?.let { layer ->
 
             fitInsideMatrix.invert(startMatrix)
@@ -744,12 +746,11 @@ class CropperTool(context: Context) : Painter() {
             tempRectF.set(frameRect)
             startMatrix.mapRect(tempRectF)
 
-            val croppedBitmap =
-                Bitmap.createBitmap(
-                    tempRectF.width().toInt(),
-                    tempRectF.height().toInt(),
-                    layer.bitmap.config ?: Bitmap.Config.ARGB_8888
-                )
+            val croppedBitmap = createBitmap(
+                tempRectF.width().toInt(),
+                tempRectF.height().toInt(),
+                layer.bitmap.config ?: Bitmap.Config.ARGB_8888
+            )
 
             cropCanvas.run {
                 setBitmap(croppedBitmap)
@@ -777,7 +778,7 @@ class CropperTool(context: Context) : Painter() {
         return null
     }
 
-    fun clip() {
+    open fun clip() {
         selectedLayer?.let { layer ->
             cropCanvas.run {
                 val layerBitmapCopy =
@@ -808,7 +809,7 @@ class CropperTool(context: Context) : Painter() {
         }
     }
 
-    fun setFrame(
+    open fun setFrame(
         rect: Rect,
         fit: Boolean = false,
         animate: Boolean = true,
@@ -852,9 +853,12 @@ class CropperTool(context: Context) : Painter() {
     }
 
     override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
-//        println("OnSizeChangeeeeeeeeeeeeeeeeee $newBounds")
-//        canvasMatrix.postConcat(changeMatrix)
-//        fitCropperInsideLayer(animate = false, setRect = true, setMatrix = true)
+        /*
+            Previous method:
+            canvasMatrix.postConcat(changeMatrix)
+            fitCropperInsideLayer(animate = false, setRect = true, setMatrix = true)
+         */
+
         tempRectF.set(clipBounds)
         fitInsideMatrix.mapRect(tempRectF)
         limitRect.set(tempRectF)
@@ -863,7 +867,7 @@ class CropperTool(context: Context) : Painter() {
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    private fun setBoundsVariablesFromRect(rect: RectF, dstArray: FloatArray) {
+    protected open fun setBoundsVariablesFromRect(rect: RectF, dstArray: FloatArray) {
         dstArray[0] = rect.left
         dstArray[1] = rect.top
         dstArray[2] = rect.right

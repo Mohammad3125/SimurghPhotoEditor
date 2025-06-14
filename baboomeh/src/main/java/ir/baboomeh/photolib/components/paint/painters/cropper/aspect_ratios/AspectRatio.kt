@@ -1,10 +1,8 @@
-package ir.baboomeh.photolib.components.paint.painters.cropper
+package ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios
 
 import android.graphics.RectF
+import ir.baboomeh.photolib.components.paint.painters.cropper.HandleBar
 
-/**
- * An abstract class for applying aspect ratio to [MananCropper].
- */
 abstract class AspectRatio {
 
     /**
