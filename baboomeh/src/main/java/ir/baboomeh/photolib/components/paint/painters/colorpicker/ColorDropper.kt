@@ -21,28 +21,26 @@ import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import kotlin.math.min
 
-class ColorDropper : Painter() {
-
-
-    private var referenceLayer: Bitmap? = null
+open class ColorDropper : Painter() {
+    protected var referenceLayer: Bitmap? = null
 
     // Matrix to later enlarge the bitmap with.
-    private val enlargedBitmapMatrix by lazy { Matrix() }
+    protected val enlargedBitmapMatrix by lazy { Matrix() }
 
     // Colors for shadow behind enlarged bitmap circle.
-    private val circleShadowColors by lazy {
+    protected val circleShadowColors by lazy {
         intArrayOf(Color.BLACK, Color.TRANSPARENT)
     }
 
     // Paint used for drawing shadow behind enlarged bitmap circle.
     // This paint will later use RadialGradient to create shadow.
-    private val circleShadowPaint by lazy {
+    protected val circleShadowPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG)
     }
 
     // Circle that would be drawn on shadow circle to prevent shadow
     // to be visible on transparent pixels.
-    private val circleShadowOverlayPaint by lazy {
+    protected val circleShadowOverlayPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             style = Paint.Style.FILL
@@ -50,40 +48,40 @@ class ColorDropper : Painter() {
     }
 
     // Ring around circle showing color of current pixel that user is pointing at.
-    private val colorRingPaint by lazy {
+    protected val colorRingPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
         }
     }
 
     // Stroke width of color ring.
-    var colorRingStrokeWidth = Float.NaN
+    open var colorRingStrokeWidth = Float.NaN
         set(value) {
             colorRingPaint.strokeWidth = value
             field = value
         }
 
     // Paint that later be used to draw circle shaped bitmap with help of BitmapShader.
-    private val bitmapCirclePaint by lazy {
+    protected val bitmapCirclePaint by lazy {
         Paint()
     }
 
     // Inner circle radius for enlarged bitmap.
-    var circlesRadius = Float.NaN
+    open var circlesRadius = Float.NaN
         set(value) {
             field = value
             sendMessage(PainterMessage.INVALIDATE)
         }
 
     // Paint for drawing cross in center of circle for better indicating selected pixels.
-    private val centerCrossPaint by lazy {
+    protected val centerCrossPaint by lazy {
         Paint().apply {
             style = Paint.Style.FILL
         }
     }
 
     // Stroke width of center cross.
-    var centerCrossStrokeWidth = Float.NaN
+    open var centerCrossStrokeWidth = Float.NaN
         set(value) {
             centerCrossPaint.strokeWidth = value
             field = value
@@ -91,7 +89,7 @@ class ColorDropper : Painter() {
         }
 
     // Color of center cross.
-    var centerCrossColor = Color.WHITE
+    open var centerCrossColor = Color.WHITE
         set(value) {
             centerCrossPaint.color = value
             field = value
@@ -99,52 +97,52 @@ class ColorDropper : Painter() {
         }
 
     // Determines the size of cross lines (not to be confused with stroke width).
-    var centerCrossLineSize = Float.NaN
+    open var centerCrossLineSize = Float.NaN
         set(value) {
             field = value
             sendMessage(PainterMessage.INVALIDATE)
         }
 
     // Later indicating current position of user fingers.
-    private var dropperXPosition = 0f
-    private var dropperYPosition = 0f
+    protected var dropperXPosition = 0f
+    protected var dropperYPosition = 0f
 
     // Determines if view should view circle (when user lifts his/her finger, circle should disappear.)
-    private var showCircle = true
+    protected var showCircle = true
 
     // This offset is used for times where current circle exceeds the bounds of image so we offset it.
-    private var offsetY = 0f
+    protected var offsetY = 0f
 
     // This variable will later be used to determine how much the circle that shows enlarged bitmap
     // should offset from user finger.
-    private var circleOffsetFromCenter = 0f
+    protected var circleOffsetFromCenter = 0f
 
     /**
      * The last color that was detected by dropper.
      */
-    private var lastSelectedColor: Int = 0
+    protected var lastSelectedColor: Int = 0
 
     /**
      * Last color selected before user lifts his/her finger from screen.
      */
-    private var onLastColorDetected: ((color: Int) -> Unit)? = null
+    protected var onLastColorDetected: ((color: Int) -> Unit)? = null
 
     /**
      * Called everytime a new color get detected by dropper.
      */
-    private var onColorDetected: ((color: Int) -> Unit)? = null
+    protected var onColorDetected: ((color: Int) -> Unit)? = null
 
     /**
      * Interface for last color that get detected.
      */
-    private var interfaceOnLastColorDetected: OnLastColorDetected? = null
+    protected var interfaceOnLastColorDetected: OnLastColorDetected? = null
 
     /**
      * Interface that get invoked when any color change happen.
      */
-    private var interfaceOnColorDetected: OnColorDetected? = null
+    protected var interfaceOnColorDetected: OnColorDetected? = null
 
-    private val clipBounds by lazy {
+    protected val clipBounds by lazy {
         RectF()
     }
 
@@ -188,15 +186,15 @@ class ColorDropper : Painter() {
     }
 
     override fun onMoveBegin(touchData: TouchData) {
-        showDropper(touchData.ex, touchData.ey)
+        calculateToShowDropperAt(touchData.ex, touchData.ey)
     }
 
     override fun onMove(touchData: TouchData) {
-        showDropper(touchData.ex, touchData.ey)
+        calculateToShowDropperAt(touchData.ex, touchData.ey)
     }
 
     override fun onMoveEnded(touchData: TouchData) {
-        showDropper(touchData.ex, touchData.ey)
+        calculateToShowDropperAt(touchData.ex, touchData.ey)
         // Call interfaces.
         onLastColorDetected?.invoke(lastSelectedColor)
         interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)
@@ -209,7 +207,7 @@ class ColorDropper : Painter() {
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    private fun showDropper(ex: Float, ey: Float) {
+    protected open fun calculateToShowDropperAt(ex: Float, ey: Float) {
         referenceLayer?.let { refBitmap ->
             // Get position of current x and y.
             dropperXPosition = ex
@@ -387,9 +385,9 @@ class ColorDropper : Painter() {
             }
 
         if (dropperXPosition == 0f && dropperYPosition == 0f) {
-            showDropper(reference.width * 0.5f, reference.height * 0.5f)
+            calculateToShowDropperAt(reference.width * 0.5f, reference.height * 0.5f)
         } else {
-            showDropper(dropperXPosition, dropperYPosition)
+            calculateToShowDropperAt(dropperXPosition, dropperYPosition)
         }
 
         showCircle = true
@@ -404,7 +402,7 @@ class ColorDropper : Painter() {
     /**
      * Set listener that get invoked everytime that color by color dropper get changed.
      */
-    fun setOnColorDetected(listener: (Int) -> Unit) {
+    open fun setOnColorDetected(listener: (Int) -> Unit) {
         onColorDetected = listener
     }
 
@@ -412,7 +410,7 @@ class ColorDropper : Painter() {
      * Set listener that get invoked everytime that color by color dropper get changed.
      * @param listener Interface [OnColorDetected]
      */
-    fun setOnColorDetected(listener: OnColorDetected) {
+    open fun setOnColorDetected(listener: OnColorDetected) {
         interfaceOnColorDetected = listener
     }
 
@@ -421,7 +419,7 @@ class ColorDropper : Painter() {
      * This listener returns the last color that was selected before user lifts his/her finger
      * up from screen.
      */
-    fun setOnLastColorDetected(listener: (Int) -> Unit) {
+    open fun setOnLastColorDetected(listener: (Int) -> Unit) {
         onLastColorDetected = listener
     }
 
@@ -431,7 +429,7 @@ class ColorDropper : Painter() {
      * up from screen.
      * @param listener Interface [OnLastColorDetected]
      */
-    fun setOnLastColorDetected(listener: OnLastColorDetected) {
+    open fun setOnLastColorDetected(listener: OnLastColorDetected) {
         interfaceOnLastColorDetected = listener
     }
 
