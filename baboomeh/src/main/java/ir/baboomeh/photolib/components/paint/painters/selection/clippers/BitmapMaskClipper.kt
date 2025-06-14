@@ -8,15 +8,15 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 
-class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitmap) {
+open class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitmap) {
 
     constructor() : this(null, null)
 
-    private val bitmapPaint by lazy {
+    protected val bitmapPaint by lazy {
         Paint()
     }
 
-    private val canvasOperation by lazy {
+    protected val canvasOperation by lazy {
         Canvas()
     }
 
@@ -60,7 +60,7 @@ class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitm
         return null
     }
 
-    private fun isMaskEmpty(mask: Bitmap): Boolean {
+    protected open fun isMaskEmpty(mask: Bitmap): Boolean {
         //Quickly check if mask is empty.
         mask.copy(mask.config ?: Bitmap.Config.ARGB_8888, true).apply {
             eraseColor(Color.TRANSPARENT)
@@ -69,18 +69,21 @@ class BitmapMaskClipper(bitmap: Bitmap?, var maskBitmap: Bitmap?) : Clipper(bitm
         }
     }
 
-    private fun drawMaskLayer(targetBitmap: Bitmap, mask: Bitmap) {
+    protected open fun drawMaskLayer(targetBitmap: Bitmap, mask: Bitmap) {
         canvasOperation.setBitmap(targetBitmap)
         canvasOperation.drawBitmap(mask, 0f, 0f, bitmapPaint)
     }
 
-    private inline fun changePaintPorterDuffMode(mode: PorterDuff.Mode, operation: () -> Unit) {
+    protected inline fun changePaintPorterDuffMode(
+        mode: PorterDuff.Mode,
+        operation: () -> Unit
+    ) {
         bitmapPaint.xfermode = PorterDuffXfermode(mode)
         operation()
         bitmapPaint.xfermode = null
     }
 
-    private inline fun doIfBitmapAndMaskNotNull(operation: (bit: Bitmap, mask: Bitmap) -> Unit) {
+    protected inline fun doIfBitmapAndMaskNotNull(operation: (bit: Bitmap, mask: Bitmap) -> Unit) {
         bitmap?.let { bit ->
             maskBitmap?.let { mask ->
                 operation(bit, mask)
