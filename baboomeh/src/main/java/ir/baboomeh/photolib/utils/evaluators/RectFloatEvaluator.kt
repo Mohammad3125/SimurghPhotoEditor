@@ -6,9 +6,9 @@ import android.graphics.RectF
 /**
  * Copy of [android.animation.RectEvaluator] for [RectF] class.
  */
-class RectFloatEvaluator : TypeEvaluator<RectF> {
+open class RectFloatEvaluator : TypeEvaluator<RectF> {
 
-    private val tempRect by lazy {
+    protected val tempRect by lazy {
         RectF()
     }
 

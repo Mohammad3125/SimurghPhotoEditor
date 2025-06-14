@@ -9,10 +9,10 @@ import ir.baboomeh.photolib.utils.MananMatrix
  * Type evaluator for [Matrix] interpolation. Copied from
  * androidx.transition.TransitionUtils.MatrixEvaluator.
  */
-class MatrixEvaluator : TypeEvaluator<MananMatrix> {
-    private val tempStartValues = FloatArray(9)
-    private val tempEndValues = FloatArray(9)
-    private val tempMatrix = MananMatrix()
+open class MatrixEvaluator : TypeEvaluator<MananMatrix> {
+    protected val tempStartValues = FloatArray(9)
+    protected val tempEndValues = FloatArray(9)
+    protected val tempMatrix = MananMatrix()
 
     override fun evaluate(fraction: Float, startValue: MananMatrix, endValue: MananMatrix): MananMatrix {
         startValue.getValues(tempStartValues)
