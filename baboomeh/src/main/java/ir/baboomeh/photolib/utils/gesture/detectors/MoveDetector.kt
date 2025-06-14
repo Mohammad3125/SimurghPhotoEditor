@@ -10,18 +10,18 @@ import ir.baboomeh.photolib.utils.gesture.gestures.OnMoveListener
  * @param listener a [OnMoveListener] that gets called in appropriate situations.
  * @throws IllegalStateException if pointer count <= 0.
  */
-class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gesture {
+open class MoveDetector(var pointerCount: Int, var listener: OnMoveListener) : Gesture {
 
-    private var initialX = 0f
-    private var initialY = 0f
+    protected var initialX = 0f
+    protected var initialY = 0f
 
-    private var secondPointerInitialX = 0f
-    private var secondPointerInitialY = 0f
+    protected var secondPointerInitialX = 0f
+    protected var secondPointerInitialY = 0f
 
     // It will notify the motion event that user is gesturing a new gesture on the screen.
-    private var newGesture = true
+    protected var newGesture = true
 
-    private var shouldContinue = false
+    protected var shouldContinue = false
 
 
     init {
