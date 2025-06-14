@@ -10,24 +10,24 @@ import android.graphics.PorterDuffXfermode
 import androidx.core.graphics.scale
 import kotlin.math.max
 
-class BitmapBrush(
-    var brushBitmap: Bitmap? = null
+open class BitmapBrush(
+    open var brushBitmap: Bitmap? = null
 ) : Brush() {
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    protected val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         colorFilter = PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN)
     }
 
-    private var stampWidth = 0f
-    private var stampHeight = 0f
+    protected var stampWidth = 0f
+    protected var stampHeight = 0f
 
-    private var stampScaledWidth = 0f
-    private var stampScaledHeight = 0f
+    protected var stampScaledWidth = 0f
+    protected var stampScaledHeight = 0f
 
-    private var stampScaledWidthHalf = 0f
-    private var stampScaledHeightHalf = 0f
+    protected var stampScaledWidthHalf = 0f
+    protected var stampScaledHeightHalf = 0f
 
-    private var stampScale = 0f
+    protected var stampScale = 0f
 
     override var brushBlending: PorterDuff.Mode = PorterDuff.Mode.SRC_OVER
         set(value) {
@@ -51,11 +51,11 @@ class BitmapBrush(
             paint.colorFilter = PorterDuffColorFilter(field, PorterDuff.Mode.SRC_IN)
         }
 
-    private lateinit var scaledStamp: Bitmap
+    protected lateinit var scaledStamp: Bitmap
 
-    private var lastSize = 0
+    protected var lastSize = 0
 
-    fun changeBrushBitmap(newBitmap: Bitmap?, recycleCurrentBitmap: Boolean) {
+    open fun changeBrushBitmap(newBitmap: Bitmap?, recycleCurrentBitmap: Boolean) {
         if (recycleCurrentBitmap) {
             brushBitmap?.recycle()
         }
@@ -64,7 +64,7 @@ class BitmapBrush(
         calculateSize(size)
     }
 
-    private fun calculateSize(size: Int) {
+    protected open fun calculateSize(size: Int) {
         brushBitmap?.let { bitmap ->
             stampWidth = bitmap.width.toFloat()
             stampHeight = bitmap.height.toFloat()

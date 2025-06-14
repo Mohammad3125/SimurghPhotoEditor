@@ -11,9 +11,9 @@ import androidx.core.graphics.scale
 import kotlin.math.max
 import kotlin.random.Random
 
-class SpriteBrush(var bitmaps: List<Bitmap>? = null) : Brush() {
+open class SpriteBrush(protected var bitmaps: List<Bitmap>? = null) : Brush() {
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    protected val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
 
@@ -35,20 +35,20 @@ class SpriteBrush(var bitmaps: List<Bitmap>? = null) : Brush() {
             }
         }
 
-    private var stampWidth = 0f
-    private var stampHeight = 0f
+    protected var stampWidth = 0f
+    protected var stampHeight = 0f
 
-    private var stampScaledWidth = 0f
-    private var stampScaledHeight = 0f
+    protected var stampScaledWidth = 0f
+    protected var stampScaledHeight = 0f
 
-    private var stampScaledWidthHalf = 0f
-    private var stampScaledHeightHalf = 0f
+    protected var stampScaledWidthHalf = 0f
+    protected var stampScaledHeightHalf = 0f
 
-    private var stampScale = 0f
+    protected var stampScale = 0f
 
-    private val scaledStamps = mutableListOf<Bitmap>()
+    protected val scaledStamps = mutableListOf<Bitmap>()
 
-    private var lastSize = 0
+    protected var lastSize = 0
 
     var isRandom = true
         set(value) {
@@ -56,7 +56,7 @@ class SpriteBrush(var bitmaps: List<Bitmap>? = null) : Brush() {
             counter = 0
         }
 
-    private var counter = 0
+    protected var counter = 0
 
     override var size: Int = 14
         set(value) {
@@ -91,7 +91,7 @@ class SpriteBrush(var bitmaps: List<Bitmap>? = null) : Brush() {
 
     }
 
-    fun changeBrushes(newBitmaps: List<Bitmap>?, recycleCurrentBitmaps: Boolean) {
+    open fun changeBrushes(newBitmaps: List<Bitmap>?, recycleCurrentBitmaps: Boolean) {
         if (recycleCurrentBitmaps) {
             bitmaps?.forEach { it.recycle() }
         }

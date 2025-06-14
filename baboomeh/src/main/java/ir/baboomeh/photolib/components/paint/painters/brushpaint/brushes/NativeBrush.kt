@@ -8,9 +8,9 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.RadialGradient
 import android.graphics.Shader
 
-class NativeBrush : Brush() {
+open class NativeBrush : Brush() {
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    protected val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
 
@@ -19,13 +19,13 @@ class NativeBrush : Brush() {
             field = value
             createHardnessShader()
         }
-    private val colorsHolder = IntArray(2)
-    private val stopsHolder = FloatArray(2)
+    protected val colorsHolder = IntArray(2)
+    protected val stopsHolder = FloatArray(2)
 
-    private var lastSize = 0
-    private var lastColor = Color.TRANSPARENT
+    protected var lastSize = 0
+    protected var lastColor = Color.TRANSPARENT
 
-    private var sizeHalf = 0f
+    protected var sizeHalf = 0f
 
     var brushShape = BrushShape.CIRCLE
 
@@ -35,7 +35,7 @@ class NativeBrush : Brush() {
             sizeHalf = value * 0.5f
         }
 
-    private var hardnessShader: RadialGradient? = null
+    protected open var hardnessShader: RadialGradient? = null
 
     override var brushBlending: PorterDuff.Mode = PorterDuff.Mode.SRC_OVER
         set(value) {
@@ -47,7 +47,7 @@ class NativeBrush : Brush() {
             }
         }
 
-    private fun createHardnessShader() {
+    protected open fun createHardnessShader() {
         if (sizeHalf == 0f) {
             return
         }
