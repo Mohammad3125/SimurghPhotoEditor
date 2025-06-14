@@ -12,6 +12,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
 import android.view.animation.LinearInterpolator
+import androidx.core.graphics.withSave
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.components.shapes.MananShape
@@ -20,41 +21,41 @@ import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool {
+open class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool {
 
     constructor(context: Context) : this(context, null)
 
 
-    private val shapePaint by lazy {
+    protected val shapePaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
         }
     }
 
-    var shape: MananShape? = shape
+    open var shape: MananShape? = shape
         set(value) {
             field = value
             resetPaint()
         }
 
-    var strokeWidth = context.dp(3)
+    open var strokeWidth = context.dp(3)
         set(value) {
             field = value
             shapePaint.strokeWidth = field
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    private val shapeBounds by lazy {
+    protected val shapeBounds by lazy {
         RectF()
     }
 
-    private var selectedLayer: PaintLayer? = null
+    protected var selectedLayer: PaintLayer? = null
 
-    private val canvasApply by lazy {
+    protected val canvasApply by lazy {
         Canvas()
     }
 
-    private var isEraser = false
+    protected open var isEraser = false
         set(value) {
             field = value
             if (isEraser) {
@@ -64,11 +65,11 @@ class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool 
             }
         }
 
-    private val cornerPathEffect by lazy {
+    protected val cornerPathEffect by lazy {
         CornerPathEffect(context.dp(2))
     }
 
-    private val pathEffectAnimator = ValueAnimator().apply {
+    protected val pathEffectAnimator = ValueAnimator().apply {
         duration = 500
         interpolator = LinearInterpolator()
         repeatCount = ValueAnimator.INFINITE
@@ -85,10 +86,9 @@ class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool 
         }
     }
 
-    private lateinit var transformationMatrix: MananMatrix
+    protected lateinit var transformationMatrix: MananMatrix
 
-    private var isMoveBeginCalled = false
-
+    protected var isMoveBeginCalled = false
 
     override fun initialize(
         context: Context,
@@ -125,7 +125,7 @@ class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool 
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    private fun resizeShape(right: Float, bottom: Float) {
+    protected open fun resizeShape(right: Float, bottom: Float) {
         shape?.apply {
             shapeBounds.right = right
             shapeBounds.bottom = bottom
@@ -133,7 +133,7 @@ class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool 
         }
     }
 
-    private fun drawOnLayer() {
+    protected open fun drawOnLayer() {
         selectedLayer?.bitmap?.let { layer ->
             canvasApply.setBitmap(layer)
             drawShape(canvasApply)
@@ -146,12 +146,10 @@ class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool 
         drawShape(canvas)
     }
 
-    private fun drawShape(canvas: Canvas) {
-        canvas.apply {
-            save()
+    protected open fun drawShape(canvas: Canvas) {
+        canvas.withSave {
             translate(shapeBounds.left, shapeBounds.top)
             shape?.draw(canvas, shapePaint)
-            restore()
         }
     }
 
