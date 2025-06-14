@@ -40,14 +40,14 @@ open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDr
         Canvas()
     }
 
-    var lassoStrokeWidth = context.dp(4)
+    open var lassoStrokeWidth = context.dp(4)
         set(value) {
             field = value
             lassoPaint.strokeWidth = field
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    private var isEraseMode = false
+    protected open var isEraseMode = false
         set(value) {
             field = value
             if (isEraseMode) {
@@ -57,9 +57,9 @@ open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDr
             }
         }
 
-    private lateinit var cornerPathEffect: CornerPathEffect
+    protected  lateinit var cornerPathEffect: CornerPathEffect
 
-    private val pathEffectAnimator = ValueAnimator().apply {
+    protected val pathEffectAnimator = ValueAnimator().apply {
         duration = 500
         interpolator = LinearInterpolator()
         repeatCount = ValueAnimator.INFINITE
@@ -91,7 +91,7 @@ open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDr
         size = 10
     }
 
-    var lassoSmoothness = 0.5f
+    open var lassoSmoothness = 0.5f
         set(value) {
             field = value
             smoothnessBrush.smoothness = field
