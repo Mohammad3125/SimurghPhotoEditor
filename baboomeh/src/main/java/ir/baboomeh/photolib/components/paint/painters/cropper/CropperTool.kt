@@ -29,7 +29,7 @@ import ir.baboomeh.photolib.utils.perimeter
 import kotlin.math.max
 import kotlin.math.min
 
-class CropperTool : Painter() {
+class CropperTool(context: Context) : Painter() {
 
     private var selectedLayer: PaintLayer? = null
 
@@ -47,7 +47,7 @@ class CropperTool : Painter() {
             framePaint.color = value
             field = value
         }
-    var frameStrokeWidth = 0f
+    var frameStrokeWidth = context.dp(2)
         set(value) {
             framePaint.strokeWidth = value
             field = value
@@ -60,7 +60,7 @@ class CropperTool : Painter() {
         }
     }
 
-    var guidelineStrokeWidth = 0f
+    var guidelineStrokeWidth = context.dp(1)
         set(value) {
             frameGuidelinePaint.strokeWidth = value
             field = value
@@ -101,7 +101,7 @@ class CropperTool : Painter() {
         }
     }
 
-    var handleBarStrokeWidth = 0f
+    var handleBarStrokeWidth = context.dp(3)
         set(value) {
             handleBarPaint.strokeWidth = value
             field = value
@@ -161,8 +161,8 @@ class CropperTool : Painter() {
     // Variable to save aspect ratio of cropper.
     private var aspectRatio: AspectRatio = AspectRatioFree()
 
-    private var excessTouchArea = 0f
-    private var excessTouchAreaHalf = 0f
+    private var excessTouchArea = context.dp(40)
+    private var excessTouchAreaHalf = excessTouchArea * 0.5f
 
     private lateinit var context: Context
 
@@ -273,21 +273,6 @@ class CropperTool : Painter() {
         fitCropperInsideLayer(setRect = true, animate = false)
         setDrawingDimensions()
 
-        context.apply {
-            excessTouchArea = dp(40)
-            excessTouchAreaHalf = excessTouchArea * 0.5f
-
-            if (handleBarStrokeWidth == 0f) {
-                handleBarStrokeWidth = dp(3)
-            }
-            if (guidelineStrokeWidth == 0f) {
-                guidelineStrokeWidth = dp(1)
-            }
-            if (frameStrokeWidth == 0f) {
-                frameStrokeWidth = dp(2)
-            }
-
-        }
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
     }
 
