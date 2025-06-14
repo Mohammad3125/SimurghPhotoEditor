@@ -22,17 +22,20 @@ import ir.baboomeh.photolib.properties.MaskTool
 import ir.baboomeh.photolib.utils.MananMatrix
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
-class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPoint, MaskTool {
+open class BrushPainter(
+    var engine: DrawingEngine,
+    lineSmoother: LineSmoother = BezierLineSmoother()
+) : Painter(), LineSmoother.OnDrawPoint, MaskTool {
 
-    private var layerPaint = Paint().apply {
+    protected var layerPaint = Paint().apply {
         isFilterBitmap = true
     }
 
-    private val blendPaint = Paint().apply {
+    protected val blendPaint = Paint().apply {
         isFilterBitmap = true
     }
 
-    private var texturePaint = Paint().apply {
+    protected var texturePaint = Paint().apply {
         xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
         isFilterBitmap = true
     }
@@ -45,32 +48,36 @@ class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPo
                 finalBrush = value
             }
         }
-    private lateinit var finalBrush: Brush
+    protected lateinit var finalBrush: Brush
 
-    private lateinit var ccBitmap: Bitmap
-    private val paintCanvas by lazy {
+    protected lateinit var ccBitmap: Bitmap
+    protected val paintCanvas by lazy {
         Canvas()
     }
-    private lateinit var alphaBlendBitmap: Bitmap
+    protected lateinit var alphaBlendBitmap: Bitmap
 
-    private val alphaBlendCanvas by lazy {
+    protected val alphaBlendCanvas by lazy {
         Canvas()
     }
-    private var isAlphaBlending = false
+    protected var isAlphaBlending = false
 
-    private var viewBounds = RectF()
+    protected var viewBounds = RectF()
 
-    private var isLayerNull = true
-    private var isBrushNull = false
-    private var isBlendingTexture = false
+    protected var isLayerNull = true
+    protected var isBrushNull = false
+    protected var isBlendingTexture = false
 
-    private lateinit var finalCanvasToDraw: Canvas
+    protected lateinit var finalCanvasToDraw: Canvas
 
-    var lineSmoother: LineSmoother = BezierLineSmoother()
+    open var lineSmoother: LineSmoother = lineSmoother
         set(value) {
             field = value
             field.onDrawPoint = this
         }
+
+    init {
+        lineSmoother.onDrawPoint = this
+    }
 
     override fun initialize(
         context: Context,
@@ -116,7 +123,7 @@ class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPo
 
     }
 
-    private fun createAlphaBitmapIfNeeded() {
+    protected open fun createAlphaBitmapIfNeeded() {
         blendPaint.alpha = if (isAlphaBlending) (finalBrush.opacity * 255f).toInt() else 255
 
         if (shouldCreateAlphaBitmap()) {
@@ -126,7 +133,7 @@ class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPo
         }
     }
 
-    private fun shouldCreateAlphaBitmap(): Boolean {
+    protected open fun shouldCreateAlphaBitmap(): Boolean {
         return (isAlphaBlending || isBlendingTexture) && (!this::alphaBlendBitmap.isInitialized || (alphaBlendBitmap.width != ccBitmap.width || alphaBlendBitmap.height != ccBitmap.height))
     }
 
@@ -185,7 +192,7 @@ class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPo
         }
     }
 
-    private fun chooseCanvasToDraw() {
+    protected open fun chooseCanvasToDraw() {
         isAlphaBlending = finalBrush.alphaBlend
 
         isBlendingTexture = finalBrush.texture != null
@@ -213,20 +220,21 @@ class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPo
         }
 
         if (isBlendingTexture) {
-            canvas.drawTextureOnBrush()
+            drawTextureOnBrush(canvas)
         } else if (isAlphaBlending) {
             canvas.drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
         }
     }
 
-    private fun Canvas.drawTextureOnBrush() {
-        saveLayer(viewBounds, layerPaint)
-        drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
-        drawRect(viewBounds, texturePaint)
-        restore()
+    protected open fun drawTextureOnBrush(canvas : Canvas) {
+        canvas.apply {
+            saveLayer(viewBounds, layerPaint)
+            drawBitmap(alphaBlendBitmap, 0f, 0f, blendPaint)
+            drawRect(viewBounds, texturePaint)
+            restore()
+        }
     }
-
-    private fun shouldDraw(): Boolean =
+    protected open fun shouldDraw(): Boolean =
         !isBrushNull && !isLayerNull
 
 
@@ -242,7 +250,7 @@ class BrushPainter(var engine: DrawingEngine) : Painter(), LineSmoother.OnDrawPo
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-    fun changeBrushTextureBlending(blendMode: PorterDuff.Mode) {
+    open fun changeBrushTextureBlending(blendMode: PorterDuff.Mode) {
         texturePaint.xfermode = PorterDuffXfermode(blendMode)
         sendMessage(PainterMessage.INVALIDATE)
     }
