@@ -12,6 +12,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.core.graphics.blue
+import androidx.core.graphics.get
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import ir.baboomeh.photolib.components.paint.Painter
@@ -56,7 +57,7 @@ class ColorDropper : Painter() {
     }
 
     // Stroke width of color ring.
-    var colorRingStrokeWidth = 0f
+    var colorRingStrokeWidth = Float.NaN
         set(value) {
             colorRingPaint.strokeWidth = value
             field = value
@@ -68,7 +69,7 @@ class ColorDropper : Painter() {
     }
 
     // Inner circle radius for enlarged bitmap.
-    var circlesRadius = 0f
+    var circlesRadius = Float.NaN
         set(value) {
             field = value
             sendMessage(PainterMessage.INVALIDATE)
@@ -82,7 +83,7 @@ class ColorDropper : Painter() {
     }
 
     // Stroke width of center cross.
-    var centerCrossStrokeWidth = 0f
+    var centerCrossStrokeWidth = Float.NaN
         set(value) {
             centerCrossPaint.strokeWidth = value
             field = value
@@ -98,7 +99,7 @@ class ColorDropper : Painter() {
         }
 
     // Determines the size of cross lines (not to be confused with stroke width).
-    var centerCrossLineSize = 0f
+    var centerCrossLineSize = Float.NaN
         set(value) {
             field = value
             sendMessage(PainterMessage.INVALIDATE)
@@ -159,41 +160,31 @@ class ColorDropper : Painter() {
 
         this.clipBounds.set(clipBounds)
 
-        if (centerCrossLineSize == 0f) {
+        if (centerCrossLineSize.isNaN()) {
             centerCrossLineSize = context.dp(4)
         }
 
-        if (centerCrossStrokeWidth == 0f) {
+        if (centerCrossStrokeWidth.isNaN()) {
             centerCrossStrokeWidth = context.dp(1)
         }
 
         // Calculate circles radius by taking smallest size between width and height of device and device
         // it by 5.
-        if (circlesRadius == 0f) {
+        if (circlesRadius.isNaN()) {
             circlesRadius =
                 min(clipBounds.width(), clipBounds.height()) / 5f
         }
 
-        // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
-        // of circle.
-        colorRingStrokeWidth = circlesRadius * 0.1f
-
         // This variable will later offset the circle.
         // We offset the circle to be visible to user which
         // area of picture they're using otherwise their finger
         // will block it.
         circleOffsetFromCenter = (circlesRadius * 1.5f)
 
-        // If color ring stroke width wasn't set in xml file, then calculate it based on current radius
+        // If color ring stroke width wasn't set, then calculate it based on current radius
         // of circle.
-        if (colorRingStrokeWidth == 0f)
+        if (colorRingStrokeWidth.isNaN())
             colorRingStrokeWidth = circlesRadius * 0.1f
-
-        // This variable will later offset the circle.
-        // We offset the circle to be visible to user which
-        // area of picture they're using otherwise their finger
-        // will block it.
-        circleOffsetFromCenter = (circlesRadius * 1.5f)
     }
 
     override fun onMoveBegin(touchData: TouchData) {
@@ -246,7 +237,7 @@ class ColorDropper : Painter() {
             // Finally get the color of current selected pixel (the pixel user pointing at) and set
             // The ring color to that.
             lastSelectedColor =
-                refBitmap.getPixel(dropperXPosition.toInt(), dropperYPosition.toInt())
+                refBitmap[dropperXPosition.toInt(), dropperYPosition.toInt()]
 
             // Call interfaces.
             interfaceOnColorDetected?.onColorDetected(lastSelectedColor)
@@ -274,8 +265,6 @@ class ColorDropper : Painter() {
 
             // Invalidate to draw content on the screen.
             sendMessage(PainterMessage.INVALIDATE)
-
-            // Return true to show interest in consuming event.
         }
     }
 
