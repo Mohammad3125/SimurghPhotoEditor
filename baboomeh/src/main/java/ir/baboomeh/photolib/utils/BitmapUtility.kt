@@ -3,6 +3,8 @@ package ir.baboomeh.photolib.utils
 import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.core.graphics.alpha
+import androidx.core.graphics.get
+import androidx.core.graphics.set
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 
@@ -113,7 +115,7 @@ class BitmapUtility {
             val listOfTask = listOf(Callable {
                 for (y in 0 until bitmap.height) {
                     for (x in 0 until bitmap.width) {
-                        if (bitmap.getPixel(x, y).alpha > sensitivity) {
+                        if (bitmap[x, y].alpha > sensitivity) {
                             return@Callable y
                         }
                     }
@@ -122,7 +124,7 @@ class BitmapUtility {
             }, Callable {
                 for (y in bitmap.height - 1 downTo 0) {
                     for (x in bitmap.width - 1 downTo 0) {
-                        if (bitmap.getPixel(x, y).alpha > sensitivity) {
+                        if (bitmap[x, y].alpha > sensitivity) {
                             return@Callable y
                         }
                     }
@@ -131,7 +133,7 @@ class BitmapUtility {
             }, Callable {
                 for (x in 0 until bitmap.width) {
                     for (y in 0 until bitmap.height) {
-                        if (bitmap.getPixel(x, y).alpha > sensitivity) {
+                        if (bitmap[x, y].alpha > sensitivity) {
                             return@Callable x
                         }
                     }
@@ -140,7 +142,7 @@ class BitmapUtility {
             }, Callable {
                 for (x in bitmap.width - 1 downTo 0) {
                     for (y in bitmap.height - 1 downTo 0) {
-                        if (bitmap.getPixel(x, y).alpha > sensitivity) {
+                        if (bitmap[x, y].alpha > sensitivity) {
                             return@Callable x
                         }
                     }
@@ -200,11 +202,7 @@ class BitmapUtility {
         ): Bitmap {
             for (x in 0 until bitmap.width) {
                 for (y in 0 until bitmap.height) {
-                    bitmap.setPixel(
-                        x,
-                        y,
-                        onEachPixel(x, y, bitmap.getPixel(x, y))
-                    )
+                    bitmap[x, y] = onEachPixel(x, y, bitmap.getPixel(x, y))
                 }
             }
             return bitmap
@@ -245,11 +243,7 @@ class BitmapUtility {
                 listOfTasks.add(Callable {
                     for (x in startX until endX) {
                         for (y in 0 until bitmap.height) {
-                            bitmap.setPixel(
-                                x,
-                                y,
-                                onEachPixel(x, y, bitmap.getPixel(x, y))
-                            )
+                            bitmap[x, y] = onEachPixel(x, y, bitmap.getPixel(x, y))
                         }
                     }
 
