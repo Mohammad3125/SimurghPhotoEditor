@@ -163,7 +163,6 @@ open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
-    //TODO: Encapsulate the whole companion object implementation to a class.
     companion object {
 
         protected val path = Path()
