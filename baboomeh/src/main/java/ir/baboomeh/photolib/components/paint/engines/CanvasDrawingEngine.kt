@@ -14,36 +14,61 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
 
+/**
+ * Concrete implementation of DrawingEngine that handles brush stroke rendering with various effects.
+ * Manages pressure sensitivity, opacity, rotation, size variation, and other brush effects.
+ */
 open class CanvasDrawingEngine : DrawingEngine {
 
+    /** Temporary HSV color array for color transformations */
     protected val hsvHolder = FloatArray(3)
+    /** Current hue shift value used for color flow effects */
     protected var hueDegreeHolder = 0f
+    /** Controls direction of hue flow animation */
     protected var hueFlip = true
 
+    /** Controls whether eraser mode is active (uses DST_OUT blending) */
     open var isInEraserMode = false
+    /** Tracks the current taper size during stroke rendering */
     protected var taperSizeHolder = 0f
 
+    /** Step size for interpolating size variance */
     protected var sizeVarianceEasingStep = 0.005f
+    /** Target size variance value */
     protected var targetSizeVarianceHolder = 0f
+    /** Current size variance value */
     protected var sizeVarianceHolder = 0f
 
-
+    /** Step size for interpolating opacity variance */
     protected var opacityVarianceEasingStep = 0.1f
+    /** Target opacity variance value */
     protected var targetOpacityVariance = 0f
+    /** Current opacity variance value */
     protected var opacityVarianceHolder = 0
 
+    /** Previous speed measurement for motion smoothing */
     protected var lastVtrSizeVariance = 0f
     protected var lastVtrOpacityVariance = 0f
 
+    /** Previous size variance state for interpolation */
     protected var lastSizeVariance = 1f
 
+    /** Pressure sensitivity tracking variables */
     protected var lastSizePressure = 0f
     protected var currentSizePressure = 0f
 
     protected var lastOpacityPressure = 0f
     protected var currentOpacityPressure = 0f
 
+    /** Current spacing value for brush stamps */
     protected var currentSpacing = 0f
+
+    /**
+     * Initializes brush parameters at the start of a touch gesture.
+     *
+     * @param touchData Touch event data containing pressure information
+     * @param brush The brush being used for rendering
+     */
     override fun onMoveBegin(touchData: TouchData, brush: Brush) {
         taperSizeHolder = brush.startTaperSize
 
@@ -58,13 +83,12 @@ open class CanvasDrawingEngine : DrawingEngine {
         )
 
         currentSizePressure = lastSizePressure
-
         currentOpacityPressure = lastOpacityPressure
-
         currentSpacing = brush.spacing
 
         targetOpacityVariance = abs(brush.opacityVariance * 255f)
 
+        // Set appropriate blending mode for eraser/normal operation
         if (isInEraserMode) {
             if (brush.brushBlending != PorterDuff.Mode.DST_OUT) {
                 brush.brushBlending = PorterDuff.Mode.DST_OUT
@@ -72,13 +96,16 @@ open class CanvasDrawingEngine : DrawingEngine {
         } else {
             brush.brushBlending = PorterDuff.Mode.SRC_OVER
         }
-
     }
 
+    /**
+     * Updates brush parameters during ongoing touch movement.
+     *
+     * @param touchData Current touch event data
+     * @param brush The brush being used for rendering
+     */
     override fun onMove(touchData: TouchData, brush: Brush) {
-
         calculateSizeVariance(touchData, brush)
-
         calculateOpacityVariance(touchData, brush)
 
         currentSizePressure = calculatePressureSensitivity(
@@ -100,7 +127,12 @@ open class CanvasDrawingEngine : DrawingEngine {
         )
     }
 
-
+    /**
+     * Finalizes touch gesture parameters at the end of a stroke.
+     *
+     * @param touchData Final touch event data
+     * @param brush The brush being used for rendering
+     */
     override fun onMoveEnded(touchData: TouchData, brush: Brush) {
         currentSizePressure =
             mapPressure(touchData.pressure, brush.minimumPressureSize, brush.maximumPressureSize)
@@ -110,6 +142,17 @@ open class CanvasDrawingEngine : DrawingEngine {
         brush.spacing = currentSpacing
     }
 
+    /**
+     * Calculates pressure sensitivity based on current pressure and sensitivity settings.
+     *
+     * @param pressure Current pressure value from input device
+     * @param isSensitive Whether pressure sensitivity is enabled
+     * @param sensitivity Sensitivity factor (0.0-1.0)
+     * @param minimum Pressure minimum value
+     * @param maximum Pressure maximum value
+     * @param lastPressure Previous pressure value for interpolation
+     * @return Calculated pressure-sensitive value
+     */
     protected open fun calculatePressureSensitivity(
         pressure: Float,
         isSensitive: Boolean,
@@ -128,14 +171,26 @@ open class CanvasDrawingEngine : DrawingEngine {
         }
     }
 
-
+    /**
+     * Maps pressure value from [0.0, 1.0] range to custom [min, max] range.
+     *
+     * @param pressure Input pressure (0.0-1.0)
+     * @param min Minimum output value
+     * @param max Maximum output value
+     * @return Mapped pressure value
+     */
     protected open fun mapPressure(
         pressure: Float, minimumPressure: Float, maximumPressure: Float
     ): Float = MathUtils.convertFloatRange(
         0f, 1f, minimumPressure, maximumPressure, pressure
     )
 
-
+    /**
+     * Updates size variance based on stroke speed and brush settings.
+     *
+     * @param touchData Touch event data with motion vectors
+     * @param brush The brush being used for rendering
+     */
     protected open fun calculateSizeVariance(touchData: TouchData, brush: Brush) {
         if (brush.sizeVariance == 1f) {
             return
@@ -158,11 +213,18 @@ open class CanvasDrawingEngine : DrawingEngine {
         }
 
         lastSizeVariance = sizeVarianceHolder
-
         sizeVarianceEasingStep = brush.sizeVarianceEasing * brush.spacing
-
     }
 
+    /**
+     * Calculates motion speed for variance and sensitivity calculations.
+     *
+     * @param dx X axis delta
+     * @param dy Y axis delta
+     * @param lastSpeed Previous speed value for smoothing
+     * @param sensitivity Sensitivity factor affecting speed calculation
+     * @return Calculated speed value
+     */
     protected open fun calculateSpeed(
         dx: Float,
         dy: Float,
@@ -178,6 +240,12 @@ open class CanvasDrawingEngine : DrawingEngine {
         return abs(vtr - lastSpeed)
     }
 
+    /**
+     * Updates opacity variance based on stroke speed and brush settings.
+     *
+     * @param touchData Touch event data with motion vectors
+     * @param brush The brush being used for rendering
+     */
     protected open fun calculateOpacityVariance(touchData: TouchData, brush: Brush) {
         if (brush.opacityVariance == 0f) {
             return
@@ -198,19 +266,37 @@ open class CanvasDrawingEngine : DrawingEngine {
         }
 
         opacityVarianceEasingStep = brush.opacityVarianceEasing / brush.spacing
-
     }
 
+    /**
+     * Draws a single brush stamp at the specified location.
+     *
+     * Applies all brush effects including:
+     * - Position translation with scatter
+     * - Rotation with jitter
+     * - Size scaling with pressure and variant effects
+     * - Color modification with hue effects
+     * - Opacity calculations
+     *
+     * @param ex Exact X coordinate for drawing
+     * @param ey Exact Y coordinate for drawing
+     * @param directionalAngle Rotational angle to apply
+     * @param canvas Canvas to draw on
+     * @param brush The brush to draw
+     * @param drawCount Number of draw calls in this stroke
+     */
     override fun draw(
         ex: Float, ey: Float, directionalAngle: Float, canvas: Canvas, brush: Brush, drawCount: Int
     ) {
         brush.apply {
             canvas.withSave {
-
+                // Apply position with scatter effect
                 translateCanvasByBrush(brush, canvas, ex, ey)
 
+                // Apply rotation with angle jitter
                 rotateCanvasByBrush(brush, canvas, directionalAngle)
 
+                // Apply tapper size interpolation
                 if (startTaperSpeed > 0 && startTaperSize != 1f && taperSizeHolder != 1f) {
                     if (startTaperSize < 1f) {
                         taperSizeHolder += startTaperSpeed
@@ -221,6 +307,7 @@ open class CanvasDrawingEngine : DrawingEngine {
                     }
                 }
 
+                // Interpolate size variance
                 if (targetSizeVarianceHolder < sizeVarianceHolder) {
                     targetSizeVarianceHolder += sizeVarianceEasingStep
                 } else {
@@ -232,6 +319,7 @@ open class CanvasDrawingEngine : DrawingEngine {
 
                 val finalSizeVariance = if (sizeVariance != 1f) targetSizeVarianceHolder else 1f
 
+                // Update pressure-interpolated values
                 if (isSizePressureSensitive) {
                     lastSizePressure += ((currentSizePressure - lastSizePressure) / drawCount)
                 }
@@ -240,32 +328,44 @@ open class CanvasDrawingEngine : DrawingEngine {
                     lastOpacityPressure += ((currentOpacityPressure - lastOpacityPressure) / drawCount)
                 }
 
+                // Apply all scale transformations and squish factor
                 scaleCanvasByBrush(brush, finalTaperSize, finalSizeVariance, canvas, 1f - squish)
 
                 val lastColor = color
 
+                // Apply hue effects
                 color = calculateColorHue(brush)
 
+                // Interpolate opacity variance
                 if (targetOpacityVariance < opacityVarianceHolder) {
                     targetOpacityVariance += opacityVarianceEasingStep
                 } else {
                     targetOpacityVariance -= opacityVarianceEasingStep
                 }
 
+                // Finalize and draw the brush stamp
                 draw(this, calculateBrushOpacity(brush))
 
                 if (color != lastColor) {
                     color = lastColor
                 }
-
             }
         }
     }
 
+    /**
+     * Rotates the canvas according to brush rotation settings.
+     *
+     * Adds random angle jitter if enabled, and can rotate based on stroke direction.
+     *
+     * @param brush The brush providing rotation parameters
+     * @param canvas The canvas to rotate
+     * @param directionalAngle Directional angle to apply when auto-rotating
+     */
     protected open fun rotateCanvasByBrush(
         brush: Brush,
         canvas: Canvas,
-        directionalAngle: Float,
+        directionalAngle: Float
     ) {
         brush.run {
             if (angleJitter > 0f && (angle > 0f || directionalAngle > 0f) || angleJitter > 0f && angle == 0f) {
@@ -283,6 +383,16 @@ open class CanvasDrawingEngine : DrawingEngine {
         }
     }
 
+    /**
+     * Translates the canvas to the brush position with optional scatter effects.
+     *
+     * When scatter is enabled, adds random position offsets to create texture.
+     *
+     * @param brush The brush providing position parameters
+     * @param canvas The canvas to translate
+     * @param ex Exact X position
+     * @param ey Exact Y position
+     */
     protected open fun translateCanvasByBrush(
         brush: Brush,
         canvas: Canvas,
@@ -291,26 +401,27 @@ open class CanvasDrawingEngine : DrawingEngine {
     ) {
         when {
             brush.scatter > 0f -> {
-
                 val r = (brush.size * brush.scatter).toInt()
-
                 if (r != 0) {
                     val randomScatterX = Random.nextInt(-r, r).toFloat()
-
                     val randomScatterY = Random.nextInt(-r, r).toFloat()
-
-                    canvas.translate(
-                        ex + randomScatterX, ey + randomScatterY
-                    )
+                    canvas.translate(ex + randomScatterX, ey + randomScatterY)
                 }
             }
-
             else -> {
                 canvas.translate(ex, ey)
             }
         }
     }
 
+    /**
+     * Calculates a new color with hue modifications based on brush settings.
+     *
+     * Handles random hue jitter, hue flow animation, and other color effects.
+     *
+     * @param brush The brush providing color parameters
+     * @return Modified color with applied effects
+     */
     @ColorInt
     protected open fun calculateColorHue(brush: Brush): Int =
         brush.run {
@@ -341,7 +452,6 @@ open class CanvasDrawingEngine : DrawingEngine {
                     }
 
                     hsvHolder[0] += hueDegreeHolder
-
                     hsvHolder[0] = GestureUtils.mapTo360(hsvHolder[0])
 
                     Color.HSVToColor(hsvHolder)
@@ -353,7 +463,17 @@ open class CanvasDrawingEngine : DrawingEngine {
             }
         }
 
-
+    /**
+     * Scales the canvas according to brush size parameters.
+     *
+     * Handles size jitter, pressure sensitivity, taper effects and variance scaling.
+     *
+     * @param brush The brush providing size parameters
+     * @param finalTaperSize Taper scaling factor
+     * @param finalSizeVariance Variance scaling factor
+     * @param canvas The canvas to scale
+     * @param squish Vertical compression factor
+     */
     protected open fun scaleCanvasByBrush(
         brush: Brush,
         finalTaperSize: Float,
@@ -395,7 +515,12 @@ open class CanvasDrawingEngine : DrawingEngine {
         }
     }
 
-
+    /**
+     * Calculates the final opacity value with various effects applied.
+     *
+     * @param brush The brush providing opacity parameters
+     * @return Calculated opacity value (0-255)
+     */
     protected open fun calculateBrushOpacity(brush: Brush): Int {
         return brush.run {
             when {
@@ -420,13 +545,22 @@ open class CanvasDrawingEngine : DrawingEngine {
                 }
             }
         }
-
     }
 
+    /**
+     * Returns whether eraser mode is currently active.
+     *
+     * @return True if in eraser mode, false otherwise
+     */
     override fun isEraserModeEnabled(): Boolean {
         return isInEraserMode
     }
 
+    /**
+     * Sets the eraser mode state and updates blending mode accordingly.
+     *
+     * @param isEnabled True to enable eraser mode, false to disable
+     */
     override fun setEraserMode(isEnabled: Boolean) {
         isInEraserMode = isEnabled
     }
