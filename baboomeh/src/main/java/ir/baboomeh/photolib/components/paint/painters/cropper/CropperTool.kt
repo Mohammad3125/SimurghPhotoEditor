@@ -31,6 +31,60 @@ import ir.baboomeh.photolib.utils.perimeter
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * A comprehensive image cropping tool that provides interactive crop frame manipulation
+ * with aspect ratio controls, guidelines, and smooth animations.
+ * 
+ * This tool implements a full-featured cropping interface commonly found in photo editing
+ * applications, supporting:
+ * 
+ * **Interactive Crop Frame:**
+ * - Resizable crop rectangle with corner and edge handles
+ * - Real-time preview with darkened overlay outside crop area
+ * - Smooth handle-based resizing with visual feedback
+ * - Automatic bounds checking to prevent invalid crop regions
+ * 
+ * **Aspect Ratio Management:**
+ * - Support for locked aspect ratios (e.g., 1:1, 4:3, 16:9)
+ * - Free-form cropping without ratio constraints
+ * - Dynamic aspect ratio switching with smooth transitions
+ * - Intelligent resize behavior that maintains ratios
+ * 
+ * **Visual Guidelines:**
+ * - Rule of thirds grid lines for composition guidance
+ * - Customizable guideline appearance and visibility
+ * - Professional-grade visual feedback during editing
+ * 
+ * **User Experience Features:**
+ * - Animated transitions for smooth interactions
+ * - Gesture-based frame manipulation and canvas panning
+ * - Auto-fitting to keep crop frame within image bounds
+ * - Smart handle positioning with extended touch areas
+ * 
+ * **Advanced Functionality:**
+ * - Direct cropping to create new bitmap with cropped content
+ * - In-place clipping to modify existing layer content
+ * - Matrix-based transformations for precise positioning
+ * - Customizable colors, stroke widths, and visual styling
+ * 
+ * The tool automatically handles complex scenarios like maintaining aspect ratios
+ * during resize operations, preventing invalid crop dimensions, and providing
+ * smooth user interactions through gesture detection and animation systems.
+ * 
+ * **Usage Example:**
+ * ```kotlin
+ * val cropperTool = CropperTool(context)
+ * cropperTool.setAspectRatio(AspectRatioLocked(16f, 9f)) // 16:9 aspect ratio
+ * cropperTool.frameColor = Color.WHITE
+ * cropperTool.isDrawGuidelineEnabled = true
+ * 
+ * // Get cropped bitmap
+ * val croppedImage = cropperTool.crop()
+ * 
+ * // Or clip existing layer
+ * cropperTool.clip()
+ * ```
+ */
 open class CropperTool(context: Context) : Painter() {
 
     protected var selectedLayer: PaintLayer? = null
@@ -44,11 +98,14 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /** Color of the crop frame border */
     open var frameColor = Color.DKGRAY
         set(value) {
             framePaint.color = value
             field = value
         }
+
+    /** Stroke width of the crop frame border */
     open var frameStrokeWidth = context.dp(2)
         set(value) {
             framePaint.strokeWidth = value
@@ -62,11 +119,14 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /** Stroke width of the rule-of-thirds guideline grid */
     open var guidelineStrokeWidth = context.dp(1)
         set(value) {
             frameGuidelinePaint.strokeWidth = value
             field = value
         }
+
+    /** Color of the rule-of-thirds guideline grid */
     open var guidelineColor = Color.DKGRAY
         set(value) {
             frameGuidelinePaint.color = value
@@ -84,11 +144,14 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /** Color of the darkened overlay area outside the crop frame */
     open var backgroundShadowColor = Color.BLACK
         set(value) {
             frameShadowsPaint.color = value
             field = value
         }
+
+    /** Alpha transparency level of the darkened overlay (0-255) */
     open var backgroundShadowAlpha = 85
         set(value) {
             frameShadowsPaint.alpha = value
@@ -103,16 +166,21 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /** Stroke width of the corner and edge resize handles */
     open var handleBarStrokeWidth = context.dp(3)
         set(value) {
             handleBarPaint.strokeWidth = value
             field = value
         }
+
+    /** Color of the corner and edge resize handles */
     open var handleBarColor = Color.DKGRAY
         set(value) {
             handleBarPaint.color = value
             field = value
         }
+
+    /** Shape of the handle bar endpoints (ROUND or SQUARE) */
     open var handleBarCornerType = Paint.Cap.ROUND
         set(value) {
             handleBarPaint.strokeCap = value
@@ -132,6 +200,10 @@ open class CropperTool(context: Context) : Painter() {
         RectF()
     }
 
+    /**
+     * Returns the crop dimensions in the original image coordinate system.
+     * This accounts for all transformations applied to the canvas.
+     */
     open val cropperDimensions: Rect
         get() {
             inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
@@ -163,68 +235,87 @@ open class CropperTool(context: Context) : Painter() {
     // Variable to save aspect ratio of cropper.
     protected var aspectRatio: AspectRatio = AspectRatioFree()
 
+    /** Extended touch area around handles to make them easier to grab */
     protected var excessTouchArea = context.dp(40)
+
+    /** Half of the extended touch area for center calculations */
     protected var excessTouchAreaHalf = excessTouchArea * 0.5f
 
     protected lateinit var context: Context
 
+    /** Matrix for canvas transformations (zoom, pan, etc.) */
     protected lateinit var canvasMatrix: MananMatrix
+
+    /** Matrix for fitting content inside view bounds */
     protected lateinit var fitInsideMatrix: MananMatrix
 
+    /** Temporary matrix for inverse transformations */
     protected val inverseMatrix = MananMatrix()
 
     // Used to animate the matrix in MatrixEvaluator
     protected val endMatrix = MananMatrix()
     protected val startMatrix = MananMatrix()
 
+    /** Temporary matrix for calculations */
     protected val tempMatrix by lazy {
         Matrix()
     }
 
+    /** Temporary rectangle for calculations */
     protected val tempRectF by lazy {
         RectF()
     }
 
+    /** Temporary rectangle for integer bounds */
     protected val tempRect by lazy {
         Rect()
     }
 
+    /** Starting rectangle for animations */
     protected val startRect by lazy {
         RectF()
     }
 
+    /** Target rectangle for animations */
     protected val endRect by lazy {
         RectF()
     }
 
+    /** Array for storing rectangle corner points */
     protected val basePoints by lazy {
         FloatArray(8)
     }
 
+    /** Array for transformed corner points */
     protected val cc by lazy {
         FloatArray(8)
     }
 
+    /** Canvas used for cropping operations */
     protected val cropCanvas by lazy {
         Canvas()
     }
 
+    /** Rectangle storing the initial crop frame position */
     protected val startingRect by lazy {
         RectF()
     }
 
+    /** Duration of crop frame animations in milliseconds */
     open var animationDuration: Long = 500
         set(value) {
             field = value
             animator.duration = field
         }
 
+    /** Interpolator for smooth crop frame animations */
     open var animationInterpolator: TimeInterpolator = FastOutSlowInInterpolator()
         set(value) {
             field = value
             animator.interpolator = field
         }
 
+    /** Animator for smooth transitions when adjusting crop frame */
     protected val animator by lazy {
         ValueAnimator.ofObject(MatrixEvaluator(), startMatrix, endMatrix).apply {
             interpolator = animationInterpolator
@@ -238,6 +329,7 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /** Evaluator for interpolating between rectangle positions during animation */
     protected val rectEvaluator by lazy {
         RectFloatEvaluator()
     }
@@ -278,6 +370,10 @@ open class CropperTool(context: Context) : Painter() {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
     }
 
+    /**
+     * Calculates the initial crop frame size based on aspect ratio constraints.
+     * Centers the frame within the available area.
+     */
     protected open fun normalizeCropper(finalWidth: Float, finalHeight: Float, targetRect: RectF) {
         // Initialize drawing objects after the width and height has been determined.
         val pair = aspectRatio.normalizeAspectRatio(
@@ -295,6 +391,9 @@ open class CropperTool(context: Context) : Painter() {
         )
     }
 
+    /**
+     * Called when user starts touching/dragging. Determines which handle is being grabbed.
+     */
     override fun onMoveBegin(touchData: TouchData) {
         mapPoints(touchData.ex, touchData.ey).let {
             // Figure out which handle bar is in range of the event.
@@ -309,6 +408,9 @@ open class CropperTool(context: Context) : Painter() {
 
     }
 
+    /**
+     * Transforms screen coordinates to crop frame coordinate system.
+     */
     protected open fun mapPoints(ex: Float, ey: Float): FloatArray {
         pointHolder[0] = ex
         pointHolder[1] = ey
@@ -317,15 +419,24 @@ open class CropperTool(context: Context) : Painter() {
         return pointHolder
     }
 
+    /**
+     * Transforms coordinate array from crop frame to screen coordinates.
+     */
     protected open fun mapArray(array: FloatArray) {
         canvasMatrix.invert(inverseMatrix)
         inverseMatrix.mapPoints(array)
     }
 
+    /**
+     * Transforms vector array (relative coordinates) using canvas matrix.
+     */
     protected open fun mapVectorPoints(array: FloatArray) {
         canvasMatrix.mapVectors(array)
     }
 
+    /**
+     * Transforms touch delta values to crop frame coordinate system.
+     */
     protected open fun mapInverseVector(touchData: TouchData) {
         inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
         pointHolder[0] = touchData.dx
@@ -335,6 +446,9 @@ open class CropperTool(context: Context) : Painter() {
         touchData.dy = pointHolder[1]
     }
 
+    /**
+     * Handles continuous touch movement for resizing crop frame or panning canvas.
+     */
     override fun onMove(touchData: TouchData) {
         if (animator.isRunning) {
             return
@@ -379,6 +493,10 @@ open class CropperTool(context: Context) : Painter() {
         sendMessage(PainterMessage.INVALIDATE)
     }
 
+    /**
+     * Calculates offset needed to keep rectangle within limit bounds.
+     * Returns [0,0] if no offset is needed.
+     */
     protected open fun getOffsetValues(rect: RectF): FloatArray {
         // Validate that the rectangle is inside the view's bounds.
         val finalX = when {
@@ -399,6 +517,9 @@ open class CropperTool(context: Context) : Painter() {
         return pointHolder
     }
 
+    /**
+     * Transforms rectangle coordinates and calculates screen bounds.
+     */
     protected open fun mapRectToMatrix(changedRect: RectF) {
         setBoundsVariablesFromRect(changedRect, basePoints)
 
@@ -408,6 +529,9 @@ open class CropperTool(context: Context) : Painter() {
         calculateMaximumBounds(cc, tempRectF)
     }
 
+    /**
+     * Calculates the bounding rectangle from transformed corner points.
+     */
     protected open fun calculateMaximumBounds(cc: FloatArray, tempRect: RectF) {
         val minX = min(min(cc[0], cc[2]), min(cc[4], cc[6]))
         val maxX = max(max(cc[0], cc[2]), max(cc[4], cc[6]))
@@ -416,14 +540,24 @@ open class CropperTool(context: Context) : Painter() {
         tempRect.set(minX, minY, maxX, maxY)
     }
 
+    /**
+     * Called when touch gesture ends. Ensures crop frame stays within valid bounds.
+     */
     override fun onMoveEnded(touchData: TouchData) {
         fitCropperInsideLayer()
     }
 
+    /**
+     * Called when transformation gesture ends. Ensures crop frame stays within valid bounds.
+     */
     override fun onTransformEnded() {
         fitCropperInsideLayer()
     }
 
+    /**
+     * Adjusts crop frame position and size to fit within layer bounds.
+     * Optionally animates the transition for smooth user experience.
+     */
     protected open fun fitCropperInsideLayer(
         setStartRect: Boolean = true,
         animate: Boolean = true,
@@ -487,11 +621,17 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /**
+     * Calculates the scale factor needed to fit rectangle within limit bounds.
+     */
     protected open fun calculateRectScaleDifference(rect: RectF): Float {
         return min(limitRect.width() / rect.width(), limitRect.height() / rect.height())
     }
 
 
+    /**
+     * Renders the crop frame, handles, guidelines, and darkened overlay.
+     */
     override fun draw(canvas: Canvas) {
         canvas.run {
             save()
@@ -522,6 +662,9 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /**
+     * Resets the crop frame to default size and position with animation.
+     */
     override fun resetPaint() {
         startMatrix.set(canvasMatrix)
         endMatrix.reset()
@@ -530,6 +673,10 @@ open class CropperTool(context: Context) : Painter() {
         animator.start()
     }
 
+    /**
+     * Updates all drawing dimensions after crop frame changes.
+     * Recalculates handle positions, touch areas, and guidelines.
+     */
     protected open fun setDrawingDimensions() {
         createHandleBarsDimensions(frameRect)
 
@@ -582,6 +729,7 @@ open class CropperTool(context: Context) : Painter() {
 
     /**
      * Calculates the positions that handle bars should locate.
+     * Creates the visual resize handles at corners and edges of crop frame.
      * @param frame The rectangle the represents the overlay window.
      * @return Returns a [FloatArray] representing the location of lines that should be drawn on screen.
      */
@@ -652,6 +800,7 @@ open class CropperTool(context: Context) : Painter() {
 
     /**
      * This method figures the touch area of each handle bar.
+     * Creates extended touch areas around each handle for easier user interaction.
      * @param frame The rectangle the represents the overlay window.
      * @return Returns a map of handle bar area range and [HandleBar] itself.
      */
@@ -717,6 +866,11 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /**
+     * Changes the aspect ratio constraint for the crop frame.
+     * @param newAspectRatio The new aspect ratio to apply
+     * @param force Whether to force the change even if ratios are similar
+     */
     open fun setAspectRatio(newAspectRatio: AspectRatio, force: Boolean = false) {
         if (!force && newAspectRatio is AspectRatioLocked && aspectRatio is AspectRatioLocked && (aspectRatio as AspectRatioLocked).getRatio() == newAspectRatio.getRatio()) {
             return
@@ -738,6 +892,10 @@ open class CropperTool(context: Context) : Painter() {
 
     }
 
+    /**
+     * Creates a new bitmap containing only the cropped portion of the image.
+     * @return Cropped bitmap or null if no layer is selected
+     */
     open fun crop(): Bitmap? {
         selectedLayer?.let { layer ->
 
@@ -778,6 +936,10 @@ open class CropperTool(context: Context) : Painter() {
         return null
     }
 
+    /**
+     * Clips the current layer to only show content within the crop frame.
+     * This modifies the existing layer bitmap directly.
+     */
     open fun clip() {
         selectedLayer?.let { layer ->
             cropCanvas.run {
@@ -809,6 +971,13 @@ open class CropperTool(context: Context) : Painter() {
         }
     }
 
+    /**
+     * Sets the crop frame to a specific rectangle.
+     * @param rect Target rectangle in image coordinates
+     * @param fit Whether to automatically fit frame within bounds
+     * @param animate Whether to animate the transition
+     * @param onEnd Callback executed when operation completes
+     */
     open fun setFrame(
         rect: Rect,
         fit: Boolean = false,
@@ -852,6 +1021,9 @@ open class CropperTool(context: Context) : Painter() {
         return false
     }
 
+    /**
+     * Handles view size changes by updating limit bounds and crop frame position.
+     */
     override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
         /*
             Previous method:
@@ -867,6 +1039,11 @@ open class CropperTool(context: Context) : Painter() {
         sendMessage(PainterMessage.INVALIDATE)
     }
 
+    /**
+     * Converts rectangle corners to coordinate array format.
+     * @param rect Source rectangle
+     * @param dstArray Destination array for coordinates
+     */
     protected open fun setBoundsVariablesFromRect(rect: RectF, dstArray: FloatArray) {
         dstArray[0] = rect.left
         dstArray[1] = rect.top
