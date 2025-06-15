@@ -21,25 +21,80 @@ import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.matrix.MananMatrix
 import kotlin.math.min
 
+/**
+ * A color picker tool that allows users to sample colors from an image by touching the screen.
+ * 
+ * This tool provides an intuitive color sampling experience with:
+ * 
+ * **Visual Features:**
+ * - Magnified preview circle showing enlarged pixels around touch point
+ * - Color ring displaying the currently sampled color
+ * - Crosshair indicator for precise pixel selection
+ * - Shadow effects for better visual contrast
+ * - Smart positioning to avoid finger occlusion
+ * 
+ * **Functionality:**
+ * - Real-time color sampling during touch movement
+ * - Automatic color detection with pixel-perfect accuracy
+ * - Callback system for color change notifications
+ * - Support for both lambda and interface-based callbacks
+ * - Intelligent contrast adjustment for crosshair visibility
+ * 
+ * **User Experience:**
+ * - Circle appears on touch and follows finger movement
+ * - Automatic offset positioning to keep preview visible
+ * - Bounds checking to ensure sampling within image limits
+ * - Smooth visual transitions and animations
+ * 
+ * The tool is designed for photo editing applications where precise color selection
+ * is essential. It provides both immediate feedback during interaction and final
+ * color selection when the user lifts their finger.
+ * 
+ * **Usage Example:**
+ * ```kotlin
+ * val colorDropper = ColorDropper()
+ * colorDropper.setOnColorDetected { color ->
+ *     // Handle real-time color changes
+ * }
+ * colorDropper.setOnLastColorDetected { finalColor ->
+ *     // Handle final color selection
+ * }
+ * ```
+ */
 open class ColorDropper : Painter() {
+    
+    /**
+     * Reference to the bitmap layer from which colors will be sampled.
+     * This is typically set automatically when the painter is initialized.
+     */
     protected var referenceLayer: Bitmap? = null
 
-    // Matrix to later enlarge the bitmap with.
+    /**
+     * Matrix used to scale and position the magnified bitmap preview.
+     * Applied to create the enlarged view inside the preview circle.
+     */
     protected val enlargedBitmapMatrix by lazy { Matrix() }
 
-    // Colors for shadow behind enlarged bitmap circle.
+    /**
+     * Color array for creating the radial gradient shadow behind the preview circle.
+     * Transitions from black to transparent for a natural drop shadow effect.
+     */
     protected val circleShadowColors by lazy {
         intArrayOf(Color.BLACK, Color.TRANSPARENT)
     }
 
-    // Paint used for drawing shadow behind enlarged bitmap circle.
-    // This paint will later use RadialGradient to create shadow.
+    /**
+     * Paint used for drawing the shadow behind the magnified preview circle.
+     * Uses a RadialGradient shader to create smooth shadow falloff.
+     */
     protected val circleShadowPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG)
     }
 
-    // Circle that would be drawn on shadow circle to prevent shadow
-    // to be visible on transparent pixels.
+    /**
+     * Paint for drawing a white overlay circle to prevent shadow visibility
+     * on transparent pixels within the preview area.
+     */
     protected val circleShadowOverlayPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
@@ -47,40 +102,57 @@ open class ColorDropper : Painter() {
         }
     }
 
-    // Ring around circle showing color of current pixel that user is pointing at.
+    /**
+     * Paint for drawing the colored ring around the preview circle.
+     * The ring color matches the currently sampled pixel color.
+     */
     protected val colorRingPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
         }
     }
 
-    // Stroke width of color ring.
+    /**
+     * Stroke width of the color ring in pixels.
+     * When set, automatically updates the paint configuration.
+     */
     open var colorRingStrokeWidth = Float.NaN
         set(value) {
             colorRingPaint.strokeWidth = value
             field = value
         }
 
-    // Paint that later be used to draw circle shaped bitmap with help of BitmapShader.
+    /**
+     * Paint used to draw the magnified bitmap as a circle using BitmapShader.
+     * Provides the enlarged pixel view within the preview circle.
+     */
     protected val bitmapCirclePaint by lazy {
         Paint()
     }
 
-    // Inner circle radius for enlarged bitmap.
+    /**
+     * Radius of the preview circle in pixels.
+     * Controls the size of both the magnified view and color ring.
+     */
     open var circlesRadius = Float.NaN
         set(value) {
             field = value
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    // Paint for drawing cross in center of circle for better indicating selected pixels.
+    /**
+     * Paint for drawing the crosshair in the center of the preview circle.
+     * Helps users see exactly which pixel is being sampled.
+     */
     protected val centerCrossPaint by lazy {
         Paint().apply {
             style = Paint.Style.FILL
         }
     }
 
-    // Stroke width of center cross.
+    /**
+     * Stroke width of the center crosshair lines in pixels.
+     */
     open var centerCrossStrokeWidth = Float.NaN
         set(value) {
             centerCrossPaint.strokeWidth = value
@@ -88,7 +160,10 @@ open class ColorDropper : Painter() {
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    // Color of center cross.
+    /**
+     * Color of the center crosshair.
+     * Automatically adjusts for contrast when set to white (default behavior).
+     */
     open var centerCrossColor = Color.WHITE
         set(value) {
             centerCrossPaint.color = value
@@ -96,57 +171,80 @@ open class ColorDropper : Painter() {
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    // Determines the size of cross lines (not to be confused with stroke width).
+    /**
+     * Length of the crosshair lines in pixels (not stroke width).
+     * Determines how far the crosshair extends from the center point.
+     */
     open var centerCrossLineSize = Float.NaN
         set(value) {
             field = value
             sendMessage(PainterMessage.INVALIDATE)
         }
 
-    // Later indicating current position of user fingers.
+    /**
+     * Current X position of the color dropper (where user is touching).
+     */
     protected var dropperXPosition = 0f
+    
+    /**
+     * Current Y position of the color dropper (where user is touching).
+     */
     protected var dropperYPosition = 0f
 
-    // Determines if view should view circle (when user lifts his/her finger, circle should disappear.)
+    /**
+     * Flag indicating whether the preview circle should be visible.
+     * Set to false when user lifts finger to hide the preview.
+     */
     protected var showCircle = true
 
-    // This offset is used for times where current circle exceeds the bounds of image so we offset it.
+    /**
+     * Vertical offset applied to prevent the preview circle from going outside bounds.
+     * Automatically calculated based on touch position and circle size.
+     */
     protected var offsetY = 0f
 
-    // This variable will later be used to determine how much the circle that shows enlarged bitmap
-    // should offset from user finger.
+    /**
+     * Distance the preview circle is offset from the user's finger.
+     * Prevents the finger from obscuring the magnified view.
+     */
     protected var circleOffsetFromCenter = 0f
 
     /**
-     * The last color that was detected by dropper.
+     * The most recently detected color value as an ARGB integer.
      */
     protected var lastSelectedColor: Int = 0
 
     /**
-     * Last color selected before user lifts his/her finger from screen.
+     * Callback invoked when user lifts finger, providing the final selected color.
      */
     protected var lastColorDetectedCallback: ((color: Int) -> Unit)? = null
 
     /**
-     * Called everytime a new color get detected by dropper.
+     * Callback invoked continuously as colors change during touch movement.
      */
     protected var colorDetectedCallback: ((color: Int) -> Unit)? = null
 
     /**
-     * Interface for last color that get detected.
+     * Interface-based callback for final color selection.
      */
     protected var interfaceOnLastColorDetected: OnLastColorDetected? = null
 
     /**
-     * Interface that get invoked when any color change happen.
+     * Interface-based callback for continuous color detection.
      */
     protected var interfaceOnColorDetected: OnColorDetected? = null
 
+    /**
+     * Bounds rectangle for clipping the color sampling area.
+     */
     protected val clipBounds by lazy {
         RectF()
     }
 
-
+    /**
+     * Initializes the color dropper with view dimensions and default settings.
+     * Calculates appropriate sizes for UI elements based on available space.
+     */
     override fun initialize(
         context: Context,
         transformationMatrix: MananMatrix,
@@ -158,70 +256,87 @@ open class ColorDropper : Painter() {
 
         this.clipBounds.set(clipBounds)
 
+        // Set default crosshair line size if not specified
         if (centerCrossLineSize.isNaN()) {
             centerCrossLineSize = context.dp(4)
         }
 
+        // Set default crosshair stroke width if not specified
         if (centerCrossStrokeWidth.isNaN()) {
             centerCrossStrokeWidth = context.dp(1)
         }
 
-        // Calculate circles radius by taking smallest size between width and height of device and device
-        // it by 5.
+        // Calculate circle radius as 1/5 of the smallest dimension for good proportions
         if (circlesRadius.isNaN()) {
             circlesRadius =
                 min(clipBounds.width(), clipBounds.height()) / 5f
         }
 
-        // This variable will later offset the circle.
-        // We offset the circle to be visible to user which
-        // area of picture they're using otherwise their finger
-        // will block it.
+        // Offset circle by 1.5x radius to keep it visible above user's finger
         circleOffsetFromCenter = (circlesRadius * 1.5f)
 
-        // If color ring stroke width wasn't set, then calculate it based on current radius
-        // of circle.
+        // Set default color ring stroke width proportional to circle size
         if (colorRingStrokeWidth.isNaN())
             colorRingStrokeWidth = circlesRadius * 0.1f
     }
 
+    /**
+     * Called when user starts touching the screen to sample colors.
+     * Initializes the color dropper at the touch position.
+     */
     override fun onMoveBegin(touchData: TouchData) {
         calculateToShowDropperAt(touchData.ex, touchData.ey)
     }
 
+    /**
+     * Called continuously while user moves their finger.
+     * Updates the dropper position and samples new colors in real-time.
+     */
     override fun onMove(touchData: TouchData) {
         calculateToShowDropperAt(touchData.ex, touchData.ey)
     }
 
+    /**
+     * Called when user lifts their finger from the screen.
+     * Finalizes color selection and hides the preview circle.
+     */
     override fun onMoveEnded(touchData: TouchData) {
         calculateToShowDropperAt(touchData.ex, touchData.ey)
-        // Call interfaces.
+        // Notify listeners of final color selection
         lastColorDetectedCallback?.invoke(lastSelectedColor)
         interfaceOnLastColorDetected?.onLastColorDetected(lastSelectedColor)
 
-        // If user lifts his/her finger then don't show the circle anymore.
+        // Hide the preview circle until next touch
         showCircle = false
-        // Reset offset.
+        // Reset positioning offset
         offsetY = 0f
-        // Invalidate to draw content on the screen.
+        // Trigger redraw to remove the circle
         sendMessage(PainterMessage.INVALIDATE)
     }
 
+    /**
+     * Core logic for positioning the color dropper and sampling colors.
+     * Handles bounds checking, offset calculations, and color detection.
+     * 
+     * @param ex X coordinate of touch position
+     * @param ey Y coordinate of touch position
+     */
     protected open fun calculateToShowDropperAt(ex: Float, ey: Float) {
         referenceLayer?.let { refBitmap ->
-            // Get position of current x and y.
+            // Store current touch position
             dropperXPosition = ex
             dropperYPosition = ey
 
+            // Clamp position to image bounds to prevent sampling outside the image
             dropperXPosition = dropperXPosition.coerceIn(clipBounds.left, clipBounds.right - 1f)
             dropperYPosition = dropperYPosition.coerceIn(clipBounds.top, clipBounds.bottom - 1f)
 
-            // Offset the Circle in case circle exceeds the height of layout y coordinate.
+            // Calculate vertical offset to keep circle visible when near top edge
             offsetY = if (dropperYPosition - circleOffsetFromCenter * 1.5f <= clipBounds.top) {
                 (clipBounds.bottom - dropperYPosition)
             } else 0f
 
-            // Scale the image to be more visible to user.
+            // Configure matrix for 2x magnification of the preview area
             enlargedBitmapMatrix.setScale(
                 2f,
                 2f,
@@ -229,28 +344,27 @@ open class ColorDropper : Painter() {
                 dropperYPosition + circleOffsetFromCenter - offsetY
             )
 
-            // If user's finger is on the image, then show the circle.
+            // Show the preview circle during active sampling
             showCircle = true
 
-            // Finally get the color of current selected pixel (the pixel user pointing at) and set
-            // The ring color to that.
+            // Sample the color at the current pixel position
             lastSelectedColor =
                 refBitmap[dropperXPosition.toInt(), dropperYPosition.toInt()]
 
-            // Call interfaces.
+            // Notify listeners of color change
             interfaceOnColorDetected?.onColorDetected(lastSelectedColor)
             colorDetectedCallback?.invoke(lastSelectedColor)
 
-            // If center cross color is white (meaning user didn't choose any preferred color)
-            // then change the color of to black if it's on a white pixel.
+            // Auto-adjust crosshair color for contrast on light backgrounds
             if (centerCrossColor == Color.WHITE)
                 centerCrossPaint.color =
                     if (lastSelectedColor.red > 230 && lastSelectedColor.blue > 230 && lastSelectedColor.green > 230)
                         Color.BLACK else Color.WHITE
 
+            // Apply magnification matrix to bitmap shader
             bitmapCirclePaint.shader.setLocalMatrix(enlargedBitmapMatrix)
 
-            // Create a RadialGradient for shadow behind the enlarged bitmap circle.
+            // Create shadow gradient for the preview circle
             circleShadowPaint.shader = RadialGradient(
                 dropperXPosition,
                 dropperYPosition - circleOffsetFromCenter + offsetY,
@@ -260,18 +374,25 @@ open class ColorDropper : Painter() {
                 Shader.TileMode.CLAMP
             )
 
-
-            // Invalidate to draw content on the screen.
+            // Request redraw to update visual feedback
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
 
+    /**
+     * Resets the color dropper to initial state.
+     * Clears position data and visual state.
+     */
     override fun resetPaint() {
         dropperXPosition = 0f
         dropperYPosition = 0f
         offsetY = 0f
     }
 
+    /**
+     * Renders the color dropper UI on the canvas.
+     * Draws the magnified preview, color ring, shadow, and crosshair.
+     */
     override fun draw(canvas: Canvas) {
         if (!showCircle) {
             return
@@ -279,16 +400,16 @@ open class ColorDropper : Painter() {
 
         canvas.run {
             referenceLayer?.let { reference ->
-
                 drawBitmap(reference, 0f, 0f, circleShadowPaint)
 
+                // Set ring color to currently sampled color
                 colorRingPaint.color = lastSelectedColor
 
-                // Variables to store positions of drawing to reuse them.
+                // Calculate drawing position (with offset applied)
                 val xPositionForDrawings = dropperXPosition
                 val yPositionForDrawings = dropperYPosition - circleOffsetFromCenter + offsetY
 
-                // Draw shadow behind the enlarged bitmap circle.
+                // Draw drop shadow behind the preview circle
                 drawCircle(
                     xPositionForDrawings,
                     yPositionForDrawings,
@@ -296,15 +417,15 @@ open class ColorDropper : Painter() {
                     circleShadowPaint
                 )
 
-                // Draw circle on top of shadow to prevent shadow to be visible
-                // on transparent pixels.
+                // Draw white overlay to hide shadow on transparent areas
                 drawCircle(
                     xPositionForDrawings,
                     yPositionForDrawings,
-                    circlesRadius - colorRingPaint.strokeWidth * 0.46f, circleShadowOverlayPaint
+                    circlesRadius - colorRingPaint.strokeWidth * 0.46f, 
+                    circleShadowOverlayPaint
                 )
 
-                // Draw ring that indicates color of current pixel.
+                // Draw colored ring showing sampled color
                 drawCircle(
                     xPositionForDrawings,
                     yPositionForDrawings,
@@ -312,42 +433,7 @@ open class ColorDropper : Painter() {
                     colorRingPaint
                 )
 
-                // Same logic as shader but with clipping.
-                // Since clipping is not available in lower
-                // APIs we use BitmapShader instead.
-
-                /*
-
-                // Add circle to path object to later clip it and draw bitmap in it.
-                enlargedBitmapPath.addCircle(
-                    xPositionForDrawings,
-                    yPositionForDrawings,
-                    circlesRadius - colorRingPaint.strokeWidth * 0.47f,
-                    Path.Direction.CW
-                )
-
-                  // Save the canvas to current state.
-                save()
-
-                // Clip the circle.
-                clipPath(enlargedBitmapPath)
-
-                // Draw the background color in case there are transparent areas so it will be better visible to user.
-                drawColor(Color.WHITE)
-
-                // Finally draw the enlarged bitmap inside the circle.
-                drawBitmap(bitmapToViewInCircle!!, enlargedBitmapMatrix, enlargedBitmapPaint)
-
-                // Restore the canvas to the saved point to not mess following drawing operations.
-                restore()
-
-                // Clear any paths.
-                enlargedBitmapPath.rewind()
-
-                 */
-
-                // Draw a circle shaped bitmap with paint that contains
-                // bitmap shader.
+                // Draw magnified bitmap view inside the circle
                 drawCircle(
                     xPositionForDrawings,
                     yPositionForDrawings,
@@ -355,7 +441,7 @@ open class ColorDropper : Painter() {
                     bitmapCirclePaint
                 )
 
-                // Draw horizontal cross in center of circle.
+                // Draw horizontal crosshair line
                 drawLine(
                     dropperXPosition - centerCrossLineSize,
                     yPositionForDrawings,
@@ -364,7 +450,7 @@ open class ColorDropper : Painter() {
                     centerCrossPaint
                 )
 
-                // Draw vertical cross in center of circle.
+                // Draw vertical crosshair line
                 drawLine(
                     xPositionForDrawings,
                     dropperYPosition - centerCrossLineSize - circleOffsetFromCenter + offsetY,
@@ -376,14 +462,20 @@ open class ColorDropper : Painter() {
         }
     }
 
+    /**
+     * Called when the reference bitmap is created or updated.
+     * Sets up the bitmap shader and initializes default sampling position.
+     */
     override fun onReferenceLayerCreated(reference: Bitmap) {
         referenceLayer = reference
 
+        // Configure bitmap shader for magnified preview
         bitmapCirclePaint.shader =
             BitmapShader(reference, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
                 setLocalMatrix(enlargedBitmapMatrix)
             }
 
+        // Initialize to center of image if no previous position
         if (dropperXPosition == 0f && dropperYPosition == 0f) {
             calculateToShowDropperAt(reference.width * 0.5f, reference.height * 0.5f)
         } else {
@@ -391,67 +483,83 @@ open class ColorDropper : Painter() {
         }
 
         showCircle = true
-
         sendMessage(PainterMessage.INVALIDATE)
     }
 
+    /**
+     * Indicates this tool handles its own history management.
+     */
     override fun doesHandleHistory(): Boolean {
         return true
     }
 
     /**
-     * Set listener that get invoked everytime that color by color dropper get changed.
+     * Sets a lambda callback for continuous color detection during touch movement.
+     * 
+     * @param listener Function that receives color values as they change
      */
     open fun setOnColorDetected(listener: (Int) -> Unit) {
         colorDetectedCallback = listener
     }
 
     /**
-     * Set listener that get invoked everytime that color by color dropper get changed.
-     * @param listener Interface [OnColorDetected]
+     * Sets an interface callback for continuous color detection during touch movement.
+     * 
+     * @param listener Interface implementation for color change notifications
      */
     open fun setOnColorDetected(listener: OnColorDetected) {
         interfaceOnColorDetected = listener
     }
 
     /**
-     * Set listener that get invoked before user lifts his/her finger from screen.
-     * This listener returns the last color that was selected before user lifts his/her finger
-     * up from screen.
+     * Sets a lambda callback for final color selection when user lifts finger.
+     * 
+     * @param listener Function that receives the final selected color
      */
     open fun setOnLastColorDetected(listener: (Int) -> Unit) {
         lastColorDetectedCallback = listener
     }
 
     /**
-     * Set listener that get invoked before user lifts his/her finger from screen.
-     * This listener returns the last color that was selected before user lifts his/her finger
-     * up from screen.
-     * @param listener Interface [OnLastColorDetected]
+     * Sets an interface callback for final color selection when user lifts finger.
+     * 
+     * @param listener Interface implementation for final color selection
      */
     open fun setOnLastColorDetected(listener: OnLastColorDetected) {
         interfaceOnLastColorDetected = listener
     }
 
+    /**
+     * Called when the view size changes.
+     * Updates the clipping bounds for color sampling.
+     */
     override fun onSizeChanged(newBounds: RectF, clipBounds: Rect, changeMatrix: Matrix) {
         this.clipBounds.set(clipBounds)
     }
 
     /**
-     * Interface definition of a callback that get invoked when any color changes by
-     * dropper get detected.
+     * Interface for continuous color detection callbacks.
+     * Invoked whenever the sampled color changes during touch movement.
      */
     interface OnColorDetected {
+        /**
+         * Called when a new color is detected by the dropper.
+         * 
+         * @param color The newly detected color as an ARGB integer
+         */
         fun onColorDetected(color: Int)
     }
 
     /**
-     * Interface definition of a callback that get invoked when user lifts his/her finger
-     * up. This callback should be used when you want to get the last color that was
-     * detected by dropper.
+     * Interface for final color selection callbacks.
+     * Invoked when the user lifts their finger to finalize color selection.
      */
     interface OnLastColorDetected {
+        /**
+         * Called when the user finalizes their color selection.
+         * 
+         * @param color The final selected color as an ARGB integer
+         */
         fun onLastColorDetected(color: Int)
     }
-
 }
