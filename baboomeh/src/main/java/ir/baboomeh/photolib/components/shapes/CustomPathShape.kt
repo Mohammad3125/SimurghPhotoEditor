@@ -6,7 +6,7 @@ import android.graphics.RectF
 import ir.baboomeh.photolib.utils.XmlPathDataExtractor
 
 class CustomPathShape(val customPath: Path, val viewportWidth: Float, val viewportHeight: Float) :
-    MananBaseShape() {
+    BaseShape() {
 
     private val scaleMatrix by lazy {
         Matrix()
@@ -38,7 +38,7 @@ class CustomPathShape(val customPath: Path, val viewportWidth: Float, val viewpo
         customPath.transform(scaleMatrix, fPath)
     }
 
-    override fun clone(): MananShape {
+    override fun clone(): Shape {
         return CustomPathShape(customPath, viewportWidth, viewportHeight).apply {
             resize(desiredWidth, desiredHeight)
         }
