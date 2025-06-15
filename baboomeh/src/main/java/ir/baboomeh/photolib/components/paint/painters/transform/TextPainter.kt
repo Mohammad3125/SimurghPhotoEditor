@@ -42,52 +42,82 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+/**
+ * A powerful text painter that provides comprehensive text rendering capabilities with support for
+ * multiple styles, backgrounds, gradients, textures, shadows, and transformations.
+ *
+ * This class handles complex text rendering scenarios including multi-line text with different
+ * alignments, customizable backgrounds with rounded corners, stroke effects, and various
+ * visual enhancements like shadows and blend modes.
+ */
 open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
     Blendable, Bitmapable,
     Colorable, Shadowable, Opacityable, TextBackgroundable {
 
-
+    /** Flag indicating whether to use unified background rendering for multi-line text. */
     protected var isUnified: Boolean = false
 
+    /** Half of the extra space used for padding calculations. */
     protected var extraSpaceHalf: Float = 0f
 
+    /** Path used for drawing individual line backgrounds. */
     protected val backgroundPath by lazy {
         Path()
     }
+
+    /** Path used for drawing unified backgrounds across all text lines. */
     protected val unifiedBackgroundPath by lazy {
         Path()
     }
+
+    /** Path used for connecting background elements between lines. */
     protected val connectorPath by lazy {
         Path()
     }
 
+    /** List containing text blocks for multi-line text rendering. */
     protected val blocHolder by lazy {
         mutableListOf<TextBloc>()
     }
 
+    // Shadow properties
+    /** Radius of the text shadow effect. */
     protected var textShadowRadius = 0f
+
+    /** Horizontal offset of the text shadow. */
     protected var textShadowDx = 0f
+
+    /** Vertical offset of the text shadow. */
     protected var textShadowDy = 0f
+
+    /** Color of the text shadow. */
     protected var textShadowColor = Color.argb(120, 255, 255, 0)
 
+    /** Raw width of the text without transformations. */
     protected var rawWidth = 0f
+
+    /** Raw height of the text without transformations. */
     protected var rawHeight = 0f
 
+    /** Current opacity value (0-255). */
     protected var opacityHolder: Int = 255
 
+    /** Main paint object used for text rendering with anti-aliasing enabled. */
     protected val textPaint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             color = Color.BLACK
         }
 
-
+    /** Porter-Duff mode for destination out operations. */
     protected val dstOutMode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
 
+    /** Rectangle bounds for the entire text area. */
     protected val textBounds = RectF()
 
     /**
-     * Text of current text view.
+     * Text content to be rendered.
+     * Setting this property triggers bounds recalculation.
      */
     open var text = ""
         set(value) {
@@ -95,7 +125,10 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             notifyBoundsChanged()
         }
 
-
+    /**
+     * Color of the text.
+     * Setting this property updates the paint color and triggers invalidation.
+     */
     open var textColor = Color.BLACK
         set(value) {
             textPaint.color = value
@@ -103,35 +136,40 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             invalidate()
         }
 
-    /* Allocations --------------------------------------------------------------------------------------------  */
+    /* Allocations -------------------------------------------------------------------------------------------- */
 
+    /** Matrix used for shader transformations. */
     protected val shaderMatrix = MananMatrix()
 
+    /** Rectangle used for text bounds measurements. */
     protected val textBoundsRect = Rect()
 
-    /**
-     * Baseline of text to be drawn.
-     */
+    /** Y-coordinate of the text baseline. */
     protected var textBaseLineY = 0f
 
+    /** X-coordinate of the text baseline. */
     protected var textBaseLineX = 0f
 
-    /**
-     * Extra space used to expand the width and height of view to prevent clipping in special cases like Blur mask and so on.
-     */
+    /** Extra space used to expand view dimensions to prevent clipping. */
     protected var extraSpace = 0f
 
+    /** Current rotation value for shader transformations. */
     protected var shaderRotationHolder = 0f
 
+    /** Flag indicating whether text background is enabled. */
     protected var isTextBackgroundEnabled = false
 
+    /** Padding size for text background. */
     protected var backgroundPaddingSize = 0f
 
+    /** Corner radius for text background. */
     protected var textBackgroundRadius = 12f
 
+    /** Color of the text background. */
     @ColorInt
     protected var textBackgroundColor: Int = Color.GRAY
 
+    /** Paint object used for drawing text backgrounds. */
     protected val backgroundPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
@@ -139,13 +177,22 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /** Array containing radius values for background corners. */
     protected val firstBackgroundRadiusArray = FloatArray(8) {
         textBackgroundRadius
     }
 
+    // Stroke properties
+    /** Width of the text stroke outline. */
     protected var textStrokeWidth = 0f
+
+    /** Color of the text stroke outline. */
     protected var textStrokeColor: Int = Color.BLACK
 
+    /**
+     * Letter spacing for text rendering.
+     * Setting this property updates the paint and triggers bounds recalculation.
+     */
     open var letterSpacing = 0f
         set(value) {
             field = value
@@ -153,6 +200,10 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             notifyBoundsChanged()
         }
 
+    /**
+     * Line spacing between text lines.
+     * Setting this property triggers bounds recalculation.
+     */
     open var lineSpacing = textPaint.fontMetrics.bottom
         set(value) {
             field = value
@@ -160,10 +211,8 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
 
     /**
-     * Sets alignment of text when drawn.
-     * - [Alignment.CENTER] Centers text.
-     * - [Alignment.LEFT] Draws text to left of view.
-     * - [Alignment.RIGHT] Draws text to right of view.
+     * Text alignment setting.
+     * Controls how text is positioned within the available space.
      */
     open var alignmentText: Alignment = Alignment.CENTER
         set(value) {
@@ -172,6 +221,10 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             invalidate()
         }
 
+    /**
+     * Typeface used for text rendering.
+     * Setting this property updates the paint typeface and line spacing.
+     */
     open var typeface: Typeface = Typeface.DEFAULT
         set(value) {
             field = value
@@ -180,25 +233,45 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             lineSpacing = textPaint.fontMetrics.bottom
         }
 
+    /** Current typeface style (normal, bold, italic, etc.). */
     open var typefaceStyle = Typeface.NORMAL
 
+    // Path effect properties
+    /** On value for dashed path effects. */
     protected var pathOnValue = 0f
+
+    /** Off value for dashed path effects. */
     protected var pathOffValue = 0f
+
+    /** Stroke width for path effects. */
     protected var textPathStrokeWidth = 0f
+
+    /** Corner radius for path effects. */
     protected var textPathRadius = 0f
 
+    /** Current blend mode for text rendering. */
     protected var textBlendMode = PorterDuff.Mode.SRC
 
+    /** Array of colors used for gradient effects. */
     protected var gradientColors: IntArray? = null
 
+    /** Array of positions for gradient color stops. */
     protected var gradientPositions: FloatArray? = null
 
+    /**
+     * Size of underline decoration.
+     * Setting this property triggers bounds recalculation.
+     */
     open var underlineSize = 0f
         set(value) {
             field = value
             notifyBoundsChanged()
         }
 
+    /**
+     * Flag indicating whether strikethrough decoration is enabled.
+     * Setting this property updates the paint and triggers bounds recalculation.
+     */
     open var isStrikethrough = false
         set(value) {
             field = value
@@ -206,16 +279,22 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             notifyBoundsChanged()
         }
 
+    /** Current texture bitmap applied to the text. */
     protected var currentTexture: Bitmap? = null
 
     init {
-        // Minimum size of a small font cache recommended in OpenGlRendered properties.
+        // Set minimum font size recommended for OpenGL rendering optimization.
         textPaint.textSize = 256f
     }
 
-
+    /**
+     * Creates a deep copy of this TextPainter with all properties and settings preserved.
+     *
+     * @return A new TextPainter instance with identical configuration.
+     */
     override fun clone(): TextPainter {
         return TextPainter().also { textPainter ->
+            // Copy basic text properties.
             textPainter.textPaint.textSize = textPaint.textSize
             textPainter.alignmentText = alignmentText
             textPainter.textColor = textColor
@@ -232,6 +311,8 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             textPainter.extraSpace = extraSpace
             textPainter.textBaseLineY = textBaseLineY
             textPainter.textBaseLineX = textBaseLineX
+
+            // Copy stroke and background settings.
             textPainter.setStroke(getStrokeWidth(), getStrokeColor())
             textPainter.setBackground(
                 getBackgroundPadding(),
@@ -245,6 +326,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             val childBounds = RectF()
             getBounds(childBounds)
 
+            // Copy gradient settings based on current shader type.
             when (textPaint.shader) {
                 is LinearGradient -> {
                     textPainter.applyLinearGradient(
@@ -277,16 +359,19 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                 }
             }
 
+            // Copy texture if present.
             getTexture()?.let { t ->
                 textPainter.applyTexture(t)
             }
 
+            // Copy shader matrix and apply transformations.
             textPainter.shaderMatrix.set(shaderMatrix)
 
             if (textPainter.textPaint.shader != null) {
                 textPainter.textPaint.shader.setLocalMatrix(shaderMatrix)
             }
 
+            // Copy additional paint effects.
             textPainter.textPaint.maskFilter = textPaint.maskFilter
             if (textBlendMode != PorterDuff.Mode.SRC) {
                 textPainter.setBlendMode(textBlendMode)
@@ -299,11 +384,15 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             )
 
             textPainter.text = text
-
             textPainter.setOpacity(getOpacity())
         }
     }
 
+    /**
+     * Renders all text blocks to the canvas with proper alignment and spacing.
+     *
+     * @param canvas The canvas to draw on.
+     */
     protected open fun drawTexts(canvas: Canvas) {
         canvas.apply {
             var acc = 0f
@@ -311,11 +400,14 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             blocHolder.forEach { textBloc ->
                 acc += textBloc.height
 
+                // Calculate horizontal position based on alignment.
                 val w =
                     ((rawWidth - textBloc.width) * Alignment.getNumber(alignmentText)) - textBloc.baselineX
 
+                // Calculate vertical position.
                 val h = acc - textBloc.baselineY
 
+                // Draw the text block.
                 drawText(
                     textBloc.text,
                     w,
@@ -323,6 +415,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                     textPaint
                 )
 
+                // Draw underline if enabled.
                 if (underlineSize > 0f) {
                     drawRect(
                         w + textBloc.baselineX,
@@ -335,17 +428,25 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /**
+     * Renders text backgrounds with support for multi-line text and different alignment modes.
+     * Handles complex background shapes and connections between lines.
+     *
+     * @param canvas The canvas to draw on.
+     */
     protected open fun drawTextBackground(canvas: Canvas) {
         canvas.apply {
             val maxRect = RectF(Float.MAX_VALUE, Float.MAX_VALUE, Float.MIN_VALUE, Float.MIN_VALUE)
             connectorPath.rewind()
             backgroundPath.rewind()
             unifiedBackgroundPath.rewind()
+
             blocHolder.forEachIndexed { index, textBloc ->
                 textBloc.backgroundRect.let { currentBackground ->
 
                     val finalLineSpacing = if (index == 0) 0f else lineSpacing
 
+                    // Add rounded rectangle for current line background.
                     backgroundPath.addRoundRect(
                         currentBackground.left,
                         currentBackground.top + finalLineSpacing,
@@ -354,6 +455,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                         firstBackgroundRadiusArray, Path.Direction.CCW
                     )
 
+                    // Handle connections between adjacent lines.
                     if (index > 0) {
                         blocHolder[index - 1].backgroundRect.let { lastBackground ->
                             val lineSpacingSecondary = if (index < 2) 0f else lineSpacing
@@ -362,6 +464,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                 abs(currentBackground.width() - lastBackground.width()) / 4f
 
                             when {
+                                // Use unified background for small width differences.
                                 textBackgroundRadius > maxRadiusAllowed -> {
                                     maxRect.left =
                                         min(
@@ -384,7 +487,6 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                             max(lastBackground.bottom, currentBackground.bottom)
                                         ) + (finalLineSpacing.takeIf { textBloc.isSandwich } ?: 0f)
 
-
                                     unifiedBackgroundPath.addRoundRect(
                                         maxRect,
                                         firstBackgroundRadiusArray,
@@ -392,6 +494,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                     )
                                 }
 
+                                // Handle equal width lines.
                                 currentBackground.width() == lastBackground.width() -> {
                                     backgroundPath.addRoundRect(
                                         lastBackground.left,
@@ -402,6 +505,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                     )
                                 }
 
+                                // Handle current line wider than previous.
                                 currentBackground.width() > lastBackground.width() -> {
 
                                     val finalBottom = currentBackground.top + lineSpacing
@@ -412,6 +516,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                         lastBackground.top
                                     }
 
+                                    // Add connecting background section.
                                     backgroundPath.addRoundRect(
                                         (currentBackground.left + lastBackground.left) * 0.5f,
                                         (lastBackground.top + lineSpacingSecondary + currentBackground.top) * 0.5f,
@@ -420,6 +525,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                         0f, 0f, Path.Direction.CCW
                                     )
 
+                                    // Add side connectors based on alignment.
                                     if (alignmentText != TextPainter.Alignment.LEFT) {
                                         connectorPath.addRoundRect(
                                             currentBackground.left,
@@ -458,6 +564,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                     }
                                 }
 
+                                // Handle current line narrower than previous.
                                 else -> {
 
                                     val finalBottom = if (textBloc.isSandwich) {
@@ -466,6 +573,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                         currentBackground.bottom
                                     }
 
+                                    // Add connecting background section.
                                     backgroundPath.addRoundRect(
                                         (lastBackground.left + currentBackground.left) * 0.5f,
                                         currentBackground.top,
@@ -474,6 +582,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                         0f, 0f, Path.Direction.CCW
                                     )
 
+                                    // Add side connectors based on alignment.
                                     if (alignmentText != TextPainter.Alignment.LEFT) {
                                         connectorPath.addRoundRect(
                                             lastBackground.left,
@@ -511,15 +620,14 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                             Path.Direction.CCW
                                         )
                                     }
-
                                 }
                             }
-
                         }
                     }
                 }
             }
 
+            // Combine paths and draw the final background.
             backgroundPath.op(connectorPath, Path.Op.DIFFERENCE)
             backgroundPath.op(unifiedBackgroundPath, Path.Op.UNION)
 
@@ -528,8 +636,10 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
     }
 
     /**
-     * Sets type face of current text.
-     * @param style Style of typeface, [Typeface.ITALIC],[Typeface.BOLD],[Typeface.BOLD_ITALIC],[Typeface.NORMAL]
+     * Sets the typeface and style for text rendering.
+     *
+     * @param typeface The typeface to use.
+     * @param style The style to apply (normal, bold, italic, etc.).
      */
     open fun setTypeface(typeface: Typeface, style: Int) {
         textPaint.typeface = Typeface.create(typeface, style)
@@ -537,10 +647,23 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         lineSpacing = textPaint.fontMetrics.bottom
     }
 
+    /**
+     * Sets the text style using the current typeface.
+     *
+     * @param style The style to apply.
+     */
     open fun setTextStyle(style: Int) {
         setTypeface(typeface, style)
     }
 
+    /**
+     * Applies a dashed path effect to the text with custom on/off values and corner radius.
+     *
+     * @param on Length of the dash segments.
+     * @param off Length of the gap segments.
+     * @param radius Corner radius for the path effect.
+     * @param strokeWidth Width of the stroke for the path effect.
+     */
     override fun applyPath(on: Float, off: Float, radius: Float, strokeWidth: Float) {
         textPaint.apply {
 
@@ -560,16 +683,27 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                 CornerPathEffect(textPathRadius)
             )
 
+            // Small increment to trigger paint update.
             textPaint.textSize += 0.0001f
 
             invalidate()
         }
     }
 
+    /**
+     * Applies a dashed path effect with equal on and off values.
+     *
+     * @param onAndOff Length of both dash and gap segments.
+     * @param radius Corner radius for the path effect.
+     * @param strokeWidth Width of the stroke for the path effect.
+     */
     override fun applyPath(onAndOff: Float, radius: Float, strokeWidth: Float) {
         applyPath(onAndOff, onAndOff, radius, strokeWidth)
     }
 
+    /**
+     * Removes any applied path effects and resets the paint style to fill.
+     */
     override fun removePath() {
         pathOnValue = 0f
         pathOffValue = 0f
@@ -583,14 +717,20 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /**
+     * Applies a bitmap texture to the text with default tile mode.
+     *
+     * @param bitmap The texture bitmap to apply.
+     */
     override fun applyTexture(bitmap: Bitmap) {
         applyTexture(bitmap, Shader.TileMode.MIRROR)
     }
 
     /**
-     * Applies a texture to the text with default tileMode of [Shader.TileMode.REPEAT]
-     * @param bitmap The bitmap texture that is going to be applied to the view.
-     * @param tileMode The bitmap mode [Shader.TileMode]
+     * Applies a bitmap texture to the text with specified tile mode.
+     *
+     * @param bitmap The texture bitmap to apply.
+     * @param tileMode The tiling mode for the texture.
      */
     override fun applyTexture(bitmap: Bitmap, tileMode: Shader.TileMode) {
         removeGradient()
@@ -602,10 +742,21 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Gets the currently applied texture bitmap.
+     *
+     * @return The current texture bitmap, or null if none is applied.
+     */
     override fun getTexture(): Bitmap? {
         return currentTexture
     }
 
+    /**
+     * Shifts the color/texture position by the specified offset.
+     *
+     * @param dx Horizontal offset.
+     * @param dy Vertical offset.
+     */
     override fun shiftColor(dx: Float, dy: Float) {
         textPaint.shader?.run {
             shaderMatrix.postTranslate(dx, dy)
@@ -614,6 +765,11 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /**
+     * Scales the color/texture by the specified factor.
+     *
+     * @param scaleFactor The scaling factor to apply.
+     */
     override fun scaleColor(scaleFactor: Float) {
         textPaint.shader?.run {
             shaderMatrix.postScale(scaleFactor, scaleFactor, 0f, 0f)
@@ -622,6 +778,11 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /**
+     * Rotates the color/texture by the specified angle.
+     *
+     * @param rotation The rotation angle in degrees.
+     */
     override fun rotateColor(rotation: Float) {
         textPaint.shader?.run {
             shaderMatrix.postRotate(
@@ -635,6 +796,9 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /**
+     * Resets all color/texture transformations to default state.
+     */
     override fun resetComplexColorMatrix() {
         textPaint.shader?.run {
             shaderMatrix.reset()
@@ -644,6 +808,11 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /**
+     * Concatenates the specified matrix with the current color transformation matrix.
+     *
+     * @param matrix The matrix to concatenate.
+     */
     override fun concatColorMatrix(matrix: Matrix) {
         textPaint.shader?.run {
             shaderMatrix.postConcat(matrix)
@@ -652,12 +821,18 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         }
     }
 
+    /**
+     * Removes the currently applied texture.
+     */
     override fun removeTexture() {
         currentTexture = null
         textPaint.shader = null
         invalidate()
     }
 
+    /**
+     * Removes any applied gradient effects.
+     */
     override fun removeGradient() {
         textPaint.shader = null
         gradientColors = null
@@ -665,6 +840,17 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Applies a linear gradient to the text.
+     *
+     * @param x0 Starting x-coordinate of the gradient.
+     * @param y0 Starting y-coordinate of the gradient.
+     * @param x1 Ending x-coordinate of the gradient.
+     * @param y1 Ending y-coordinate of the gradient.
+     * @param colors Array of colors for the gradient.
+     * @param position Array of color stop positions (can be null for even distribution).
+     * @param tileMode Tile mode for the gradient.
+     */
     override fun applyLinearGradient(
         x0: Float,
         y0: Float,
@@ -686,6 +872,16 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Applies a radial gradient to the text.
+     *
+     * @param centerX Center x-coordinate of the gradient.
+     * @param centerY Center y-coordinate of the gradient.
+     * @param radius Radius of the gradient.
+     * @param colors Array of colors for the gradient.
+     * @param stops Array of color stop positions (can be null for even distribution).
+     * @param tileMode Tile mode for the gradient.
+     */
     override fun applyRadialGradient(
         centerX: Float,
         centerY: Float,
@@ -712,6 +908,14 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Applies a sweep gradient to the text.
+     *
+     * @param cx Center x-coordinate of the gradient.
+     * @param cy Center y-coordinate of the gradient.
+     * @param colors Array of colors for the gradient.
+     * @param positions Array of color stop positions (can be null for even distribution).
+     */
     override fun applySweepGradient(
         cx: Float,
         cy: Float,
@@ -730,6 +934,13 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Sets stroke properties for the text outline.
+     *
+     * @param strokeRadiusPx Width of the stroke in pixels.
+     * @param strokeColor Color of the stroke.
+     * @throws IllegalStateException if stroke width is negative.
+     */
     override fun setStroke(strokeRadiusPx: Float, strokeColor: Int) {
         if (strokeRadiusPx < 0f) throw IllegalStateException("Stroke width should be a positive number")
         textStrokeWidth = strokeRadiusPx
@@ -737,14 +948,29 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         notifyBoundsChanged()
     }
 
+    /**
+     * Gets the current stroke color.
+     *
+     * @return The stroke color as an integer.
+     */
     override fun getStrokeColor(): Int {
         return textStrokeColor
     }
 
+    /**
+     * Gets the current stroke width.
+     *
+     * @return The stroke width in pixels.
+     */
     override fun getStrokeWidth(): Float {
         return textStrokeWidth
     }
 
+    /**
+     * Shifts texture position based on alignment when stroke changes occur.
+     *
+     * @param currentStroke The new stroke width.
+     */
     private fun shiftTextureWithAlignment(currentStroke: Float) {
         val diffCurrentStrokeWithLast = (currentStroke - extraSpace)
 
@@ -752,7 +978,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
 
         when (alignmentText) {
             Alignment.LEFT -> {
-
+                // No horizontal shift needed for left alignment.
             }
 
             Alignment.RIGHT -> {
@@ -767,22 +993,50 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         shiftColor(finalShiftValueX, diffCurrentStrokeWithLast)
     }
 
+    /**
+     * Gets the horizontal offset of the shadow.
+     *
+     * @return The shadow's horizontal offset.
+     */
     override fun getShadowDx(): Float {
         return textShadowDx
     }
 
+    /**
+     * Gets the vertical offset of the shadow.
+     *
+     * @return The shadow's vertical offset.
+     */
     override fun getShadowDy(): Float {
         return textShadowDy
     }
 
+    /**
+     * Gets the blur radius of the shadow.
+     *
+     * @return The shadow's blur radius.
+     */
     override fun getShadowRadius(): Float {
         return textShadowRadius
     }
 
+    /**
+     * Gets the color of the shadow.
+     *
+     * @return The shadow color as an integer.
+     */
     override fun getShadowColor(): Int {
         return textShadowColor
     }
 
+    /**
+     * Sets shadow properties for the text.
+     *
+     * @param radius Blur radius of the shadow.
+     * @param dx Horizontal offset of the shadow.
+     * @param dy Vertical offset of the shadow.
+     * @param shadowColor Color of the shadow.
+     */
     override fun setShadow(radius: Float, dx: Float, dy: Float, shadowColor: Int) {
         textShadowRadius = radius
         textShadowDx = dx
@@ -791,6 +1045,9 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Removes the shadow effect from the text.
+     */
     override fun clearShadow() {
         textPaint.clearShadowLayer()
         textShadowRadius = 0f
@@ -801,12 +1058,27 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
     }
 
 
+    /**
+     * Converts the text to a bitmap with the specified configuration.
+     *
+     * @param config The bitmap configuration to use.
+     * @return A bitmap representation of the text, or null if creation fails.
+     */
     override fun toBitmap(config: Bitmap.Config): Bitmap? {
         return createBitmap(rawWidth.toInt(), rawHeight.toInt(), config).also { bitmap ->
             draw(Canvas(bitmap))
         }
     }
 
+    /**
+     * Converts the text to a bitmap with specified dimensions and configuration.
+     * The text is scaled to fit within the specified dimensions while maintaining aspect ratio.
+     *
+     * @param width The desired width of the output bitmap.
+     * @param height The desired height of the output bitmap.
+     * @param config The bitmap configuration to use.
+     * @return A bitmap representation of the text, or null if creation fails.
+     */
     override fun toBitmap(width: Int, height: Int, config: Bitmap.Config): Bitmap? {
         val scale = min(width.toFloat() / rawWidth, height.toFloat() / rawHeight)
 
@@ -829,34 +1101,74 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         return outputBitmap
     }
 
+    /**
+     * Checks if a gradient effect is currently applied to the text.
+     *
+     * @return True if a gradient is applied, false otherwise.
+     */
     override fun isGradientApplied(): Boolean {
         return (textPaint.shader != null && (textPaint.shader is LinearGradient || textPaint.shader is RadialGradient || textPaint.shader is SweepGradient))
     }
 
+    /**
+     * Changes the text color.
+     *
+     * @param color The new color to apply.
+     */
     override fun changeColor(color: Int) {
         textColor = color
     }
 
+    /**
+     * Gets the current text color.
+     *
+     * @return The current text color as an integer.
+     */
     override fun getColor(): Int {
         return textColor
     }
 
+    /**
+     * Gets the "on" value for path effects.
+     *
+     * @return The dash segment length.
+     */
     override fun getOnValue(): Float {
         return pathOnValue
     }
 
+    /**
+     * Gets the "off" value for path effects.
+     *
+     * @return The gap segment length.
+     */
     override fun getOffValue(): Float {
         return pathOffValue
     }
 
+    /**
+     * Gets the corner radius for path effects.
+     *
+     * @return The path corner radius.
+     */
     override fun getPathRadius(): Float {
         return textPathRadius
     }
 
+    /**
+     * Gets the stroke width for path effects.
+     *
+     * @return The path stroke width.
+     */
     override fun getPathStrokeWidth(): Float {
         return textPathStrokeWidth
     }
 
+    /**
+     * Sets the blend mode for text rendering.
+     *
+     * @param blendMode The Porter-Duff blend mode to apply.
+     */
     override fun setBlendMode(blendMode: PorterDuff.Mode) {
         textPaint.xfermode = PorterDuffXfermode(blendMode)
         backgroundPaint.xfermode = textPaint.xfermode
@@ -864,6 +1176,9 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Clears the current blend mode and resets to default.
+     */
     override fun clearBlend() {
         textPaint.xfermode = null
         backgroundPaint.xfermode = null
@@ -871,14 +1186,29 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         invalidate()
     }
 
+    /**
+     * Gets the current blend mode.
+     *
+     * @return The current Porter-Duff blend mode.
+     */
     override fun getBlendMode(): PorterDuff.Mode {
         return textBlendMode
     }
 
+    /**
+     * Reports the gradient color stop positions.
+     *
+     * @return Array of gradient positions, or null if no gradient is applied.
+     */
     override fun reportPositions(): FloatArray? {
         return gradientPositions
     }
 
+    /**
+     * Reports the gradient colors.
+     *
+     * @return Array of gradient colors, or null if no gradient is applied.
+     */
     override fun reportColors(): IntArray? {
         return gradientColors
     }
@@ -886,12 +1216,26 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
     /**
      * Determines alignment of drawn text in [MananTextView].
      */
+    /**
+     * Enumeration defining text alignment options.
+     */
     enum class Alignment {
+        /** Aligns text to the left edge. */
         LEFT,
+
+        /** Aligns text to the right edge. */
         RIGHT,
+
+        /** Centers text horizontally. */
         CENTER;
 
         companion object {
+            /**
+             * Converts alignment enum to a numeric factor for calculations.
+             *
+             * @param alignment The alignment to convert.
+             * @return Numeric factor: 0.0 for LEFT, 0.5 for CENTER, 1.0 for RIGHT.
+             */
             fun getNumber(alignment: Alignment): Float {
                 return when (alignment) {
                     LEFT -> 0f
@@ -900,7 +1244,6 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                 }
             }
         }
-
     }
 
     override fun getBounds(bounds: RectF) {
@@ -1155,6 +1498,13 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
         return isUnified
     }
 
+    /**
+     * Calculates color with opacity factor applied.
+     * Adjusts the alpha channel of a color based on the provided opacity factor.
+     *
+     * @param factor The opacity factor (0.0 to 1.0).
+     * @return The color with adjusted alpha channel.
+     */
     protected fun @receiver: ColorInt Int.calculateColorAlphaWithOpacityFactor(
         factor: Float
     ): Int =
@@ -1165,6 +1515,17 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
             this.blue,
         )
 
+    /**
+     * Data class representing a single block of text with positioning and background information.
+     *
+     * @param text The text content of this block.
+     * @param width The width of the text block.
+     * @param height The height of the text block including spacing.
+     * @param baselineX The x-offset of the text baseline.
+     * @param baselineY The y-offset of the text baseline.
+     * @param isSandwich Whether this block is sandwiched between wider blocks (affects background rendering).
+     * @param backgroundRect The rectangle defining the background area for this text block.
+     */
     protected data class TextBloc(
         val text: String,
         val width: Float,

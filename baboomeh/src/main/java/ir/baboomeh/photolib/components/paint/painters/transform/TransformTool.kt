@@ -35,10 +35,31 @@ import kotlin.math.atan2
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * A comprehensive transformation tool that provides interactive manipulation capabilities for transformable objects.
+ * This tool handles scaling, rotation, translation, and provides smart guidelines for precise object positioning.
+ *
+ * The TransformTool is the core component for object manipulation in the paint system, offering:
+ * - Multi-touch gesture support for transformations (scaling, rotation, translation)
+ * - Smart guidelines for automatic alignment assistance between objects
+ * - Rotation snapping to specific degrees for precise positioning
+ * - Complete history management with undo/redo functionality
+ * - Layer ordering operations (bring to front, send to back, etc.)
+ * - Free transform mode for advanced corner-by-corner manipulation
+ * - Visual feedback with transformation bounds and handles
+ * - Support for multiple transformable objects simultaneously
+ *
+ * The tool integrates with the paint layer system and provides callbacks for selection events,
+ * making it suitable for complex editing applications that require precise object manipulation.
+ *
+ * @param context The Android context used for resource access, measurements, and drawable loading.
+ */
 class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
 
+    /** The currently selected paint layer for rendering operations. */
     private var selectedLayer: PaintLayer? = null
 
+    /** Paint object used for drawing transformation bounds around selected objects. */
     private val boundPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
@@ -46,6 +67,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
             strokeWidth = context.dp(2)
         }
 
+    /**
+     * The stroke width for transformation bounds in pixels.
+     * Setting this value automatically updates the paint and triggers invalidation for immediate visual feedback.
+     */
     var boundStrokeWidth = boundPaint.strokeWidth
         set(value) {
             field = value
@@ -53,6 +78,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
             onInvalidate()
         }
 
+    /**
+     * The color for transformation bounds.
+     * Setting this value automatically updates the paint and triggers invalidation for immediate visual feedback.
+     */
     var boundColor = boundPaint.color
         set(value) {
             field = value
@@ -61,103 +90,160 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
 
 
+    /** The drawable used for transformation handles (corner and edge controls) that users can drag. */
     var handleDrawable: Drawable = ResourcesCompat.getDrawable(
         context.resources,
         R.drawable.defualt_transform_tool_handles,
         null
     )!!
 
+    /** The touch range in pixels for detecting handle interactions and determining touch sensitivity. */
     var touchRange = context.dp(24)
 
+    /** Matrix used for coordinate mappings and transformations between different coordinate systems. */
     private val mappingMatrix by lazy {
         MananMatrix()
     }
 
+    /** Array holding the base corner points of a transformable object (8 values: x1,y1,x2,y2,x3,y3,x4,y4). */
     private val basePoints by lazy {
         FloatArray(8)
     }
 
+    /** Array holding mapped mesh points for drawing after transformation calculations. */
     private val mappedMeshPoints by lazy {
         FloatArray(8)
     }
 
+    /** Array holding mapped points for size change handles after transformation calculations. */
     private val mappedBaseSizeChangePoints by lazy {
         FloatArray(8)
     }
 
+    /** Temporary array for coordinate calculations to avoid object allocation during operations. */
     private val cc by lazy {
         FloatArray(8)
     }
 
+    /** Temporary array for holding single point coordinates during transformations. */
     private val pointHolder by lazy {
         FloatArray(2)
     }
 
+    /** Rectangle representing the bounds of the target component being transformed. */
     private val targetComponentBounds by lazy {
         RectF()
     }
 
+    /** Temporary rectangle for various calculations to avoid object allocation. */
     private val tempRect by lazy {
         RectF()
     }
 
+    /** Canvas used for final rendering operations when applying transformations to layers. */
     private val finalCanvas by lazy {
         Canvas()
     }
 
+    /**
+     * Enables free transform mode, allowing individual corner manipulation for advanced transformations.
+     * When disabled, transformations maintain aspect ratio and shape consistency.
+     * When enabled, each corner can be moved independently for perspective-like effects.
+     */
     var isFreeTransform = false
         set(value) {
             field = value
             sendMessage(PainterMessage.INVALIDATE)
         }
 
+    /** Index of the first selected corner for transformation (-1 if none selected). */
     private var firstSelectedIndex = -1
+
+    /** Index of the second selected corner for transformation (-1 if none selected). */
     private var secondSelectedIndex = -1
+
+    /** Index of the third selected corner for transformation (-1 if none selected). */
     private var thirdSelectedIndex = -1
+
+    /** Index of the fourth selected corner for transformation (-1 if none selected). */
     private var forthSelectedIndex = -1
 
+    /** Index of the first size change handle (-1 if none selected). */
     private var firstSizeChangeIndex = -1
+
+    /** Index of the second size change handle (-1 if none selected). */
     private var secondSizeChangeIndex = -1
 
+    /** Flag indicating if movement should be restricted to X-axis only during transformations. */
     private var isOnlyMoveX = false
 
+    /** Last recorded X coordinate for transformation calculations and delta computations. */
     private var lastX = 0f
+
+    /** Last recorded Y coordinate for transformation calculations and delta computations. */
     private var lastY = 0f
 
+    /** The bounds rectangle for clipping operations and coordinate system boundaries. */
     private lateinit var bounds: Rect
 
+    /** The main transformation matrix for coordinate system transformations. */
     private lateinit var matrix: MananMatrix
 
+    /** Matrix for fitting content inside bounds with proper scaling and positioning. */
     private lateinit var fitMatrix: MananMatrix
 
+    /** Internal list of child transformable objects managed by this tool. */
     private val _children = LinkedList<Child>()
 
+    /**
+     * Public read-only access to the list of transformable children.
+     * This provides external access to all objects currently managed by the transform tool.
+     *
+     * @return Immutable list of transformable objects managed by this tool.
+     */
     val children: List<Transformable>
         get() {
             return _children.map { it.transformable }
         }
 
+    /** When true, prevents any transformation operations on objects, effectively locking them in place. */
     var isTransformationLocked = false
 
+    /**
+     * Controls visibility of transformation bounds.
+     * When false, bounds are not drawn around selected objects.
+     */
     var isBoundsEnabled = true
         set(value) {
             field = value
             onInvalidate()
         }
 
+    /** Stores the initial state of a child for history operations and undo functionality. */
     private var initialChildState: Child? = null
 
+    /**
+     * The currently selected child object for transformations.
+     * Setting this automatically creates a backup for history operations to enable undo functionality.
+     */
     private var _selectedChild: Child? = null
         set(value) {
             field = value
             initialChildState = value?.clone(true)
         }
 
+    /**
+     * Public access to the currently selected transformable object.
+     * This provides external access to the object currently being manipulated.
+     *
+     * @return The selected transformable object or null if none is selected.
+     */
     val selectedChild: Transformable?
         get() {
             return _selectedChild?.transformable
         }
 
+    /** Paint object used for drawing smart guidelines that assist with object alignment. */
     private val smartGuidePaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             strokeWidth = context.dp(2)
@@ -183,29 +269,48 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      * Holds lines for smart guidelines.
      */
     private val smartGuidelineHolder = arrayListOf<Float>()
+
+    /** Container for determining which guidelines should be drawn as dashed lines. */
     private val smartGuidelineDashedLine = arrayListOf<Boolean>()
 
+    /** Bitwise flags controlling which smart guidelines are enabled for detection and rendering. */
     private var smartGuidelineFlags: Int = 0
 
+    /** Array of target degrees for rotation smart guidelines (null if disabled). */
     private var smartRotationDegreeHolder: FloatArray? = null
+
+    /** Original rotation degree holder for external access (excludes internal 360-degree addition). */
     private var originalRotationHolder: FloatArray? = null
 
+    /** Array holding coordinates for the smart rotation guideline (x1, y1, x2, y2). */
     private var smartRotationLineHolder = FloatArray(4)
 
+    /** The acceptable distance in pixels for triggering smart guideline detection. */
     var acceptableDistanceForSmartGuideline = context.dp(1)
 
+    /**
+     * The degree range for smart rotation guideline detection.
+     * Objects will snap to target rotations when within this range.
+     *
+     * @throws IllegalStateException if value is less than 0 or greater than 360.
+     */
     var rangeForSmartRotationGuideline = 2f
         set(value) {
             if (value < 0f || value > 360) throw IllegalStateException("this value should not be less than 0 or greater than 360")
             field = value
         }
 
+    /** Path effect for rendering dashed smart guidelines. */
     private val smartGuideLineDashedPathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
 
+    /** Callback invoked when a child object is selected, providing access to the selected object and initialization state. */
     var onChildSelected: ((Transformable, isInitialization: Boolean) -> Unit)? = null
+
+    /** Callback invoked when a child object is deselected. */
     var onChildDeselected: (() -> Unit)? = null
 
     init {
+        // Initialize with stack-based history handler for undo/redo functionality.
         historyHandler = StackHistoryHandler()
     }
 
@@ -623,6 +728,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         transformationMatrix.mapPoints(array)
     }
 
+    /**
+     * Maps touch vectors for coordinate system transformation.
+     * This method converts touch deltas to the appropriate coordinate space.
+     *
+     * @param touchData The touch data containing delta values.
+     */
     private fun mapVectors(touchData: TouchData) {
         pointHolder[0] = touchData.dx
         pointHolder[1] = touchData.dy
@@ -630,6 +741,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         mappingMatrix.mapVectors(pointHolder)
     }
 
+    /**
+     * Renders all child objects and their transformation UI elements to the canvas.
+     * This method handles the complete rendering pipeline including bounds, handles, and guidelines.
+     *
+     * @param canvas The canvas to draw on.
+     */
     override fun draw(canvas: Canvas) {
         _children.forEach { child ->
 
@@ -755,6 +872,14 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Positions and draws a transformation handle drawable at the specified coordinates.
+     * This method centers the drawable on the given point for intuitive handle interaction.
+     *
+     * @param x The x-coordinate for the handle center.
+     * @param y The y-coordinate for the handle center.
+     * @param canvas The canvas to draw the handle on.
+     */
     private fun resizeAndDrawDrawable(x: Int, y: Int, canvas: Canvas) {
         val hw = handleDrawable.intrinsicWidth / 2
         val hh = handleDrawable.intrinsicHeight / 2
@@ -768,6 +893,13 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         handleDrawable.draw(canvas)
     }
 
+    /**
+     * Draws a single child object with its transformation matrix applied.
+     * This method handles the matrix concatenation for proper object positioning.
+     *
+     * @param canvas The canvas to draw on.
+     * @param child The child object to draw.
+     */
     private fun drawChild(canvas: Canvas, child: Child) {
         canvas.apply {
             withSave {
@@ -781,6 +913,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Resets the paint tool by clearing history and all child objects.
+     * This method returns the tool to its initial state.
+     */
     override fun resetPaint() {
         historyHandler!!.reset()
         initialChildState = null
@@ -789,18 +925,42 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         onInvalidate()
     }
 
+    /**
+     * Called when the active paint layer changes.
+     * This method updates the internal layer reference for rendering operations.
+     *
+     * @param layer The new active paint layer, or null if none is active.
+     */
     override fun onLayerChanged(layer: PaintLayer?) {
         selectedLayer = layer
     }
 
+    /**
+     * Indicates that this tool handles its own history management.
+     * This prevents external history systems from interfering with transformation undo/redo.
+     *
+     * @return Always returns true.
+     */
     override fun doesHandleHistory(): Boolean {
         return true
     }
 
+    /**
+     * Determines if this tool should receive gesture events.
+     * Gestures are only processed when an object is selected and transformations are not locked.
+     *
+     * @return True if gestures should be processed, false otherwise.
+     */
     override fun doesTakeGestures(): Boolean {
         return _selectedChild != null && !isTransformationLocked
     }
 
+    /**
+     * Called when a transformation matrix is applied to the selected object.
+     * This method updates the object's transformation and triggers smart guideline detection.
+     *
+     * @param transformMatrix The transformation matrix to apply.
+     */
     override fun onTransformed(transformMatrix: Matrix) {
         if (isTransformationLocked) {
             return
@@ -813,6 +973,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Called when a transformation operation ends.
+     * This method saves the current state for undo functionality.
+     */
     override fun onTransformEnded() {
         saveState(_selectedChild.createState())
     }
@@ -832,6 +996,13 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      * - Bottom,Bottom
      * - CenterX
      * - CenterY
+     */
+    /**
+     * Finds possible guide lines on selected component and other components and populates the line holder.
+     * This method detects guide lines on sides of selected component including:
+     * - Left-Left, Left-Right, Right-Left, Right-Right alignment
+     * - Top-Top, Top-Bottom, Bottom-Top, Bottom-Bottom alignment
+     * - Center X and Center Y alignment
      */
     private fun findSmartGuideLines() {
 
@@ -1096,6 +1267,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Merges canvas transformation matrices for proper coordinate mapping.
+     * This method combines fit and transformation matrices for accurate rendering.
+     *
+     * @return The merged transformation matrix.
+     */
     private fun mergeCanvasMatrices(): MananMatrix {
         return mappingMatrix.apply {
             setConcat(fitMatrix, matrix)
@@ -1103,6 +1280,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Calculates the maximum bounding rectangle from an array of points.
+     * This method finds the extents of a set of transformed points.
+     *
+     * @param array The array of points (x1,y1,x2,y2,...).
+     */
     private fun RectF.calculateMaximumRect(array: FloatArray) {
         val minX =
             min(min(array[0], array[2]), min(array[4], array[6]))
@@ -1119,6 +1302,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         set(minX, minY, maxX, maxY)
     }
 
+    /**
+     * Merges all transformation matrices for a child object.
+     * This method combines the transformation and poly matrices for final rendering.
+     *
+     * @param shouldMap Whether to map final points for drawing.
+     */
     private fun Child.mergeMatrices(shouldMap: Boolean = true) {
         if (shouldMap) {
             mapFinalPointsForDraw()
@@ -1127,6 +1316,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         mappingMatrix.preConcat(polyMatrix)
     }
 
+    /**
+     * Applies all child transformations to the current layer's bitmap.
+     * This method permanently renders all transformations to the layer.
+     */
     fun applyComponentOnLayer() {
 
         selectedLayer?.let { layer ->
@@ -1143,6 +1336,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Called when the bounds of the selected child change.
+     * This method adjusts the transformation to maintain visual consistency.
+     */
     override fun onBoundsChange() {
         _selectedChild?.let { child ->
             tempRect.set(targetComponentBounds)
@@ -1171,10 +1368,23 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Adds a new transformable child object to the tool.
+     * This method creates a new child with default positioning.
+     *
+     * @param transformable The transformable object to add.
+     */
     fun addChild(transformable: Transformable) {
         addChild(transformable, null)
     }
 
+    /**
+     * Adds a new transformable child object with a specific target rectangle.
+     * This method creates a new child and positions it according to the target rectangle.
+     *
+     * @param transformable The transformable object to add.
+     * @param targetRect The target rectangle for positioning, or null for default positioning.
+     */
     fun addChild(transformable: Transformable, targetRect: RectF?) {
         clearSmartGuidelineList()
         clearSmartRotationArray()
@@ -1198,30 +1408,53 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         saveState(_selectedChild.createState(initialChildren))
     }
 
+    /**
+     * Moves the selected child object up one layer in the rendering order.
+     * This method increases the z-order of the selected object.
+     */
     fun bringSelectedChildUp() {
         getSelectedChildIndexAndCompare(_children.lastIndex) { child, selectedChildIndex ->
             swap(selectedChildIndex + 1, selectedChildIndex, child)
         }
     }
 
+    /**
+     * Brings the selected child object to the front of the rendering order.
+     * This method moves the selected object to the highest z-order.
+     */
     fun bringSelectedChildToFront() {
         getSelectedChildIndexAndCompare(_children.lastIndex) { _, selectedChildIndex ->
             bringFromIndexToIndex(selectedChildIndex, _children.lastIndex)
         }
     }
 
+    /**
+     * Moves the selected child object down one layer in the rendering order.
+     * This method decreases the z-order of the selected object.
+     */
     fun bringSelectedChildDown() {
         getSelectedChildIndexAndCompare(0) { child, selectedChildIndex ->
             swap(selectedChildIndex - 1, selectedChildIndex, child)
         }
     }
 
+    /**
+     * Sends the selected child object to the back of the rendering order.
+     * This method moves the selected object to the lowest z-order.
+     */
     fun bringSelectedChildToBack() {
         getSelectedChildIndexAndCompare(0) { _, selectedChildIndex ->
             bringFromIndexToIndex(selectedChildIndex, 0)
         }
     }
 
+    /**
+     * Helper method for layer ordering operations that checks bounds and executes operations.
+     * This method prevents unnecessary operations when objects are already at the target position.
+     *
+     * @param compareIndex The index to compare against.
+     * @param operation The operation to perform if the comparison allows it.
+     */
     private fun getSelectedChildIndexAndCompare(
         compareIndex: Int,
         operation: (child: Child, selectedChildIndex: Int) -> Unit
@@ -1236,6 +1469,14 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Swaps two children in the rendering order.
+     * This method exchanges the positions of two objects in the z-order.
+     *
+     * @param firstIndex The index of the first object.
+     * @param secondIndex The index of the second object.
+     * @param child The child object being moved.
+     */
     private fun swap(firstIndex: Int, secondIndex: Int, child: Child) {
         val initialChildren = LinkedList(_children)
         val temp = _children[firstIndex]
@@ -1244,6 +1485,13 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         saveState(_selectedChild.createState(initialChildren))
     }
 
+    /**
+     * Moves an object from one index to another in the rendering order.
+     * This method handles moving objects to the front or back of the z-order.
+     *
+     * @param fromIndex The current index of the object.
+     * @param toIndex The target index for the object.
+     */
     private fun bringFromIndexToIndex(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) {
             return
@@ -1263,6 +1511,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         saveState(_selectedChild.createState(initialChildren))
     }
 
+    /**
+     * Removes the currently selected child object from the tool.
+     * This method deletes the selected object and clears the selection.
+     */
     fun removeSelectedChild() {
         _selectedChild?.apply {
             val initialChildren = LinkedList(_children)
@@ -1273,6 +1525,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Removes a child object at the specified index.
+     * This method deletes the object at the given position in the children list.
+     *
+     * @param index The index of the child to remove.
+     */
     fun removeChildAt(index: Int) {
         val initialChildren = LinkedList(_children)
         _children.removeAt(index)
@@ -1280,6 +1538,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         onInvalidate()
     }
 
+    /**
+     * Removes all child objects from the tool.
+     * This method clears all managed objects and resets the selection.
+     */
     fun removeAllChildren() {
         val initialChildren = LinkedList(_children)
         _children.clear()
@@ -1288,6 +1550,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         onInvalidate()
     }
 
+    /**
+     * Selects a child object and initializes it for manipulation.
+     * This method prepares the child for transformation operations.
+     *
+     * @param shouldCalculateBounds Whether to recalculate the object's bounds.
+     */
     private fun Child.select(shouldCalculateBounds: Boolean = false) {
         initializeChild(this, true, shouldCalculateBounds)
     }
@@ -1302,31 +1570,63 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      *      setFlags(LEFT_LEFT | RIGHT_LEFT | CENTER_X)
      * @see Guidelines
      */
+    /**
+     * Sets flags for smart guideline detection and rendering.
+     * This method controls which types of alignment guidelines are active.
+     *
+     * Guidelines can be combined using bitwise OR operations:
+     * ```
+     * setSmartGuidelineFlags(Guidelines.LEFT_LEFT or Guidelines.CENTER_X)
+     * ```
+     *
+     * @param flags Bitwise combination of guideline flags from Guidelines class.
+     * @see Guidelines
+     */
     fun setSmartGuidelineFlags(flags: Int) {
         // If flag has the ALL in it then store the maximum int value in flag holder to indicate
         // that all of flags has been set, otherwise set it to provided flags.
         smartGuidelineFlags = if (flags.and(Guidelines.ALL) != 0) Int.MAX_VALUE else flags
     }
 
+    /**
+     * Clears all currently visible smart guidelines.
+     * This method removes guideline visuals without affecting the detection settings.
+     */
     fun clearSmartGuidelines() {
         clearSmartGuidelineList()
         onInvalidate()
     }
 
+    /**
+     * Clears the internal smart guideline coordinate lists.
+     * This method removes stored guideline data for rendering.
+     */
     private fun clearSmartGuidelineList() {
         smartGuidelineDashedLine.clear()
         smartGuidelineHolder.clear()
     }
 
+    /**
+     * Resets smart guideline detection flags to disable all guidelines.
+     * This method turns off automatic guideline detection completely.
+     */
     fun resetSmartGuidelineFlag() {
         smartGuidelineFlags = 0
     }
 
+    /**
+     * Clears rotation smart guidelines from the display.
+     * This method removes rotation snap indicators without affecting snap settings.
+     */
     fun clearRotationSmartGuidelines() {
         clearSmartRotationArray()
         onInvalidate()
     }
 
+    /**
+     * Clears the internal rotation guideline coordinate array.
+     * This method removes stored rotation guideline data for rendering.
+     */
     private fun clearSmartRotationArray() {
         smartRotationLineHolder[0] = 0f
         smartRotationLineHolder[1] = 0f
@@ -1339,12 +1639,26 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      * @see setSmartGuidelineFlags
      * @see resetSmartGuidelineFlag
      */
+    /**
+     * Gets the current smart guideline detection flags.
+     * This method returns the bitwise combination of active guideline types.
+     *
+     * @return The current guideline flags.
+     * @see setSmartGuidelineFlags
+     * @see resetSmartGuidelineFlag
+     */
     fun getSmartGuidelineFlags(): Int = smartGuidelineFlags
 
 
     /**
      * Finds smart guidelines for rotation if [smartRotationDegreeHolder] does have target rotations.
      * @return True if it found smart guideline, false otherwise.
+     */
+    /**
+     * Finds smart guidelines for rotation based on target rotation degrees.
+     * This method detects when the selected object's rotation is near target angles and snaps to them.
+     *
+     * @return True if a rotation guideline was found and applied, false otherwise.
      */
     private fun findRotationSmartGuidelines(): Boolean {
         _selectedChild?.let { child ->
@@ -1398,6 +1712,13 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      * @param degrees Array of specific degrees that rotation snaps to.
      * @throws IllegalStateException if provided array is empty or any element in array is not between 0-360 degrees.
      */
+    /**
+     * Sets target degrees for rotation smart guidelines.
+     * Objects will automatically snap to these rotation angles when rotated nearby.
+     *
+     * @param degrees Array of target rotation degrees (0-359). 360 is treated as 0.
+     * @throws IllegalStateException if array is empty or contains invalid degree values.
+     */
     fun setRotationSmartGuideline(degrees: FloatArray) {
         if (degrees.any { degree -> (degree < 0 || degree > 359) }) throw IllegalStateException(
             "array elements should be between 0-359 degrees"
@@ -1420,6 +1741,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      * Clears any degrees that smart guideline detector detects.
      * This way smart guideline wouldn't snap to any specific degree.
      */
+    /**
+     * Clears rotation smart guideline target degrees.
+     * This method disables automatic rotation snapping completely.
+     */
     fun clearRotationSmartGuideline() {
         smartRotationDegreeHolder = null
         originalRotationHolder = null
@@ -1430,12 +1755,30 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      * Returns the rotation degree holder. Smart guideline detector snaps to these
      * degrees if there is any.
      */
+    /**
+     * Gets the current rotation smart guideline target degrees.
+     * This method returns the original degree array (without internal 360-degree additions).
+     *
+     * @return Array of target rotation degrees, or null if rotation guidelines are disabled.
+     */
     fun getRotationSmartGuidelineDegreeHolder() = originalRotationHolder
 
+    /**
+     * Applies a transformation matrix to the selected child object.
+     * This method is a convenience wrapper for the onTransformed method.
+     *
+     * @param matrix The transformation matrix to apply.
+     */
     fun applyMatrix(matrix: Matrix) {
         onTransformed(matrix)
     }
 
+    /**
+     * Rotates the selected child object by the specified number of degrees.
+     * This method applies rotation around the object's center point.
+     *
+     * @param degree The rotation angle in degrees (positive for clockwise).
+     */
     fun rotateSelectedChildBy(degree: Float) {
         _selectedChild?.apply {
             transformable.getBounds(tempRect)
@@ -1452,12 +1795,20 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Resets the rotation of the selected child object to zero degrees.
+     * This method removes all rotation while preserving other transformations.
+     */
     fun resetSelectedChildRotation() {
         getChildMatrix()?.let {
             rotateSelectedChildBy(it.getMatrixRotation())
         }
     }
 
+    /**
+     * Flips the selected child object vertically (around horizontal axis).
+     * This method creates a vertical mirror effect.
+     */
     fun flipSelectedChildVertically() {
         _selectedChild?.apply {
             transformable.getBounds(tempRect)
@@ -1466,6 +1817,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Flips the selected child object horizontally (around vertical axis).
+     * This method creates a horizontal mirror effect.
+     */
     fun flipSelectedChildHorizontally() {
         _selectedChild?.apply {
             transformable.getBounds(tempRect)
@@ -1474,6 +1829,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Applies a matrix transformation with pre-concatenation and guideline detection.
+     * This method is used internally for flip and other transformation operations.
+     *
+     * @param matrix The transformation matrix to pre-concatenate.
+     */
     private fun Child.preConcatTransformationMatrix(matrix: Matrix) {
         transformationMatrix.preConcat(matrix)
         mergeMatrices()
@@ -1482,6 +1843,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         sendMessage(PainterMessage.INVALIDATE)
     }
 
+    /**
+     * Resets the transformation matrix of the selected child object.
+     * This method can either reset to original bounds or to the current canvas bounds.
+     *
+     * @param resetToBounds If true, resets to original object bounds; if false, resets to canvas bounds.
+     */
     fun resetSelectedChildMatrix(resetToBounds: Boolean) {
         _selectedChild?.apply {
             initializeChild(this, false, false, resetToBounds)
@@ -1491,6 +1858,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Sets the transformation matrix of the selected child object.
+     * This method replaces the current transformation with the specified matrix.
+     *
+     * @param matrix The new transformation matrix to apply.
+     */
     fun setMatrix(matrix: Matrix) {
         _selectedChild?.apply {
             transformationMatrix.set(matrix)
@@ -1501,10 +1874,23 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Gets the transformation matrix of the selected child object.
+     * This method provides access to the current transformation state.
+     *
+     * @return The transformation matrix of the selected child, or null if none is selected.
+     */
     fun getChildMatrix(): MananMatrix? =
         _selectedChild?.transformationMatrix
 
 
+    /**
+     * Gets the bounds of the selected child object after transformations.
+     * This method calculates the final screen-space bounds of the selected object.
+     *
+     * @param rect The rectangle to store the calculated bounds.
+     * @return True if bounds were calculated (child is selected), false otherwise.
+     */
     fun getSelectedChildBounds(rect: RectF): Boolean {
         _selectedChild?.let { child ->
             child.mapFinalPointsForDraw()
@@ -1514,6 +1900,12 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         return false
     }
 
+    /**
+     * Aligns the selected child object according to the specified alignment mode.
+     * This method positions the object relative to the canvas bounds.
+     *
+     * @param alignment The alignment mode to apply.
+     */
     fun setSelectedChildAlignment(alignment: TransformableAlignment) {
         _selectedChild?.let {
             getSelectedChildBounds(tempRect)
@@ -1537,19 +1929,37 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Finds and applies all types of smart guidelines.
+     * This method combines alignment and rotation guideline detection.
+     */
     private fun findAllGuidelines() {
         findSmartGuideLines()
         findRotationSmartGuidelines()
     }
 
+    /**
+     * Called when a child object requests invalidation.
+     * This method triggers a redraw of the entire transform tool.
+     */
     override fun onInvalidate() {
         sendMessage(PainterMessage.INVALIDATE)
     }
 
+    /**
+     * Releases resources when the tool is no longer needed.
+     * This method is currently empty as no special cleanup is required.
+     */
     override fun release() {
         // Do not reinitialize child
     }
 
+    /**
+     * Saves a transformation state to the history stack.
+     * This method enables undo/redo functionality for transformations.
+     *
+     * @param state The state to save.
+     */
     private fun saveState(state: State) {
         if (isTransformationLocked) {
             return
@@ -1558,6 +1968,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         initialChildState = _selectedChild?.clone(true)
     }
 
+    /**
+     * Saves the current state of the selected child for undo functionality.
+     * This method is used to create checkpoints during transformation operations.
+     */
     fun saveSelectedChildState() {
         _selectedChild?.apply {
             saveState(createState())
@@ -1565,19 +1979,43 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Undoes the last transformation operation.
+     * This method restores the previous state from the history stack.
+     */
     override fun undo() {
         historyHandler!!.undo()
     }
 
+    /**
+     * Redoes the next transformation operation.
+     * This method applies the next state from the history stack.
+     */
     override fun redo() {
         historyHandler!!.redo()
     }
 
+    /**
+     * Creates a history state for the specified child.
+     * This method captures the current state for undo/redo operations.
+     *
+     * @param initialChildren The initial children list for this state.
+     * @param reference The reference child for this state.
+     * @return A new State object representing the current transformation state.
+     */
     private fun Child?.createState(
         initialChildren: LinkedList<Child>? = null,
         reference: Child? = this,
     ): State = State(initialChildState, initialChildren, reference)
 
+    /**
+     * Inner class representing a saved transformation state for history operations.
+     * This class manages undo/redo functionality by storing object states and child lists.
+     *
+     * @param initialChildState The initial state of the child when the operation began.
+     * @param initialChildren The initial list of children when the operation began.
+     * @param reference The reference child object for this state.
+     */
     private inner class State(
         val initialChildState: Child?,
         val initialChildren: LinkedList<Child>? = null,
@@ -1617,6 +2055,17 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Data class representing a transformable child object with its transformation state.
+     * This class encapsulates all information needed to manage and transform an object.
+     *
+     * @param transformable The transformable object being managed.
+     * @param transformationMatrix The transformation matrix applied to the object.
+     * @param polyMatrix The poly-to-poly transformation matrix for free transform mode.
+     * @param baseSizeChangeArray The base positions for size change handles.
+     * @param meshPoints The current mesh points for transformation calculations.
+     * @param targetRect The target rectangle for positioning, or null for default positioning.
+     */
     private data class Child(
         var transformable: Transformable,
         val transformationMatrix: MananMatrix,
@@ -1683,6 +2132,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
      * A class holding static flags for smart guideline. User should
      * set the desired flags in [setSmartGuidelineFlags] method.
      */
+    /**
+     * Class containing static constants for smart guideline types.
+     * These flags can be combined using bitwise OR operations to enable specific guidelines.
+     */
     class Guidelines {
         companion object {
             const val ALL = 1
@@ -1699,6 +2152,10 @@ class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
         }
     }
 
+    /**
+     * Enumeration defining alignment options for transformable objects.
+     * These values are used with setSelectedChildAlignment to position objects.
+     */
     enum class TransformableAlignment {
         TOP, LEFT, RIGHT, BOTTOM, VERTICAL, HORIZONTAL, CENTER
     }
