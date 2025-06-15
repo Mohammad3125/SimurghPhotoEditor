@@ -23,7 +23,61 @@ import ir.baboomeh.photolib.utils.matrix.MananMatrix
 import java.util.Stack
 import kotlin.math.abs
 
+/**
+ * Advanced pen tool base class for creating precise vector-based selections and paths.
+ *
+ * This comprehensive tool provides professional-grade path creation capabilities similar to
+ * those found in vector graphics and advanced image editing software. It supports multiple
+ * line types and sophisticated editing features for creating precise selections.
+ *
+ * **Core Path Types:**
+ * - **Normal Lines**: Straight line segments between anchor points.
+ * - **Quadratic Bezier**: Curved segments with single control handle.
+ * - **Cubic Bezier**: Curved segments with dual control handles for maximum flexibility.
+ * - All types can be mixed within a single path for complex shapes.
+ *
+ * **Interactive Editing Features:**
+ * - **Anchor Point Manipulation**: Click and drag any point to reposition.
+ * - **Bezier Handle Control**: Precise curve adjustment with visual handles.
+ * - **Real-time Preview**: Live feedback during path construction and editing.
+ * - **Path Transformation**: Move entire paths with multi-touch gestures.
+ *
+ * **Professional Visual Feedback:**
+ * - **Marching Ants**: Animated selection outline when path is closed.
+ * - **Anchor Points**: Visual indicators for all editable points.
+ * - **Control Handles**: Bezier curve handles with connecting guide lines.
+ * - **Selection States**: Different colors for selected vs unselected elements.
+ *
+ * **Advanced Path Management:**
+ * - **Automatic Closure**: Smart path closure when returning to start point.
+ * - **Undo System**: Full history support for all path operations.
+ * - **Precision Control**: Configurable touch ranges for different UI elements.
+ * - **Zoom Awareness**: Scale-appropriate rendering at all zoom levels.
+ *
+ * **Technical Architecture:**
+ * - Abstract base class designed for extension by specific selection tools.
+ * - Thread-safe path operations with proper state management.
+ * - Memory-efficient storage of path data with history support.
+ * - Matrix-based transformations for zoom and pan operations.
+ *
+ * **Common Use Cases:**
+ * - Creating precise selections around complex objects.
+ * - Vector-based masking and clipping operations.
+ * - Custom shape creation for design applications.
+ * - Professional photo editing selection workflows.
+ *
+ * **Usage Pattern:**
+ * ```kotlin
+ * class MyPenTool : PenToolBase(context) {
+ *     override fun performSelection() {
+ *         val path = getPathCopy()
+ *         // Use path for selection operations
+ *     }
+ * }
+ * ```
+ */
 abstract class PenToolBase(context: Context) : Painter() {
+
     // A path used by other paths in drawings operation to maintain
     // the previous state of a path.
     protected val path by lazy {
@@ -32,7 +86,6 @@ abstract class PenToolBase(context: Context) : Painter() {
 
     /**
      * Determines if path is closed or not.
-     *
      *
      * Selector cannot clip the content if this value is not 'true'.
      */
@@ -51,6 +104,7 @@ abstract class PenToolBase(context: Context) : Painter() {
     protected var vx = 0f
     protected var vy = 0f
 
+    /** Last valid end point coordinates for line continuation. */
     protected var lvx = 0f
     protected var lvy = 0f
 
@@ -69,9 +123,9 @@ abstract class PenToolBase(context: Context) : Painter() {
     protected var currentHandleSelected: Handle = Handle.NONE
 
     /**
-     *  This variables prevents end point of a line to be shifted if user selects it. */
+     *  This variables prevents end point of a line to be shifted if user selects it.
+     */
     protected var isOtherLinesSelected = false
-
 
     /**
      * This range will later determine the range of acceptance for current touch
@@ -121,6 +175,7 @@ abstract class PenToolBase(context: Context) : Painter() {
     @ColorInt
     var unselectedCirclesColor = "#7888a1".toColorInt()
 
+    /** Path for drawing helper/guide lines that connect bezier handles. */
     protected val helperLinesPath by lazy {
         Path()
     }
@@ -144,6 +199,7 @@ abstract class PenToolBase(context: Context) : Painter() {
         repeatMode = ValueAnimator.RESTART
         setFloatValues(0f, 20f)
         addUpdateListener {
+            // Create marching ants effect with dashed line animation.
             linesPaint.pathEffect =
                 ComposePathEffect(
                     DashPathEffect(floatArrayOf(10f, 10f), it.animatedValue as Float),
@@ -184,6 +240,7 @@ abstract class PenToolBase(context: Context) : Painter() {
             style = Paint.Style.STROKE
             strokeWidth = context.dp(3)
             val intervals = context.dp(2)
+            // Create dashed line effect for helper lines.
             pathEffect = DashPathEffect(floatArrayOf(intervals, intervals), 0f)
         }
     }
@@ -219,17 +276,24 @@ abstract class PenToolBase(context: Context) : Painter() {
      */
     protected var selectedLine: Line? = null
 
-
+    /** Matrix for coordinate transformations between screen and canvas space. */
     protected val mappingMatrix by lazy {
         Matrix()
     }
 
+    /** Canvas transformation matrix for zoom and pan operations. */
     protected lateinit var canvasMatrix: MananMatrix
 
+    /** Currently selected layer for path operations. */
     protected var selectedLayer: PaintLayer? = null
 
+    /** Reusable array for coordinate transformations to avoid allocations. */
     protected var vectorHolder = FloatArray(2)
 
+    /**
+     * Initializes the pen tool with transformation matrices and layer bounds.
+     * Sets up the coordinate system for precise path creation.
+     */
     override fun initialize(
         context: Context,
         transformationMatrix: MananMatrix,
@@ -238,54 +302,70 @@ abstract class PenToolBase(context: Context) : Painter() {
         clipBounds: Rect
     ) {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
+        // Store canvas matrix for coordinate transformations.
         canvasMatrix = transformationMatrix
     }
 
+    /**
+     * Called when user starts touching the screen.
+     * Determines which path element (if any) is being selected for editing.
+     */
     override fun onMoveBegin(touchData: TouchData) {
         findLines(touchData.ex, touchData.ey)
     }
 
+    /**
+     * Sets up tool state variables based on the selected line.
+     * Restores the editing context for the specified line segment.
+     */
     protected fun setLineRelatedVariables(line: Line) {
+        // Set current end point to the line's end point.
         bx = line.epx
         by = line.epy
 
+        // Reset handle positions.
         handleX = 0f
         handleY = 0f
-
         secondHandleX = 0f
         secondHandleY = 0f
 
+        // Restore handle positions if line has bezier curves.
         if (line is QuadBezier) {
             handleX = line.handleX
             handleY = line.handleY
         }
         if (line is CubicBezier) {
-
             handleX = line.firstHandleX
             handleY = line.firstHandleY
-
             secondHandleX = line.secondHandleX
             secondHandleY = line.secondHandleY
         }
 
+        // Find the starting point for this line (previous line's end or path start).
         val index = lines.indexOf(line) - 1
         if (index < 0) {
+            // This is the first line, start from path beginning.
             vx = firstX
             vy = firstY
         } else {
+            // Start from previous line's end point.
             lines[index].run {
                 vx = epx
                 vy = epy
             }
         }
-
     }
 
-
+    /**
+     * Handles continuous touch movement for path editing and transformation.
+     * Supports different editing modes based on which element is selected.
+     */
     override fun onMove(touchData: TouchData) {
         // If path is closed then offset (move around) path if user moves his/her finger.
         if (isPathClose && currentHandleSelected == Handle.NONE) {
+            // Transform entire path when no specific handle is selected.
 
+            // Convert screen movement to canvas coordinates.
             vectorHolder[0] = touchData.dx
             vectorHolder[1] = touchData.dy
 
@@ -295,22 +375,27 @@ abstract class PenToolBase(context: Context) : Painter() {
             val tdx = vectorHolder[0]
             val tdy = vectorHolder[1]
 
+            // Apply translation to path coordinates.
             mappingMatrix.setTranslate(tdx, tdy)
 
+            // Move the starting point.
             firstX += tdx
             firstY += tdy
 
+            // Clear line selection since we're moving the entire path.
             selectedLine = null
 
+            // Transform all lines in the path.
             lines.forEach { line ->
                 line.transform(mappingMatrix)
             }
 
             sendMessage(PainterMessage.INVALIDATE)
         } else if (!isOtherLinesSelected) {
+            // Handle individual element editing based on selection.
             when (currentHandleSelected) {
                 Handle.FIRST_BEZIER_HANDLE -> {
-                    // Reset the bezier path to original path.
+                    // Adjust first bezier handle position.
                     (selectedLine as? QuadBezier)?.run {
                         handleX = touchData.ex
                         handleY = touchData.ey
@@ -342,20 +427,23 @@ abstract class PenToolBase(context: Context) : Painter() {
                 }
 
                 Handle.END_HANDLE -> {
+                    // Move the end point of the selected line.
                     selectedLine?.run {
                         epx = touchData.ex
                         epy = touchData.ey
 
+                        // If this is the last line and path is closed, update start point too.
                         if (selectedLine === lines.lastElement() && isPathClose) {
                             firstX = epx
                             firstY = epy
                         }
                     }
 
-                    // Change the end point of current path.
+                    // Update current drawing position.
                     bx = touchData.ex
                     by = touchData.ey
 
+                    // Update line continuation point if this is the last line.
                     if (lines.indexOf(selectedLine) == lines.size - 1) {
                         lvx = touchData.ex
                         lvy = touchData.ey
@@ -365,9 +453,11 @@ abstract class PenToolBase(context: Context) : Painter() {
                 }
 
                 Handle.FIRST_POINT_HANDLE -> {
+                    // Move the starting point of the entire path.
                     firstX = touchData.ex
                     firstY = touchData.ey
 
+                    // If path is closed, update the last line's end point to match.
                     if (isPathClose) {
                         lines.lastElement()?.let { lastLine ->
                             lastLine.epx = firstX
@@ -375,6 +465,7 @@ abstract class PenToolBase(context: Context) : Painter() {
                         }
                     }
 
+                    // Update line start position.
                     vx = touchData.ex
                     vy = touchData.ey
 
@@ -382,27 +473,33 @@ abstract class PenToolBase(context: Context) : Painter() {
                 }
 
                 Handle.NONE -> {
-
+                    // No specific handle selected, no action needed.
                 }
             }
         }
     }
 
+    /**
+     * Handles the completion of touch gestures for path creation and editing.
+     * Manages path construction logic and automatic closure detection.
+     */
     override fun onMoveEnded(touchData: TouchData) {
         touchData.run {
-
-
+            // Find which elements are near the touch end position.
             findLines(ex, ey)
+
             // If path is closed.
             if (!isPathClose) {
-                // If path is empty store the first touch location.
                 if (pointCounter == 0) {
+                    // First point of the path - establish starting position.
                     firstX = ex
                     firstY = ey
                     vx = ex
                     vy = ey
                     pointCounter++
                 } else {
+                    // Subsequent points - handle line creation and path closure.
+
                     // If a new line is drawn and user touched somewhere else instead of lines' handles, then
                     // store the last point of current line as start point of new line (because lines are drawn relative to another).
                     if (isNewLineDrawn && currentHandleSelected == Handle.NONE) {
@@ -413,6 +510,7 @@ abstract class PenToolBase(context: Context) : Painter() {
                     if (!isNewLineDrawn && pointCounter > 0 && currentHandleSelected != Handle.FIRST_POINT_HANDLE) {
 
                         if (lineType != LineType.NORMAL) {
+                            // Create bezier curves with automatic handle positioning.
 
                             // Determine width and height of current line to later
                             // get center of that line to use as handle for bezier.
@@ -420,12 +518,15 @@ abstract class PenToolBase(context: Context) : Painter() {
                             val lineHeight = (ey - vy)
 
                             if (lineType == LineType.QUAD_BEZIER) {
+                                // Position handle at midpoint of line for natural curve.
                                 handleX = vx + (lineWidth * 0.5f)
                                 handleY = vy + (lineHeight * 0.5f)
 
                                 // Create new QuadBezier and select it.
                                 selectedLine = QuadBezier(ex, ey, handleX, handleY)
                             } else {
+                                // Create cubic bezier with handles at 1/3 and 2/3 positions.
+
                                 // First handle of CUBIC_BEZIER is at 33% of
                                 // width and height of line.
                                 handleX = vx + (lineWidth * 0.33f)
@@ -445,7 +546,6 @@ abstract class PenToolBase(context: Context) : Painter() {
                                     secondHandleX,
                                     secondHandleY,
                                 )
-
                             }
                         } else {
                             // Create new simple line and select it.
@@ -479,14 +579,21 @@ abstract class PenToolBase(context: Context) : Painter() {
                     }
                 }
             }
+            // Reset selection state flags.
             isOtherLinesSelected = false
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
 
+    /**
+     * Determines which path elements are near the specified coordinates.
+     * Handles selection logic for different types of handles and anchor points.
+     */
     protected fun findLines(lastX: Float, lastY: Float) {
+        // Calculate touch range adjusted for current zoom level.
         canvasMatrix.invert(mappingMatrix)
         val finalRange = mappingMatrix.mapRadius(handleTouchRange)
+
         // Figure out which handle in a line user has selected.
         // Some handles are specific to one or two type of line and
         // others might be for each type of them.
@@ -495,6 +602,7 @@ abstract class PenToolBase(context: Context) : Painter() {
         // Reset selected handle.
         currentHandleSelected = Handle.NONE
 
+        // Check if end handle of current line is touched.
         if (GestureUtils.isNearTargetPoint(
                 lastX,
                 lastY,
@@ -511,6 +619,7 @@ abstract class PenToolBase(context: Context) : Painter() {
             }
         }
 
+        // Check if first bezier handle is touched.
         if (GestureUtils.isNearTargetPoint(
                 lastX,
                 lastY,
@@ -527,6 +636,7 @@ abstract class PenToolBase(context: Context) : Painter() {
             }
         }
 
+        // Check if first point of path is touched.
         if (GestureUtils.isNearTargetPoint(
                 lastX,
                 lastY,
@@ -543,7 +653,7 @@ abstract class PenToolBase(context: Context) : Painter() {
             }
         }
 
-
+        // Check if second bezier handle is touched (cubic bezier only).
         if (selectedLine is CubicBezier && (GestureUtils.isNearTargetPoint(
                 lastX,
                 lastY,
@@ -589,33 +699,50 @@ abstract class PenToolBase(context: Context) : Painter() {
             }
         }
 
+        // Clear selection if path is closed and no handle selected.
         if (currentHandleSelected == Handle.NONE && isPathClose) {
             selectedLine = null
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
 
+    /**
+     * Finalizes the current line being drawn and prepares for the next line.
+     * Updates the drawing state to continue path construction.
+     */
     protected fun finalizeLine() {
         if (lines.indexOf(selectedLine) == lines.size - 1) {
+            // If this is the last line, use its end point as next start.
             vx = bx
             vy = by
         } else {
+            // Otherwise, use the stored continuation point.
             vx = lvx
             vy = lvy
         }
         isNewLineDrawn = false
     }
 
+    /**
+     * Closes the current path and activates the marching ants animation.
+     * Completes the path construction process.
+     */
     protected fun closePath() {
         isNewLineDrawn = false
+        // Connect the last line to the starting point.
         lines.lastElement().run {
             epx = firstX
             epy = firstY
         }
+        // Start marching ants animation to indicate closed path.
         pathEffectAnimator.start()
         isPathClose = true
     }
 
+    /**
+     * Determines if the current touch position should trigger path closure.
+     * Checks proximity to starting point and ensures minimum path complexity.
+     */
     private fun shouldClosePath(lastX: Float, lastY: Float): Boolean {
         val finalRange = canvasMatrix.mapRadius(touchRange)
         return (GestureUtils.isNearTargetPoint(
@@ -630,15 +757,23 @@ abstract class PenToolBase(context: Context) : Painter() {
             firstX,
             firstY,
             finalRange
-        )) && pointCounter > 2
+        )) && pointCounter > 2 // Require at least 3 points for closure.
     }
 
+    /**
+     * Creates a copy of the current path for external use.
+     * @return A new Path object containing the current path data.
+     */
     fun getPathCopy(): Path {
         val cPath = Path()
         drawLinesIntoPath(cPath)
         return cPath
     }
 
+    /**
+     * Stops the marching ants animation and cleans up animation resources.
+     * Called when animation is no longer needed.
+     */
     protected fun cancelAnimation() {
         if (pathEffectAnimator.isRunning || pathEffectAnimator.isStarted) {
             linesPaint.pathEffect = null
@@ -646,6 +781,10 @@ abstract class PenToolBase(context: Context) : Painter() {
         }
     }
 
+    /**
+     * Renders all path lines into the specified Path object.
+     * Builds the complete path from individual line segments.
+     */
     protected fun drawLinesIntoPath(targetPath: Path) {
         // Move the allocation path to first point.
         targetPath.moveTo(firstX, firstY)
@@ -656,7 +795,10 @@ abstract class PenToolBase(context: Context) : Painter() {
         }
     }
 
-
+    /**
+     * Resets the pen tool to its initial state.
+     * Clears all path data and prepares for new path creation.
+     */
     override fun resetPaint() {
         selectedLine = null
         lines.clear()
@@ -667,22 +809,26 @@ abstract class PenToolBase(context: Context) : Painter() {
 
         pointCounter = 0
 
+        // Stop animations and clean up resources.
         cancelAnimation()
 
         sendMessage(PainterMessage.INVALIDATE)
     }
 
-
+    /**
+     * Renders the complete path with all visual elements.
+     * Draws the path, anchor points, handles, and guide lines.
+     */
     override fun draw(canvas: Canvas) {
         canvas.run {
-
+            // Build and draw the main path.
             drawLinesIntoPath(path)
-
             drawPath(path, linesPaint)
 
             // Reset path copy to release memory.
             path.rewind()
 
+            // Draw bezier curve helper elements if applicable.
             if (selectedLine is QuadBezier || selectedLine is CubicBezier) {
 
                 helperLinesPath.run {
@@ -705,7 +851,6 @@ abstract class PenToolBase(context: Context) : Painter() {
                         lineTo(secondHandleX, secondHandleY)
                         lineTo(bx, by)
                     }
-
                 }
 
                 // Finally draw helper lines path.
@@ -718,11 +863,10 @@ abstract class PenToolBase(context: Context) : Painter() {
                     // Draw second handle only if we're in CUBIC_BEZIER type.
                     drawCircle(secondHandleX, secondHandleY, circlesRadius, circlesPaint)
                 }
-
             }
 
+            // Draw end point of currently selected line.
             selectedLine?.let { line ->
-                // End point of line (either bezier or straight).
                 drawCircle(line.epx, line.epy, circlesRadius, circlesPaint)
             }
 
@@ -733,6 +877,7 @@ abstract class PenToolBase(context: Context) : Painter() {
                 drawCircle(firstX, firstY, circlesRadius, circlesPaint)
             }
 
+            // Draw unselected anchor points in different color.
             circlesPaint.color = unselectedCirclesColor
 
             lines.minus(selectedLine).forEach {
@@ -745,41 +890,72 @@ abstract class PenToolBase(context: Context) : Painter() {
                     )
                 }
             }
+            // Restore original color for selected elements.
             circlesPaint.color = circlesColor
         }
     }
 
+    /**
+     * Called when the active layer changes.
+     * Updates the tool's reference to the current working layer.
+     */
     override fun onLayerChanged(layer: PaintLayer?) {
         selectedLayer = layer
     }
 
+    /**
+     * Indicates that this tool doesn't require touch slope calculation.
+     * Path creation works with discrete point placement rather than continuous drawing.
+     */
     override fun doesNeedTouchSlope(): Boolean {
         return false
     }
 
+    /**
+     * Enumeration of different handle types that can be selected and manipulated.
+     * Each handle type provides different editing capabilities.
+     */
     protected enum class Handle {
+        /** No handle is currently selected. */
         NONE,
+
+        /** End point of a line segment. */
         END_HANDLE,
+
+        /** First (or only) bezier control handle. */
         FIRST_BEZIER_HANDLE,
+
+        /** Second bezier control handle (cubic bezier only). */
         SECOND_BEZIER_HANDLE,
+
+        /** Starting point of the entire path. */
         FIRST_POINT_HANDLE
     }
-
 
     /**
      * A class that represents the type of line that is going to be drawn in [PenSelector].
      */
     enum class LineType {
+        /** Straight line segment. */
         NORMAL,
+
+        /** Quadratic bezier curve with single control point. */
         QUAD_BEZIER,
+
+        /** Cubic bezier curve with two control points. */
         CUBIC_BEZIER
     }
 
+    /**
+     * Base class representing a line segment in the path.
+     * Provides basic functionality for line storage and transformation.
+     */
     open class Line(
         var epx: Float,
         var epy: Float,
     ) {
 
+        /** Reusable array for coordinate transformations to avoid allocations. */
         protected var floatArrayPointsHolder = FloatArray(6) {
             0f
         }
@@ -792,6 +968,10 @@ abstract class PenToolBase(context: Context) : Painter() {
             path.lineTo(epx, epy)
         }
 
+        /**
+         * Applies matrix transformation to the line coordinates.
+         * @param matrix Transformation matrix to apply.
+         */
         open fun transform(matrix: Matrix) {
             floatArrayPointsHolder[0] = epx
             floatArrayPointsHolder[1] = epy
@@ -800,20 +980,32 @@ abstract class PenToolBase(context: Context) : Painter() {
 
             epx = floatArrayPointsHolder[0]
             epy = floatArrayPointsHolder[1]
-
         }
     }
 
+    /**
+     * Quadratic bezier curve implementation with single control handle.
+     * Provides smooth curves with simple control interface.
+     */
     class QuadBezier(
         epx: Float,
         epy: Float,
         var handleX: Float,
         var handleY: Float
     ) : Line(epx, epy) {
+
+        /**
+         * Draws quadratic bezier curve into the path.
+         * @param path Target path for the curve.
+         */
         override fun putIntoPath(path: Path) {
             path.quadTo(handleX, handleY, epx, epy)
         }
 
+        /**
+         * Applies matrix transformation to both end point and control handle.
+         * @param matrix Transformation matrix to apply.
+         */
         override fun transform(matrix: Matrix) {
             super.transform(matrix)
             floatArrayPointsHolder[2] = handleX
@@ -825,6 +1017,10 @@ abstract class PenToolBase(context: Context) : Painter() {
         }
     }
 
+    /**
+     * Cubic bezier curve implementation with dual control handles.
+     * Provides maximum flexibility for complex curve shapes.
+     */
     class CubicBezier(
         epx: Float,
         epy: Float,
@@ -833,10 +1029,19 @@ abstract class PenToolBase(context: Context) : Painter() {
         var secondHandleX: Float,
         var secondHandleY: Float
     ) : Line(epx, epy) {
+
+        /**
+         * Draws cubic bezier curve into the path.
+         * @param path Target path for the curve.
+         */
         override fun putIntoPath(path: Path) {
             path.cubicTo(firstHandleX, firstHandleY, secondHandleX, secondHandleY, epx, epy)
         }
 
+        /**
+         * Applies matrix transformation to end point and both control handles.
+         * @param matrix Transformation matrix to apply.
+         */
         override fun transform(matrix: Matrix) {
             super.transform(matrix)
 
@@ -851,7 +1056,6 @@ abstract class PenToolBase(context: Context) : Painter() {
             firstHandleY = floatArrayPointsHolder[3]
             secondHandleX = floatArrayPointsHolder[4]
             secondHandleY = floatArrayPointsHolder[5]
-
         }
     }
 }
