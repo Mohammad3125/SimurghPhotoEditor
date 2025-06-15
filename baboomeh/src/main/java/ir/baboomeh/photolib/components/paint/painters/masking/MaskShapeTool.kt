@@ -15,13 +15,13 @@ import android.view.animation.LinearInterpolator
 import androidx.core.graphics.withSave
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
-import ir.baboomeh.photolib.components.shapes.MananShape
+import ir.baboomeh.photolib.components.shapes.Shape
 import ir.baboomeh.photolib.properties.MaskTool
 import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.matrix.MananMatrix
 
-open class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), MaskTool {
+open class MaskShapeTool(context: Context, shape: Shape?) : Painter(), MaskTool {
 
     constructor(context: Context) : this(context, null)
 
@@ -32,7 +32,7 @@ open class MaskShapeTool(context: Context, shape: MananShape?) : Painter(), Mask
         }
     }
 
-    open var shape: MananShape? = shape
+    open var shape: Shape? = shape
         set(value) {
             field = value
             resetPaint()
