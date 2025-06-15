@@ -3,23 +3,71 @@ package ir.baboomeh.photolib.properties
 import android.graphics.Shader
 
 /**
- * Interface definition for a view that is capable of gradient coloring.
+ * Interface for objects that support gradient coloring capabilities.
+ *
+ * This interface extends [ComplexColor] to provide gradient-specific functionality
+ * including linear, radial, and sweep gradients. Objects implementing this interface
+ * can have gradients applied instead of solid colors.
+ *
+ * Supported gradient types:
+ * - **Linear Gradient**: Color transitions along a straight line
+ * - **Radial Gradient**: Color transitions radiating from a center point
+ * - **Sweep Gradient**: Color transitions rotating around a center point
+ *
+ * All gradient methods support:
+ * - Custom color arrays with multiple color stops
+ * - Position arrays to control color distribution
+ * - Tile modes for handling areas outside the gradient bounds
+ *
+ * Example usage:
+ * ```kotlin
+ * val gradientable: Gradientable = textPainter
+ *
+ * // Apply a linear gradient from red to blue
+ * gradientable.applyLinearGradient(
+ *     x0 = 0f, y0 = 0f, x1 = 100f, y1 = 0f,
+ *     colors = intArrayOf(Color.RED, Color.BLUE),
+ *     position = null // Even distribution
+ * )
+ *
+ * // Apply a radial gradient with multiple colors
+ * gradientable.applyRadialGradient(
+ *     centerX = 50f, centerY = 50f, radius = 50f,
+ *     colors = intArrayOf(Color.WHITE, Color.GRAY, Color.BLACK),
+ *     stops = floatArrayOf(0f, 0.5f, 1f)
+ * )
+ *
+ * // Transform the gradient
+ * gradientable.rotateColor(45f)
+ * gradientable.scaleColor(1.5f)
+ *
+ * // Remove the gradient
+ * gradientable.removeGradient()
+ * ```
  */
 interface Gradientable : ComplexColor {
 
     /**
-     * Create a shader that draws a linear gradient along a line.
+     * Creates and applies a linear gradient shader.
      *
-     * @param x0           The x-coordinate for the start of the gradient line
-     * @param y0           The y-coordinate for the start of the gradient line
-     * @param x1           The x-coordinate for the end of the gradient line
-     * @param y1           The y-coordinate for the end of the gradient line
-     * @param colors       The sRGB colors to be distributed along the gradient line
-     * @param position    May be null. The relative positions [0..1] of
-     *                     each corresponding color in the colors array. If this is null,
-     *                     the the colors are distributed evenly along the gradient line.
-     * @param tileMode         The Shader tiling mode
-     * @param rotation     Rotation of gradient.
+     * Linear gradients transition colors along a straight line defined by
+     * start and end points. The gradient can have multiple color stops
+     * at specific positions along the line.
+     *
+     * @param x0 X coordinate of the gradient start point
+     * @param y0 Y coordinate of the gradient start point
+     * @param x1 X coordinate of the gradient end point
+     * @param y1 Y coordinate of the gradient end point
+     * @param colors Array of sRGB colors to distribute along the gradient line.
+     *              Must contain at least 2 colors.
+     * @param position Array of relative positions [0..1] for each color.
+     *                May be null for even distribution. If provided, must have
+     *                the same length as colors array.
+     * @param tileMode How to handle areas outside the gradient bounds.
+     *                Default is MIRROR for smooth transitions.
+     *
+     * @throws IllegalArgumentException if colors array has less than 2 colors
+     * @throws IllegalArgumentException if position array length doesn't match colors length
      */
     fun applyLinearGradient(
         x0: Float,
@@ -31,19 +79,29 @@ interface Gradientable : ComplexColor {
         tileMode: Shader.TileMode = Shader.TileMode.MIRROR
     )
 
-
     /**
-     * Create a shader that draws a radial gradient given the center and radius.
+     * Creates and applies a radial gradient shader.
      *
-     * @param centerX  The x-coordinate of the center of the radius
-     * @param centerY  The y-coordinate of the center of the radius
-     * @param radius   Must be positive. The radius of the circle for this gradient.
-     * @param colors   The sRGB colors to be distributed between the center and edge of the circle
-     * @param stops    May be <code>null</code>. Valid values are between <code>0.0f</code> and
-     *                 <code>1.0f</code>. The relative position of each corresponding color in
-     *                 the colors array. If <code>null</code>, colors are distributed evenly
-     *                 between the center and edge of the circle.
-     * @param tileMode The Shader tiling mode
+     * Radial gradients transition colors radiating outward from a center point.
+     * The gradient forms concentric circles with colors transitioning from
+     * the center to the edge.
+     *
+     * @param centerX X coordinate of the gradient center
+     * @param centerY Y coordinate of the gradient center
+     * @param radius Radius of the gradient circle. Must be positive.
+     * @param colors Array of sRGB colors to distribute from center to edge.
+     *              Must contain at least 2 colors.
+     * @param stops Array of relative positions [0..1] for each color.
+     *             May be null for even distribution. Position 0 is at the center,
+     *             position 1 is at the edge. If provided, must have the same
+     *             length as colors array and values must be monotonic.
+     * @param tileMode How to handle areas outside the gradient radius.
+     *                Default is MIRROR for smooth transitions.
+     *
+     * @throws IllegalArgumentException if radius is not positive
+     * @throws IllegalArgumentException if colors array has less than 2 colors
+     * @throws IllegalArgumentException if stops array length doesn't match colors length
+     * @throws IllegalArgumentException if stops array values are not monotonic
      */
     fun applyRadialGradient(
         centerX: Float,
@@ -54,21 +112,26 @@ interface Gradientable : ComplexColor {
         tileMode: Shader.TileMode = Shader.TileMode.MIRROR
     )
 
-
     /**
-     * A Shader that draws a sweep gradient around a given point.
+     * Creates and applies a sweep (angular) gradient shader.
      *
-     * @param cx       The x-coordinate of the center
-     * @param cy       The y-coordinate of the center
-     * @param colors   The sRGB colors to be distributed between around the center.
-     *                 There must be at least 2 colors in the array.
-     * @param positions May be NULL. The relative position of
-     *                 each corresponding color in the colors array, beginning
-     *                 with 0 and ending with 1.0. If the values are not
-     *                 monotonic, the drawing may produce unexpected results.
-     *                 If positions is NULL, then the colors are automatically
-     *                 spaced evenly.
+     * Sweep gradients transition colors in a circular pattern around a center point,
+     * similar to a color wheel. The gradient starts at the 3 o'clock position
+     * and sweeps clockwise.
      *
+     * @param cx X coordinate of the gradient center
+     * @param cy Y coordinate of the gradient center
+     * @param colors Array of sRGB colors to distribute around the center.
+     *              Must contain at least 2 colors.
+     * @param positions Array of relative positions [0..1] for each color.
+     *                 May be null for even angular distribution. Position 0
+     *                 corresponds to 3 o'clock, position 1 to a full rotation.
+     *                 If provided, must have the same length as colors array
+     *                 and values must be monotonic.
+     *
+     * @throws IllegalArgumentException if colors array has less than 2 colors
+     * @throws IllegalArgumentException if positions array length doesn't match colors length
+     * @throws IllegalArgumentException if positions array values are not monotonic
      */
     fun applySweepGradient(
         cx: Float,
@@ -77,17 +140,37 @@ interface Gradientable : ComplexColor {
         positions: FloatArray?,
     )
 
+    /**
+     * Checks if a gradient is currently applied to this object.
+     *
+     * @return true if any gradient (linear, radial, or sweep) is applied,
+     *         false if using solid color or no gradient
+     */
     fun isGradientApplied(): Boolean
 
-
-    fun reportPositions() : FloatArray?
-
-
-    fun reportColors() : IntArray?
-
+    /**
+     * Returns the current gradient color positions.
+     *
+     * @return Array of relative positions [0..1] for gradient colors,
+     *         or null if no gradient is applied or positions weren't specified
+     */
+    fun reportPositions(): FloatArray?
 
     /**
-     * Removes any gradient that's been applied to the target.
+     * Returns the current gradient colors.
+     *
+     * @return Array of sRGB color values used in the gradient,
+     *         or null if no gradient is applied
+     */
+    fun reportColors(): IntArray?
+
+    /**
+     * Removes any applied gradient and reverts to solid color.
+     *
+     * After calling this method:
+     * - [isGradientApplied] will return false
+     * - [reportPositions] and [reportColors] will return null
+     * - The object will use its base color for rendering
      */
     fun removeGradient()
 }
