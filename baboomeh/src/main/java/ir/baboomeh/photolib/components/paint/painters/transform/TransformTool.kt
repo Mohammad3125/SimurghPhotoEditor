@@ -21,6 +21,8 @@ import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.Tr
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.RIGHT
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.TOP
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.VERTICAL
+import ir.baboomeh.photolib.components.paint.painters.transform.managers.ChildManager
+import ir.baboomeh.photolib.components.paint.painters.transform.managers.LinkedListChildManager
 import ir.baboomeh.photolib.components.paint.painters.transform.smartguideline.AlignmentGuidelineResult
 import ir.baboomeh.photolib.components.paint.painters.transform.smartguideline.DefaultAlignmentSmartGuidelineDetector
 import ir.baboomeh.photolib.components.paint.painters.transform.smartguideline.DefaultRotationSmartGuidelineDetector
@@ -37,7 +39,6 @@ import ir.baboomeh.photolib.utils.history.HistoryHandler
 import ir.baboomeh.photolib.utils.history.HistoryState
 import ir.baboomeh.photolib.utils.history.handlers.StackHistoryHandler
 import ir.baboomeh.photolib.utils.matrix.MananMatrix
-import java.util.LinkedList
 import kotlin.math.abs
 
 /**
@@ -61,8 +62,8 @@ import kotlin.math.abs
  */
 open class TransformTool(
     context: Context,
-    var rotationGuidelineDetector: SmartRotationGuidelineDetector = DefaultRotationSmartGuidelineDetector(),
-    var alignmentGuidelineDetector: SmartAlignmentGuidelineDetector = DefaultAlignmentSmartGuidelineDetector()
+    open var rotationGuidelineDetector: SmartRotationGuidelineDetector = DefaultRotationSmartGuidelineDetector(),
+    open var alignmentGuidelineDetector: SmartAlignmentGuidelineDetector = DefaultAlignmentSmartGuidelineDetector(),
 ) : Painter(), Transformable.OnInvalidate {
 
     /** The currently selected paint layer for rendering operations. */
@@ -201,8 +202,7 @@ open class TransformTool(
     /** Matrix for fitting content inside bounds with proper scaling and positioning. */
     protected lateinit var fitMatrix: MananMatrix
 
-    /** Internal list of child transformable objects managed by this tool. */
-    protected val childHolder = LinkedList<Child>()
+    protected open var childManager: ChildManager = LinkedListChildManager()
 
     /**
      * Public read-only access to the list of transformable children.
@@ -212,7 +212,7 @@ open class TransformTool(
      */
     open val children: List<Transformable>
         get() {
-            return childHolder.map { it.transformable }
+            return childManager.map { it.transformable }
         }
 
     /** When true, prevents any transformation operations on objects, effectively locking them in place. */
@@ -302,7 +302,7 @@ open class TransformTool(
         fitMatrix = fitInsideMatrix
         bounds = clipBounds
 
-        childHolder.forEach { child ->
+        childManager.forEach { child ->
             initializeChild(child, shouldCalculateBounds = true)
         }
     }
@@ -396,7 +396,7 @@ open class TransformTool(
         val range = touchRange / matrix.getRealScaleX()
 
         child.baseSizeChangeArray.copyInto(cc)
-        mapMeshPoints(child,cc)
+        mapMeshPoints(child, cc)
 
         var nearest = range
 
@@ -468,7 +468,7 @@ open class TransformTool(
         }
 
         if (firstSizeChangeIndex > -1 && secondSizeChangeIndex > -1) {
-            map(child,cc)
+            map(child, cc)
             lastX = cc[firstSizeChangeIndex]
             lastY = cc[secondSizeChangeIndex]
         }
@@ -478,7 +478,7 @@ open class TransformTool(
         }
 
         basePoints.copyInto(cc)
-        mapMeshPoints(child,cc)
+        mapMeshPoints(child, cc)
 
         if (touchData.isNearPoint(cc[0], cc[1], range)) {
             (abs(touchData.ex - cc[0]) + abs(touchData.ey - cc[1])).let {
@@ -519,7 +519,7 @@ open class TransformTool(
             return
         }
         currentSelectedChild?.apply {
-            mapMeshPoints(this,touchData.ex, touchData.ey)
+            mapMeshPoints(this, touchData.ex, touchData.ey)
 
             if (firstSelectedIndex > -1 && secondSelectedIndex > -1) {
                 if (thirdSelectedIndex > -1 && forthSelectedIndex > -1) {
@@ -563,7 +563,7 @@ open class TransformTool(
             val lastSelected = currentSelectedChild
             currentSelectedChild = null
 
-            childHolder.forEach { child ->
+            childManager.forEach { child ->
                 if (child.isPointInChildRect(touchData)) {
                     currentSelectedChild = child
                 }
@@ -598,7 +598,7 @@ open class TransformTool(
     }
 
     protected fun Child.isPointInChildRect(touchData: TouchData): Boolean {
-        mapMeshPoints(this,touchData.ex, touchData.ey)
+        mapMeshPoints(this, touchData.ex, touchData.ey)
 
         val x = pointHolder[0]
         val y = pointHolder[1]
@@ -657,7 +657,7 @@ open class TransformTool(
      * @param canvas The canvas to draw on.
      */
     override fun draw(canvas: Canvas) {
-        childHolder.forEach { child ->
+        childManager.forEach { child ->
 
             mergeMatrices(child, false)
 
@@ -824,7 +824,7 @@ open class TransformTool(
         historyHandler!!.reset()
         initialChildState = null
         currentSelectedChild = null
-        childHolder.clear()
+        childManager.removeAllChildren()
         onInvalidate()
     }
 
@@ -895,7 +895,7 @@ open class TransformTool(
         alignmentGuideline = currentSelectedChild?.let { child ->
             alignmentGuidelineDetector.detectAlignmentGuidelines(
                 child,
-                childHolder - child,
+                childManager - child,
                 bounds.toRectF()
             )?.apply {
                 child.transformationMatrix.postConcat(transformation)
@@ -941,7 +941,7 @@ open class TransformTool(
         selectedLayer?.let { layer ->
             finalCanvas.setBitmap(layer.bitmap)
 
-            childHolder.forEach { child ->
+            childManager.forEach { child ->
                 select(child)
                 drawChild(finalCanvas, child)
             }
@@ -1010,9 +1010,9 @@ open class TransformTool(
             FloatArray(8), targetRect
         )
 
-        val initialChildren = LinkedList(childHolder)
+        val initialChildren = childManager.getAllChildren()
 
-        childHolder.add(currentSelectedChild!!)
+        childManager.addChild(currentSelectedChild!!)
 
         onChildSelected?.invoke(currentSelectedChild!!.transformable, true)
 
@@ -1029,8 +1029,8 @@ open class TransformTool(
      * This method increases the z-order of the selected object.
      */
     open fun bringSelectedChildUp() {
-        getSelectedChildIndexAndCompare(childHolder.lastIndex) { child, selectedChildIndex ->
-            swap(selectedChildIndex + 1, selectedChildIndex, child)
+        getSelectedChildIndexAndCompare(childManager.getAllChildren().lastIndex) { child, selectedChildIndex ->
+            swap(selectedChildIndex + 1, selectedChildIndex)
         }
     }
 
@@ -1039,8 +1039,8 @@ open class TransformTool(
      * This method moves the selected object to the highest z-order.
      */
     open fun bringSelectedChildToFront() {
-        getSelectedChildIndexAndCompare(childHolder.lastIndex) { _, selectedChildIndex ->
-            bringFromIndexToIndex(selectedChildIndex, childHolder.lastIndex)
+        getSelectedChildIndexAndCompare(childManager.getAllChildren().lastIndex) { _, selectedChildIndex ->
+            bringFromIndexToIndex(selectedChildIndex, childManager.getAllChildren().lastIndex)
         }
     }
 
@@ -1050,7 +1050,7 @@ open class TransformTool(
      */
     open fun bringSelectedChildDown() {
         getSelectedChildIndexAndCompare(0) { child, selectedChildIndex ->
-            swap(selectedChildIndex - 1, selectedChildIndex, child)
+            swap(selectedChildIndex - 1, selectedChildIndex)
         }
     }
 
@@ -1076,7 +1076,7 @@ open class TransformTool(
         operation: (child: Child, selectedChildIndex: Int) -> Unit
     ) {
         currentSelectedChild?.let { child ->
-            val selectedChildIndex = childHolder.indexOf(child)
+            val selectedChildIndex = childManager.indexOf(child)
 
             if (selectedChildIndex != compareIndex) {
                 operation(child, selectedChildIndex)
@@ -1093,11 +1093,9 @@ open class TransformTool(
      * @param secondIndex The index of the second object.
      * @param child The child object being moved.
      */
-    protected open fun swap(firstIndex: Int, secondIndex: Int, child: Child) {
-        val initialChildren = LinkedList(childHolder)
-        val temp = childHolder[firstIndex]
-        childHolder[firstIndex] = child
-        childHolder[secondIndex] = temp
+    protected open fun swap(firstIndex: Int, secondIndex: Int) {
+        val initialChildren = childManager.toList()
+        childManager.swap(firstIndex, secondIndex)
         saveState(createState(currentSelectedChild, initialChildren))
     }
 
@@ -1109,20 +1107,9 @@ open class TransformTool(
      * @param toIndex The target index for the object.
      */
     protected open fun bringFromIndexToIndex(fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) {
-            return
-        }
+        val initialChildren = childManager.getAllChildren()
 
-        val initialChildren = LinkedList(childHolder)
-
-        val temp = childHolder[fromIndex]
-        childHolder.removeAt(fromIndex)
-
-        if (fromIndex < toIndex) {
-            childHolder.addLast(temp)
-        } else {
-            childHolder.addFirst(temp)
-        }
+        childManager.reorder(fromIndex, toIndex)
 
         saveState(createState(currentSelectedChild, initialChildren))
     }
@@ -1133,8 +1120,8 @@ open class TransformTool(
      */
     open fun removeSelectedChild() {
         currentSelectedChild?.apply {
-            val initialChildren = LinkedList(childHolder)
-            childHolder.remove(this)
+            val initialChildren = childManager.getAllChildren()
+            childManager.removeChild(this)
             saveState(createState(this, initialChildren))
             currentSelectedChild = null
             onInvalidate()
@@ -1148,8 +1135,8 @@ open class TransformTool(
      * @param index The index of the child to remove.
      */
     open fun removeChildAt(index: Int) {
-        val initialChildren = LinkedList(childHolder)
-        childHolder.removeAt(index)
+        val initialChildren = childManager.getAllChildren()
+        childManager.removeChildAt(index)
         saveState(createState(currentSelectedChild, initialChildren))
         onInvalidate()
     }
@@ -1159,8 +1146,8 @@ open class TransformTool(
      * This method clears all managed objects and resets the selection.
      */
     open fun removeAllChildren() {
-        val initialChildren = LinkedList(childHolder)
-        childHolder.clear()
+        val initialChildren = childManager.getAllChildren()
+        childManager.removeAllChildren()
         currentSelectedChild = null
         saveState(createState(currentSelectedChild, initialChildren))
         onInvalidate()
@@ -1458,7 +1445,7 @@ open class TransformTool(
      */
     protected open fun createState(
         child: Child?,
-        initialChildren: LinkedList<Child>? = null,
+        initialChildren: Collection<Child>? = null,
         reference: Child? = child,
     ): State = State(initialChildState, initialChildren, reference)
 
@@ -1472,10 +1459,10 @@ open class TransformTool(
      */
     protected open inner class State(
         val initialChildState: Child?,
-        val initialChildren: LinkedList<Child>? = null,
+        val initialChildren: Collection<Child>? = null,
         val reference: Child?,
     ) : HistoryState {
-        protected val clonedChildren = LinkedList(childHolder)
+        protected val clonedChildren = childManager.getAllChildren()
         protected val clonedChild = reference?.clone(true)
 
         override fun undo() {
@@ -1486,14 +1473,14 @@ open class TransformTool(
             restoreState(clonedChild, clonedChildren)
         }
 
-        protected open fun restoreState(targetChild: Child?, targetChildren: MutableList<Child>?) {
+        protected open fun restoreState(targetChild: Child?, targetChildren: Collection<Child>?) {
             targetChild?.clone(true)?.let {
                 reference?.set(it)
             }
 
             targetChildren?.let {
-                childHolder.clear()
-                childHolder.addAll(LinkedList(it))
+                childManager.removeAllChildren()
+                childManager.addAllChildren(targetChildren.toList())
             }
 
             currentSelectedChild = reference
