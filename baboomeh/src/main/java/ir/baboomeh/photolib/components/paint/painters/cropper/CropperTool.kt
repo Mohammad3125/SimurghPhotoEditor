@@ -22,12 +22,12 @@ import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.Aspe
 import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatioFree
 import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatioLocked
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
-import ir.baboomeh.photolib.utils.dp
 import ir.baboomeh.photolib.utils.evaluators.MatrixEvaluator
 import ir.baboomeh.photolib.utils.evaluators.RectFloatEvaluator
+import ir.baboomeh.photolib.utils.extensions.dp
+import ir.baboomeh.photolib.utils.extensions.perimeter
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.matrix.MananMatrix
-import ir.baboomeh.photolib.utils.perimeter
 import kotlin.math.max
 import kotlin.math.min
 

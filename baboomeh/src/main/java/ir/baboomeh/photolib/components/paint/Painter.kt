@@ -50,7 +50,7 @@ abstract class Painter {
      * Optional history handler for undo/redo functionality.
      * Set this if the tool needs to manage its own history.
      */
-    var historyHandler: HistoryHandler? = null
+    open var historyHandler: HistoryHandler? = null
 
     /**
      * Indicates whether the painter has been properly initialized.

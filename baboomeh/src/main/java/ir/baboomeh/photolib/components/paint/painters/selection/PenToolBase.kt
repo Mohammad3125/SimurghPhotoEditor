@@ -16,7 +16,7 @@ import androidx.annotation.ColorInt
 import androidx.core.graphics.toColorInt
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
-import ir.baboomeh.photolib.utils.dp
+import ir.baboomeh.photolib.utils.extensions.dp
 import ir.baboomeh.photolib.utils.gesture.GestureUtils
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.matrix.MananMatrix

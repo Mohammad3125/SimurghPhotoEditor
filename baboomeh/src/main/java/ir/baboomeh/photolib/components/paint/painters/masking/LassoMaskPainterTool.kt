@@ -18,7 +18,7 @@ import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.baboomeh.photolib.components.paint.smoothers.LineSmoother
 import ir.baboomeh.photolib.properties.MaskTool
-import ir.baboomeh.photolib.utils.dp
+import ir.baboomeh.photolib.utils.extensions.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.matrix.MananMatrix
 

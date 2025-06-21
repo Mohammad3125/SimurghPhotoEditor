@@ -14,7 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.ColorInt
 import androidx.core.view.doOnLayout
-import ir.baboomeh.photolib.utils.dp
+import ir.baboomeh.photolib.utils.extensions.dp
 import ir.baboomeh.photolib.utils.gesture.detectors.MoveDetector
 import ir.baboomeh.photolib.utils.gesture.gestures.OnMoveListener
 import kotlin.math.abs

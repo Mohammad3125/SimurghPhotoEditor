@@ -1,4 +1,4 @@
-package ir.baboomeh.photolib.utils
+package ir.baboomeh.photolib.utils.extensions
 
 import android.content.Context
 import android.content.res.Resources

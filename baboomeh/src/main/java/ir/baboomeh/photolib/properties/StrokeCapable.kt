@@ -12,7 +12,7 @@ interface StrokeCapable {
      * Stroke values should be more than 0 (negative values are not accepted.)
      *
      *
-     * Use [TypedValue] or [ir.baboomeh.photolib.utils.dp] extension function to convert a dp number to pixels.
+     * Use [TypedValue] or [ir.baboomeh.photolib.utils.extensions.dp] extension function to convert a dp number to pixels.
      * @param strokeRadiusPx Stroke radius in pixels.
      * @param strokeColor Color of stroke.
      */

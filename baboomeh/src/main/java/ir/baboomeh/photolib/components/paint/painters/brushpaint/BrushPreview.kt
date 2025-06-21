@@ -18,7 +18,7 @@ import ir.baboomeh.photolib.components.paint.engines.CachedCanvasEngine
 import ir.baboomeh.photolib.components.paint.painters.brushpaint.brushes.Brush
 import ir.baboomeh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.baboomeh.photolib.components.paint.smoothers.LineSmoother
-import ir.baboomeh.photolib.utils.dp
+import ir.baboomeh.photolib.utils.extensions.dp
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import kotlin.random.Random
 

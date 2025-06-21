@@ -1,4 +1,4 @@
-package ir.baboomeh.photolib.components.paint.painters.transform
+package ir.baboomeh.photolib.components.paint.painters.transform.transformables
 
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
@@ -526,7 +526,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                     )
 
                                     // Add side connectors based on alignment.
-                                    if (alignmentText != TextPainter.Alignment.LEFT) {
+                                    if (alignmentText != Alignment.LEFT) {
                                         connectorPath.addRoundRect(
                                             currentBackground.left,
                                             finalTop,
@@ -544,7 +544,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                             Path.Direction.CCW
                                         )
                                     }
-                                    if (alignmentText != TextPainter.Alignment.RIGHT) {
+                                    if (alignmentText != Alignment.RIGHT) {
                                         connectorPath.addRoundRect(
                                             lastBackground.right,
                                             finalTop,
@@ -583,7 +583,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                     )
 
                                     // Add side connectors based on alignment.
-                                    if (alignmentText != TextPainter.Alignment.LEFT) {
+                                    if (alignmentText != Alignment.LEFT) {
                                         connectorPath.addRoundRect(
                                             lastBackground.left,
                                             lastBackground.bottom,
@@ -602,7 +602,7 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
                                         )
                                     }
 
-                                    if (alignmentText != TextPainter.Alignment.RIGHT) {
+                                    if (alignmentText != Alignment.RIGHT) {
                                         connectorPath.addRoundRect(
                                             currentBackground.right,
                                             lastBackground.bottom,
