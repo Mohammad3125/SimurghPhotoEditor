@@ -19,31 +19,31 @@ import ir.baboomeh.photolib.utils.history.handlers.StackHistoryHandler
 /**
  * A sophisticated paint view that supports multiple layers with independent blending modes,
  * opacity levels, and painting operations.
- * 
+ *
  * This view extends [MananPaintView] to provide comprehensive layer management functionality
  * including:
- * 
+ *
  * **Layer Management:**
  * - Create, duplicate, delete, and reorder layers.
  * - Individual layer opacity and blending mode control.
  * - Layer locking to prevent accidental modifications.
  * - Visual layer caching for improved performance.
- * 
+ *
  * **History System:**
  * - Full undo/redo support for all layer operations.
  * - State preservation for complex multi-layer edits.
  * - Automatic history management with configurable handlers.
- * 
+ *
  * **Performance Optimizations:**
  * - Intelligent layer caching system.
  * - Partial rendering for interactive operations.
  * - Efficient memory management for large layer stacks.
- * 
+ *
  * **Visual Features:**
  * - Checkerboard transparency background.
  * - Layer composition with proper blending.
  * - Real-time preview during transformations.
- * 
+ *
  * The view automatically manages the complexity of multi-layer rendering while providing
  * a simple API for layer manipulation. It's designed for use in photo editing and
  * digital art applications where layer-based editing is essential
@@ -86,7 +86,7 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
      */
     protected var onLayersChanged: ((layers: List<PaintLayer>, selectedLayerIndex: Int) -> Unit)? =
         null
-    
+
     /**
      * Interface-based callback for layer change notifications.
      */
@@ -352,10 +352,19 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
      * Called automatically when the history stack changes.
      */
     protected open fun callUndoRedoListener() {
-        onUndoOrRedoStateChanged?.invoke(
-            historyHandler.getUndoSize() != 0,
-            historyHandler.getRedoSize() != 0
-        )
+        if (painter?.doesHandleHistory() == true) {
+            painter?.historyHandler?.let { handler ->
+                onUndoOrRedoStateChanged?.invoke(
+                    handler.getUndoSize() != 0,
+                    handler.getRedoSize() != 0
+                )
+            }
+        } else {
+            onUndoOrRedoStateChanged?.invoke(
+                historyHandler.getUndoSize() != 0,
+                historyHandler.getRedoSize() != 0
+            )
+        }
     }
 
     /**
