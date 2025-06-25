@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import androidx.annotation.ColorInt
 import ir.baboomeh.photolib.components.paint.painters.masking.LassoMaskPainterTool
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.utils.gesture.TouchData
 
 /**

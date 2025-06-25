@@ -2,7 +2,7 @@ package ir.baboomeh.photolib.components.paint.painters.coloring.flood
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import ir.baboomeh.photolib.components.paint.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.utils.gesture.TouchData
 

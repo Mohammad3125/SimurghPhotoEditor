@@ -26,7 +26,9 @@ import androidx.core.animation.doOnEnd
 import androidx.core.graphics.toRectF
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.baboomeh.photolib.R
-import ir.baboomeh.photolib.components.paint.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.MessageChannel
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.utils.evaluators.MatrixEvaluator
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.gesture.detectors.rotation.OnRotateListener
@@ -78,7 +80,7 @@ import kotlin.math.abs
  * - Robust error handling and state management.
  */
 open class MananPaintView(context: Context, attrSet: AttributeSet?) :
-    View(context, attrSet), Painter.MessageChannel,
+    View(context, attrSet), MessageChannel,
     ScaleGestureDetector.OnScaleGestureListener,
     OnRotateListener, OnTranslationDetector {
     
@@ -860,9 +862,9 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
     /**
      * Handles messages from the painter system.
      */
-    override fun onSendMessage(message: Painter.PainterMessage) {
+    override fun onSendMessage(message: PainterMessage) {
         when (message) {
-            Painter.PainterMessage.INVALIDATE -> {
+            PainterMessage.INVALIDATE -> {
                 invalidate()
             }
 

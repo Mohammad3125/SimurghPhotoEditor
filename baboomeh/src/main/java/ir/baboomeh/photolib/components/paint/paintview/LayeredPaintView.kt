@@ -9,7 +9,8 @@ import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.ScaleGestureDetector
 import androidx.core.graphics.createBitmap
-import ir.baboomeh.photolib.components.paint.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.gesture.detectors.translation.TranslationDetector
 import ir.baboomeh.photolib.utils.history.HistoryHandler
@@ -486,17 +487,17 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
     /**
      * Handles messages from the painter system including layer caching.
      */
-    override fun onSendMessage(message: Painter.PainterMessage) {
+    override fun onSendMessage(message: PainterMessage) {
         when (message) {
-            Painter.PainterMessage.INVALIDATE -> {
+            PainterMessage.INVALIDATE -> {
                 invalidate()
             }
 
-            Painter.PainterMessage.SAVE_HISTORY -> {
+            PainterMessage.SAVE_HISTORY -> {
                 saveState(createState())
             }
 
-            Painter.PainterMessage.CACHE_LAYERS -> {
+            PainterMessage.CACHE_LAYERS -> {
                 cacheLayers()
             }
         }

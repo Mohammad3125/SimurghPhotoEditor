@@ -11,7 +11,9 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
 import ir.baboomeh.photolib.R
-import ir.baboomeh.photolib.components.paint.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.MessageChannel
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.BOTTOM
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.CENTER
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.HORIZONTAL
@@ -58,7 +60,7 @@ import ir.baboomeh.photolib.utils.matrix.MananMatrix
  *
  * @param context The Android context used for resource access, measurements, and drawable loading.
  */
-open class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
+open class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate, MessageChannel {
 
     /** The currently selected paint layer for rendering operations. */
     protected var selectedLayer: PaintLayer? = null
@@ -227,7 +229,7 @@ open class TransformTool(context: Context) : Painter(), Transformable.OnInvalida
     open var alignmentGuidelineDetector: SmartAlignmentGuidelineDetector =
         DefaultAlignmentSmartGuidelineDetector()
 
-    open var handleTransformer: HandleTransformer = PerspectiveHandleTransformer(context)
+    open var handleTransformer: HandleTransformer = PerspectiveHandleTransformer(context, this)
 
     protected open var childManager: ChildManager = LinkedListChildManager()
         set(value) {
@@ -369,78 +371,92 @@ open class TransformTool(context: Context) : Painter(), Transformable.OnInvalida
      * @param canvas The canvas to draw on.
      */
     override fun draw(canvas: Canvas) {
+
+        val mergedCanvasMatrices = mergeCanvasMatrices()
+        val sx = mergedCanvasMatrices.getRealScaleX()
+        val currentBoundWidth = boundPaint.strokeWidth
+        val currentGuideWidth = smartGuidePaint.strokeWidth
+        val finalBoundWidth = currentBoundWidth * sx
+        val finalGuidelineWidth = currentGuideWidth * sx
+
         childManager.forEach { child ->
 
             child.draw(canvas)
-
-            val mergedCanvasMatrices = mergeCanvasMatrices()
-            val sx = mergedCanvasMatrices.getRealScaleX()
-            val currentBoundWidth = boundPaint.strokeWidth
-            val currentGuideWidth = smartGuidePaint.strokeWidth
-            val finalBoundWidth = currentBoundWidth * sx
-            val finalGuidelineWidth = currentGuideWidth * sx
 
             boundPaint.strokeWidth = finalBoundWidth
             smartGuidePaint.strokeWidth = finalGuidelineWidth
 
             if (child === currentSelectedChild && isBoundsEnabled) {
+                drawBounds(canvas, child)
 
-                child.mapMeshPointsByMatrices(mappingMatrix, mappedMeshPoints)
+                drawHandles(canvas,child)
 
-                canvas.apply {
-                    drawLine(
-                        mappedMeshPoints[0],
-                        mappedMeshPoints[1],
-                        mappedMeshPoints[2],
-                        mappedMeshPoints[3],
-                        boundPaint
-                    )
-
-                    drawLine(
-                        mappedMeshPoints[2],
-                        mappedMeshPoints[3],
-                        mappedMeshPoints[4],
-                        mappedMeshPoints[5],
-                        boundPaint
-                    )
-
-                    drawLine(
-                        mappedMeshPoints[4],
-                        mappedMeshPoints[5],
-                        mappedMeshPoints[6],
-                        mappedMeshPoints[7],
-                        boundPaint
-                    )
-
-                    drawLine(
-                        mappedMeshPoints[6],
-                        mappedMeshPoints[7],
-                        mappedMeshPoints[0],
-                        mappedMeshPoints[1],
-                        boundPaint
-                    )
-                }
-
-                handleTransformer.getAllHandles(child).forEach {
-                    resizeAndDrawDrawable(it.x, it.y, canvas)
-                }
-
-                rotationGuideline?.let { rotationGuideline ->
-                    canvas.drawLines(rotationGuideline.guideline.lineArray, smartGuidePaint)
-                }
-
-                alignmentGuideline?.lines?.forEach { smartGuideline ->
-                    if (smartGuideline.isDashed) {
-                        smartGuidePaint.pathEffect = smartGuideLineDashedPathEffect
-                    }
-
-                    canvas.drawLines(smartGuideline.lineArray, smartGuidePaint)
-
-                    smartGuidePaint.pathEffect = null
-                }
+                drawGuidelines(canvas)
             }
+
             boundPaint.strokeWidth = currentBoundWidth
             smartGuidePaint.strokeWidth = currentGuideWidth
+        }
+    }
+
+    protected open fun drawBounds(canvas: Canvas, child: Child) {
+        child.mapMeshPointsByMatrices(mappingMatrix, mappedMeshPoints)
+
+        canvas.apply {
+
+            drawLine(
+                mappedMeshPoints[0],
+                mappedMeshPoints[1],
+                mappedMeshPoints[2],
+                mappedMeshPoints[3],
+                boundPaint
+            )
+
+            drawLine(
+                mappedMeshPoints[2],
+                mappedMeshPoints[3],
+                mappedMeshPoints[4],
+                mappedMeshPoints[5],
+                boundPaint
+            )
+
+            drawLine(
+                mappedMeshPoints[4],
+                mappedMeshPoints[5],
+                mappedMeshPoints[6],
+                mappedMeshPoints[7],
+                boundPaint
+            )
+
+            drawLine(
+                mappedMeshPoints[6],
+                mappedMeshPoints[7],
+                mappedMeshPoints[0],
+                mappedMeshPoints[1],
+                boundPaint
+            )
+        }
+    }
+
+    protected open fun drawGuidelines(canvas: Canvas) {
+        rotationGuideline?.let { rotationGuideline ->
+            canvas.drawLines(rotationGuideline.guideline.lineArray, smartGuidePaint)
+        }
+
+        alignmentGuideline?.lines?.forEach { smartGuideline ->
+            if (smartGuideline.isDashed) {
+                smartGuidePaint.pathEffect = smartGuideLineDashedPathEffect
+            }
+
+            canvas.drawLines(smartGuideline.lineArray, smartGuidePaint)
+
+            smartGuidePaint.pathEffect = null
+        }
+    }
+
+    protected open fun drawHandles(canvas: Canvas,child: Child) {
+        handleTransformer.getAllHandles(child).forEach {
+            resizeAndDrawDrawable(it.x, it.y, canvas)
         }
     }
 
@@ -1109,6 +1125,11 @@ open class TransformTool(context: Context) : Painter(), Transformable.OnInvalida
         }
     }
 
+    override fun onSendMessage(message: PainterMessage) {
+        if (message == PainterMessage.INVALIDATE) {
+            onInvalidate()
+        }
+    }
 
     /**
      * Enumeration defining alignment options for transformable objects.

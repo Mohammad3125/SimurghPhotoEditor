@@ -13,7 +13,8 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import androidx.core.graphics.withSave
-import ir.baboomeh.photolib.components.paint.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.components.shapes.Shape
 import ir.baboomeh.photolib.properties.MaskTool

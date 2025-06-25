@@ -10,7 +10,9 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import androidx.core.graphics.createBitmap
-import ir.baboomeh.photolib.components.paint.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.MessageChannel
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.components.paint.painters.selection.clippers.BitmapMaskClipper
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.utils.gesture.TouchData
@@ -70,7 +72,7 @@ import ir.baboomeh.photolib.utils.matrix.MananMatrix
  * 
  * @param clipper The bitmap mask clipper used for applying mask operations
  */
-open class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Painter.MessageChannel {
+open class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), MessageChannel {
 
     /**
      * Paint used for rendering the mask overlay with color filtering.

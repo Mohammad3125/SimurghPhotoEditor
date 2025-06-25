@@ -2,6 +2,8 @@ package ir.baboomeh.photolib.components.paint.painters.transform.managers.handle
 
 import android.content.Context
 import android.graphics.Matrix
+import ir.baboomeh.photolib.components.paint.painters.painter.MessageChannel
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.components.paint.painters.transform.Child
 import ir.baboomeh.photolib.utils.extensions.dp
 import ir.baboomeh.photolib.utils.extensions.isNearPoint
@@ -9,6 +11,7 @@ import ir.baboomeh.photolib.utils.gesture.TouchData
 
 open class PerspectiveHandleTransformer(
     val context: Context,
+    val messageChannel: MessageChannel
 ) : HandleTransformer {
 
     /**
@@ -16,7 +19,11 @@ open class PerspectiveHandleTransformer(
      * When disabled, transformations maintain aspect ratio and shape consistency.
      * When enabled, each corner can be moved independently for perspective-like effects.
      */
-    open var isPerspectiveHandling: Boolean = true
+    open var isPerspectiveHandling: Boolean = false
+        set(value) {
+            field = value
+            messageChannel.onSendMessage(PainterMessage.INVALIDATE)
+        }
 
     override var selectedHandle: TransformHandle? = null
 

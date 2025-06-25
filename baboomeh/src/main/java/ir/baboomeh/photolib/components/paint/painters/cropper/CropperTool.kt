@@ -17,10 +17,11 @@ import android.graphics.Region
 import androidx.core.animation.doOnEnd
 import androidx.core.graphics.createBitmap
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
-import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatio
 import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatioFree
 import ir.baboomeh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatioLocked
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.utils.evaluators.MatrixEvaluator
 import ir.baboomeh.photolib.utils.evaluators.RectFloatEvaluator

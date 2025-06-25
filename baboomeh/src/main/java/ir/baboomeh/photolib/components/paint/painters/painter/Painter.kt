@@ -1,4 +1,4 @@
-package ir.baboomeh.photolib.components.paint
+package ir.baboomeh.photolib.components.paint.painters.painter
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -254,32 +254,5 @@ abstract class Painter {
      */
     open fun doesNeedTouchSlope(): Boolean {
         return true
-    }
-
-    /**
-     * Interface for receiving messages from painters.
-     * Implemented by parent paint views to handle painter requests.
-     */
-    interface MessageChannel {
-        /**
-         * Called when a painter sends a message.
-         *
-         * @param message The message sent by the painter
-         */
-        fun onSendMessage(message: PainterMessage)
-    }
-
-    /**
-     * Messages that painters can send to the parent view.
-     */
-    enum class PainterMessage {
-        /** Request the parent view to invalidate and redraw */
-        INVALIDATE,
-
-        /** Request the parent view to save the current state to history */
-        SAVE_HISTORY,
-
-        /** Request the parent view to cache the current layers */
-        CACHE_LAYERS
     }
 }

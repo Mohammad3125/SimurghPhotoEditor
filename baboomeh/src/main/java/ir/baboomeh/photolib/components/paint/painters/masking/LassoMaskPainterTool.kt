@@ -12,8 +12,9 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.view.animation.LinearInterpolator
-import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.painters.brushpaint.brushes.NativeBrush
+import ir.baboomeh.photolib.components.paint.painters.painter.Painter
+import ir.baboomeh.photolib.components.paint.painters.painter.PainterMessage
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.baboomeh.photolib.components.paint.smoothers.LineSmoother
