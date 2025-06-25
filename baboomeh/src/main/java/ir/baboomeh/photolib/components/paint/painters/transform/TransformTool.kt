@@ -10,8 +10,6 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.toRectF
-import androidx.core.graphics.withSave
 import ir.baboomeh.photolib.R
 import ir.baboomeh.photolib.components.paint.Painter
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.BOTTOM
@@ -21,8 +19,10 @@ import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.Tr
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.RIGHT
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.TOP
 import ir.baboomeh.photolib.components.paint.painters.transform.TransformTool.TransformableAlignment.VERTICAL
-import ir.baboomeh.photolib.components.paint.painters.transform.managers.ChildManager
-import ir.baboomeh.photolib.components.paint.painters.transform.managers.LinkedListChildManager
+import ir.baboomeh.photolib.components.paint.painters.transform.managers.child.ChildManager
+import ir.baboomeh.photolib.components.paint.painters.transform.managers.child.LinkedListChildManager
+import ir.baboomeh.photolib.components.paint.painters.transform.managers.handle.HandleTransformer
+import ir.baboomeh.photolib.components.paint.painters.transform.managers.handle.PerspectiveHandleTransformer
 import ir.baboomeh.photolib.components.paint.painters.transform.smartguideline.AlignmentGuidelineResult
 import ir.baboomeh.photolib.components.paint.painters.transform.smartguideline.DefaultAlignmentSmartGuidelineDetector
 import ir.baboomeh.photolib.components.paint.painters.transform.smartguideline.DefaultRotationSmartGuidelineDetector
@@ -32,14 +32,12 @@ import ir.baboomeh.photolib.components.paint.painters.transform.smartguideline.S
 import ir.baboomeh.photolib.components.paint.painters.transform.transformables.Transformable
 import ir.baboomeh.photolib.components.paint.paintview.PaintLayer
 import ir.baboomeh.photolib.utils.extensions.dp
-import ir.baboomeh.photolib.utils.extensions.isNearPoint
 import ir.baboomeh.photolib.utils.extensions.setMaximumRect
 import ir.baboomeh.photolib.utils.gesture.TouchData
 import ir.baboomeh.photolib.utils.history.HistoryHandler
 import ir.baboomeh.photolib.utils.history.HistoryState
 import ir.baboomeh.photolib.utils.history.handlers.StackHistoryHandler
 import ir.baboomeh.photolib.utils.matrix.MananMatrix
-import kotlin.math.abs
 
 /**
  * A comprehensive transformation tool that provides interactive manipulation capabilities for transformable objects.
@@ -60,11 +58,7 @@ import kotlin.math.abs
  *
  * @param context The Android context used for resource access, measurements, and drawable loading.
  */
-open class TransformTool(
-    context: Context,
-    open var rotationGuidelineDetector: SmartRotationGuidelineDetector = DefaultRotationSmartGuidelineDetector(),
-    open var alignmentGuidelineDetector: SmartAlignmentGuidelineDetector = DefaultAlignmentSmartGuidelineDetector(),
-) : Painter(), Transformable.OnInvalidate {
+open class TransformTool(context: Context) : Painter(), Transformable.OnInvalidate {
 
     /** The currently selected paint layer for rendering operations. */
     protected var selectedLayer: PaintLayer? = null
@@ -107,31 +101,13 @@ open class TransformTool(
         null
     )!!
 
-    /** The touch range in pixels for detecting handle interactions and determining touch sensitivity. */
-    open var touchRange = context.dp(24)
-
     /** Matrix used for coordinate mappings and transformations between different coordinate systems. */
     protected val mappingMatrix by lazy {
         MananMatrix()
     }
 
-    /** Array holding the base corner points of a transformable object (8 values: x1,y1,x2,y2,x3,y3,x4,y4). */
-    protected val basePoints by lazy {
-        FloatArray(8)
-    }
-
     /** Array holding mapped mesh points for drawing after transformation calculations. */
     protected val mappedMeshPoints by lazy {
-        FloatArray(8)
-    }
-
-    /** Array holding mapped points for size change handles after transformation calculations. */
-    protected val mappedBaseSizeChangePoints by lazy {
-        FloatArray(8)
-    }
-
-    /** Temporary array for coordinate calculations to avoid object allocation during operations. */
-    protected val cc by lazy {
         FloatArray(8)
     }
 
@@ -155,44 +131,6 @@ open class TransformTool(
         Canvas()
     }
 
-    /**
-     * Enables free transform mode, allowing individual corner manipulation for advanced transformations.
-     * When disabled, transformations maintain aspect ratio and shape consistency.
-     * When enabled, each corner can be moved independently for perspective-like effects.
-     */
-    open var isFreeTransform = false
-        set(value) {
-            field = value
-            sendMessage(PainterMessage.INVALIDATE)
-        }
-
-    /** Index of the first selected corner for transformation (-1 if none selected). */
-    protected var firstSelectedIndex = -1
-
-    /** Index of the second selected corner for transformation (-1 if none selected). */
-    protected var secondSelectedIndex = -1
-
-    /** Index of the third selected corner for transformation (-1 if none selected). */
-    protected var thirdSelectedIndex = -1
-
-    /** Index of the fourth selected corner for transformation (-1 if none selected). */
-    protected var forthSelectedIndex = -1
-
-    /** Index of the first size change handle (-1 if none selected). */
-    protected var firstSizeChangeIndex = -1
-
-    /** Index of the second size change handle (-1 if none selected). */
-    protected var secondSizeChangeIndex = -1
-
-    /** Flag indicating if movement should be restricted to X-axis only during transformations. */
-    protected var isOnlyMoveX = false
-
-    /** Last recorded X coordinate for transformation calculations and delta computations. */
-    protected var lastX = 0f
-
-    /** Last recorded Y coordinate for transformation calculations and delta computations. */
-    protected var lastY = 0f
-
     /** The bounds rectangle for clipping operations and coordinate system boundaries. */
     protected lateinit var bounds: Rect
 
@@ -201,8 +139,6 @@ open class TransformTool(
 
     /** Matrix for fitting content inside bounds with proper scaling and positioning. */
     protected lateinit var fitMatrix: MananMatrix
-
-    protected open var childManager: ChildManager = LinkedListChildManager()
 
     /**
      * Public read-only access to the list of transformable children.
@@ -285,6 +221,20 @@ open class TransformTool(
 
     override var historyHandler: HistoryHandler? = StackHistoryHandler()
 
+    open var rotationGuidelineDetector: SmartRotationGuidelineDetector =
+        DefaultRotationSmartGuidelineDetector()
+
+    open var alignmentGuidelineDetector: SmartAlignmentGuidelineDetector =
+        DefaultAlignmentSmartGuidelineDetector()
+
+    open var handleTransformer: HandleTransformer = PerspectiveHandleTransformer(context)
+
+    protected open var childManager: ChildManager = LinkedListChildManager()
+        set(value) {
+            value.addAllChildren(field.getAllChildren())
+            field = value
+        }
+
     protected var rotationGuideline: RotationGuidelineResult? = null
 
     protected var alignmentGuideline: AlignmentGuidelineResult? = null
@@ -303,69 +253,19 @@ open class TransformTool(
         bounds = clipBounds
 
         childManager.forEach { child ->
-            initializeChild(child, shouldCalculateBounds = true)
+            initializeChild(child)
         }
     }
 
     protected open fun initializeChild(
         child: Child,
         isSelectChild: Boolean = false,
-        shouldCalculateBounds: Boolean,
-        shouldStickToTargetRect: Boolean = true
+        targetRect: RectF? = null
     ) {
         child.apply {
             transformable.onInvalidateListener = this@TransformTool
-
-            if (isSelectChild && shouldCalculateBounds) {
-                transformable.getBounds(targetComponentBounds)
-            }
-
-            if (!isSelectChild) {
-                transformable.getBounds(targetComponentBounds)
-
-                transformationMatrix.reset()
-                polyMatrix.reset()
-
-                if (shouldStickToTargetRect && targetRect != null) {
-                    changeMatrixToMatchRect(child, targetRect)
-                } else {
-                    transformationMatrix.setRectToRect(
-                        targetComponentBounds,
-                        bounds.toRectF(),
-                        Matrix.ScaleToFit.CENTER
-                    )
-                }
-            }
-
-            val w = targetComponentBounds.width()
-            val h = targetComponentBounds.height()
-
-            val wh = w * 0.5f
-            val hh = h * 0.5f
-
-            basePoints[0] = 0f
-            basePoints[1] = 0f
-            basePoints[2] = w
-            basePoints[3] = 0f
-            basePoints[4] = 0f
-            basePoints[5] = h
-            basePoints[6] = w
-            basePoints[7] = h
-
-            baseSizeChangeArray[0] = wh
-            baseSizeChangeArray[1] = 0f
-            baseSizeChangeArray[2] = w
-            baseSizeChangeArray[3] = hh
-            baseSizeChangeArray[4] = wh
-            baseSizeChangeArray[5] = h
-            baseSizeChangeArray[6] = 0f
-            baseSizeChangeArray[7] = hh
-
-            if (!isSelectChild) {
-                basePoints.copyInto(meshPoints)
-            }
-
-            mergeMatrices(child)
+            initialize(targetRect ?: RectF(bounds))
+            handleTransformer.createHandles(this)
         }
     }
 
@@ -379,138 +279,13 @@ open class TransformTool(
                 Matrix.ScaleToFit.CENTER
             )
 
-            mergeMatrices(child)
-
             onInvalidate()
         }
     }
 
     override fun onMoveBegin(touchData: TouchData) {
         currentSelectedChild?.let {
-            selectIndexes(it, touchData)
-        }
-    }
-
-    protected open fun selectIndexes(child: Child, touchData: TouchData) {
-
-        val range = touchRange / matrix.getRealScaleX()
-
-        child.baseSizeChangeArray.copyInto(cc)
-        mapMeshPoints(child, cc)
-
-        var nearest = range
-
-        firstSelectedIndex = -1
-        secondSelectedIndex = -1
-        thirdSelectedIndex = -1
-        forthSelectedIndex = -1
-        firstSizeChangeIndex = -1
-        secondSizeChangeIndex = -1
-
-        if (touchData.isNearPoint(cc[0], cc[1], range)) {
-            (abs(touchData.ex - cc[0]) + abs(touchData.ey - cc[1])).let {
-                if (it < nearest) {
-                    nearest = it
-                    firstSelectedIndex = 0
-                    secondSelectedIndex = 1
-                    thirdSelectedIndex = 2
-                    forthSelectedIndex = 3
-                    firstSizeChangeIndex = 0
-                    secondSizeChangeIndex = 1
-                    isOnlyMoveX = false
-                }
-            }
-        }
-
-        if (touchData.isNearPoint(cc[2], cc[3], range)) {
-            (abs(touchData.ex - cc[2]) + abs(touchData.ey - cc[3])).let {
-                if (it < nearest) {
-                    nearest = it
-                    firstSelectedIndex = 2
-                    secondSelectedIndex = 3
-                    thirdSelectedIndex = 6
-                    forthSelectedIndex = 7
-                    firstSizeChangeIndex = 2
-                    secondSizeChangeIndex = 3
-                    isOnlyMoveX = true
-                }
-            }
-
-        }
-        if (touchData.isNearPoint(cc[4], cc[5], range)) {
-            (abs(touchData.ex - cc[4]) + abs(touchData.ey - cc[5])).let {
-                if (it < nearest) {
-                    nearest = it
-                    firstSelectedIndex = 6
-                    secondSelectedIndex = 7
-                    thirdSelectedIndex = 4
-                    forthSelectedIndex = 5
-                    firstSizeChangeIndex = 4
-                    secondSizeChangeIndex = 5
-                    isOnlyMoveX = false
-                }
-            }
-
-        }
-        if (touchData.isNearPoint(cc[6], cc[7], range)) {
-            (abs(touchData.ex - cc[6]) + abs(touchData.ey - cc[7])).let {
-                if (it < nearest) {
-                    nearest = it
-                    firstSelectedIndex = 4
-                    secondSelectedIndex = 5
-                    thirdSelectedIndex = 0
-                    forthSelectedIndex = 1
-                    firstSizeChangeIndex = 6
-                    secondSizeChangeIndex = 7
-                    isOnlyMoveX = true
-                }
-            }
-        }
-
-        if (firstSizeChangeIndex > -1 && secondSizeChangeIndex > -1) {
-            map(child, cc)
-            lastX = cc[firstSizeChangeIndex]
-            lastY = cc[secondSizeChangeIndex]
-        }
-
-        if (!isFreeTransform) {
-            return
-        }
-
-        basePoints.copyInto(cc)
-        mapMeshPoints(child, cc)
-
-        if (touchData.isNearPoint(cc[0], cc[1], range)) {
-            (abs(touchData.ex - cc[0]) + abs(touchData.ey - cc[1])).let {
-                if (it < nearest) {
-                    firstSelectedIndex = 0
-                    secondSelectedIndex = 1
-                }
-            }
-        }
-        if (touchData.isNearPoint(cc[2], cc[3], range)) {
-            (abs(touchData.ex - cc[2]) + abs(touchData.ey - cc[3])).let {
-                if (it < nearest) {
-                    firstSelectedIndex = 2
-                    secondSelectedIndex = 3
-                }
-            }
-        }
-        if (touchData.isNearPoint(cc[4], cc[5], range)) {
-            (abs(touchData.ex - cc[4]) + abs(touchData.ey - cc[5])).let {
-                if (it < nearest) {
-                    firstSelectedIndex = 4
-                    secondSelectedIndex = 5
-                }
-            }
-        }
-        if (touchData.isNearPoint(cc[6], cc[7], range)) {
-            (abs(touchData.ex - cc[6]) + abs(touchData.ey - cc[7])).let {
-                if (it < nearest) {
-                    firstSelectedIndex = 6
-                    secondSelectedIndex = 7
-                }
-            }
+            handleTransformer.findHandle(it, touchData)
         }
     }
 
@@ -519,59 +294,28 @@ open class TransformTool(
             return
         }
         currentSelectedChild?.apply {
-            mapMeshPoints(this, touchData.ex, touchData.ey)
-
-            if (firstSelectedIndex > -1 && secondSelectedIndex > -1) {
-                if (thirdSelectedIndex > -1 && forthSelectedIndex > -1) {
-                    if (isFreeTransform) {
-                        var diff = pointHolder[0] - lastX
-                        meshPoints[firstSelectedIndex] += diff
-                        meshPoints[thirdSelectedIndex] += diff
-                        diff = pointHolder[1] - lastY
-                        meshPoints[secondSelectedIndex] += diff
-                        meshPoints[forthSelectedIndex] += diff
-                    } else if (isOnlyMoveX) {
-                        val diff = pointHolder[0] - lastX
-                        meshPoints[firstSelectedIndex] += diff
-                        meshPoints[thirdSelectedIndex] += diff
-                    } else {
-                        val diff = pointHolder[1] - lastY
-                        meshPoints[secondSelectedIndex] += diff
-                        meshPoints[forthSelectedIndex] += diff
-                    }
-
-                    lastX = pointHolder[0]
-                    lastY = pointHolder[1]
-
-                } else {
-                    meshPoints[firstSelectedIndex] = pointHolder[0]
-                    meshPoints[secondSelectedIndex] = pointHolder[1]
-                }
-            } else if (currentSelectedChild?.isPointInChildRect(touchData) == true) {
+            if (handleTransformer.selectedHandle != null) {
+                handleTransformer.transform(this, touchData)
+            } else if (isPointInChildRect(this, touchData)) {
                 mappingMatrix.setTranslate(touchData.dx, touchData.dy)
                 onTransformed(mappingMatrix)
             }
-
-            makePolyToPoly()
             onInvalidate()
         }
     }
 
     override fun onMoveEnded(touchData: TouchData) {
-        if (firstSelectedIndex == -1 && secondSelectedIndex == -1 && firstSizeChangeIndex == -1 && secondSizeChangeIndex == -1) {
+        if (handleTransformer.selectedHandle == null) {
 
             val lastSelected = currentSelectedChild
             currentSelectedChild = null
 
-            childManager.forEach { child ->
-                if (child.isPointInChildRect(touchData)) {
-                    currentSelectedChild = child
-                }
-            }
+            currentSelectedChild =
+                childManager.firstOrNull { child -> isPointInChildRect(child, touchData) }
 
             if (lastSelected !== currentSelectedChild) {
                 currentSelectedChild?.let {
-                    select(it, true)
+                    select(it)
                     onChildSelected?.invoke(it.transformable, false)
                 }
             }
@@ -581,29 +325,22 @@ open class TransformTool(
             }
 
             onInvalidate()
-
         } else {
             saveState(createState(currentSelectedChild))
         }
 
         eraseRotationSmartGuidelines()
 
-        firstSelectedIndex = -1
-        secondSelectedIndex = -1
-        thirdSelectedIndex = -1
-        forthSelectedIndex = -1
-        firstSizeChangeIndex = -1
-        secondSizeChangeIndex = -1
-
+        handleTransformer.selectedHandle = null
     }
 
-    protected fun Child.isPointInChildRect(touchData: TouchData): Boolean {
-        mapMeshPoints(this, touchData.ex, touchData.ey)
+    protected open fun isPointInChildRect(child: Child, touchData: TouchData): Boolean {
+        mapMeshPoints(child, touchData.ex, touchData.ey)
 
         val x = pointHolder[0]
         val y = pointHolder[1]
 
-        tempRect.setMaximumRect(meshPoints)
+        tempRect.setMaximumRect(child.meshPoints)
 
         return (x.coerceIn(
             tempRect.left,
@@ -613,13 +350,6 @@ open class TransformTool(
             tempRect.bottom
         ) == y)
     }
-
-    protected open fun makePolyToPoly() {
-        currentSelectedChild!!.apply {
-            polyMatrix.setPolyToPoly(basePoints, 0, meshPoints, 0, 4)
-        }
-    }
-
 
     protected open fun mapMeshPoints(child: Child, ex: Float, ey: Float) {
         pointHolder[0] = ex
@@ -632,24 +362,6 @@ open class TransformTool(
         mappingMatrix.mapPoints(array)
     }
 
-    protected open fun mapMeshPoints(child: Child, array: FloatArray) {
-        child.polyMatrix.mapPoints(array)
-        child.transformationMatrix.mapPoints(array)
-    }
-
-    /**
-     * Maps touch vectors for coordinate system transformation.
-     * This method converts touch deltas to the appropriate coordinate space.
-     *
-     * @param touchData The touch data containing delta values.
-     */
-    protected open fun mapVectors(touchData: TouchData) {
-        pointHolder[0] = touchData.dx
-        pointHolder[1] = touchData.dy
-        matrix.invert(mappingMatrix)
-        mappingMatrix.mapVectors(pointHolder)
-    }
-
     /**
      * Renders all child objects and their transformation UI elements to the canvas.
      * This method handles the complete rendering pipeline including bounds, handles, and guidelines.
@@ -659,9 +371,7 @@ open class TransformTool(
     override fun draw(canvas: Canvas) {
         childManager.forEach { child ->
 
-            mergeMatrices(child, false)
-
-            drawChild(canvas, child)
+            child.draw(canvas)
 
             val mergedCanvasMatrices = mergeCanvasMatrices()
             val sx = mergedCanvasMatrices.getRealScaleX()
@@ -675,7 +385,7 @@ open class TransformTool(
 
             if (child === currentSelectedChild && isBoundsEnabled) {
 
-                select(child)
+                child.mapMeshPointsByMatrices(mappingMatrix, mappedMeshPoints)
 
                 canvas.apply {
                     drawLine(
@@ -687,74 +397,33 @@ open class TransformTool(
                     )
 
                     drawLine(
-                        mappedMeshPoints[4],
-                        mappedMeshPoints[5],
-                        mappedMeshPoints[6],
-                        mappedMeshPoints[7],
-                        boundPaint
-                    )
-
-                    drawLine(
-                        mappedMeshPoints[0],
-                        mappedMeshPoints[1],
-                        mappedMeshPoints[4],
-                        mappedMeshPoints[5],
-                        boundPaint
-                    )
-
-                    drawLine(
                         mappedMeshPoints[2],
                         mappedMeshPoints[3],
+                        mappedMeshPoints[4],
+                        mappedMeshPoints[5],
+                        boundPaint
+                    )
+
+                    drawLine(
+                        mappedMeshPoints[4],
+                        mappedMeshPoints[5],
                         mappedMeshPoints[6],
                         mappedMeshPoints[7],
                         boundPaint
                     )
-                }
 
-                if (isFreeTransform) {
-                    resizeAndDrawDrawable(
-                        mappedMeshPoints[0].toInt(),
-                        mappedMeshPoints[1].toInt(),
-                        canvas
-                    )
-                    resizeAndDrawDrawable(
-                        mappedMeshPoints[2].toInt(),
-                        mappedMeshPoints[3].toInt(),
-                        canvas
-                    )
-                    resizeAndDrawDrawable(
-                        mappedMeshPoints[4].toInt(),
-                        mappedMeshPoints[5].toInt(),
-                        canvas
-                    )
-                    resizeAndDrawDrawable(
-                        mappedMeshPoints[6].toInt(),
-                        mappedMeshPoints[7].toInt(),
-                        canvas
+                    drawLine(
+                        mappedMeshPoints[6],
+                        mappedMeshPoints[7],
+                        mappedMeshPoints[0],
+                        mappedMeshPoints[1],
+                        boundPaint
                     )
                 }
 
-
-                resizeAndDrawDrawable(
-                    mappedBaseSizeChangePoints[0].toInt(),
-                    mappedBaseSizeChangePoints[1].toInt(),
-                    canvas
-                )
-                resizeAndDrawDrawable(
-                    mappedBaseSizeChangePoints[2].toInt(),
-                    mappedBaseSizeChangePoints[3].toInt(),
-                    canvas
-                )
-                resizeAndDrawDrawable(
-                    mappedBaseSizeChangePoints[4].toInt(),
-                    mappedBaseSizeChangePoints[5].toInt(),
-                    canvas
-                )
-                resizeAndDrawDrawable(
-                    mappedBaseSizeChangePoints[6].toInt(),
-                    mappedBaseSizeChangePoints[7].toInt(),
-                    canvas
-                )
+                handleTransformer.getAllHandles(child).forEach {
+                    resizeAndDrawDrawable(it.x, it.y, canvas)
+                }
 
                 rotationGuideline?.let { rotationGuideline ->
                     canvas.drawLines(rotationGuideline.guideline.lineArray, smartGuidePaint)
@@ -783,37 +452,17 @@ open class TransformTool(
      * @param y The y-coordinate for the handle center.
      * @param canvas The canvas to draw the handle on.
      */
-    protected open fun resizeAndDrawDrawable(x: Int, y: Int, canvas: Canvas) {
+    protected open fun resizeAndDrawDrawable(x: Float, y: Float, canvas: Canvas) {
         val hw = handleDrawable.intrinsicWidth / 2
         val hh = handleDrawable.intrinsicHeight / 2
         handleDrawable.setBounds(
-            x - hw,
-            y - hh,
-            hw + x,
-            hh + y
+            (x - hw).toInt(),
+            (y - hh).toInt(),
+            (hw + x).toInt(),
+            (hh + y).toInt()
         )
 
         handleDrawable.draw(canvas)
-    }
-
-    /**
-     * Draws a single child object with its transformation matrix applied.
-     * This method handles the matrix concatenation for proper object positioning.
-     *
-     * @param canvas The canvas to draw on.
-     * @param child The child object to draw.
-     */
-    protected open fun drawChild(canvas: Canvas, child: Child) {
-        canvas.apply {
-            withSave {
-
-                concat(mappingMatrix)
-
-                child.transformable.draw(this)
-
-            }
-
-        }
     }
 
     /**
@@ -871,7 +520,6 @@ open class TransformTool(
         currentSelectedChild?.apply {
             transformationMatrix.postConcat(transformMatrix)
             findAllGuidelines()
-            mergeMatrices(this)
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -896,7 +544,7 @@ open class TransformTool(
             alignmentGuidelineDetector.detectAlignmentGuidelines(
                 child,
                 childManager - child,
-                bounds.toRectF()
+                RectF(bounds)
             )?.apply {
                 child.transformationMatrix.postConcat(transformation)
             }
@@ -917,22 +565,6 @@ open class TransformTool(
     }
 
     /**
-     * Merges all transformation matrices for a child object.
-     * This method combines the transformation and poly matrices for final rendering.
-     *
-     * @param shouldMap Whether to map final points for drawing.
-     */
-
-    private fun mergeMatrices(child: Child, shouldMap: Boolean = true) {
-        if (shouldMap) {
-            child.mapMeshPointsByMatrices(mappingMatrix, mappedMeshPoints)
-            child.mapSizeChangePointsByMatrices(mappingMatrix, mappedBaseSizeChangePoints)
-        }
-        mappingMatrix.set(child.transformationMatrix)
-        mappingMatrix.preConcat(child.polyMatrix)
-    }
-
-    /**
      * Applies all child transformations to the current layer's bitmap.
      * This method permanently renders all transformations to the layer.
      */
@@ -943,7 +575,7 @@ open class TransformTool(
 
             childManager.forEach { child ->
                 select(child)
-                drawChild(finalCanvas, child)
+                child.draw(finalCanvas)
             }
 
             sendMessage(PainterMessage.SAVE_HISTORY)
@@ -958,9 +590,10 @@ open class TransformTool(
      */
     override fun onBoundsChange() {
         currentSelectedChild?.let { child ->
-            tempRect.set(targetComponentBounds)
 
-            select(child, true)
+            child.getBounds(tempRect)
+            child.updateBounds()
+            child.getBounds(targetComponentBounds)
 
             val tw = targetComponentBounds.width()
             val th = targetComponentBounds.height()
@@ -969,17 +602,16 @@ open class TransformTool(
             val lh = tempRect.height()
 
             child.apply {
-
                 tempRect.setMaximumRect(meshPoints)
 
                 mappingMatrix.apply {
                     setScale(tw / lw, th / lh, tempRect.centerX(), tempRect.centerY())
                     mapPoints(meshPoints)
                 }
-
             }
-            makePolyToPoly()
-            mergeMatrices(child)
+
+            handleTransformer.createHandles(child)
+
             onInvalidate()
         }
     }
@@ -1007,7 +639,7 @@ open class TransformTool(
 
         currentSelectedChild = Child(
             transformable, MananMatrix(), MananMatrix(), FloatArray(8),
-            FloatArray(8), targetRect
+            FloatArray(8), FloatArray(8)
         )
 
         val initialChildren = childManager.getAllChildren()
@@ -1017,7 +649,7 @@ open class TransformTool(
         onChildSelected?.invoke(currentSelectedChild!!.transformable, true)
 
         if (isInitialized) {
-            initializeChild(currentSelectedChild!!, shouldCalculateBounds = true)
+            initializeChild(currentSelectedChild!!)
             onInvalidate()
         }
 
@@ -1030,7 +662,7 @@ open class TransformTool(
      */
     open fun bringSelectedChildUp() {
         getSelectedChildIndexAndCompare(childManager.getAllChildren().lastIndex) { child, selectedChildIndex ->
-            swap(selectedChildIndex + 1, selectedChildIndex)
+            childManager.swap(selectedChildIndex + 1, selectedChildIndex)
         }
     }
 
@@ -1040,7 +672,7 @@ open class TransformTool(
      */
     open fun bringSelectedChildToFront() {
         getSelectedChildIndexAndCompare(childManager.getAllChildren().lastIndex) { _, selectedChildIndex ->
-            bringFromIndexToIndex(selectedChildIndex, childManager.getAllChildren().lastIndex)
+            childManager.reorder(selectedChildIndex, childManager.getAllChildren().lastIndex)
         }
     }
 
@@ -1050,7 +682,9 @@ open class TransformTool(
      */
     open fun bringSelectedChildDown() {
         getSelectedChildIndexAndCompare(0) { child, selectedChildIndex ->
-            swap(selectedChildIndex - 1, selectedChildIndex)
+            doAndSaveState {
+                childManager.swap(selectedChildIndex - 1, selectedChildIndex)
+            }
         }
     }
 
@@ -1060,7 +694,9 @@ open class TransformTool(
      */
     open fun bringSelectedChildToBack() {
         getSelectedChildIndexAndCompare(0) { _, selectedChildIndex ->
-            bringFromIndexToIndex(selectedChildIndex, 0)
+            doAndSaveState {
+                childManager.reorder(selectedChildIndex, 0)
+            }
         }
     }
 
@@ -1085,32 +721,9 @@ open class TransformTool(
         }
     }
 
-    /**
-     * Swaps two children in the rendering order.
-     * This method exchanges the positions of two objects in the z-order.
-     *
-     * @param firstIndex The index of the first object.
-     * @param secondIndex The index of the second object.
-     * @param child The child object being moved.
-     */
-    protected open fun swap(firstIndex: Int, secondIndex: Int) {
-        val initialChildren = childManager.toList()
-        childManager.swap(firstIndex, secondIndex)
-        saveState(createState(currentSelectedChild, initialChildren))
-    }
-
-    /**
-     * Moves an object from one index to another in the rendering order.
-     * This method handles moving objects to the front or back of the z-order.
-     *
-     * @param fromIndex The current index of the object.
-     * @param toIndex The target index for the object.
-     */
-    protected open fun bringFromIndexToIndex(fromIndex: Int, toIndex: Int) {
+    protected fun doAndSaveState(operation: () -> Unit) {
         val initialChildren = childManager.getAllChildren()
-
-        childManager.reorder(fromIndex, toIndex)
-
+        operation()
         saveState(createState(currentSelectedChild, initialChildren))
     }
 
@@ -1159,8 +772,12 @@ open class TransformTool(
      *
      * @param shouldCalculateBounds Whether to recalculate the object's bounds.
      */
-    private fun select(child: Child, shouldCalculateBounds: Boolean = false) {
-        initializeChild(child, true, shouldCalculateBounds)
+    protected open fun select(child: Child) {
+        child.apply {
+            transformable.onInvalidateListener = this@TransformTool
+            transformable.getBounds(targetComponentBounds)
+            handleTransformer.createHandles(child)
+        }
     }
 
 
@@ -1228,7 +845,6 @@ open class TransformTool(
                 tempRect.centerY()
             )
             transformationMatrix.preConcat(mappingMatrix)
-            mergeMatrices(this)
             findAllGuidelines()
             saveState(createState(this))
             sendMessage(PainterMessage.INVALIDATE)
@@ -1277,10 +893,9 @@ open class TransformTool(
      */
     protected fun Child.preConcatTransformationMatrix(matrix: Matrix) {
         transformationMatrix.preConcat(matrix)
-        mergeMatrices(this)
         findAllGuidelines()
         saveState(createState(this))
-        sendMessage(PainterMessage.INVALIDATE)
+        onInvalidate()
     }
 
     /**
@@ -1289,9 +904,9 @@ open class TransformTool(
      *
      * @param resetToBounds If true, resets to original object bounds; if false, resets to canvas bounds.
      */
-    open fun resetSelectedChildMatrix(resetToBounds: Boolean) {
+    open fun resetSelectedChildMatrix(resetToBoundsRect: RectF? = null) {
         currentSelectedChild?.apply {
-            initializeChild(this, false, false, resetToBounds)
+            initializeChild(this, false, resetToBoundsRect)
             findAllGuidelines()
             saveState(createState(this))
             sendMessage(PainterMessage.INVALIDATE)
@@ -1308,7 +923,6 @@ open class TransformTool(
         currentSelectedChild?.apply {
             transformationMatrix.set(matrix)
             findAllGuidelines()
-            mergeMatrices(this)
             saveState(createState(this))
             onInvalidate()
         }
@@ -1333,8 +947,7 @@ open class TransformTool(
      */
     open fun getSelectedChildBounds(rect: RectF): Boolean {
         currentSelectedChild?.let { child ->
-            child.mapMeshPointsByMatrices(mappingMatrix, mappedMeshPoints)
-            rect.setMaximumRect(mappedMeshPoints)
+            child.getTransformedBounds(mappingMatrix, rect)
             return true
         }
         return false
@@ -1486,7 +1099,7 @@ open class TransformTool(
             currentSelectedChild = reference
 
             currentSelectedChild?.apply {
-                select(this, true)
+                select(this)
                 onChildSelected?.invoke(transformable, false)
             }
 

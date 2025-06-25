@@ -1,4 +1,4 @@
-package ir.baboomeh.photolib.components.paint.painters.transform.managers
+package ir.baboomeh.photolib.components.paint.painters.transform.managers.child
 
 import ir.baboomeh.photolib.components.paint.painters.transform.Child
 import java.util.LinkedList
