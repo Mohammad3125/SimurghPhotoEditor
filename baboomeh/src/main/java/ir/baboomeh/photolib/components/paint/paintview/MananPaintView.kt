@@ -42,37 +42,37 @@ import kotlin.math.abs
 
 /**
  * Advanced paint view that provides comprehensive canvas transformation and painting capabilities.
- * 
+ *
  * This view serves as the foundation for sophisticated image editing and digital art applications.
  * It combines multi-touch gesture recognition with matrix-based transformations to provide
  * a smooth, responsive painting experience similar to professional graphics software.
- * 
+ *
  * **Core Features:**
  * - **Multi-touch Gestures**: Support for pan, pinch-zoom, and rotation gestures.
  * - **Matrix Transformations**: Smooth canvas transformations with animation support.
  * - **Painter Integration**: Seamless integration with painting tools and brushes.
  * - **Touch Mapping**: Precise coordinate transformation for accurate painting.
  * - **Performance Optimization**: Intelligent gesture detection and rendering optimization.
- * 
+ *
  * **Gesture System:**
  * - **Single Touch**: Direct painting and drawing operations.
  * - **Two Finger Pan**: Canvas translation with momentum.
  * - **Pinch Zoom**: Smooth scaling with configurable limits.
  * - **Two Finger Rotation**: Canvas rotation with precision control.
  * - **Double Tap**: Configurable zoom and tool actions.
- * 
+ *
  * **Transformation Features:**
  * - **Animated Transitions**: Smooth matrix animations with customizable duration.
  * - **Coordinate Mapping**: Automatic transformation between screen and canvas coordinates.
  * - **Gesture Delegation**: Optional gesture forwarding to painting tools.
  * - **Reset Functionality**: Return to default view state with animation.
- * 
+ *
  * **Layer Support:**
  * - **Single Layer Mode**: Basic painting on a single bitmap layer.
  * - **Layer Properties**: Opacity, blending modes, and lock states.
  * - **Bitmap Management**: Automatic bitmap handling and memory optimization.
  * - **Transparency Support**: Checkerboard background for alpha channel visualization.
- * 
+ *
  * **Technical Architecture:**
  * - Thread-safe operation with proper synchronization.
  * - Memory-efficient bitmap handling with recycling support.
@@ -89,6 +89,11 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     /** Paint used for rendering layer bitmaps with filtering enabled for smooth scaling. */
     protected val layersPaint by lazy {
+        Paint().apply {
+            isFilterBitmap = true
+        }
+    }
+    protected val bitmapPaint by lazy {
         Paint().apply {
             isFilterBitmap = true
         }
@@ -281,10 +286,10 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     /** Controls whether rotation gestures are recognized and processed. */
     open var isRotatingEnabled = true
-    
+
     /** Controls whether scaling gestures are recognized and processed. */
     open var isScalingEnabled = true
-    
+
     /** Controls whether translation gestures are recognized and processed. */
     open var isTranslationEnabled = true
 
@@ -294,6 +299,7 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
 
     /** Rectangle bounds for animation end state. */
     protected val endRect = Rect()
+
     /** Rectangle bounds for animation start state. */
     protected val startRect = Rect()
 

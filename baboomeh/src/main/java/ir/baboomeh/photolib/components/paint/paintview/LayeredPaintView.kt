@@ -407,22 +407,15 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
 
             if (isAllLayersCached && !isAnyLayerBlending()) {
                 // Optimized rendering with cached layers.
-                layersPaint.xfermode = null
-                layersPaint.alpha = 255
-                drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+                drawBitmap(partiallyCachedLayer, 0f, 0f, bitmapPaint)
 
                 drawPainterLayer(canvas)
 
-                layersPaint.xfermode = null
-                layersPaint.alpha = 255
-
-                drawBitmap(cachedLayer, 0f, 0f, layersPaint)
+                drawBitmap(cachedLayer, 0f, 0f, bitmapPaint)
             } else {
                 // Mixed rendering for partial caching or blending layers.
                 if (this@LayeredPaintView::partiallyCachedLayer.isInitialized) {
-                    layersPaint.xfermode = null
-                    layersPaint.alpha = 255
-                    drawBitmap(partiallyCachedLayer, 0f, 0f, layersPaint)
+                    drawBitmap(partiallyCachedLayer, 0f, 0f, bitmapPaint)
                 }
 
                 drawPainterLayer(canvas)
