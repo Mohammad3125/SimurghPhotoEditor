@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.util.AttributeSet
@@ -56,6 +57,12 @@ open class LayeredPaintView(context: Context, attrSet: AttributeSet?) :
      * Constructor for programmatic view creation without attributes.
      */
     constructor(context: Context) : this(context, null)
+
+    protected val bitmapPaint by lazy {
+        Paint().apply {
+            isFilterBitmap = true
+        }
+    }
 
     /**
      * Controls whether the checkerboard transparency background is displayed.

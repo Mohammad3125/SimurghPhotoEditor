@@ -93,11 +93,6 @@ open class MananPaintView(context: Context, attrSet: AttributeSet?) :
             isFilterBitmap = true
         }
     }
-    protected val bitmapPaint by lazy {
-        Paint().apply {
-            isFilterBitmap = true
-        }
-    }
 
     /** Flag indicating whether a matrix transformation gesture is in progress. */
     protected var isMatrixGesture = false
