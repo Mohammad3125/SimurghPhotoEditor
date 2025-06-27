@@ -1,4 +1,4 @@
-package ir.simurgh.photolib.components.paint.painters.brushpaint.brushes
+package ir.simurgh.photolib.components.paint.painters.painting.brushes
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

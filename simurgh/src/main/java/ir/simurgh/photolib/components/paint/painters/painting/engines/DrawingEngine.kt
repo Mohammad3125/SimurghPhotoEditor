@@ -1,7 +1,7 @@
-package ir.simurgh.photolib.components.paint.engines
+package ir.simurgh.photolib.components.paint.painters.painting.engines
 
 import android.graphics.Canvas
-import ir.simurgh.photolib.components.paint.painters.brushpaint.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.brushes.Brush
 import ir.simurgh.photolib.utils.gesture.TouchData
 
 /**
@@ -25,8 +25,8 @@ import ir.simurgh.photolib.utils.gesture.TouchData
  * 2. [draw] - Called multiple times to render individual brush stamps
  * 3. [onMoveEnded] - Finalize stroke rendering
  *
- * @see ir.simurgh.photolib.components.paint.engines.CanvasDrawingEngine
- * @see ir.simurgh.photolib.components.paint.engines.CachedCanvasEngine
+ * @see CanvasDrawingEngine
+ * @see CachedCanvasEngine
  */
 interface DrawingEngine {
 

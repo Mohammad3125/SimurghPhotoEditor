@@ -13,9 +13,9 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.view.animation.LinearInterpolator
 import androidx.core.graphics.withSave
+import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
-import ir.simurgh.photolib.components.paint.paintview.PaintLayer
 import ir.simurgh.photolib.components.shapes.Shape
 import ir.simurgh.photolib.properties.MaskTool
 import ir.simurgh.photolib.utils.extensions.dp

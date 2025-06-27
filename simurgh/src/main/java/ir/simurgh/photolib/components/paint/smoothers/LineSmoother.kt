@@ -1,6 +1,6 @@
 package ir.simurgh.photolib.components.paint.smoothers
 
-import ir.simurgh.photolib.components.paint.painters.brushpaint.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.brushes.Brush
 import ir.simurgh.photolib.utils.gesture.TouchData
 
 /**

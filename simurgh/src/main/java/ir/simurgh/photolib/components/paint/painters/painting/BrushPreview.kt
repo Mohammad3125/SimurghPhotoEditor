@@ -1,4 +1,4 @@
-package ir.simurgh.photolib.components.paint.painters.brushpaint
+package ir.simurgh.photolib.components.paint.painters.painting
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -14,8 +14,8 @@ import android.view.View
 import androidx.core.graphics.createBitmap
 import androidx.core.view.doOnLayout
 import ir.simurgh.photolib.R
-import ir.simurgh.photolib.components.paint.engines.CachedCanvasEngine
-import ir.simurgh.photolib.components.paint.painters.brushpaint.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.engines.CachedCanvasEngine
 import ir.simurgh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.simurgh.photolib.components.paint.smoothers.LineSmoother
 import ir.simurgh.photolib.utils.extensions.dp

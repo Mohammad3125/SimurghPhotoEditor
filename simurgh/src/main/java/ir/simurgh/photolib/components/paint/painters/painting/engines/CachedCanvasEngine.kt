@@ -1,8 +1,8 @@
-package ir.simurgh.photolib.components.paint.engines
+package ir.simurgh.photolib.components.paint.painters.painting.engines
 
 import android.graphics.Canvas
 import androidx.core.graphics.withSave
-import ir.simurgh.photolib.components.paint.painters.brushpaint.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.brushes.Brush
 import ir.simurgh.photolib.utils.gesture.GestureUtils
 import ir.simurgh.photolib.utils.gesture.TouchData
 import kotlin.random.Random
@@ -45,7 +45,7 @@ import kotlin.random.Random
  * ```
  *
  * @see CanvasDrawingEngine for full-featured real-time rendering
- * @see ir.simurgh.photolib.components.paint.painters.brushpaint.BrushPreview for usage example
+ * @see ir.simurgh.photolib.components.paint.painters.painting.BrushPreview for usage example
  */
 open class CachedCanvasEngine : DrawingEngine {
 

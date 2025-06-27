@@ -6,7 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.RectF
-import ir.simurgh.photolib.components.paint.paintview.PaintLayer
+import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.utils.gesture.TouchData
 import ir.simurgh.photolib.utils.history.HistoryHandler
 import ir.simurgh.photolib.utils.matrix.SimurghMatrix
@@ -34,7 +34,7 @@ import ir.simurgh.photolib.utils.matrix.SimurghMatrix
  * 3. [draw] - Render tool-specific graphics
  * 4. [release] - Clean up resources
  *
- * @see ir.simurgh.photolib.components.paint.painters.brushpaint.BrushPainter
+ * @see ir.simurgh.photolib.components.paint.painters.painting.BrushPainter
  * @see ir.simurgh.photolib.components.paint.painters.transform.TransformTool
  * @see ir.simurgh.photolib.components.paint.painters.selection.LassoTool
  */

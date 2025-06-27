@@ -1,4 +1,4 @@
-package ir.simurgh.photolib.components.paint.paintview
+package ir.simurgh.photolib.components.paint.painter_view
 
 import android.animation.RectEvaluator
 import android.animation.TimeInterpolator

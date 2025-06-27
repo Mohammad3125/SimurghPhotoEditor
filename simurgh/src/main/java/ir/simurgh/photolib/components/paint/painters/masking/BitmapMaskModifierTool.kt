@@ -8,10 +8,10 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
-import ir.simurgh.photolib.components.paint.engines.DrawingEngine
-import ir.simurgh.photolib.components.paint.painters.brushpaint.brushes.Brush
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
+import ir.simurgh.photolib.components.paint.painters.painting.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.engines.DrawingEngine
 import ir.simurgh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.simurgh.photolib.components.paint.smoothers.LineSmoother
 import ir.simurgh.photolib.utils.gesture.TouchData

@@ -1,11 +1,11 @@
-package ir.simurgh.photolib.components.paint.engines
+package ir.simurgh.photolib.components.paint.painters.painting.engines
 
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
 import androidx.annotation.ColorInt
 import androidx.core.graphics.withSave
-import ir.simurgh.photolib.components.paint.painters.brushpaint.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.brushes.Brush
 import ir.simurgh.photolib.utils.MathUtils
 import ir.simurgh.photolib.utils.gesture.GestureUtils
 import ir.simurgh.photolib.utils.gesture.TouchData

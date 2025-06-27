@@ -8,8 +8,8 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import androidx.core.graphics.toRect
-import ir.simurgh.photolib.components.paint.painters.brushpaint.BrushPreview
-import ir.simurgh.photolib.components.paint.painters.brushpaint.brushes.Brush
+import ir.simurgh.photolib.components.paint.painters.painting.BrushPreview
+import ir.simurgh.photolib.components.paint.painters.painting.brushes.Brush
 import ir.simurgh.photolib.components.paint.smoothers.BasicSmoother
 
 open class PathBitmapClipper(

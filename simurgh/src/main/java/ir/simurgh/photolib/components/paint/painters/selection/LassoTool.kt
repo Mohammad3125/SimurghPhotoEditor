@@ -7,10 +7,10 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
+import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.components.paint.painters.coloring.LassoColorPainter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
 import ir.simurgh.photolib.components.paint.painters.selection.clippers.PathBitmapClipper
-import ir.simurgh.photolib.components.paint.paintview.PaintLayer
 import ir.simurgh.photolib.utils.gesture.TouchData
 import ir.simurgh.photolib.utils.matrix.SimurghMatrix
 
