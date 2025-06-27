@@ -11,7 +11,7 @@ import kotlin.math.abs
  * delta movement, cumulative movement, pressure, and timing information.
  * @param listener The callback interface to receive translation events.
  */
-open class TranslationDetector(var listener: OnTranslationDetector) : Gesture {
+open class TranslationDetector(var listener: OnTranslationListener) : Gesture {
 
     /** Initial X coordinate of the first touch point. */
     protected var initialX = 0f

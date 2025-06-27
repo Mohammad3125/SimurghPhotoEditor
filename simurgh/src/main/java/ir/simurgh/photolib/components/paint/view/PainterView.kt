@@ -34,7 +34,7 @@ import ir.simurgh.photolib.utils.gesture.TouchData
 import ir.simurgh.photolib.utils.gesture.detectors.rotation.OnRotateListener
 import ir.simurgh.photolib.utils.gesture.detectors.rotation.RotationDetectorGesture
 import ir.simurgh.photolib.utils.gesture.detectors.rotation.TwoFingerRotationDetector
-import ir.simurgh.photolib.utils.gesture.detectors.translation.OnTranslationDetector
+import ir.simurgh.photolib.utils.gesture.detectors.translation.OnTranslationListener
 import ir.simurgh.photolib.utils.gesture.detectors.translation.TranslationDetector
 import ir.simurgh.photolib.utils.matrix.MatrixAnimator
 import ir.simurgh.photolib.utils.matrix.SimurghMatrix
@@ -76,7 +76,7 @@ import kotlin.math.abs
 open class PainterView(context: Context, attrSet: AttributeSet?) :
     View(context, attrSet), MessageChannel,
     ScaleGestureDetector.OnScaleGestureListener,
-    OnRotateListener, OnTranslationDetector {
+    OnRotateListener, OnTranslationListener {
 
     /** Alternative constructor for programmatic view creation without attributes. */
     constructor(context: Context) : this(context, null)

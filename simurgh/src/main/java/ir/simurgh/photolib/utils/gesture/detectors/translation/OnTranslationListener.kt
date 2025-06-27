@@ -4,7 +4,7 @@ package ir.simurgh.photolib.utils.gesture.detectors.translation
  * Interface for receiving callbacks about translation (pan/move) gesture events.
  * This interface provides methods to handle the start, progress, and end of translation gestures.
  */
-interface OnTranslationDetector {
+interface OnTranslationListener {
     /**
      * Called when a translation gesture begins.
      * This is typically triggered when the user first touches the screen.
