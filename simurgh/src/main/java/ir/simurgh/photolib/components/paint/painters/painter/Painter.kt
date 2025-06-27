@@ -6,7 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.RectF
-import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
+import ir.simurgh.photolib.components.paint.view.PaintLayer
 import ir.simurgh.photolib.utils.gesture.TouchData
 import ir.simurgh.photolib.utils.history.HistoryHandler
 import ir.simurgh.photolib.utils.matrix.SimurghMatrix

@@ -1,4 +1,4 @@
-package ir.simurgh.photolib.components.paint.painter_view
+package ir.simurgh.photolib.components.paint.view
 
 import android.graphics.Bitmap
 import android.graphics.PorterDuff

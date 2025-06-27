@@ -11,7 +11,6 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import androidx.core.content.res.ResourcesCompat
 import ir.simurgh.photolib.R
-import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.components.paint.painters.painter.MessageChannel
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
@@ -33,6 +32,7 @@ import ir.simurgh.photolib.components.paint.painters.transform.smartguideline.Ro
 import ir.simurgh.photolib.components.paint.painters.transform.smartguideline.SmartAlignmentGuidelineDetector
 import ir.simurgh.photolib.components.paint.painters.transform.smartguideline.SmartRotationGuidelineDetector
 import ir.simurgh.photolib.components.paint.painters.transform.transformables.Transformable
+import ir.simurgh.photolib.components.paint.view.PaintLayer
 import ir.simurgh.photolib.utils.extensions.dp
 import ir.simurgh.photolib.utils.extensions.setMaximumRect
 import ir.simurgh.photolib.utils.gesture.TouchData

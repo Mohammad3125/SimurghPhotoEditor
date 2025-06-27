@@ -2,8 +2,8 @@ package ir.simurgh.photolib.components.paint.painters.coloring.flood
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
+import ir.simurgh.photolib.components.paint.view.PaintLayer
 import ir.simurgh.photolib.utils.gesture.TouchData
 
 /**

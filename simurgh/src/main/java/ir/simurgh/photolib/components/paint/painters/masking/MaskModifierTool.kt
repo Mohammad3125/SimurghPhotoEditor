@@ -10,11 +10,11 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import androidx.core.graphics.createBitmap
-import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.components.paint.painters.painter.MessageChannel
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
 import ir.simurgh.photolib.components.paint.painters.selection.clippers.BitmapMaskClipper
+import ir.simurgh.photolib.components.paint.view.PaintLayer
 import ir.simurgh.photolib.utils.gesture.TouchData
 import ir.simurgh.photolib.utils.history.HistoryState
 import ir.simurgh.photolib.utils.history.handlers.StackFullRestoreHistoryHandler

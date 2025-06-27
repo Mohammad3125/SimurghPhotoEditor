@@ -12,12 +12,12 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.view.animation.LinearInterpolator
-import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
 import ir.simurgh.photolib.components.paint.painters.painting.brushes.NativeBrush
 import ir.simurgh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.simurgh.photolib.components.paint.smoothers.LineSmoother
+import ir.simurgh.photolib.components.paint.view.PaintLayer
 import ir.simurgh.photolib.properties.MaskTool
 import ir.simurgh.photolib.utils.extensions.dp
 import ir.simurgh.photolib.utils.gesture.TouchData

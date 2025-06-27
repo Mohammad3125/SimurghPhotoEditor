@@ -14,9 +14,9 @@ import android.graphics.Rect
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
 import androidx.core.graphics.toColorInt
-import ir.simurgh.photolib.components.paint.painter_view.PaintLayer
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
+import ir.simurgh.photolib.components.paint.view.PaintLayer
 import ir.simurgh.photolib.utils.extensions.dp
 import ir.simurgh.photolib.utils.gesture.GestureUtils
 import ir.simurgh.photolib.utils.gesture.TouchData
