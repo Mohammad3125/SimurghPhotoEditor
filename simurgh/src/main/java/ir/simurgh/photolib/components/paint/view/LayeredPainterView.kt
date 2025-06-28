@@ -161,6 +161,8 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
     /**
      * Controls whether layer caching is enabled for performance optimization.
      * When enabled, layers are pre-composited to reduce rendering overhead.
+     * Take into consideration that caching creates two bitmaps with size of the current layers in painterView
+     * And can be memory-heavy.
      */
     open var isCachingEnabled = false
         set(value) {
@@ -504,10 +506,10 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
 
     /**
      * Creates a new layer based on the current view dimensions and adds it to the layer stack.
-     * This method requires that [addNewLayer(bitmap)] has been called previously to establish
+     * This method requires that [addNewLayer(bitmap)] or [addNewLayer(layer)] has been called previously to establish
      * the view dimensions.
      *
-     * @throws IllegalStateException If the view hasn't been initialized with bitmap dimensions.
+     * @throws IllegalStateException If there isn't any layer to base the new layer on.
      */
     open fun addNewLayer() {
         if (!isViewInitialized) {
@@ -541,7 +543,7 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
      *
      * @param layer The layer to add to the layer stack.
      */
-    open fun addNewLayer(layer: PaintLayer) {
+    override fun addNewLayer(layer: PaintLayer) {
         initializeBitmap(layer.bitmap)
 
         addNewLayerWithoutLayoutReset(layer)

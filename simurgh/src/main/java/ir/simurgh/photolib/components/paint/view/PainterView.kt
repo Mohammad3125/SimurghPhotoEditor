@@ -1015,7 +1015,7 @@ open class PainterView(context: Context, attrSet: AttributeSet?) :
     /**
      * Applies a matrix transformation to the canvas matrix.
      */
-    open fun applyCanvasMatrix(matrix: Matrix) {
+    open fun concatCanvasMatrix(matrix: Matrix) {
         canvasMatrix.postConcat(matrix)
         invalidate()
     }
@@ -1112,24 +1112,41 @@ open class PainterView(context: Context, attrSet: AttributeSet?) :
      * The bitmap must be mutable to allow painting operations.
      */
     open fun addNewLayer(bitmap: Bitmap?) {
-        if (bitmap != null) {
-            if (!bitmap.isMutable) {
-                throw IllegalStateException("Bitmap should be mutable")
-            }
-
-            isNewLayer = true
-            bitmapWidth = bitmap.width
-            bitmapHeight = bitmap.height
-            isViewInitialized = false
-
-            layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
-            identityClip.set(layerClipBounds)
+        bitmap?.let {
+            initializeBitmap(it)
 
             selectedLayer = PaintLayer(bitmap, false, 1f)
 
             requestLayout()
             invalidate()
         }
+    }
+
+    /**
+     * Adds a new layer using the provided PaintLayer object.
+     *
+     * @param layer The layer to add to the layer stack.
+     */
+    open fun addNewLayer(layer: PaintLayer) {
+        initializeBitmap(layer.bitmap)
+        selectedLayer = layer
+
+        requestLayout()
+        invalidate()
+    }
+
+    private fun initializeBitmap(bitmap: Bitmap) {
+        if (!bitmap.isMutable) {
+            throw IllegalStateException("Bitmap should be mutable")
+        }
+
+        isNewLayer = true
+        bitmapWidth = bitmap.width
+        bitmapHeight = bitmap.height
+        isViewInitialized = false
+
+        layerClipBounds.set(0, 0, bitmapWidth, bitmapHeight)
+        identityClip.set(layerClipBounds)
     }
 
     /**
