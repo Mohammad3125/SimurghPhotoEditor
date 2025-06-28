@@ -62,7 +62,6 @@ open class BitmapBrush(
     startTaperSize: Float = 1f,
     texture: Bitmap? = null,
     textureTransformation: Matrix? = null,
-    softness: Float = 0.2f,
     open var brushBitmap: Bitmap? = null
 ) : Brush(size,
     color,

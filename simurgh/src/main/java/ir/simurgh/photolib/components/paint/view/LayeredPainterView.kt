@@ -745,7 +745,7 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
      * @param opacity The new opacity value (0.0 to 1.0).
      * @throws ArrayIndexOutOfBoundsException If the index is invalid.
      */
-    open fun changeLayerOpacityAt(index: Int, opacity: Float) {
+    open fun setLayerOpacityAt(index: Int, opacity: Float) {
         checkIndex(index)
 
         layerHolder[index].apply {
@@ -804,6 +804,11 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
         cacheLayers()
 
         invalidate()
+    }
+    
+    open fun getLayerBlendingModeAt(index: Int): PorterDuff.Mode {
+        checkIndex(index)
+        return layerHolder[index].blendingMode
     }
 
     /**
@@ -888,23 +893,9 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
     }
 
     /**
-     * Locks the layer at the specified index to prevent modifications.
-     */
-    open fun lockLayer(index: Int) {
-        changeLayerLockState(index, true)
-    }
-
-    /**
-     * Unlocks the layer at the specified index to allow modifications.
-     */
-    open fun unlockLayer(index: Int) {
-        changeLayerLockState(index, false)
-    }
-
-    /**
      * Changes the lock state of a layer and saves the state.
      */
-    protected open fun changeLayerLockState(index: Int, shouldLock: Boolean) {
+    open fun setLayerLockedStateAt(index: Int, shouldLock: Boolean) {
         checkIndex(index)
 
         layerHolder[index].apply {
@@ -920,7 +911,7 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
     /**
      * Checks if the layer at the specified index is locked.
      */
-    open fun isLayerAtIndexLocked(index: Int): Boolean {
+    open fun isLayerLockedAt(index: Int): Boolean {
         checkIndex(index)
         return layerHolder[index].isLocked
     }
