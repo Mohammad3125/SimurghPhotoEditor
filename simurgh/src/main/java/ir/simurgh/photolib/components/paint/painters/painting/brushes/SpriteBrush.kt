@@ -3,6 +3,7 @@ package ir.simurgh.photolib.components.paint.painters.painting.brushes
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
@@ -30,7 +31,78 @@ import kotlin.random.Random
  *
  * @param bitmaps List of bitmaps to use as brush sprites (can be null initially)
  */
-open class SpriteBrush(protected var bitmaps: List<Bitmap>? = null) : Brush() {
+open class SpriteBrush(
+    size: Int = 1,
+    color: Int = Color.BLACK,
+    opacity: Float = 1f,
+    opacityJitter: Float = 0f,
+    opacityVariance: Float = 0f,
+    opacityVarianceSpeed: Float = 0.6f,
+    opacityVarianceEasing: Float = 0.1f,
+    sizePressureSensitivity: Float = 0.6f,
+    minimumPressureSize: Float = 0.3f,
+    maximumPressureSize: Float = 1f,
+    isSizePressureSensitive: Boolean = false,
+    opacityPressureSensitivity: Float = 0.5f,
+    minimumPressureOpacity: Float = 0f,
+    maximumPressureOpacity: Float = 1f,
+    isOpacityPressureSensitive: Boolean = false,
+    spacing: Float = 0.1f,
+    scatter: Float = 0f,
+    angle: Float = 0f,
+    angleJitter: Float = 0f,
+    sizeJitter: Float = 0f,
+    sizeVariance: Float = 1f,
+    sizeVarianceSensitivity: Float = 0.1f,
+    sizeVarianceEasing: Float = 0.08f,
+    squish: Float = 0f,
+    hueJitter: Int = 0,
+    smoothness: Float = 0f,
+    alphaBlend: Boolean = false,
+    autoRotate: Boolean = false,
+    hueFlow: Float = 0f,
+    hueDistance: Int = 0,
+    startTaperSpeed: Float = 0.03f,
+    startTaperSize: Float = 1f,
+    texture: Bitmap? = null,
+    textureTransformation: Matrix? = null,
+    protected open var bitmaps: List<Bitmap>? = null
+) : Brush(
+    size,
+    color,
+    opacity,
+    opacityJitter,
+    opacityVariance,
+    opacityVarianceSpeed,
+    opacityVarianceEasing,
+    sizePressureSensitivity,
+    minimumPressureSize,
+    maximumPressureSize,
+    isSizePressureSensitive,
+    opacityPressureSensitivity,
+    minimumPressureOpacity,
+    maximumPressureOpacity,
+    isOpacityPressureSensitive,
+    spacing,
+    scatter,
+    angle,
+    angleJitter,
+    sizeJitter,
+    sizeVariance,
+    sizeVarianceSensitivity,
+    sizeVarianceEasing,
+    squish,
+    hueJitter,
+    smoothness,
+    alphaBlend,
+    autoRotate,
+    hueFlow,
+    hueDistance,
+    startTaperSpeed,
+    startTaperSize,
+    texture,
+    textureTransformation
+) {
 
     /** Paint object used for rendering the bitmap sprites */
     protected val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -42,7 +114,7 @@ open class SpriteBrush(protected var bitmaps: List<Bitmap>? = null) : Brush() {
      * When enabled, sprites are tinted with the brush color.
      * When disabled, sprites retain their original colors.
      */
-    var isColoringEnabled = false
+    open var isColoringEnabled = false
         set(value) {
             field = value
             if (value) {
@@ -99,7 +171,7 @@ open class SpriteBrush(protected var bitmaps: List<Bitmap>? = null) : Brush() {
      * true = random selection for each stamp
      * false = sequential cycling through sprites
      */
-    var isRandom = true
+    open var isRandom = true
         set(value) {
             field = value
             counter = 0 // Reset counter when mode changes
@@ -138,7 +210,7 @@ open class SpriteBrush(protected var bitmaps: List<Bitmap>? = null) : Brush() {
      *
      * @param size The target brush size in pixels
      */
-    private fun calculateSize(size: Int) {
+    protected open fun calculateSize(size: Int) {
         bitmaps?.get(0)?.let { bitmap ->
             stampWidth = bitmap.width.toFloat()
             stampHeight = bitmap.height.toFloat()

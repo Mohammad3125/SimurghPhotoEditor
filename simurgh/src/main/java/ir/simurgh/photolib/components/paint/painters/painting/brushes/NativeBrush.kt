@@ -1,7 +1,9 @@
 package ir.simurgh.photolib.components.paint.painters.painting.brushes
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
@@ -22,7 +24,78 @@ import android.graphics.Shader
  * - Efficient memory usage (no bitmap caching needed)
  * - Automatic gradient generation for softness
  */
-open class NativeBrush : Brush() {
+open class NativeBrush(
+    size: Int = 1,
+    color: Int = Color.BLACK,
+    opacity: Float = 1f,
+    opacityJitter: Float = 0f,
+    opacityVariance: Float = 0f,
+    opacityVarianceSpeed: Float = 0.6f,
+    opacityVarianceEasing: Float = 0.1f,
+    sizePressureSensitivity: Float = 0.6f,
+    minimumPressureSize: Float = 0.3f,
+    maximumPressureSize: Float = 1f,
+    isSizePressureSensitive: Boolean = false,
+    opacityPressureSensitivity: Float = 0.5f,
+    minimumPressureOpacity: Float = 0f,
+    maximumPressureOpacity: Float = 1f,
+    isOpacityPressureSensitive: Boolean = false,
+    spacing: Float = 0.1f,
+    scatter: Float = 0f,
+    angle: Float = 0f,
+    angleJitter: Float = 0f,
+    sizeJitter: Float = 0f,
+    sizeVariance: Float = 1f,
+    sizeVarianceSensitivity: Float = 0.1f,
+    sizeVarianceEasing: Float = 0.08f,
+    squish: Float = 0f,
+    hueJitter: Int = 0,
+    smoothness: Float = 0f,
+    alphaBlend: Boolean = false,
+    autoRotate: Boolean = false,
+    hueFlow: Float = 0f,
+    hueDistance: Int = 0,
+    startTaperSpeed: Float = 0.03f,
+    startTaperSize: Float = 1f,
+    texture: Bitmap? = null,
+    textureTransformation: Matrix? = null,
+    softness: Float = 0.2f,
+    /** The shape type of this brush */
+    open var brushShape: BrushShape = BrushShape.CIRCLE
+) : Brush(size,
+    color,
+    opacity,
+    opacityJitter,
+    opacityVariance,
+    opacityVarianceSpeed,
+    opacityVarianceEasing,
+    sizePressureSensitivity,
+    minimumPressureSize,
+    maximumPressureSize,
+    isSizePressureSensitive,
+    opacityPressureSensitivity,
+    minimumPressureOpacity,
+    maximumPressureOpacity,
+    isOpacityPressureSensitive,
+    spacing,
+    scatter,
+    angle,
+    angleJitter,
+    sizeJitter,
+    sizeVariance,
+    sizeVarianceSensitivity,
+    sizeVarianceEasing,
+    squish,
+    hueJitter,
+    smoothness,
+    alphaBlend,
+    autoRotate,
+    hueFlow,
+    hueDistance,
+    startTaperSpeed,
+    startTaperSize,
+    texture,
+    textureTransformation) {
 
     /** Paint object for drawing the brush shapes */
     protected val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -33,7 +106,7 @@ open class NativeBrush : Brush() {
      * Softness of the brush edges (0.0 = hard edges, 1.0 = very soft/feathered edges).
      * When changed, automatically regenerates the radial gradient shader.
      */
-    var softness = 0.2f
+    open var softness = softness
         set(value) {
             field = value
             createHardnessShader()
@@ -55,9 +128,6 @@ open class NativeBrush : Brush() {
 
     /** Half of the brush size, used for radius calculations */
     protected var sizeHalf = 0f
-
-    /** The shape type of this brush */
-    var brushShape = BrushShape.CIRCLE
 
     /**
      * Size of the brush in pixels.
