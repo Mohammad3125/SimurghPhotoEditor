@@ -290,7 +290,7 @@ open class MaskModifierTool(var clipper: BitmapMaskClipper) : Painter(), Message
     /**
      * Clears the mask and resets the history.
      */
-    override fun resetPaint() {
+    override fun reset() {
         maskLayer?.bitmap?.eraseColor(Color.TRANSPARENT)
         historyHandler!!.reset()
         sendMessage(PainterMessage.INVALIDATE)

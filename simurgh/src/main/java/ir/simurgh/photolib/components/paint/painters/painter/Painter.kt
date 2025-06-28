@@ -139,7 +139,7 @@ abstract class Painter {
      * Resets the painter to its initial state.
      * This should clear any temporary data, selections, or operations in progress.
      */
-    open fun resetPaint() {
+    open fun reset() {
         // Default implementation does nothing
     }
 

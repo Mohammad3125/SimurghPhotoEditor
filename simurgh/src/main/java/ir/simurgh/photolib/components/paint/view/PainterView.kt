@@ -802,8 +802,8 @@ open class PainterView(context: Context, attrSet: AttributeSet?) :
     /**
      * Resets the active painter to its initial state.
      */
-    open fun resetPaint() {
-        painter?.resetPaint()
+    open fun resetPainter() {
+        painter?.reset()
     }
 
     /**

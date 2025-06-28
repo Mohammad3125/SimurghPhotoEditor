@@ -148,8 +148,8 @@ open class CanvasDrawingEngine : DrawingEngine {
      * @param pressure Current pressure value from input device
      * @param isSensitive Whether pressure sensitivity is enabled
      * @param sensitivity Sensitivity factor (0.0-1.0)
-     * @param minimum Pressure minimum value
-     * @param maximum Pressure maximum value
+     * @param minimumPressure Pressure minimum value
+     * @param maximumPressure Pressure maximum value
      * @param lastPressure Previous pressure value for interpolation
      * @return Calculated pressure-sensitive value
      */

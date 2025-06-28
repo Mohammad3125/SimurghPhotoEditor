@@ -140,7 +140,7 @@ open class LassoTool(context: Context, var clipper: PathBitmapClipper) :
      * Resets the lasso tool to its initial state.
      * Clears the current selection path and prepares for new selection.
      */
-    override fun resetPaint() {
+    override fun reset() {
         // Clear both working paths.
         lassoPath.rewind()
         lassoCopy.rewind()

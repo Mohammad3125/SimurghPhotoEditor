@@ -73,7 +73,7 @@ open class LassoColorPainter(context: Context) : LassoMaskPainterTool(context) {
             canvasColorApply.drawPath(lassoPath, lassoPaint)
 
             // Clean up the paint state for the next operation
-            resetPaint()
+            reset()
 
             // Trigger a redraw to show the applied color fill
             sendMessage(PainterMessage.INVALIDATE)

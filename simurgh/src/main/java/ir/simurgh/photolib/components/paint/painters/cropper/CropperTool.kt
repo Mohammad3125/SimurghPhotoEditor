@@ -652,7 +652,7 @@ open class CropperTool(context: Context) : Painter() {
     /**
      * Resets the crop frame to default size and position with animation.
      */
-    override fun resetPaint() {
+    override fun reset() {
         startMatrix.set(canvasMatrix)
         endMatrix.reset()
         startRect.set(frameRect)

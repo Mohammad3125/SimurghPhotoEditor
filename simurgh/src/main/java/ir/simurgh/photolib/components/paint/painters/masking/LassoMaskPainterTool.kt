@@ -243,7 +243,7 @@ open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDr
             canvasColorApply.drawPath(lassoPath, lassoPaint)
             // Restore stroke mode for outline drawing
             lassoPaint.style = Paint.Style.STROKE
-            resetPaint()
+            reset()
             sendMessage(PainterMessage.INVALIDATE)
         }
     }
@@ -283,7 +283,7 @@ open class LassoMaskPainterTool(context: Context) : Painter(), LineSmoother.OnDr
      * Resets the lasso path and prepares for a new selection.
      * Clears the current path and resets the first point flag.
      */
-    override fun resetPaint() {
+    override fun reset() {
         lassoPath.rewind()
         isFirstPoint = true
         sendMessage(PainterMessage.INVALIDATE)

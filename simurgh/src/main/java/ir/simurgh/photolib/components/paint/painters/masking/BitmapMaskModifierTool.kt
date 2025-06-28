@@ -244,7 +244,7 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
      * Resets the paint tool state. Currently no specific reset behavior needed
      * as the mask bitmap and brush settings are managed externally.
      */
-    override fun resetPaint() {
+    override fun reset() {
         // No specific reset behavior required for masking tool
     }
 

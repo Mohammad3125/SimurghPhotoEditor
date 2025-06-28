@@ -800,7 +800,7 @@ abstract class PenToolBase(context: Context) : Painter() {
      * Resets the pen tool to its initial state.
      * Clears all path data and prepares for new path creation.
      */
-    override fun resetPaint() {
+    override fun reset() {
         selectedLine = null
         lines.clear()
         path.reset()

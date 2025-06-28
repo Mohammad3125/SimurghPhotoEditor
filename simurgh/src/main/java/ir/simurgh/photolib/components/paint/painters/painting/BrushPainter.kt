@@ -372,7 +372,7 @@ open class BrushPainter(
      * Clears both the main canvas bitmap and any alpha blending bitmaps,
      * effectively erasing all paint content.
      */
-    override fun resetPaint() {
+    override fun reset() {
         if (this::ccBitmap.isInitialized) {
             ccBitmap.eraseColor(Color.TRANSPARENT)
         }

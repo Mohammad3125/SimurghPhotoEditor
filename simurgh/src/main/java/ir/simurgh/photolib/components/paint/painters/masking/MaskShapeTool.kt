@@ -36,7 +36,7 @@ open class MaskShapeTool(context: Context, shape: Shape?) : Painter(), MaskTool 
     open var shape: Shape? = shape
         set(value) {
             field = value
-            resetPaint()
+            reset()
         }
 
     open var strokeWidth = context.dp(3)
@@ -138,7 +138,7 @@ open class MaskShapeTool(context: Context, shape: Shape?) : Painter(), MaskTool 
         selectedLayer?.bitmap?.let { layer ->
             canvasApply.setBitmap(layer)
             drawShape(canvasApply)
-            resetPaint()
+            reset()
         }
     }
 
@@ -158,7 +158,7 @@ open class MaskShapeTool(context: Context, shape: Shape?) : Painter(), MaskTool 
         selectedLayer = layer
     }
 
-    override fun resetPaint() {
+    override fun reset() {
         shapeBounds.setEmpty()
         resizeShape(0f, 0f)
     }

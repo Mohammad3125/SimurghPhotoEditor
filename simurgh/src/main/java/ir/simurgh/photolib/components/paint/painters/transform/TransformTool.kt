@@ -485,7 +485,7 @@ open class TransformTool(context: Context) : Painter(), Transformable.OnInvalida
      * Resets the paint tool by clearing history and all child objects.
      * This method returns the tool to its initial state.
      */
-    override fun resetPaint() {
+    override fun reset() {
         historyHandler!!.reset()
         initialChildState = null
         currentSelectedChild = null

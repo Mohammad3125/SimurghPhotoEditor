@@ -95,7 +95,7 @@ open class FloodFillPainter : Painter() {
     /**
      * Resets the painter's state. No state to reset for flood fill.
      */
-    override fun resetPaint() {
+    override fun reset() {
         // No paint state to reset for flood fill
     }
 

@@ -384,7 +384,7 @@ open class ColorDropper : Painter() {
      * Resets the color dropper to initial state.
      * Clears position data and visual state.
      */
-    override fun resetPaint() {
+    override fun reset() {
         dropperXPosition = 0f
         dropperYPosition = 0f
         offsetY = 0f
