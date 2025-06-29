@@ -5,7 +5,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 
-open class BaseShape : Shape() {
+open class BaseShape : SimurghShape() {
 
     protected val fPath = Path()
 
@@ -41,7 +41,7 @@ open class BaseShape : Shape() {
         path.addPath(copyPath, 0f, 0f)
     }
 
-    override fun clone(): Shape {
-        return super.clone() as Shape
+    override fun clone(): SimurghShape {
+        return super.clone() as SimurghShape
     }
 }

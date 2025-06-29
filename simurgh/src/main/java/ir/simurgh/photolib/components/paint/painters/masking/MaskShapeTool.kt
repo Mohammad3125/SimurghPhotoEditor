@@ -16,13 +16,13 @@ import androidx.core.graphics.withSave
 import ir.simurgh.photolib.components.paint.painters.painter.Painter
 import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
 import ir.simurgh.photolib.components.paint.view.PaintLayer
-import ir.simurgh.photolib.components.shapes.Shape
+import ir.simurgh.photolib.components.shapes.SimurghShape
 import ir.simurgh.photolib.properties.MaskTool
 import ir.simurgh.photolib.utils.extensions.dp
 import ir.simurgh.photolib.utils.gesture.TouchData
 import ir.simurgh.photolib.utils.matrix.SimurghMatrix
 
-open class MaskShapeTool(context: Context, shape: Shape?) : Painter(), MaskTool {
+open class MaskShapeTool(context: Context, shape: SimurghShape?) : Painter(), MaskTool {
 
     constructor(context: Context) : this(context, null)
 
@@ -33,7 +33,7 @@ open class MaskShapeTool(context: Context, shape: Shape?) : Painter(), MaskTool 
         }
     }
 
-    open var shape: Shape? = shape
+    open var shape: SimurghShape? = shape
         set(value) {
             field = value
             reset()

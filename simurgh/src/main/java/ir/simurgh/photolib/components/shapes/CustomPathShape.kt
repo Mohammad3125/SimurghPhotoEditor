@@ -38,7 +38,7 @@ class CustomPathShape(val customPath: Path, val viewportWidth: Float, val viewpo
         customPath.transform(scaleMatrix, fPath)
     }
 
-    override fun clone(): Shape {
+    override fun clone(): SimurghShape {
         return CustomPathShape(customPath, viewportWidth, viewportHeight).apply {
             resize(desiredWidth, desiredHeight)
         }

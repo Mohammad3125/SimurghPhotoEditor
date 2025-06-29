@@ -27,7 +27,7 @@ import android.graphics.Path
  * @see Triangle
  * @see CustomPathShape
  */
-abstract class Shape {
+abstract class SimurghShape {
 
     /**
      * Resizes the shape to the specified dimensions.
@@ -113,7 +113,7 @@ abstract class Shape {
      * Note: Subclasses should override this method to provide proper cloning.
      * The default implementation throws an exception.
      */
-    open fun clone(): Shape {
+    open fun clone(): SimurghShape {
         throw IllegalStateException("Cannot clone an abstract class [${javaClass.name}]")
     }
 }
