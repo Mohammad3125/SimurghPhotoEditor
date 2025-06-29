@@ -1455,45 +1455,96 @@ open class TextTransformable : Transformable(), Pathable, Texturable, Gradientab
         invalidate()
     }
 
+    /**
+     * Sets the background properties for the text element.
+     * Updates padding, radius, and color while optimizing for performance by only changing bounds when necessary.
+     *
+     * @param padding The padding size around the text background.
+     * @param radius The corner radius for the background shape.
+     * @param color The background color as a ColorInt.
+     */
     override fun setBackground(padding: Float, radius: Float, @ColorInt color: Int) {
+        // Check if bounds need to change to avoid unnecessary operations.
         val shouldChangeBounds = (backgroundPaddingSize != padding || textBackgroundRadius != radius)
         backgroundPaddingSize = padding
         textBackgroundColor = color
         textBackgroundRadius = radius
+        // Apply radius to all corners of the background shape.
         firstBackgroundRadiusArray.fill(textBackgroundRadius)
         if (shouldChangeBounds) {
+            // Notify that bounds have changed for layout recalculation.
             notifyBoundsChanged()
         } else {
+            // Only invalidate for visual updates without layout changes.
             invalidate()
         }
     }
 
+    /**
+     * Gets the current background padding value.
+     *
+     * @return The padding size around the text background.
+     */
     override fun getBackgroundPadding(): Float {
         return backgroundPaddingSize
     }
 
+    /**
+     * Gets the current background corner radius.
+     *
+     * @return The corner radius of the background shape.
+     */
     override fun getBackgroundRadius(): Float {
         return textBackgroundRadius
     }
 
+    /**
+     * Gets the current background color.
+     *
+     * @return The background color as a ColorInt value.
+     */
     override fun getBackgroundColor(): Int {
         return textBackgroundColor
     }
 
+    /**
+     * Gets the current background enabled state.
+     *
+     * @return True if the text background is enabled, false otherwise.
+     */
     override fun getBackgroundState(): Boolean {
         return isTextBackgroundEnabled
     }
 
+    /**
+     * Sets whether the text background is enabled or disabled.
+     * Notifies bounds changed to trigger layout recalculation.
+     *
+     * @param isEnabled True to enable the background, false to disable it.
+     */
     override fun setBackgroundState(isEnabled: Boolean) {
         isTextBackgroundEnabled = isEnabled
+        // Bounds change because background affects the overall element size.
         notifyBoundsChanged()
     }
 
+    /**
+     * Sets the unified state for the background rendering.
+     * Unified state affects how multiple background elements are rendered together.
+     *
+     * @param isUnified True for unified rendering, false for separate rendering.
+     */
     override fun setBackgroundUnifiedState(isUnified: Boolean) {
         this.isUnified = isUnified
+        // Only visual update needed, no layout changes.
         invalidate()
     }
 
+    /**
+     * Checks if the background is in unified rendering mode.
+     *
+     * @return True if background uses unified rendering, false otherwise.
+     */
     override fun isBackgroundUnified(): Boolean {
         return isUnified
     }
