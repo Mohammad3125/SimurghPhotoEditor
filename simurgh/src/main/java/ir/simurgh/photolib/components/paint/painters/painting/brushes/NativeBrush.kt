@@ -133,7 +133,7 @@ open class NativeBrush(
      * Size of the brush in pixels.
      * When changed, updates the radius and invalidates the shader cache.
      */
-    override var size: Int = 1
+    override var size: Int = size
         set(value) {
             field = value
             sizeHalf = value * 0.5f

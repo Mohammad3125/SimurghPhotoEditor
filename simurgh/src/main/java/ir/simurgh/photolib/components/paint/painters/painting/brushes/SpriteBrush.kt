@@ -128,7 +128,7 @@ open class SpriteBrush(
      * Color of the brush strokes (used for tinting when coloring is enabled).
      * When changed and coloring is enabled, updates the color filter.
      */
-    override var color: Int = Color.BLACK
+    override var color: Int = color
         set(value) {
             field = value
             if (isColoringEnabled) {
@@ -184,7 +184,7 @@ open class SpriteBrush(
      * Size of the brush in pixels.
      * When changed, recalculates the scaling parameters for all bitmaps.
      */
-    override var size: Int = 14
+    override var size: Int = size
         set(value) {
             field = value
             calculateSize(field)

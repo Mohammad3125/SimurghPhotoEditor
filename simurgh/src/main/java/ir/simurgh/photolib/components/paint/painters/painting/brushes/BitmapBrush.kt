@@ -145,7 +145,7 @@ open class BitmapBrush(
      * Size of the brush in pixels.
      * When changed, recalculates the scaling parameters for the bitmap.
      */
-    override var size: Int = 14
+    override var size: Int = size
         set(value) {
             field = value
             calculateSize(field)
@@ -155,7 +155,7 @@ open class BitmapBrush(
      * Color of the brush strokes.
      * When changed, updates the color filter to tint the bitmap.
      */
-    override var color: Int = Color.BLACK
+    override var color: Int = color
         set(value) {
             field = value
             paint.colorFilter = PorterDuffColorFilter(field, PorterDuff.Mode.SRC_IN)
