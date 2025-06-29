@@ -12,6 +12,9 @@ import ir.simurgh.photolib.components.paint.painters.painter.PainterMessage
 import ir.simurgh.photolib.components.paint.painters.selection.clippers.PathBitmapClipper
 import ir.simurgh.photolib.components.paint.view.PaintLayer
 import ir.simurgh.photolib.utils.gesture.TouchData
+import ir.simurgh.photolib.utils.history.HistoryHandler
+import ir.simurgh.photolib.utils.history.HistoryState
+import ir.simurgh.photolib.utils.history.handlers.StackHistoryHandler
 import ir.simurgh.photolib.utils.matrix.SimurghMatrix
 
 /**
@@ -77,13 +80,25 @@ open class LassoTool(context: Context, var clipper: PathBitmapClipper) :
      */
     open var isInverse = false
         set(value) {
-            field = value
-            // Trigger visual update to show selection change.
-            sendMessage(PainterMessage.INVALIDATE)
+            if (field != value) {
+                // Prepare for new operation before changing the state.
+                prepareForNewOperation()
+                field = value
+                // Save the state change for undo/redo.
+                saveHistoryState()
+                // Trigger visual update to show selection change.
+                sendMessage(PainterMessage.INVALIDATE)
+            }
         }
 
     /** Canvas transformation matrix for handling zoom and pan operations. */
     protected lateinit var canvasMatrix: SimurghMatrix
+
+    /** History handler for managing undo/redo operations. */
+    override var historyHandler: HistoryHandler? = StackHistoryHandler()
+
+    /** Backup of the initial lasso tool state for history operations. */
+    protected var initialState: LassoToolStateSnapshot? = null
 
     init {
         // Configure lasso paint for stroke-only rendering of selection outline.
@@ -153,25 +168,27 @@ open class LassoTool(context: Context, var clipper: PathBitmapClipper) :
     }
 
     /**
-     * Creates a non-destructive copy of the selected area.
-     * @return New bitmap containing only the selected content, or null if no valid selection.
+     * Called when user begins drawing a selection stroke.
+     * Prepares the tool for a new selection operation.
      */
-    open fun copy(): Bitmap? {
-        doIfLayerNotNullAndPathIsNotEmpty { layer ->
-            val finalBitmap = clipper.copy()
-            return finalBitmap
-        }
-
-        return null
+    override fun onMoveBegin(touchData: TouchData) {
+        // Prepare for new drawing operation.
+        prepareForNewOperation()
+        super.onMoveBegin(touchData)
     }
 
     /**
      * Called when user finishes drawing a selection stroke.
-     * Completes the path smoothing process.
+     * Completes the path smoothing process and saves the state.
      */
     override fun onMoveEnded(touchData: TouchData) {
         // Complete the smooth line generation for the selection path.
         touchSmoother.setLastPoint(touchData, smoothnessBrush)
+
+        // Save state after completing the path drawing.
+        if (!lassoPath.isEmpty) {
+            saveHistoryState()
+        }
     }
 
     /**
@@ -182,6 +199,19 @@ open class LassoTool(context: Context, var clipper: PathBitmapClipper) :
         clipper.path = lassoPath
         clipper.bitmap = layer.bitmap
         clipper.isInverse = isInverse
+    }
+
+    /**
+     * Creates a non-destructive copy of the selected area.
+     * @return New bitmap containing only the selected content, or null if no valid selection.
+     */
+    open fun copy(): Bitmap? {
+        doIfLayerNotNullAndPathIsNotEmpty { layer ->
+            val finalBitmap = clipper.copy()
+            return finalBitmap
+        }
+
+        return null
     }
 
     /**
@@ -253,5 +283,115 @@ open class LassoTool(context: Context, var clipper: PathBitmapClipper) :
                 function(layer)
             }
         }
+    }
+
+    /**
+     * Data class that captures a snapshot of the lasso tool's state at a specific point in time.
+     * Used for creating backups before operations that need to be undoable.
+     *
+     * @param isInverse The inverse selection setting at the time of capture.
+     * @param lassoPath Copy of the lasso path at the time of capture.
+     */
+    protected data class LassoToolStateSnapshot(
+        val isInverse: Boolean,
+        val lassoPath: Path
+    ) {
+        /**
+         * Creates a deep copy of this state snapshot.
+         */
+        fun clone(): LassoToolStateSnapshot {
+            return LassoToolStateSnapshot(
+                isInverse = isInverse,
+                lassoPath = Path(lassoPath)
+            )
+        }
+    }
+
+    /**
+     * Captures the current state of the lasso tool as a snapshot.
+     *
+     * @return A snapshot containing the current isInverse setting and lasso path.
+     */
+    protected fun getCurrentStateSnapshot(): LassoToolStateSnapshot {
+        return LassoToolStateSnapshot(
+            isInverse = isInverse,
+            lassoPath = Path(lassoPath)
+        )
+    }
+
+    /**
+     * Internal state class for managing undo/redo operations.
+     * Captures both initial and final states of the lasso tool configuration.
+     */
+    protected inner class LassoToolState(
+        private val initialSnapshot: LassoToolStateSnapshot?,
+        private val reference: LassoTool = this@LassoTool
+    ) : HistoryState {
+
+        /** Snapshot of the current state when this history state was created. */
+        private val clonedSnapshot = getCurrentStateSnapshot().clone()
+
+        /**
+         * Restores the lasso tool to its initial state.
+         */
+        override fun undo() {
+            restoreState(initialSnapshot)
+        }
+
+        /**
+         * Re-applies the final state to the lasso tool.
+         */
+        override fun redo() {
+            restoreState(clonedSnapshot)
+        }
+
+        /**
+         * Internal method to restore a specific state configuration.
+         *
+         * @param targetSnapshot The state snapshot to restore, or null to clear state.
+         */
+        private fun restoreState(targetSnapshot: LassoToolStateSnapshot?) {
+            if (targetSnapshot != null) {
+                reference.isInverse = targetSnapshot.isInverse
+                reference.lassoPath.set(targetSnapshot.lassoPath)
+            } else {
+                // Clear state if no target provided.
+                reference.reset()
+            }
+            reference.sendMessage(PainterMessage.INVALIDATE)
+        }
+    }
+
+    /**
+     * Saves the current state of the lasso tool to the history handler.
+     * Uses the LayeredPainterView pattern with initial and cloned values.
+     */
+    protected fun saveHistoryState() {
+        val state = LassoToolState(initialState)
+
+        // Update the initial state for the next operation.
+        initialState = getCurrentStateSnapshot()
+
+        historyHandler?.addState(state)
+    }
+
+    /**
+     * Prepares the lasso tool for a new operation by capturing the initial state.
+     * Should be called before operations that will modify the tool's state.
+     */
+    protected fun prepareForNewOperation() {
+        initialState = getCurrentStateSnapshot()
+    }
+
+    override fun undo() {
+        historyHandler?.undo()
+    }
+
+    override fun redo() {
+        historyHandler?.redo()
+    }
+
+    override fun doesHandleHistory(): Boolean {
+        return true
     }
 }
