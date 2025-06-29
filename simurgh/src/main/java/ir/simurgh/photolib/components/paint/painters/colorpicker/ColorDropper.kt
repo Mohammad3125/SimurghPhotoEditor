@@ -41,12 +41,6 @@ import kotlin.math.min
  * - Support for both lambda and interface-based callbacks
  * - Intelligent contrast adjustment for crosshair visibility
  * 
- * **User Experience:**
- * - Circle appears on touch and follows finger movement
- * - Automatic offset positioning to keep preview visible
- * - Bounds checking to ensure sampling within image limits
- * - Smooth visual transitions and animations
- * 
  * The tool is designed for photo editing applications where precise color selection
  * is essential. It provides both immediate feedback during interaction and final
  * color selection when the user lifts their finger.
@@ -121,6 +115,7 @@ open class ColorDropper : Painter() {
         set(value) {
             colorRingPaint.strokeWidth = value
             field = value
+            sendMessage(PainterMessage.INVALIDATE)
         }
 
     /**
@@ -130,6 +125,17 @@ open class ColorDropper : Painter() {
     protected val bitmapCirclePaint by lazy {
         Paint()
     }
+
+    /**
+     * Scale factor for magnifying the bitmap preview inside the circle.
+     * Controls how much the pixels are enlarged in the preview.
+     * Default value is 4.0f for 4x magnification.
+     */
+    open var magnifierScale = 4f
+        set(value) {
+            field = value.coerceAtLeast(1.0f) // Ensure minimum 1x scale
+            sendMessage(PainterMessage.INVALIDATE)
+        }
 
     /**
      * Radius of the preview circle in pixels.
@@ -337,12 +343,15 @@ open class ColorDropper : Painter() {
                 (clipBounds.bottom - dropperYPosition)
             } else 0f
 
-            // Configure matrix for 2x magnification of the preview area
-            enlargedBitmapMatrix.setScale(
-                2f,
-                2f,
-                dropperXPosition,
-                dropperYPosition + circleOffsetFromCenter - offsetY
+            // Configure matrix for magnification of the preview area
+            val previewCenterX = dropperXPosition
+            val previewCenterY = dropperYPosition - circleOffsetFromCenter + offsetY
+
+            enlargedBitmapMatrix.reset()
+            enlargedBitmapMatrix.postScale(magnifierScale, magnifierScale)
+            enlargedBitmapMatrix.postTranslate(
+                previewCenterX - dropperXPosition * magnifierScale,
+                previewCenterY - dropperYPosition * magnifierScale
             )
 
             // Show the preview circle during active sampling
@@ -461,6 +470,10 @@ open class ColorDropper : Painter() {
                 )
             }
         }
+    }
+
+    override fun doesTakeGestures(): Boolean {
+        return true
     }
 
     /**
