@@ -20,7 +20,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.graphics.withSave
-import ir.simurgh.photolib.components.shapes.Shape
+import ir.simurgh.photolib.components.shapes.SimurghShape
 import ir.simurgh.photolib.properties.Bitmapable
 import ir.simurgh.photolib.properties.Blendable
 import ir.simurgh.photolib.properties.Colorable
@@ -48,14 +48,14 @@ import kotlin.math.roundToInt
  * This class serves as a bridge between abstract Shape objects and their visual representation,
  * handling all rendering operations while maintaining performance through optimized drawing routines.
  *
- * @param shape The Shape object to be rendered
+ * @param simurghShape The Shape object to be rendered
  * @param shapeWidth The width of the shape in pixels
  * @param shapeHeight The height of the shape in pixels
  *
- * @see Shape
+ * @see SimurghShape
  * @see Transformable
  */
-open class ShapePainter(shape: Shape, var shapeWidth: Int, var shapeHeight: Int) : Transformable(),
+open class ShapeTransformable(simurghShape: SimurghShape, var shapeWidth: Int, var shapeHeight: Int) : Transformable(),
     Bitmapable, StrokeCapable, Colorable,
     Texturable, Gradientable,
     Shadowable, Blendable, Opacityable {
@@ -63,7 +63,7 @@ open class ShapePainter(shape: Shape, var shapeWidth: Int, var shapeHeight: Int)
     /**
      * The shape object being painted. Setting this property will trigger bounds recalculation.
      */
-    open var shape = shape
+    open var shape = simurghShape
         set(value) {
             field = value
             notifyBoundsChanged()
@@ -168,8 +168,8 @@ open class ShapePainter(shape: Shape, var shapeWidth: Int, var shapeHeight: Int)
      *
      * @return A new ShapePainter instance identical to this one
      */
-    override fun clone(): ShapePainter {
-        return ShapePainter(shape.clone(), shapeWidth, shapeHeight).also { painter ->
+    override fun clone(): ShapeTransformable {
+        return ShapeTransformable(shape.clone(), shapeWidth, shapeHeight).also { painter ->
             // Copy basic paint properties
             painter.shapeColor = shapeColor
             painter.shapePaint.style = shapePaint.style

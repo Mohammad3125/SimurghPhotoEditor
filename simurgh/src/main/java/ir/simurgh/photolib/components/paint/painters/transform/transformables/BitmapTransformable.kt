@@ -40,7 +40,7 @@ import kotlin.math.roundToInt
  * @param bitmap The source bitmap to be painted.
  * @param complexPath Optional custom path for non-rectangular bitmap shapes.
  */
-open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transformable(), Blendable,
+open class BitmapTransformable(bitmap: Bitmap, complexPath: Path? = null) : Transformable(), Blendable,
     Opacityable, Backgroundable,
     CornerRounder, Shadowable, StrokeCapable {
 
@@ -57,7 +57,7 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
     /** Paint object used for drawing stroke outlines. */
     protected val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = bitmapStrokeColor
-        strokeWidth = this@BitmapPainter.bitmapStrokeWidth
+        strokeWidth = this@BitmapTransformable.bitmapStrokeWidth
         style = Paint.Style.FILL_AND_STROKE
     }
 
@@ -419,11 +419,11 @@ open class BitmapPainter(bitmap: Bitmap, complexPath: Path? = null) : Transforma
      * @param cloneBitmap Whether to create a copy of the bitmap or reuse the existing one.
      * @return A new BitmapPainter instance with identical configuration.
      */
-    open fun clone(cloneBitmap: Boolean = false): BitmapPainter {
+    open fun clone(cloneBitmap: Boolean = false): BitmapTransformable {
         val clonedBitmap =
             if (cloneBitmap) bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true) else bitmap
 
-        return BitmapPainter(clonedBitmap).also {
+        return BitmapTransformable(clonedBitmap).also {
             // Copy blend mode if not default.
             if (bitmapBlendMode != PorterDuff.Mode.SRC) {
                 it.setBlendMode(bitmapBlendMode)

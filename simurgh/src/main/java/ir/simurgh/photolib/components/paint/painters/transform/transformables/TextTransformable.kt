@@ -50,7 +50,7 @@ import kotlin.math.roundToInt
  * alignments, customizable backgrounds with rounded corners, stroke effects, and various
  * visual enhancements like shadows and blend modes.
  */
-open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
+open class TextTransformable : Transformable(), Pathable, Texturable, Gradientable, StrokeCapable,
     Blendable, Bitmapable,
     Colorable, Shadowable, Opacityable, UnifiedBackgroundable {
 
@@ -292,8 +292,8 @@ open class TextPainter : Transformable(), Pathable, Texturable, Gradientable, St
      *
      * @return A new TextPainter instance with identical configuration.
      */
-    override fun clone(): TextPainter {
-        return TextPainter().also { textPainter ->
+    override fun clone(): TextTransformable {
+        return TextTransformable().also { textPainter ->
             // Copy basic text properties.
             textPainter.textPaint.textSize = textPaint.textSize
             textPainter.alignmentText = alignmentText
