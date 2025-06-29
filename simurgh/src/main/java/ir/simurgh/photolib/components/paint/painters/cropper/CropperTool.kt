@@ -16,6 +16,7 @@ import android.graphics.RectF
 import android.graphics.Region
 import androidx.core.animation.doOnEnd
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withSave
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import ir.simurgh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatio
 import ir.simurgh.photolib.components.paint.painters.cropper.aspect_ratios.AspectRatioFree
@@ -220,7 +221,8 @@ open class CropperTool(context: Context) : Painter() {
     protected var handleBar: HandleBar? = null
 
     // Variable to save aspect ratio of cropper.
-    protected var aspectRatio: AspectRatio = AspectRatioFree()
+    var aspectRatio: AspectRatio = AspectRatioFree()
+    private set
 
     /** Extended touch area around handles to make them easier to grab */
     protected var excessTouchArea = context.dp(40)
@@ -303,7 +305,7 @@ open class CropperTool(context: Context) : Painter() {
         }
 
     /** Animator for smooth transitions when adjusting crop frame */
-    protected val animator by lazy {
+    protected val animator: ValueAnimator by lazy {
         ValueAnimator.ofObject(MatrixEvaluator(), startMatrix, endMatrix).apply {
             interpolator = animationInterpolator
             duration = animationDuration
@@ -908,15 +910,15 @@ open class CropperTool(context: Context) : Painter() {
 
                 clipRect(frameRect)
 
-                save()
+                withSave {
 
-                inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
+                    inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
 
-                concat(inverseMatrix)
+                    concat(inverseMatrix)
 
-                drawBitmap(layer.bitmap, 0f, 0f, framePaint)
+                    drawBitmap(layer.bitmap, 0f, 0f, framePaint)
 
-                restoreToCount(1)
+                }
             }
             return croppedBitmap
         }
@@ -938,12 +940,12 @@ open class CropperTool(context: Context) : Painter() {
                 setBitmap(layer.bitmap)
                 inverseMatrix.setConcat(canvasMatrix, fitInsideMatrix)
                 inverseMatrix.invert(inverseMatrix)
-                save()
-                concat(inverseMatrix)
-                drawRect(frameRect, framePaint.apply {
-                    style = Paint.Style.FILL
-                })
-                restore()
+                withSave {
+                    concat(inverseMatrix)
+                    drawRect(frameRect, framePaint.apply {
+                        style = Paint.Style.FILL
+                    })
+                }
 
                 drawBitmap(layerBitmapCopy, 0f, 0f, framePaint.apply {
                     xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
