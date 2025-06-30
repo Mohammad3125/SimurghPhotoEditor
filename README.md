@@ -1,7 +1,7 @@
 # Simurgh Photo Editing Library
 
 [![](https://jitpack.io/v/Mohammad3125/SimurghPhotoEditor.svg)](https://jitpack.io/#Mohammad3125/SimurghPhotoEditor)
-[![License](https://img.shields.io/badge/License-MIT%202.0-white.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-MIT%20-white.svg)](https://opensource.org/licenses/Apache-2.0)
 [![API](https://img.shields.io/badge/API-21%2B-red.svg?style=flat)](https://android-arsenal.com/api?level=21)
 
 **Simurgh** is a powerful, feature-rich photo editing library for Android that provides
