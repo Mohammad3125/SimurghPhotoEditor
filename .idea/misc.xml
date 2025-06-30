@@ -1,0 +1,136 @@
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable-v24/custom_progress2.xml" value="0.184" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/color_circle.xml" value="0.163" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/custom_progress.xml" value="0.184" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/editing_bound_background.xml" value="0.2169230769230769" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_3d_rotation_24.xml" value="0.2169230769230769" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_add_24.xml" value="0.1745" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_architecture_24.xml" value="0.1135" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_content_copy_24.xml" value="0.1135" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_content_cut_24.xml" value="0.1745" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_image_24.xml" value="0.1745" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_masks_24.xml" value="0.1745" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_open_with_24.xml" value="0.1745" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_text_fields_24.xml" value="0.1135" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_cubic_bezier.xml" value="0.1975" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_launcher_background.xml" value="0.2169230769230769" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_quad_bezier.xml" value="0.1395" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_straight_line.xml" value="0.17" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout-land/activity_main.xml" value="0.35315315315315315" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/activity_cropper.xml" value="0.20416666666666666" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/activity_dropper.xml" value="0.18" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/activity_inspect.xml" value="0.20416666666666666" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/activity_main.xml" value="0.22" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/activity_second.xml" value="0.1675929884566054" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/brush_selection_feature_layout.xml" value="0.25" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/editing_bound.xml" value="0.5" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_blank.xml" value="0.1675929884566054" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_cropper.xml" value="0.16" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_dropper.xml" value="0.20416666666666666" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_inspect.xml" value="0.18" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_main.xml" value="0.16" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_opengl.xml" value="0.33" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_perspective.xml" value="0.25" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/image_view_extra_feature.xml" value="0.33" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/layout_child_sub_feature_settings.xml" value="0.25" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/pen_selection_feature_layout.xml" value="0.5" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/rotate_button.xml" value="0.5" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_alert_dialog.xml" value="0.25" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_blur_mode_layout.xml" value="0.25" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_view_blur.xml" value="0.1675929884566054" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_view_extra_feature.xml" value="0.33" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_view_stroke_setting_layout.xml" value="0.25" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/texture_selection.xml" value="0.16374519025224454" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/texture_selection_layout.xml" value="0.25" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/mananpiclibrary/src/main/res/drawable/ic_baseline_add_24.xml" value="0.1745" />
+        <entry key="..\:/AndroidProjects/PhotoEditorTest/mananpiclibrary/src/main/res/drawable/pivot_icon.xml" value="0.174" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/color_circle.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_add_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_architecture_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_arrow_back_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_blur_circular_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_brush_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_check_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_color_lens_24.xml" value="0.1885" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_colorize_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_content_copy_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_content_cut_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_content_shdow_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_crop_16_9_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_crop_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_crop_3_2_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_crop_5_4_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_crop_free_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_delete_24.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_delete_outline_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_desktop_access_disabled_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_filter_1_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_filter_2_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_filter_3_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_filter_4_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_flip_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_image_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_masks_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_open_with_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_pen_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_save_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_stroke.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_tab_path_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_text_fields_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_texture_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_undo_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_baseline_zoom_in_24.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_cubic_bezier.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_effect.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_launcher_background.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_quad_bezier.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/drawable/ic_straight_line.xml" value="0.113" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/activity_main.xml" value="0.1675929884566054" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/brush_selection_feature_layout.xml" value="0.25" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_blank.xml" value="0.17089755213055305" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_blank2.xml" value="0.1718683197947841" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_cropper.xml" value="0.1" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_dropper.xml" value="0.1718683197947841" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_inspect.xml" value="0.25" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_main.xml" value="0.22" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_opengl.xml" value="0.16" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_page_setting.xml" value="0.33" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_slider.xml" value="0.1718683197947841" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/fragment_start.xml" value="0.22" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/header_for_navigation_bar.xml" value="0.25" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/image_view_extra_feature.xml" value="0.33" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/layout_child_sub_feature_settings.xml" value="0.1718683197947841" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/layout_color_picker.xml" value="0.22" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/pen_selection_feature_layout.xml" value="0.25" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/sajad_layout.xml" value="0.2" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_alert_dialog.xml" value="0.33" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_blur_mode_layout.xml" value="0.25" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_view_extra_feature.xml" value="0.25" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/text_view_stroke_setting_layout.xml" value="0.22" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/layout/texture_selection_layout.xml" value="0.1718683197947841" />
+        <entry key="..\:/Apps/AndroidProjects/PhotoEditorTest/app/src/main/res/menu/navigation_bar_menu.xml" value="0.16802052159042324" />
+        <entry key="..\:/PhotoEditorTest/app/src/main/res/layout/activity_main.xml" value="0.20416666666666666" />
+      </map>
+    </option>
+  </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+  <component name="StickyNotes">
+    <option name="stickyNotes">
+      <list>
+        <SerializedStickyNote>
+          <option name="archived" value="true" />
+          <option name="description" value="Dropper" />
+        </SerializedStickyNote>
+      </list>
+    </option>
+  </component>
+</project>
