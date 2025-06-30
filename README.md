@@ -1,8 +1,8 @@
 # Simurgh Photo Editing Library
 
-[![API](https://img.shields.io/badge/API-21%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=21)
+[![](https://jitpack.io/v/Mohammad3125/SimurghPhotoEditor.svg)](https://jitpack.io/#Mohammad3125/SimurghPhotoEditor)
 [![License](https://img.shields.io/badge/License-MIT%202.0-white.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Kotlin](https://img.shields.io/badge/Kotlin-100%25-red.svg)](https://kotlinlang.org/)
+[![API](https://img.shields.io/badge/API-21%2B-red.svg?style=flat)](https://android-arsenal.com/api?level=21)
 
 **Simurgh** is a powerful, feature-rich photo editing library for Android that provides
 image manipulation capabilities through set of tools. Built entirely in Kotlin,
@@ -1357,26 +1357,21 @@ class WatercolorPainter : Painter() {
 
 ## 🛠 Installation
 
-### Step 1: Add JitPack repository
-
+Add jitpack in your settings.gradle.kts at the end of repositories:
 ```gradle
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
+ dependencyResolutionManagement {
+	repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+	repositories {
+		mavenCentral()
+		maven { url = uri("https://jitpack.io") } // This
+	}
 }
+
 ```
 
-### Step 2: Add dependency
-
+Then add dependency to your `build.gradle`
 ```gradle
-dependencies {
-    implementation 'com.github.YourUsername::Tag'
-    // Or use local module
-    implementation project(':')
-}
+ implementation 'com.github.Mohammad3125:SimurghPhotoEditor:0.6.0'
 ```
 
 ## 🎯 Quick Start
