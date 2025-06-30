@@ -22,11 +22,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     namespace 'ir.simurgh.photolib'
 }
@@ -42,8 +42,8 @@ afterEvaluate {
             release(MavenPublication) {
                 from components.release
 
-                groupId = 'ir.simurgh.photolib'
-                artifactId = 'simurgh-photolib'
+                groupId = 'com.github.Mohammad3125'
+                artifactId = 'SimurghPhotoEditor'
                 version = '0.6.0'
             }
         }
