@@ -127,7 +127,7 @@ open class NativeBrush(
     protected var lastColor = Color.TRANSPARENT
 
     /** Half of the brush size, used for radius calculations */
-    protected var sizeHalf = 0f
+    protected var sizeHalf = size * 0.5f
 
     /**
      * Size of the brush in pixels.
@@ -155,6 +155,11 @@ open class NativeBrush(
                 paint.xfermode = PorterDuffXfermode(value)
             }
         }
+
+    init {
+        this.size = size
+        this.softness = softness
+    }
 
     /**
      * Creates a radial gradient shader for softness effects.

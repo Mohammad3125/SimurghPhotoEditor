@@ -100,7 +100,7 @@ open class BitmapBrush(
 
     /** Paint object used for rendering the bitmap with color tinting */
     protected val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        colorFilter = PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN)
+        colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
     }
 
     // Original bitmap dimensions
@@ -166,6 +166,11 @@ open class BitmapBrush(
 
     /** Last size used for scaling, used to detect when re-scaling is needed */
     protected var lastSize = 0
+
+    init {
+        this.color = color
+        this.size = size
+    }
 
     /**
      * Changes the bitmap used for this brush.

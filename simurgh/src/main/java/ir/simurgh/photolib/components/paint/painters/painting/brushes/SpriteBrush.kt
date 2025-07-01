@@ -204,6 +204,10 @@ open class SpriteBrush(
             }
         }
 
+    init {
+        this.color = color
+        this.size = size
+    }
     /**
      * Calculates scaling parameters based on the current brush size.
      * Uses the first bitmap in the collection as the reference for scaling.
