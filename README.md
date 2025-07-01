@@ -314,6 +314,7 @@ Add `PainterView` to your xml layout:
 ```
 
 ### 🖌️ Brush Painter
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/4Rw361H3/Hue-Flow-ezgif-com-optimize.gif" alt="Hue-Flow-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/SwQvVzF7/Brush-Painter-ezgif-com-optimize.gif" alt="Brush-Painter-ezgif-com-optimize" border="0" /></a>  <a href="https://imgbb.com/"><img src="https://i.ibb.co/tTBFCtRr/Speed-Sensitivitiy-ezgif-com-optimize.gif" alt="Speed-Sensitivitiy-ezgif-com-optimize" border="0" /></a>
 
 - **Various Brushes**: Render customizable brushes.
 - **Texture Support**: Apply custom textures to brush strokes.
@@ -418,6 +419,8 @@ It has a `brush` property that is responsible for rendering a stamp on provided 
 ```
 ### 🖌️ BrushPreview
 
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/SwkN7FHs/Brush-Preview-ezgif-com-optimize.gif" alt="Brush-Preview-ezgif-com-optimize" border="0"></a>
+
 `BrushPreview` is a custom View component that renders a preview of how a `Brush` will look when drawing.
 It displays a sample stroke using the configured brush properties and settings.
 
@@ -469,6 +472,7 @@ Add `BrushPreview` to your xml layout.
 ```
 
 ### 📐 Transform Tool
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/5hyyjWPQ/Bitmap-Transformable-ezgif-com-optimize-1.gif" alt="Bitmap-Transformable-ezgif-com-optimize-1" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/d44xF8cD/Text-Transformable-ezgif-com-optimize.gif" alt="Text-Transformable-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/3mhwr0Sz/Perspective-ezgif-com-optimize.gif" alt="Perspective-ezgif-com-optimize" border="0" /></a>
 
 - **Multi-touch Gestures**: Scale, rotate, and translate objects with touch controls.
 - **Free Transform Mode**: Advanced corner-by-corner manipulation for perspective adjustments.
@@ -872,6 +876,7 @@ painterView.painter = transformTool
 ```
 
 ### ✂️ Crop Tool
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/99tS3VV1/Crop-Tool-ezgif-com-optimize.gif" alt="Crop-Tool-ezgif-com-optimize" border="0" /></a>
 - **Smooth Animations**: Fluid transitions and adjustments.
 - **Gesture Support**: Pinch, pan, and drag interactions.
 - **Auto-fitting**: Keeps crop frame within image bounds.
@@ -976,7 +981,7 @@ paintView.setClipRectWithStateSave(
 ```
 
 ### 🔍 ColorDropper
-
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/tTsKCXgh/Color-Dropper-ezgif-com-optimize.gif" alt="Color-Dropper-ezgif-com-optimize" border="0" /></a>
 - **Magnified Preview Circle**: Shows enlarged pixels with custom maginification factor around the touch point.
 - **Color Ring**: Displays the currently sampled color as a circular border.
 - **Crosshair Indicator**: Precise pixel selection with automatic contrast adjustment.
@@ -1054,7 +1059,7 @@ painterView.painter = colorDropper
 ```
 
 ### 🤠 LassoTool
-
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/XrNDQy9y/Lasso-Tool-ezgif-com-optimize.gif" alt="Lasso-Tool-ezgif-com-optimize" border="0" /></a>
 - **Visual Feedback**: Animated selection outline with marching ants effect.
 - **Smooth Edges**: High-quality anti-aliased selection boundaries.
 - **Multiple Operations**: Support for copy, cut, and clip operations on selections.
@@ -1122,6 +1127,8 @@ lassoTool.redo()
 
 ### 🤠 LassoColorPainter
 
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/nM4Ry94T/Lasso-Color-Painter-ezgif-com-optimize.gif" alt="Lasso-Color-Painter-ezgif-com-optimize" border="0" /></a>
+
 `Painter` for creating lasso selections and filling them with solid colors.
 
 <details>
@@ -1145,6 +1152,8 @@ lassoColorPainter.fillingColor = Color.BLACK
 
 ### 🧺 FloodFill Patiner (Bucket Tool)
 
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/rGW88RPY/Flood-Fill-ezgif-com-optimize.gif" alt="Flood-Fill-ezgif-com-optimize" border="0" /></a>
+
 `Painter` that handles touch events to trigger flood fill operations on bitmap layers.
 The actual flood fill algorithm is delegated to external handlers via callback,
 allowing for delgation to background thread for processing and ability to use different flood fill implementations.
@@ -1165,6 +1174,9 @@ painterView.painter = floodFillPainter
 ```
 
 ### 🌓 MaskModifierTool
+
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/SLwVmFr/Mask-Modifier-Tool-ezgif-com-gif-maker.gif" alt="Mask-Modifier-Tool-ezgif-com-gif-maker" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/5gm2NdGR/Mask-Modifier-Tool2-ezgif-com-optimize.gif" alt="Mask-Modifier-Tool2-ezgif-com-optimize" border="0" /></a>
+
 - Create masks using any painter tool (brushes, shapes, etc.)
 - Support for additive and subtractive mask operations
 - Colored overlay showing mask areas with adjustable opacity
@@ -1227,6 +1239,8 @@ val copiedBitmap = maskModifierTool.copy()
 
 ### 🎭 BitmapMaskModifierTool
 
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/LdwtBff1/Bitmap-Mask-Modifier-Tool-ezgif-com-optimize-1.gif" alt="Bitmap-Mask-Modifier-Tool-ezgif-com-optimize-1" border="0" /></a>
+
 `Painter` that takes bitmap and a mask bitmap and shows the result of masking immediately during editing. It takes a `DrawingEngine` with brush.
 It's a useful tool for times you want to fine-tune the masking operation that you just did, or for example when you have a blured bitmap and normal bitmap
 and you want to blur the parts you want precisely.
@@ -1280,7 +1294,10 @@ painterView.painter = bitmapMaskModifierTool
 
 ### 🌈 GradientSlider
 
-A custom view that displays an interactive gradient slider with draggable color handles.
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/99j7LqyS/Gradient-Slider-ezgif-com-optimize.gif" alt="Gradient-Slider-ezgif-com-optimize" border="0" /></a>
+
+A custom view that displays an interactive gradient slider with draggable color handles. It reports the desired stops and colors for 
+Linear,Radial and Sweep gradient type.
 Users can tap to add new color stops, drag existing handles to reposition them,
 and long-press to remove handles (minimum 2 handles must remain).
 
