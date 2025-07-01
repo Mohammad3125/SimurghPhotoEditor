@@ -83,6 +83,8 @@ open class CropperTool(context: Context) : Painter() {
     protected val framePaint by lazy {
         Paint().apply {
             style = Paint.Style.STROKE
+            strokeWidth = frameStrokeWidth
+            color = frameColor
         }
     }
 
@@ -104,6 +106,8 @@ open class CropperTool(context: Context) : Painter() {
     protected val frameGuidelinePaint by lazy {
         Paint().apply {
             style = Paint.Style.STROKE
+            strokeWidth = guidelineStrokeWidth
+            color = guidelineColor
         }
     }
 
@@ -129,6 +133,8 @@ open class CropperTool(context: Context) : Painter() {
     protected val frameShadowsPaint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
+            alpha = backgroundShadowAlpha
+            color = backgroundShadowColor
         }
     }
 
@@ -150,7 +156,10 @@ open class CropperTool(context: Context) : Painter() {
     protected val handleBarPaint by lazy {
         Paint().apply {
             style = Paint.Style.STROKE
-
+            strokeWidth = handleBarStrokeWidth
+            color = handleBarColor
+            strokeCap = handleBarCornerType
+            isAntiAlias = strokeCap == Paint.Cap.ROUND
         }
     }
 
@@ -162,7 +171,7 @@ open class CropperTool(context: Context) : Painter() {
         }
 
     /** Color of the corner and edge resize handles */
-    open var handleBarColor = Color.DKGRAY
+    open var handleBarColor = Color.GRAY
         set(value) {
             handleBarPaint.color = value
             field = value
@@ -638,7 +647,7 @@ open class CropperTool(context: Context) : Painter() {
 
             restore()
 
-            drawLines(frameHandleBar, framePaint)
+            drawLines(frameHandleBar, handleBarPaint)
 
             // Draw guidelines.
             if (isDrawGuidelineEnabled) {
