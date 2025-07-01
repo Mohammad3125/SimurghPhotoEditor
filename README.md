@@ -18,21 +18,22 @@ it supports features like layers, complex gesutres, drawing, masking, selection,
    - **[👨‍🎨 PainterViews](#-painterviews)**
       - PainterView
       - LayeredPainterView
-   - **[🖌️ Brush Painter](#-brush-painter)**
+   - **[🖌️ Brush Painter](#%EF%B8%8F-brush-painter)**
       - Various brush types
       - Brush properties
       - Texture support
-   - **[🖌️ BrushPreview](#-brushpreview)**
+   - **[🖌️ BrushPreview](#%EF%B8%8F-brushpreview)**
    - **[📐 Transform Tool](#-transform-tool)**
       - TextTransformable
       - BitmapTransformable
       - ShapeTransformable
-   - **[✂️ Crop Tool](#-crop-tool)**
+   - **[✂️ Crop Tool](#%EF%B8%8F-crop-tool)**
    - **[🔍 ColorDropper](#-colordropper)**
    - **[🤠 LassoTool](#-lassotool)**
    - **[🤠 LassoColorPainter](#-lassocolorpainter)**
    - **[🧺 FloodFill Painter (Bucket Tool)](#-floodfill-patiner-bucket-tool)**
    - **[🌓 MaskModifierTool](#-maskmodifiertool)**
+   - **[🎭 BitmapMaskModifierTool](#-bitmapmaskmodifiertool)**
    - **[🌈 GradientSlider](#-gradientslider)**
    - **[🛠 Custom Painter](#-custom-painter)**
 
@@ -1222,6 +1223,59 @@ val copiedBitmap = maskModifierTool.copy()
   painterView.painter = maskModifierTool
   
   // HAPPY MASKING!
+```
+
+### 🎭 BitmapMaskModifierTool
+
+`Painter` that takes bitmap and a mask bitmap and shows the result of masking immediately during editing. It takes a `DrawingEngine` with brush.
+It's a useful tool for times you want to fine-tune the masking operation that you just did, or for example when you have a blured bitmap and normal bitmap
+and you want to blur the parts you want precisely.
+
+<details>
+<summary>
+BitmapMaskModifierTool members		
+</summary>
+
+```kotlin
+// The original source bitmap to be masked.
+bitmapMaskModifierTool.bitmap = sourceImageBitmap
+
+// The mask bitmap that defines which areas of the source image are visible.
+bitmapMaskModifierTool.maskBitmap = someMaskBitmap
+
+// The brush used for painting mask areas.
+bitmapMaskModifierTool.brush = eraserBrush
+
+// Line smoother for creating natural-looking brush strokes.
+bitmapMaskModifierTool.lineSmoother = BezierLineSmoother()
+
+// The drawing engine that handles brush stroke rendering.
+bitmapMaskModifierTool.engine = drawingEngine
+
+// Reset the tool state.
+bitmapMaskModifierTool.reset()
+```
+</details>
+
+### SETUP
+```kotlin
+val maskBitmap = layerBitmap.copy(config,isMutable = true)
+
+// Set color of this bitmap to black, this way, all the layer is visible.
+// Later we erase parts of this mask to show the sourceBitmap instead of selected layer's bitmap.
+maskBitmap.eraseColor(Color.BLACK)
+
+val bitmapMaskModifierTool = BitmapMaskModifierTool(sourceBitmap // For example blured bitmap, maskBitmap, engine = DrawingEngine // Could be CanvasDrawingEngine)
+
+// Modify the mask in realtime using this brush. 
+bitmapMaskModifierTool.brush = NativeBrush(size = 20, softness = 0.8f)
+
+// Set eraser mode to true. You can also draw instead of earasing but in this example we are erasing the mask.
+drawingEngine.setEraserMode(true)
+
+painterView.painter = bitmapMaskModifierTool
+
+// HAPPY MASKING, I guess.
 ```
 
 ### 🌈 GradientSlider
