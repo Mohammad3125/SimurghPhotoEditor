@@ -3,6 +3,7 @@ package ir.simurgh.photolib.components.paint.painters.masking
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
@@ -15,6 +16,9 @@ import ir.simurgh.photolib.components.paint.painters.painting.engines.DrawingEng
 import ir.simurgh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.simurgh.photolib.components.paint.smoothers.LineSmoother
 import ir.simurgh.photolib.utils.gesture.TouchData
+import ir.simurgh.photolib.utils.history.HistoryHandler
+import ir.simurgh.photolib.utils.history.HistoryState
+import ir.simurgh.photolib.utils.history.handlers.StackFullRestoreHistoryHandler
 import ir.simurgh.photolib.utils.matrix.SimurghMatrix
 
 /**
@@ -63,7 +67,11 @@ import ir.simurgh.photolib.utils.matrix.SimurghMatrix
  * // Result shows sourceImage with masked areas transparent
  * ```
  */
-open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, var engine: DrawingEngine) :
+open class BitmapMaskModifierTool(
+    open var bitmap: Bitmap,
+    maskBitmap: Bitmap,
+    var engine: DrawingEngine
+) :
     Painter(),
     LineSmoother.OnDrawPoint {
 
@@ -77,7 +85,14 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
             field = value
             // Update the canvas to draw on the new mask bitmap
             paintCanvas.setBitmap(field)
+            // Create backup for undo operations
+            initialMaskBitmapState = value.copy(value.config ?: Bitmap.Config.ARGB_8888, true)
         }
+
+    /**
+     * Backup of the initial mask bitmap state for history management.
+     */
+    protected var initialMaskBitmapState: Bitmap? = null
 
     /**
      * The brush used for painting mask areas. This determines the size, opacity,
@@ -128,6 +143,9 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
     /** Bounds of the layer being masked, used for efficient rendering */
     protected val layerBound = RectF()
 
+
+    override var historyHandler: HistoryHandler? = StackFullRestoreHistoryHandler()
+
     /**
      * Initializes the masking tool with transformation matrices and layer bounds.
      * Sets up the mask canvas and prepares the tool for drawing operations.
@@ -140,6 +158,8 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
         clipBounds: Rect
     ) {
         super.initialize(context, transformationMatrix, fitInsideMatrix, layerBounds, clipBounds)
+
+        prepareInitialState()
 
         // Configure the canvas to draw on the mask bitmap
         paintCanvas.setBitmap(maskBitmap)
@@ -158,6 +178,8 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
     override fun onMoveBegin(touchData: TouchData) {
         if (shouldDraw()) {
             touchData.run {
+                prepareInitialState()
+
                 // Initialize the drawing engine for the new stroke
                 engine.onMoveBegin(touchData, finalBrush)
 
@@ -198,6 +220,9 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
                 touchData,
                 finalBrush
             )
+
+            // Save state for undo/redo functionality
+            saveState()
 
             // Request screen update to show the new mask effect
             sendMessage(PainterMessage.INVALIDATE)
@@ -245,7 +270,9 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
      * as the mask bitmap and brush settings are managed externally.
      */
     override fun reset() {
-        // No specific reset behavior required for masking tool
+        // Reset history
+        historyHandler?.reset()
+        sendMessage(PainterMessage.INVALIDATE)
     }
 
     /**
@@ -277,5 +304,75 @@ open class BitmapMaskModifierTool(open var bitmap: Bitmap, maskBitmap: Bitmap, v
 
         // Request screen update to show the drawing progress
         sendMessage(PainterMessage.INVALIDATE)
+    }
+
+    /**
+     * Saves the current state for undo/redo functionality.
+     */
+    protected open fun saveState() {
+        initialMaskBitmapState?.let { initialBitmap ->
+            historyHandler?.addState(State(initialBitmap))
+        }
+
+        prepareInitialState()
+    }
+
+    protected open fun prepareInitialState() {
+        initialMaskBitmapState =
+            maskBitmap.copy(maskBitmap.config ?: Bitmap.Config.ARGB_8888, true)
+    }
+
+    /**
+     * Performs undo operation to restore previous mask state.
+     */
+    override fun undo() {
+        historyHandler?.undo()?.let {
+            sendMessage(PainterMessage.INVALIDATE)
+        }
+    }
+
+    /**
+     * Performs redo operation to restore next mask state.
+     */
+    override fun redo() {
+        historyHandler?.redo()?.let {
+            sendMessage(PainterMessage.INVALIDATE)
+        }
+    }
+
+    /**
+     * Indicates this tool handles its own history management.
+     */
+    override fun doesHandleHistory(): Boolean {
+        return true
+    }
+
+    /**
+     * History state implementation for mask bitmap operations.
+     * Stores mask bitmap states for undo/redo functionality.
+     */
+    protected open inner class State(val initialBitmap: Bitmap) : HistoryState {
+        private val clonedBitmap =
+            maskBitmap.copy(maskBitmap.config ?: Bitmap.Config.ARGB_8888, true)
+
+        override fun undo() {
+            restoreState(initialBitmap)
+        }
+
+        override fun redo() {
+            restoreState(clonedBitmap)
+        }
+
+        /**
+         * Restores the mask bitmap to a specific state.
+         *
+         * @param targetBitmap The bitmap state to restore to
+         */
+        protected open fun restoreState(targetBitmap: Bitmap) {
+            // Copy the target bitmap content to the current mask bitmap
+            val canvas = Canvas(maskBitmap)
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+            canvas.drawBitmap(targetBitmap, 0f, 0f, null)
+        }
     }
 }
