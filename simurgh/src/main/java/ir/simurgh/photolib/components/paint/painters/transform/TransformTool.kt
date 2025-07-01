@@ -665,7 +665,7 @@ open class TransformTool(context: Context) : Painter(), Transformable.OnInvalida
         onChildSelected?.invoke(currentSelectedChild!!.transformable, true)
 
         if (isInitialized) {
-            initializeChild(currentSelectedChild!!)
+            initializeChild(currentSelectedChild!!,targetRect = targetRect)
             onInvalidate()
         }
 
