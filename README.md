@@ -27,6 +27,7 @@ it supports features like layers, complex gesutres, drawing, masking, selection,
       - TextTransformable
       - BitmapTransformable
       - ShapeTransformable
+      - Default Bursh Stamps
    - **[✂️ Crop Tool](#%EF%B8%8F-crop-tool)**
    - **[🔍 ColorDropper](#-colordropper)**
    - **[🤠 LassoTool](#-lassotool)**
@@ -55,6 +56,7 @@ it supports features like layers, complex gesutres, drawing, masking, selection,
 9. **[📞 Support](#-support)**
 
 10. **[🏆 Acknowledgments](#-acknowledgments)**
+    - Apps built with Simurgh
 
 ## 🚀 Features
 
@@ -314,7 +316,7 @@ Add `PainterView` to your xml layout:
 ```
 
 ### 🖌️ Brush Painter
-<a href="https://imgbb.com/"><img src="https://i.ibb.co/4Rw361H3/Hue-Flow-ezgif-com-optimize.gif" alt="Hue-Flow-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/SwQvVzF7/Brush-Painter-ezgif-com-optimize.gif" alt="Brush-Painter-ezgif-com-optimize" border="0" /></a>  <a href="https://imgbb.com/"><img src="https://i.ibb.co/tTBFCtRr/Speed-Sensitivitiy-ezgif-com-optimize.gif" alt="Speed-Sensitivitiy-ezgif-com-optimize" border="0" /></a>
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/4Rw361H3/Hue-Flow-ezgif-com-optimize.gif" alt="Hue-Flow-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/SwQvVzF7/Brush-Painter-ezgif-com-optimize.gif" alt="Brush-Painter-ezgif-com-optimize" border="0" /></a>  <a href="https://imgbb.com/"><img src="https://i.ibb.co/tTBFCtRr/Speed-Sensitivitiy-ezgif-com-optimize.gif" alt="Speed-Sensitivitiy-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/dwsNcW05/Eraser-ezgif-com-optimize.gif" alt="Eraser-ezgif-com-optimize" border="0"></a>
 
 - **Various Brushes**: Render customizable brushes.
 - **Texture Support**: Apply custom textures to brush strokes.
@@ -401,6 +403,30 @@ It has a `brush` property that is responsible for rendering a stamp on provided 
 
 </details>
 
+### 🎟️ Default Brush Stamps
+There is a number of brush stamp and texture resources available at Simurgh's module at `R.drawable`.
+These brushes were provided by `myphotoshopbrushes.com`.
+
+```
+// Stamps
+R.drawable.free_charcoal_bruses_10
+R.drawable.free_charcoal_bruses_2
+R.drawable.free_charcoal_bruses_7
+R.drawable.hair
+R.drawable.real_6
+R.drawable.wavy_hair
+
+// Textures
+R.drawable.back_pattern
+R.drawable.basketball
+R.drawable.binding
+R.drawable.gray_lines
+R.drawable.knitted_netting
+R.drawable.large_leather
+R.drawable.paper
+
+```
+
 ### Setup
 
 ```kotlin
@@ -472,7 +498,8 @@ Add `BrushPreview` to your xml layout.
 ```
 
 ### 📐 Transform Tool
-<a href="https://imgbb.com/"><img src="https://i.ibb.co/5hyyjWPQ/Bitmap-Transformable-ezgif-com-optimize-1.gif" alt="Bitmap-Transformable-ezgif-com-optimize-1" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/d44xF8cD/Text-Transformable-ezgif-com-optimize.gif" alt="Text-Transformable-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/3mhwr0Sz/Perspective-ezgif-com-optimize.gif" alt="Perspective-ezgif-com-optimize" border="0" /></a>
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/5hyyjWPQ/Bitmap-Transformable-ezgif-com-optimize-1.gif" alt="Bitmap-Transformable-ezgif-com-optimize-1" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/d44xF8cD/Text-Transformable-ezgif-com-optimize.gif" alt="Text-Transformable-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/3mhwr0Sz/Perspective-ezgif-com-optimize.gif" alt="Perspective-ezgif-com-optimize" border="0" /></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/YFF6h7dZ/Guidelines-ezgif-com-optimize.gif" alt="Guidelines-ezgif-com-optimize" border="0"></a> <a href="https://imgbb.com/"><img src="https://i.ibb.co/hxxxxPT2/Texture-ezgif-com-optimize-1.gif" alt="Texture-ezgif-com-optimize-1" border="0"></a>
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/RGnzcbXk/Gradient-ezgif-com-optimize.gif" alt="Gradient-ezgif-com-optimize" border="0"></a>
 
 - **Multi-touch Gestures**: Scale, rotate, and translate objects with touch controls.
 - **Free Transform Mode**: Advanced corner-by-corner manipulation for perspective adjustments.
@@ -1556,8 +1583,8 @@ Let me know where did you use this library and what apps you created with it.
 
 ## 🏆 Acknowledgments
 - Built with ❤️ for the Android development community
-- Part of line-smoothing algorithm was inspired by [krzysztofzablocki's LineDrawing](https://github.com/krzysztofzablocki/LineDrawing?tab=readme-ov-file) project. Thank you ❤️.
-
-### 📱 Apps built with this library
+- Part of line-smoothing algorithm was inspired by [krzysztofzablocki's LineDrawing](https://github.com/krzysztofzablocki/LineDrawing?tab=readme-ov-file) project. Thank you ❤️
+- Brush stamps in this library is provided by `www.myphotoshopbrushes.com`
+### 📱 Apps built with Simurgh
 #### [Baboomeh](https://cafebazaar.ir/app/ir.baboomeh.editor)
 <a href="https://imgbb.com/"><img src="https://i.ibb.co/SXxKS4jQ/logo-baboomeh.png" alt="logo-baboomeh" border="0"></a>
