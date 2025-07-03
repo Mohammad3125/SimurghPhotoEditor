@@ -792,6 +792,7 @@ open class TransformTool(context: Context) : Painter(), Transformable.OnInvalida
         child.apply {
             transformable.onInvalidateListener = this@TransformTool
             transformable.getBounds(targetComponentBounds)
+            updateBounds()
             handleTransformer.createHandles(child)
         }
     }
