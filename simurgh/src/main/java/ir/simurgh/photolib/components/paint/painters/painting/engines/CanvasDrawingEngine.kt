@@ -75,6 +75,8 @@ open class CanvasDrawingEngine : DrawingEngine {
         sizeVarianceHolder = brush.sizeVariance
         targetSizeVarianceHolder = sizeVarianceHolder
 
+        hueDegreeHolder = 0f
+
         lastSizePressure =
             mapPressure(touchData.pressure, brush.minimumPressureSize, brush.maximumPressureSize)
 
@@ -138,7 +140,7 @@ open class CanvasDrawingEngine : DrawingEngine {
             mapPressure(touchData.pressure, brush.minimumPressureSize, brush.maximumPressureSize)
 
         lastVtrSizeVariance = 0f
-        hueDegreeHolder = 0f
+
         brush.spacing = currentSpacing
     }
 
