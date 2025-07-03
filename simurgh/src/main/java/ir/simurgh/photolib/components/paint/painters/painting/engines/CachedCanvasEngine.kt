@@ -73,6 +73,9 @@ open class CachedCanvasEngine : DrawingEngine {
      */
     open var cachedRotation = 0f
 
+
+    open var cachedColor : Int? = null
+
     /** Current taper size value for progressive size changes */
     private var taperSizeHolder = 0f
 
@@ -166,8 +169,19 @@ open class CachedCanvasEngine : DrawingEngine {
                     (opacity * 255).toInt()
                 }
 
+                val lastColor = color
+
+                cachedColor?.let {
+                    color = it
+                }
+
                 // Draw the brush stamp
                 draw(this, brushOpacity)
+
+                if(lastColor != color) {
+                    color = lastColor
+                }
+
             }
         }
     }

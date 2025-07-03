@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PathMeasure
@@ -19,6 +20,7 @@ import ir.simurgh.photolib.components.paint.painters.painting.engines.CachedCanv
 import ir.simurgh.photolib.components.paint.smoothers.BezierLineSmoother
 import ir.simurgh.photolib.components.paint.smoothers.LineSmoother
 import ir.simurgh.photolib.utils.extensions.dp
+import ir.simurgh.photolib.utils.gesture.GestureUtils
 import ir.simurgh.photolib.utils.gesture.TouchData
 import kotlin.random.Random
 
@@ -260,6 +262,15 @@ open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
         /** Cache for random Y scatter values used in brush rendering. */
         protected val scatterYCache = mutableListOf<Float>()
 
+        /** Cache for hue jitter values used in brush rendering. */
+        protected val hueJitterCache = mutableListOf<Float>()
+
+        /** Temporary HSV color array for color transformations */
+        protected val hsvHolder = FloatArray(3)
+
+        /** Controls direction of hue flow animation */
+        protected var hueFlip = true
+
         /** Counter for cycling through cached properties during rendering. */
         protected var cacheCounter = 0
 
@@ -280,6 +291,8 @@ open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
 
         /** Touch data object used for simulating brush strokes. */
         protected val touchData = TouchData()
+
+        protected var hueShift = 0f
 
         /**
          * Creates a bitmap snapshot of a brush stroke preview.
@@ -468,9 +481,12 @@ open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
                 brush
             )
 
+
             engine.onMoveBegin(
                 touchData, brush
             )
+
+            hueShift = 0f
 
             // Process intermediate points along the path.
             for (i in 2..points.size - 2 step 2) {
@@ -526,6 +542,15 @@ open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
                 engine.cachedScale = scaleCache[cacheCounter]
                 engine.cachedRotation = rotationCache[cacheCounter]
 
+                // Calculate and apply hue variations if enabled
+                val originalColor = brush.color
+                val hueModifiedColor = calculateHueModifiedColor(
+                    originalColor,
+                    brush,
+                    cacheCounter
+                )
+                engine.cachedColor = hueModifiedColor
+
                 // Draw the point with the configured properties.
                 engine.draw(
                     cachePointHolder[i],
@@ -555,6 +580,7 @@ open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
                 scaleCache.clear()
                 scatterXCache.clear()
                 scatterYCache.clear()
+                hueJitterCache.clear()
 
                 // Generate random values for brush variation effects.
                 repeat(cacheSizeInByte) {
@@ -566,8 +592,83 @@ open class BrushPreview(context: Context, attributeSet: AttributeSet?) :
                     scatterXCache.add(Random.nextInt(-100, 100) / 100f)
                     // Random Y scatter values from -1 to 1.
                     scatterYCache.add(Random.nextInt(-100, 100) / 100f)
+                    // Random hue jitter values from 0 to 1.
+                    hueJitterCache.add(Random.nextInt(0, 100) / 100f)
+                }
+            }
+        }
+
+        /**
+         * Calculates a hue-modified color based on brush hue properties and cached values.
+         *
+         * @param originalColor The original brush color.
+         * @param brush The brush configuration containing hue properties.
+         * @param pointIndex The current point index in the stroke.
+         * @param totalPoints The total number of points in the stroke.
+         * @param cacheIndex The current cache index for random values.
+         * @return The hue-modified color as an integer.
+         */
+        private fun calculateHueModifiedColor(
+            originalColor: Int,
+            brush: Brush,
+            cacheIndex: Int
+        ): Int {
+            return when {
+                brush.hueJitter > 0 -> {
+                    // Extract HSV values from the original color
+                    Color.colorToHSV(originalColor, hsvHolder)
+                    // Apply jitter using cached random value
+                    hsvHolder[0] += (brush.hueJitter * hueJitterCache[cacheIndex])
+                    // Normalize hue to 0-360 range
+                    hsvHolder[0] = GestureUtils.mapTo360(hsvHolder[0])
+                    Color.HSVToColor(Color.alpha(originalColor), hsvHolder)
+                }
+
+                brush.hueFlow > 0f && brush.hueDistance > 0f -> {
+
+                    // Extract HSV values from the original color.
+                    Color.colorToHSV(originalColor, hsvHolder)
+
+                    // Calculate hue shift rate based on flow speed.
+                    val progress = 4f / brush.hueFlow
+
+                    // Update hue shift based on current direction.
+                    if (hueFlip) {
+                        // Increase hue shift when flowing forward.
+                        hueShift += progress
+                    } else {
+                        // Decrease hue shift when flowing backward.
+                        hueShift -= progress
+                    }
+
+                    // Check if we've reached the maximum hue distance.
+                    if (hueShift >= brush.hueDistance) {
+                        // Clamp to maximum distance and reverse direction.
+                        hueShift = brush.hueDistance.toFloat()
+                        hueFlip = false
+                    }
+
+                    // Check if we've reached the minimum hue position.
+                    if (hueShift <= 0f) {
+                        // Clamp to zero and reverse direction.
+                        hueShift = 0f
+                        hueFlip = true
+                    }
+
+                    // Apply the calculated hue shift to the color.
+                    hsvHolder[0] += hueShift
+                    // Normalize hue to 0-360 degree range.
+                    hsvHolder[0] = GestureUtils.mapTo360(hsvHolder[0])
+
+                    // Convert back to RGB color with original alpha.
+                    Color.HSVToColor(Color.alpha(originalColor), hsvHolder)
+                }
+
+                else -> {
+                    originalColor
                 }
             }
         }
     }
 }
+
