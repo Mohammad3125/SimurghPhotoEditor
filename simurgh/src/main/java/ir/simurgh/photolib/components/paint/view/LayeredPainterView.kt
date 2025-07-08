@@ -578,7 +578,9 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
 
         saveState(createState(initialLayers))
 
-        if (!isViewInitialized) {
+        processNewLayerIfReady()
+
+        if(isNewLayer) {
             requestLayout()
         }
 
@@ -805,7 +807,7 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
 
         invalidate()
     }
-    
+
     open fun getLayerBlendingModeAt(index: Int): PorterDuff.Mode {
         checkIndex(index)
         return layerHolder[index].blendingMode

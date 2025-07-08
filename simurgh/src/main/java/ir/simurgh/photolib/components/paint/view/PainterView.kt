@@ -199,8 +199,9 @@ open class PainterView(context: Context, attrSet: AttributeSet?) :
             // Initialize painter if view is ready.
             if (isViewInitialized) {
                 initializedPainter(field)
+            } else {
+                requestLayout()
             }
-            requestLayout()
         }
 
     /** Callback invoked when the painter is fully initialized and ready for use. */
@@ -402,7 +403,15 @@ open class PainterView(context: Context, attrSet: AttributeSet?) :
      * Handles view layout operations and initializes the view when bitmap dimensions are available.
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        if (isNewLayer && bitmapWidth != 0 && bitmapHeight != 0) {
+        processNewLayerIfReady()
+    }
+
+    /**
+     * Processes new layer initialization if all conditions are met.
+     * Can be called immediately when bitmap dimensions and view dimensions are available.
+     */
+    protected open fun processNewLayerIfReady() {
+        if (isNewLayer && bitmapWidth != 0 && bitmapHeight != 0 && width > 0 && height > 0) {
             // Update canvas dimensions based on new bitmap.
             resizeCanvas(width.toFloat(), height.toFloat())
 
