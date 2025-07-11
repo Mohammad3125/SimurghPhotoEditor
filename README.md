@@ -154,7 +154,13 @@ painterView.resetPainter()
 // Change properties of layers.
 painterView.setSelectedLayerLockState(lockedState = true)
 painterView.setSelectedLayerOpacity(opactiy = 0.4f) // Between 0f to 1f.
-painterView.setSelectedLayerBlendingMode(blendingMode = PorterDuff.Mode.LIGHTEN) // Some modes require painterView layer type to run in software mode, be aware of this.
+// Some modes require painterView layer type to run in software mode, change painterView layerType for software for
+// blending modes that are not hardware-accelerated on certain API levels.
+painterView.setSelectedLayerBlendingMode(blendingMode = PorterDuff.Mode.LIGHTEN)
+
+if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && paintView.layerType == LAYER_TYPE_NONE) {
+    paintView.setLayerType(LAYER_TYPE_SOFTWARE, null)
+}
 
 // Get layer property
 val blendingMode : PorterDuff.Mode = painterView.getSelectedLayerBlendingMode()
@@ -517,6 +523,11 @@ It has handleDrawable and bound properties that are responsible for rendering tr
 - **`SmartAlignmentGuidelineDetector`**: Responsible for finding guidelines for alignments of `Transformable` objects.
 - **`SmartRotationGuidelineDetector`**: Responsible for finding guidelines for rotation of `Transformable` objects.
 
+> [!WARNING]
+> Custom shaped shadows and some blending modes are not hardware accelerated on API below version 28 (P). Enable `LAYER_TYPE_SOFTWARE` on `PainterView` to
+> correctly show custom shaped shadows and blending modes.
+
+
 <details>
   <summary>
   Transformables
@@ -709,7 +720,6 @@ val clonedTransformable = textTransformable.clone()
 `Transformable` object responsible for rendering bitmap. It supports stroke, image adjustment (brighntess, contrast, hue, etc.), customizable background, shadow, etc.
 
 > All the methods and properties present in TextTransformable such as background, shadow, stroke, etc is persent in this class too.
-
 
 ```kotlin
 // The source bitmap being painted
