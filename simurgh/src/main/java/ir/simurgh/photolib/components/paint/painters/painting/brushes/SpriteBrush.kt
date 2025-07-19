@@ -305,4 +305,11 @@ open class SpriteBrush(
             )
         }
     }
+
+    /**
+     * Returns list of sprite bitmaps in this brush.
+     */
+    fun getSpriteBitmaps(): List<Bitmap>? {
+        return bitmaps?.toList()
+    }
 }
