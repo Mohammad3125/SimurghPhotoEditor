@@ -1512,7 +1512,7 @@ class MainActivity : AppCompatActivity() {
         
         // Set up brush painter
         val brushPainter = BrushPainter().apply {
-            // Configure brush properties
+            brush = NativeBrush(size = 40)
         }
         paintView.painter = brushPainter
         
