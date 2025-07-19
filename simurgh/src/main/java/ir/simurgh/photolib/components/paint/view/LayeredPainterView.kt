@@ -658,10 +658,12 @@ open class LayeredPainterView(context: Context, attrSet: AttributeSet?) :
             if (!isCachingEnabled) {
                 // Update reference bitmap without caching.
                 bitmapReference.eraseColor(Color.TRANSPARENT)
+
+                setBitmap(bitmapReference)
+
                 if (isCheckerBoardEnabled) {
                     drawPaint(checkerPatternPaint)
                 }
-                setBitmap(bitmapReference)
                 mergeLayersAtIndex(mergeCanvas, 0, layerHolder.lastIndex)
                 painter?.onReferenceLayerCreated(bitmapReference)
                 return
