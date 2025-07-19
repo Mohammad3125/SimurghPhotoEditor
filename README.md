@@ -1479,7 +1479,7 @@ Add jitpack in your settings.gradle.kts at the end of repositories:
 
 Then add dependency to your `build.gradle`
 ```gradle
- implementation 'com.github.Mohammad3125:SimurghPhotoEditor:0.6.0'
+ implementation 'com.github.Mohammad3125:SimurghPhotoEditor:0.6.1'
 ```
 
 ## 🎯 Quick Start
