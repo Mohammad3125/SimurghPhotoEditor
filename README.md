@@ -1483,7 +1483,7 @@ Then add dependency to your `build.gradle`
 ```
 
 ## 🎯 Quick Start
-
+#### [HonarPaint](https://github.com/Mohammad3125/HonarPaint) application can be used as a reference design to help you start using this library.
 ### Basic Setup
 
 ```xml
@@ -1598,3 +1598,5 @@ Let me know where did you use this library and what apps you created with it.
 ### 📱 Apps built with Simurgh
 #### [Baboomeh](https://cafebazaar.ir/app/ir.baboomeh.editor)
 <a href="https://imgbb.com/"><img src="https://i.ibb.co/SXxKS4jQ/logo-baboomeh.png" alt="logo-baboomeh" border="0"></a>
+
+#### [HonarPaintRepository](https://github.com/Mohammad3125/HonarPaint)
